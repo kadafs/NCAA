@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+from datetime import datetime
 
 # Script 3: Conservative / Pessimistic Model
 # Goal: Address "over-optimistic" scoring by applying aggressive penalties
@@ -8,6 +9,17 @@ import requests
 
 TEAM_STATS_FILE = "data/consolidated_stats.json"
 STANDINGS_FILE = "data/standings.json"
+BASE_URL = "http://localhost:3000"
+
+def fetch_scoreboard(year, month, day):
+    url = f"{BASE_URL}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+    except Exception as e:
+        print(f"Error fetching scoreboard: {e}")
+    return None
 
 ROAD_PENALTY = 0.95 # -5% efficiency for visiting team
 TEMPO_DRAG = 0.65   # The slower team controls 65% of the pace
@@ -106,13 +118,25 @@ def main():
     
     metrics, avg_tempo, avg_eff = get_pessimistic_metrics(stats_data, standings_data)
     
-    matchups = [
-        ("Arizona", "TCU"), ("Alabama", "Texas"), ("Villanova", "Marquette"), ("Duke", "NC State")
-    ]
+    # Use current date from metadata
+    now = datetime(2026, 1, 12)
+    print(f"\n--- Conservative Predictions for {now.strftime('%Y-%m-%d')} ---")
     
+    board = fetch_scoreboard(now.year, now.month, now.day)
+    if not board or 'games' not in board or not board['games']:
+        print("No games found on scoreboard.")
+        return
+
     print(f"{'Matchup':<40} | {'Proj Score':<15} | {'Total':<10}")
     print("-" * 75)
-    for away, home in matchups:
+    
+    for game_wrapper in board['games']:
+        game = game_wrapper.get('game')
+        if not game: continue
+        
+        away = game['away']['names']['short']
+        home = game['home']['names']['short']
+        
         res = predict_pessimistic(away, home, metrics, (avg_tempo, avg_eff))
         if res:
             match_str = f"{res['away']} @ {res['home']}"

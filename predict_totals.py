@@ -1,12 +1,24 @@
 import json
 import os
 import requests
+from datetime import datetime
 
 # Script 2: Over/Under Focused Model
 # Features: Offensive Rebounding (Possession Resets), 3PT Regression,
 # Late Game Fouling (Free Throw Trap), and Tempo Archetypes.
 
 TEAM_STATS_FILE = "data/consolidated_stats.json"
+BASE_URL = "http://localhost:3000"
+
+def fetch_scoreboard(year, month, day):
+    url = f"{BASE_URL}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+    except Exception as e:
+        print(f"Error fetching scoreboard: {e}")
+    return None
 
 def load_json(path):
     if not os.path.exists(path): return None
@@ -120,13 +132,25 @@ def main():
     
     metrics, avg_tempo, avg_eff = get_total_metrics(stats_data)
     
-    matchups = [
-        ("Arizona", "TCU"), ("Alabama", "Texas"), ("Villanova", "Marquette"), ("Duke", "NC State")
-    ]
+    # Use current date from metadata
+    now = datetime(2026, 1, 12)
+    print(f"\n--- Totals Predictions for {now.strftime('%Y-%m-%d')} ---")
     
+    board = fetch_scoreboard(now.year, now.month, now.day)
+    if not board or 'games' not in board or not board['games']:
+        print("No games found on scoreboard.")
+        return
+
     print(f"{'Matchup':<40} | {'Base Total':<12} | {'Adj Total':<12} | {'Diff':<8}")
     print("-" * 85)
-    for away, home in matchups:
+    
+    for game_wrapper in board['games']:
+        game = game_wrapper.get('game')
+        if not game: continue
+        
+        away = game['away']['names']['short']
+        home = game['home']['names']['short']
+        
         res = predict_total(away, home, metrics, (avg_tempo, avg_eff))
         if res:
             match_str = f"{res['away']} @ {res['home']}"
