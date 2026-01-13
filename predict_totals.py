@@ -132,8 +132,8 @@ def main():
     
     metrics, avg_tempo, avg_eff = get_total_metrics(stats_data)
     
-    # Use current date from metadata
-    now = datetime(2026, 1, 12)
+    # Use current date
+    now = datetime.now()
     print(f"\n--- Totals Predictions for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)

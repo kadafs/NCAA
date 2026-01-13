@@ -118,8 +118,8 @@ def main():
     
     metrics, avg_tempo, avg_eff = get_pessimistic_metrics(stats_data, standings_data)
     
-    # Use current date from metadata
-    now = datetime(2026, 1, 12)
+    # Use current date
+    now = datetime.now()
     print(f"\n--- Conservative Predictions for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)

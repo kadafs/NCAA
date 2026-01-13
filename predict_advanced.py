@@ -144,8 +144,8 @@ def main():
     metrics, avg_tempo, avg_off, avg_def = get_team_metrics(stats_data, standings_data)
     league_avgs = (avg_tempo, avg_off, avg_def)
 
-    # Use current date from metadata
-    now = datetime(2026, 1, 12)
+    # Use current date
+    now = datetime.now()
     print(f"\n--- Advanced Predictions for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)
