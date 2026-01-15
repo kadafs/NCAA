@@ -13,7 +13,7 @@ CREATE TABLE settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Create Payment Requests Table (Optional but recommended)
+-- 3. Create Payment Requests Table
 CREATE TABLE payment_requests (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username TEXT NOT NULL,
@@ -23,11 +23,12 @@ CREATE TABLE payment_requests (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Enable Row Level Security (Initial simple open policy - refine later)
+-- Enable Row Level Security
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_requests ENABLE ROW LEVEL SECURITY;
 
+-- Initial open policies for development (refine for production)
 CREATE POLICY "Allow anon access" ON users FOR ALL USING (true);
 CREATE POLICY "Allow anon access" ON settings FOR ALL USING (true);
 CREATE POLICY "Allow anon access" ON payment_requests FOR ALL USING (true);
