@@ -42,8 +42,10 @@ def find_team(name, teams_dict):
     return None
 
 def get_pessimistic_metrics(stats_data, standings_data):
+    # Map schools to conferences
     school_to_conf = {}
-    for conf_group in standings_data.get('data', []):
+    data_list = standings_data.get('data', []) if isinstance(standings_data, dict) else []
+    for conf_group in data_list:
         for team in conf_group['standings']:
             school_to_conf[team['School']] = conf_group['conference']
 

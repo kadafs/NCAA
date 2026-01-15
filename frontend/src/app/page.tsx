@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 // Initial fallback data (empty by default to force live fetch)
 const GAMES: any[] = [];
@@ -34,7 +35,8 @@ const PLATFORM_STATS = [
 ];
 
 export default function Dashboard() {
-  const [user, setUser] = useState<{ username: string; isPro: boolean } | null>(null);
+  const { data: session, status } = useSession();
+  const user = session?.user as any;
   const [showLogin, setShowLogin] = useState(false);
   const [loginUsername, setLoginUsername] = useState("");
   const [showPayments, setShowPayments] = useState(false);
@@ -45,50 +47,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("ncaa_user");
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      checkUserStatus(parsed.username);
-    }
     fetchData();
     fetchWallets();
   }, []);
 
-  const checkUserStatus = async (username: string) => {
-    try {
-      const res = await fetch("/api/admin/users");
-      const users = await res.json();
-      const match = users.find((u: any) => u.username === username);
-      if (match) {
-        // Map Supabase is_pro to frontend isPro if needed
-        const normalizedUser = { ...match, isPro: match.is_pro ?? match.isPro ?? false };
-        setUser(normalizedUser);
-        localStorage.setItem("ncaa_user", JSON.stringify(normalizedUser));
-      } else {
-        // New user
-        const newUser = { username, is_pro: false };
-        await fetch("/api/admin/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newUser)
-        });
-        setUser({ ...newUser, isPro: false });
-        localStorage.setItem("ncaa_user", JSON.stringify({ ...newUser, isPro: false }));
-      }
-    } catch (err) { console.error(err); }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loginUsername) {
-      checkUserStatus(loginUsername);
+      await signIn("credentials", {
+        username: loginUsername,
+        redirect: false
+      });
       setShowLogin(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("ncaa_user");
-    setUser(null);
+    signOut();
   };
 
   const fetchWallets = async () => {
