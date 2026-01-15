@@ -18,17 +18,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 
 export default function ScoreboardPage() {
+    const { data: session } = useSession();
+    const user = session?.user as any;
     const [games, setGames] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [dates, setDates] = useState<string[]>([]);
-    const [user, setUser] = useState<any>(null);
 
     useEffect(() => {
-        const savedUser = localStorage.getItem("ncaa_user");
-        if (savedUser) setUser(JSON.parse(savedUser));
 
         // Generate date range
         const d = [];

@@ -14,16 +14,24 @@ import {
     Trophy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const [activeTab, setActiveTab] = useState<'users' | 'settings'>('users');
     const [users, setUsers] = useState<any[]>([]);
     const [wallets, setWallets] = useState<{ type: string; address: string }[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        if (status === 'unauthenticated' || (session && (session.user as any).username !== 'admin')) {
+            router.push('/');
+        } else if (status === 'authenticated') {
+            fetchData();
+        }
+    }, [status, session]);
 
     const fetchData = async () => {
         try {
