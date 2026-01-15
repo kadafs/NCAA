@@ -541,7 +541,7 @@ export const app = new Elysia()
   },
     { detail: { hide: true } }
   )
-  .listen(3000);
+  .listen(process.env.PORT || 3000);
 
 log(`Server is running at ${app.server?.url}`);
 
