@@ -7,17 +7,18 @@ from datetime import datetime
 # Features: Offensive Rebounding (Possession Resets), 3PT Regression,
 # Late Game Fouling (Free Throw Trap), and Tempo Archetypes.
 
+BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
-BASE_URL = "http://localhost:3000"
 
 def fetch_scoreboard(year, month, day):
-    url = f"{BASE_URL}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json()
-    except Exception as e:
-        print(f"Error fetching scoreboard: {e}")
+    for base in BASE_URLS:
+        url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+        except:
+            continue
     return None
 
 def load_json(path):

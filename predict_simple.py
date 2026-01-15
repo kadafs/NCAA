@@ -7,17 +7,18 @@ from datetime import datetime
 # Logic: Proj Score = (Team A Offense + Team B Defense) / 2
 # Uses only basic Scoring Offense (PPG) and Scoring Defense (OPP PPG).
 
-BASE_URL = "http://localhost:3000"
+BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
 
 def fetch_scoreboard(year, month, day):
-    url = f"{BASE_URL}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json()
-    except Exception as e:
-        print(f"Error fetching scoreboard: {e}")
+    for base in BASE_URLS:
+        url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+        except:
+            continue
     return None
 
 def load_json(path):
