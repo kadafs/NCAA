@@ -11,6 +11,7 @@ from datetime import datetime
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
 STANDINGS_FILE = "data/standings.json"
+BARTTORVIK_STATS_FILE = "data/barttorvik_stats.json"
 
 # Conference Rankings Proxy (Higher = Stronger Conference)
 # Based on historical/NET context
@@ -54,6 +55,36 @@ def find_team(name, teams_dict):
         t_low = t_name.lower()
         if name_low == t_low or name_low in t_low or t_low in name_low:
             return t_name
+    return None
+
+def find_barttorvik_team(name, barttorvik_dict):
+    if not name: return None
+    if name in barttorvik_dict: return name
+    
+    # Custom mapping for known discrepancies
+    custom_map = {
+        "St. Mary's (CA)": "Saint Mary's",
+        "Saint Mary's (CA)": "Saint Mary's",
+        "UConn": "Connecticut",
+        "Ole Miss": "Mississippi",
+        "UMKC": "Kansas City",
+        "Penn": "Pennsylvania",
+        "Fullerton": "Cal St. Fullerton",
+        "Long Beach State": "Cal St. Long Beach",
+        "Northridge": "Cal St. Northridge",
+        "Bakersfield": "Cal St. Bakersfield",
+        "St. Thomas (MN)": "St. Thomas",
+        "UL Monroe": "Louisiana Monroe",
+        "Louisiana": "Louisiana Lafayette",
+    }
+    if name in custom_map and custom_map[name] in barttorvik_dict:
+        return custom_map[name]
+        
+    name_low = name.lower()
+    for bt_name in barttorvik_dict:
+        bt_low = bt_name.lower()
+        if name_low == bt_low or name_low in bt_low or bt_low in name_low:
+            return bt_name
     return None
 
 def get_team_metrics(stats_data, standings_data):
@@ -114,22 +145,40 @@ def get_team_metrics(stats_data, standings_data):
             
     return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_off_eff)/len(all_off_eff), sum(all_def_eff)/len(all_def_eff)
 
-def predict_game(away_raw, home_raw, metrics, league_avgs):
+def predict_game(away_raw, home_raw, metrics, league_avgs, barttorvik_data=None):
     nameA = find_team(away_raw, metrics)
     nameH = find_team(home_raw, metrics)
+    
+    # BartTorvik Specific Lookup
+    btA_name = find_barttorvik_team(away_raw, barttorvik_data) if barttorvik_data else None
+    btH_name = find_barttorvik_team(home_raw, barttorvik_data) if barttorvik_data else None
+    
+    # We need metrics for basic info, but can prefer BartTorvik for calculations
     if not nameA or not nameH: return None
     
     tA, tH = metrics[nameA], metrics[nameH]
+    btA = barttorvik_data.get(btA_name) if btA_name else None
+    btH = barttorvik_data.get(btH_name) if btH_name else None
+    
     avg_tempo, avg_off, avg_def = league_avgs
     
-    # 1. Tempo Adjustment
-    proj_tempo = (tA['tempo'] * tH['tempo']) / avg_tempo
+    # 1. Use BartTorvik if available, else fallback
+    tempoA = btA['adj_t'] if btA else tA['tempo']
+    tempoH = btH['adj_t'] if btH else tH['tempo']
     
-    # 2. Adjusted Efficiency with Home Court Advantage
+    offA = btA['adj_off'] if btA else tA['off_eff']
+    defA = btA['adj_def'] if btA else tA['def_eff']
+    
+    offH = btH['adj_off'] if btH else tH['off_eff']
+    defH = btH['adj_def'] if btH else tH['def_eff']
+    
+    # 2. Projections using Adjusted Metrics
+    proj_tempo = (tempoA * tempoH) / avg_tempo
+    
     # Away Team Offense vs Home Team Defense
-    effA = (tA['off_eff'] * tH['def_eff']) / avg_def
+    effA = (offA * defH) / avg_def
     # Home Team Offense vs Away Team Defense
-    effH = (tH['off_eff'] * tA['def_eff']) / avg_def
+    effH = (offH * defA) / avg_def
     
     scoreA = (effA * proj_tempo) / 100
     scoreH = ((effH * proj_tempo) / 100) + HOME_ADVANTAGE
@@ -138,7 +187,8 @@ def predict_game(away_raw, home_raw, metrics, league_avgs):
         "away": away_raw, "home": home_raw,
         "scoreA": round(scoreA, 1), "scoreH": round(scoreH, 1),
         "total": round(scoreA + scoreH, 1),
-        "spread": round(scoreH - scoreA, 1)
+        "spread": round(scoreH - scoreA, 1),
+        "using_bt": btA is not None and btH is not None
     }
 
 def main():
@@ -149,6 +199,16 @@ def main():
         return
 
     metrics, avg_tempo, avg_off, avg_def = get_team_metrics(stats_data, standings_data)
+    
+    # Load BartTorvik stats for better precision
+    bt_stats = load_json(BARTTORVIK_STATS_FILE)
+    if bt_stats:
+        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced precision.")
+        # Calculate BartTorvik league averages for more consistent normalization
+        avg_tempo = sum(t['adj_t'] for t in bt_stats.values()) / len(bt_stats)
+        avg_off = sum(t['adj_off'] for t in bt_stats.values()) / len(bt_stats)
+        avg_def = sum(t['adj_def'] for t in bt_stats.values()) / len(bt_stats)
+        
     league_avgs = (avg_tempo, avg_off, avg_def)
 
     # Use current date in ET
@@ -170,9 +230,11 @@ def main():
         away = game['away']['names']['short']
         home = game['home']['names']['short']
         
-        res = predict_game(away, home, metrics, league_avgs)
+        res = predict_game(away, home, metrics, league_avgs, bt_stats)
         if res:
             match_str = f"{res['away']} @ {res['home']}"
+            if res.get('using_bt'):
+                match_str += " *"
             score_str = f"{res['scoreA']} - {res['scoreH']}"
             print(f"{match_str:<40} | {score_str:<15} | {res['total']:<10} | {res['spread']:<10}")
 
