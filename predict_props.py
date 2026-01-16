@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import zoneinfo
 from datetime import datetime
 
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
@@ -121,8 +122,8 @@ def main():
         
     metrics, avg_ppg, avg_tempo, avg_eff = get_team_metrics(team_data)
     
-    # Use current date
-    now = datetime.now()
+    # Use current date in ET
+    now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     print(f"\n--- Player Props for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)

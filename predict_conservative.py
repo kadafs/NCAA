@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import zoneinfo
 from datetime import datetime
 
 # Script 3: Conservative / Pessimistic Model
@@ -92,10 +93,10 @@ def predict_pessimistic(away_raw, home_raw, metrics, league_avgs):
     proj_tempo = (slow_tempo * TEMPO_DRAG) + (fast_tempo * (1 - TEMPO_DRAG))
     
     # 2. Road Penalty
-    effA_raw = (tA['off_eff'] * tH['def_eff']) / avg_eff
+    effA_raw = (tA['off_eff'] * tH['def_eff']) / 100
     effA = effA_raw * ROAD_PENALTY # Harsh penalty for visitors
     
-    effH = (tH['off_eff'] * tA['def_eff']) / avg_eff
+    effH = (tH['off_eff'] * tA['def_eff']) / 100
     
     # 3. Mid-Major Cap
     # If a Mid-Major plays a Power Conference team, cap their efficiency
@@ -121,8 +122,8 @@ def main():
     
     metrics, avg_tempo, avg_eff = get_pessimistic_metrics(stats_data, standings_data)
     
-    # Use current date
-    now = datetime.now()
+    # Use current date in ET
+    now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     print(f"\n--- Conservative Predictions for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)

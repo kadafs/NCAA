@@ -25,17 +25,22 @@ export default function ScoreboardPage() {
     const user = session?.user as any;
     const [games, setGames] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const getETDate = (date: Date = new Date()) => {
+        return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(date);
+    };
+
+    const [selectedDate, setSelectedDate] = useState(getETDate());
     const [dates, setDates] = useState<string[]>([]);
 
     useEffect(() => {
 
-        // Generate date range
+        // Generate date range in ET
         const d = [];
+        const baseDate = new Date();
         for (let i = -3; i <= 3; i++) {
-            const date = new Date();
+            const date = new Date(baseDate);
             date.setDate(date.getDate() + i);
-            d.push(date.toISOString().split('T')[0]);
+            d.push(getETDate(date));
         }
         setDates(d);
     }, []);

@@ -1,4 +1,5 @@
 import json
+import zoneinfo
 from datetime import datetime
 import predict_advanced
 import predict_totals
@@ -11,9 +12,11 @@ def get_all_data(target_date=None):
         try:
             now = datetime.strptime(target_date, "%Y-%m-%d")
         except:
-            now = datetime.now()
+           # Use ET for today's date if none provided
+            now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     else:
-        now = datetime.now()
+        # Use ET for today's date if none provided
+        now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
         
     year, month, day = now.year, now.month, now.day
     
@@ -79,52 +82,31 @@ def get_all_data(target_date=None):
         }
 
         # 1. Advanced Model
-        tA, tH = metrics_adv[nameA_adv], metrics_adv[nameH_adv]
-        adv_tempo = (tA['tempo'] * tH['tempo']) / avg_tempo
-        adv_scoreA = (tA['off_eff'] * tH['def_eff'] / avg_def) * (adv_tempo / 100)
-        adv_scoreH = (tH['off_eff'] * tA['def_eff'] / avg_def) * (adv_tempo / 100)
-        # Apply HCA
-        adv_scoreH += 3.5
-        game_data["predictions"]["advanced"] = {
-            "scoreA": round(adv_scoreA, 1),
-            "scoreH": round(adv_scoreH, 1),
-            "total": round(adv_scoreA + adv_scoreH, 1),
-            "spread": round(adv_scoreH - adv_scoreA, 1)
-        }
+        adv_res = predict_advanced.predict_game(away_name, home_name, metrics_adv, (avg_tempo, avg_off, avg_def))
+        if adv_res:
+            game_data["predictions"]["advanced"] = adv_res
 
         # 2. Totals Model
-        nameA_tot = predict_totals.find_team(away_name, metrics_tot)
-        nameH_tot = predict_totals.find_team(home_name, metrics_tot)
-        if nameA_tot and nameH_tot:
-            tA_t, tH_t = metrics_tot[nameA_tot], metrics_tot[nameH_tot]
-            base_total = (tA_t['off_eff'] + tH_t['off_eff']) * (adv_tempo / 100)
-            # Simplified version of the complex adjustments for the bridge
+        tot_res = predict_totals.predict_total(away_name, home_name, metrics_tot, (avg_tempo, avg_def))
+        if tot_res:
             game_data["predictions"]["totals"] = {
-                "total": round(base_total, 1)
+                "total": tot_res["adj_total"]
             }
 
         # 3. Conservative Model
-        nameA_con = predict_conservative.find_team(away_name, metrics_con)
-        nameH_con = predict_conservative.find_team(home_name, metrics_con)
-        if nameA_con and nameH_con:
-            tA_c, tH_c = metrics_con[nameA_con], metrics_con[nameH_con]
-            con_scoreA = (tA_c['off_eff'] * 0.95 * tH_c['def_eff'] / 100) * (adv_tempo * 0.9 / 100)
-            con_scoreH = (tH_c['off_eff'] * tA_c['def_eff'] / 100) * (adv_tempo * 0.9 / 100)
+        con_res = predict_conservative.predict_pessimistic(away_name, home_name, metrics_con, (avg_tempo, avg_off))
+        if con_res:
             game_data["predictions"]["conservative"] = {
-                "scoreA": round(con_scoreA, 1),
-                "scoreH": round(con_scoreH, 1)
+                "scoreA": con_res["scoreA"],
+                "scoreH": con_res["scoreH"]
             }
 
         # 4. Simple Model
-        nameA_sim = predict_simple.find_team(away_name, metrics_simple)
-        nameH_sim = predict_simple.find_team(home_name, metrics_simple)
-        if nameA_sim and nameH_sim:
-            tA_s, tH_s = metrics_simple[nameA_sim], metrics_simple[nameH_sim]
-            sim_scoreA = (tA_s['offense'] + tH_s['defense']) / 2
-            sim_scoreH = (tH_s['offense'] + tA_s['defense']) / 2
+        sim_res = predict_simple.predict_simple(away_name, home_name, metrics_simple)
+        if sim_res:
             game_data["predictions"]["simple"] = {
-                "scoreA": round(sim_scoreA, 1),
-                "scoreH": round(sim_scoreH, 1)
+                "scoreA": sim_res["scoreA"],
+                "scoreH": sim_res["scoreH"]
             }
 
         # 5. Props (Top 2 per team)
@@ -132,14 +114,14 @@ def get_all_data(target_date=None):
         nameH_p = predict_props.find_team(home_name, metrics_props_team)
         game_data["props"] = {"away": [], "home": []}
         
-        if nameA_p and nameH_p:
+        if nameA_p and nameH_p and adv_res:
             pts_list = player_data.get('pts_pg', [])
             for side, t_name in [("away", nameA_p), ("home", nameH_p)]:
                 players = [p for p in pts_list if p.get('Team') == t_name]
                 for p in sorted(players, key=lambda x: float(x.get('PPG', 0)), reverse=True)[:2]:
                     game_data["props"][side].append({
                         "name": p.get('Name', 'Unknown'),
-                        "pts": round(float(p.get('PPG', 0)) * (adv_scoreA/avg_ppg if side=="away" else adv_scoreH/avg_ppg), 1)
+                        "pts": round(float(p.get('PPG', 0)) * (adv_res['scoreA']/avg_ppg if side=="away" else adv_res['scoreH']/avg_ppg), 1)
                     })
 
         results.append(game_data)

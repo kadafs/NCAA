@@ -41,9 +41,26 @@ const validRoutes = new Map([
   ["news", cache_30m],
 ]);
 
-/** log message to console with timestamp */
+/** log message to console with timestamp in ET */
 function log(str: string) {
-  console.log(`[${new Date().toISOString().substring(0, 19).replace("T", " ")}] ${str}`);
+  const et = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  }).format(new Date());
+  // Format: [MM/DD/YYYY, HH:mm:ss] -> [YYYY-MM-DD HH:mm:ss]
+  const [date, time] = et.split(', ');
+  const [m, d, y] = date.split('/');
+  console.log(`[${y}-${m}-${d} ${time}] ${str}`);
+}
+
+/** Get current year in ET */
+function getETYear() {
+  return parseInt(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric'
+  }).format(new Date()), 10);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -422,8 +439,8 @@ export const app = new Elysia()
 
       if (urlDate) {
         // return 400 if date is more than a year in the future
-        // (had runaway bot requesting every day until I noticed it in 2195)
-        if (new Date(urlDate).getFullYear() > new Date().getFullYear() + 1) {
+        const etYear = getETYear();
+        if (new Date(urlDate).getFullYear() > etYear + 1) {
           return status(400, "Invalid date");
         }
       } else {
@@ -433,8 +450,8 @@ export const app = new Elysia()
 
       const scoreboardDate = new Date(urlDate);
 
-      // Use the year from URL
-      const effectiveYear = parseInt(year, 10) || new Date().getFullYear();
+      // Use the year from URL or current ET year
+      const effectiveYear = parseInt(year, 10) || getETYear();
 
       // Check if we should use new endpoint
       const supportsNewApi = doesSupportScoreboardNewApi(
