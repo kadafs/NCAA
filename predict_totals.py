@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import zoneinfo
 from datetime import datetime
 
 # Script 2: Over/Under Focused Model
@@ -44,7 +45,7 @@ def find_team(name, teams_dict):
 
 def get_total_metrics(stats_data):
     teams = {}
-    all_tempo, all_off_eff = [], []
+    all_tempo, all_off_eff, all_def_eff = [], [], []
     
     for key in stats_data:
         for entry in stats_data[key]:
@@ -80,9 +81,10 @@ def get_total_metrics(stats_data):
             
             all_tempo.append(stats['tempo'])
             all_off_eff.append(stats['off_eff'])
+            all_def_eff.append(stats['def_eff'])
             valid_teams[name] = stats
             
-    return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_off_eff)/len(all_off_eff)
+    return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_def_eff)/len(all_def_eff)
 
 def predict_total(away_raw, home_raw, metrics, league_avgs):
     nameA = find_team(away_raw, metrics)
@@ -90,12 +92,12 @@ def predict_total(away_raw, home_raw, metrics, league_avgs):
     if not nameA or not nameH: return None
     
     tA, tH = metrics[nameA], metrics[nameH]
-    avg_tempo, avg_eff = league_avgs[0], league_avgs[1]
+    avg_tempo, avg_def = league_avgs[0], league_avgs[1]
     
     # 1. Base Projection
     proj_tempo = (tA['tempo'] * tH['tempo']) / avg_tempo
-    effA = (tA['off_eff'] * tH['def_eff']) / avg_eff
-    effH = (tH['off_eff'] * tA['def_eff']) / avg_eff
+    effA = (tA['off_eff'] * tH['def_eff']) / avg_def
+    effH = (tH['off_eff'] * tA['def_eff']) / avg_def
     
     base_scoreA = (effA * proj_tempo) / 100
     base_scoreH = (effH * proj_tempo) / 100
@@ -133,8 +135,8 @@ def main():
     
     metrics, avg_tempo, avg_eff = get_total_metrics(stats_data)
     
-    # Use current date
-    now = datetime.now()
+    # Use current date in ET
+    now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     print(f"\n--- Totals Predictions for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)

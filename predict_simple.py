@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import zoneinfo
 from datetime import datetime
 
 # Script 5: Simple Scoring Model
@@ -60,6 +61,24 @@ def get_simple_metrics(stats_data):
     valid_teams = {n: s for n, s in teams.items() if 'offense' in s and 'defense' in s}
     return valid_teams
 
+def predict_simple(away_raw, home_raw, metrics):
+    nameA = find_team(away_raw, metrics)
+    nameH = find_team(home_raw, metrics)
+    if not nameA or not nameH: return None
+    
+    tA, tH = metrics[nameA], metrics[nameH]
+    
+    # Simple Math: Average of Team A Offense and Team B Defense
+    scoreA = (tA['offense'] + tH['defense']) / 2
+    scoreH = (tH['offense'] + tA['defense']) / 2
+    
+    return {
+        "scoreA": round(scoreA, 1),
+        "scoreH": round(scoreH, 1),
+        "total": round(scoreA + scoreH, 1),
+        "spread": round(scoreH - scoreA, 1)
+    }
+
 def main():
     stats_data = load_json(TEAM_STATS_FILE)
     if not stats_data:
@@ -68,8 +87,8 @@ def main():
 
     metrics = get_simple_metrics(stats_data)
     
-    # Use current date
-    now = datetime.now()
+    # Use current date in ET
+    now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     print(f"\n--- Simple Predictions for {now.strftime('%Y-%m-%d')} ---")
     print("(Based ONLY on PPG and OPP PPG averages)")
     

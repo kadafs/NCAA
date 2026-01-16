@@ -2,8 +2,8 @@
   "name": "ncaa-api",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun --watch src/index.ts",
-    "start": "NODE_ENV=production bun src/index.ts",
+    "dev": "set TZ=America/New_York && bun --watch src/index.ts",
+    "start": "set TZ=America/New_York && NODE_ENV=production bun src/index.ts",
     "lint": "biome check --write src"
   },
   "dependencies": {

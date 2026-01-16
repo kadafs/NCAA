@@ -38,7 +38,10 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const user = session?.user as any;
   const [showLogin, setShowLogin] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [authError, setAuthError] = useState("");
   const [showPayments, setShowPayments] = useState(false);
   const [paymentWallets, setPaymentWallets] = useState<{ type: string; address: string }[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -53,12 +56,46 @@ export default function Dashboard() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginUsername) {
-      await signIn("credentials", {
+    setAuthError("");
+
+    if (!loginUsername || !loginPassword) {
+      setAuthError("Username and password are required");
+      return;
+    }
+
+    if (isSignUp) {
+      try {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: loginUsername, password: loginPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setAuthError(data.error || "Registration failed");
+          return;
+        }
+        await signIn("credentials", {
+          username: loginUsername,
+          password: loginPassword,
+          redirect: false
+        });
+        setShowLogin(false);
+      } catch (err) {
+        setAuthError("An error occurred during registration");
+      }
+    } else {
+      const result = await signIn("credentials", {
         username: loginUsername,
+        password: loginPassword,
         redirect: false
       });
-      setShowLogin(false);
+
+      if (result?.error) {
+        setAuthError("Invalid username or password");
+      } else {
+        setShowLogin(false);
+      }
     }
   };
 
@@ -161,24 +198,53 @@ export default function Dashboard() {
               className="relative glass w-full max-w-md p-8 rounded-3xl border border-white/5 space-y-6"
             >
               <div className="text-center space-y-2">
-                <h3 className="text-2xl font-black">Welcome Back</h3>
-                <p className="text-sm text-gray-500">Enter your username to access analytics</p>
+                <h3 className="text-2xl font-black">{isSignUp ? "Join the Elite" : "Welcome Back"}</h3>
+                <p className="text-sm text-gray-500">{isSignUp ? "Create an account to access advanced metrics" : "Enter your credentials to access your dashboard"}</p>
               </div>
+
+              {authError && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-xs font-bold text-center">
+                  {authError}
+                </div>
+              )}
+
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Username / ID</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Username</label>
                   <input
                     autoFocus
                     className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white placeholder:text-gray-700 focus:border-accent-blue/50 outline-none transition-all"
-                    placeholder="Enter unique ID..."
+                    placeholder="Enter username..."
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
                   />
                 </div>
-                <button className="w-full bg-accent-blue text-white py-4 rounded-2xl font-black shadow-xl shadow-accent-blue/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
-                  CONTINUE
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Password</label>
+                  <input
+                    type="password"
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl p-4 text-white placeholder:text-gray-700 focus:border-accent-blue/50 outline-none transition-all"
+                    placeholder="Enter password..."
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                  />
+                </div>
+                <button className="w-full bg-accent-blue text-white py-4 rounded-2xl font-black shadow-xl shadow-accent-blue/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase">
+                  {isSignUp ? "Sign Up" : "Continue"}
                 </button>
               </form>
+
+              <div className="text-center pt-2">
+                <button
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setAuthError("");
+                  }}
+                  className="text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest"
+                >
+                  {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

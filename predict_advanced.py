@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import zoneinfo
 from datetime import datetime
 
 # Script 1: General Accuracy Model
@@ -58,12 +59,13 @@ def find_team(name, teams_dict):
 def get_team_metrics(stats_data, standings_data):
     # Map schools to conferences
     school_to_conf = {}
-    data_list = standings_data.get('data', []) if isinstance(standings_data, dict) else []
-    for conf_group in data_list:
-        conf_name = conf_group['conference']
-        for team in conf_group['standings']:
-            school_to_conf[team['School']] = conf_name
-
+    if isinstance(standings_data, dict):
+        data_list = standings_data.get('data', [])
+        for conf_group in data_list:
+            conf_name = conf_group['conference']
+            for team in conf_group['standings']:
+                school_to_conf[team['School']] = conf_name
+    
     teams = {}
     for key in stats_data:
         for entry in stats_data[key]:
@@ -107,6 +109,9 @@ def get_team_metrics(stats_data, standings_data):
             all_def_eff.append(stats['def_eff'])
             valid_teams[name] = stats
             
+    if not all_tempo:
+        return {}, 0, 0, 0
+            
     return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_off_eff)/len(all_off_eff), sum(all_def_eff)/len(all_def_eff)
 
 def predict_game(away_raw, home_raw, metrics, league_avgs):
@@ -122,9 +127,9 @@ def predict_game(away_raw, home_raw, metrics, league_avgs):
     
     # 2. Adjusted Efficiency with Home Court Advantage
     # Away Team Offense vs Home Team Defense
-    effA = (tA['off_eff'] * tH['def_eff']) / avg_off
+    effA = (tA['off_eff'] * tH['def_eff']) / avg_def
     # Home Team Offense vs Away Team Defense
-    effH = (tH['off_eff'] * tA['def_eff']) / avg_off
+    effH = (tH['off_eff'] * tA['def_eff']) / avg_def
     
     scoreA = (effA * proj_tempo) / 100
     scoreH = ((effH * proj_tempo) / 100) + HOME_ADVANTAGE
@@ -139,15 +144,15 @@ def predict_game(away_raw, home_raw, metrics, league_avgs):
 def main():
     stats_data = load_json(TEAM_STATS_FILE)
     standings_data = load_json(STANDINGS_FILE)
-    if not stats_data or not standings_data: 
-        print("Data files missing.")
+    if not stats_data: 
+        print("Stats file missing.")
         return
 
     metrics, avg_tempo, avg_off, avg_def = get_team_metrics(stats_data, standings_data)
     league_avgs = (avg_tempo, avg_off, avg_def)
 
-    # Use current date
-    now = datetime.now()
+    # Use current date in ET
+    now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     print(f"\n--- Advanced Predictions for {now.strftime('%Y-%m-%d')} ---")
     
     board = fetch_scoreboard(now.year, now.month, now.day)

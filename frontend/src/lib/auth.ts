@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { supabase } from "@/lib/supabase";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -11,27 +12,20 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                if (!credentials?.username) return null;
+                if (!credentials?.username || !credentials?.password) return null;
 
-                // For now, we allow login with just username (simple migration)
-                // In production, you would verify the password here
                 const { data: user, error } = await supabase
                     .from('users')
                     .select('*')
                     .eq('username', credentials.username)
                     .single();
 
-                if (error || !user) {
-                    // Create user if not exists (to match existing flow)
-                    const { data: newUser, error: createError } = await supabase
-                        .from('users')
-                        .insert([{ username: credentials.username, is_pro: false }])
-                        .select()
-                        .single();
-
-                    if (createError) return null;
-                    return { id: newUser.id, name: newUser.username, username: newUser.username, isPro: false };
+                if (error || !user || !user.password_hash) {
+                    return null;
                 }
+
+                const isValid = await bcrypt.compare(credentials.password, user.password_hash);
+                if (!isValid) return null;
 
                 return {
                     id: user.id,
