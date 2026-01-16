@@ -10,6 +10,7 @@ from datetime import datetime
 
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
+BARTTORVIK_STATS_FILE = "data/barttorvik_stats.json"
 
 def fetch_scoreboard(year, month, day):
     for base in BASE_URLS:
@@ -41,6 +42,35 @@ def find_team(name, teams_dict):
         t_low = t_name.lower()
         if name_low == t_low or name_low in t_low or t_low in name_low:
             return t_name
+    return None
+
+def find_barttorvik_team(name, barttorvik_dict):
+    if not name or not barttorvik_dict: return None
+    if name in barttorvik_dict: return name
+    
+    custom_map = {
+        "St. Mary's (CA)": "Saint Mary's",
+        "Saint Mary's (CA)": "Saint Mary's",
+        "UConn": "Connecticut",
+        "Ole Miss": "Mississippi",
+        "UMKC": "Kansas City",
+        "Penn": "Pennsylvania",
+        "Fullerton": "Cal St. Fullerton",
+        "Long Beach State": "Cal St. Long Beach",
+        "Northridge": "Cal St. Northridge",
+        "Bakersfield": "Cal St. Bakersfield",
+        "St. Thomas (MN)": "St. Thomas",
+        "UL Monroe": "Louisiana Monroe",
+        "Louisiana": "Louisiana Lafayette",
+    }
+    if name in custom_map and custom_map[name] in barttorvik_dict:
+        return custom_map[name]
+        
+    name_low = name.lower()
+    for bt_name in barttorvik_dict:
+        bt_low = bt_name.lower()
+        if name_low == bt_low or name_low in bt_low or bt_low in name_low:
+            return bt_name
     return None
 
 def get_simple_metrics(stats_data):
@@ -79,6 +109,9 @@ def predict_simple(away_raw, home_raw, metrics):
         "spread": round(scoreH - scoreA, 1)
     }
 
+def print_row(matchup, p_score, spread, adj_t, adj_oe, adj_de):
+    print(f"{matchup:<35} | {p_score:<15} | {spread:<8} | {adj_t:<12} | {adj_oe:<12} | {adj_de:<12}")
+
 def main():
     stats_data = load_json(TEAM_STATS_FILE)
     if not stats_data:
@@ -86,6 +119,11 @@ def main():
         return
 
     metrics = get_simple_metrics(stats_data)
+    
+    bt_stats = load_json(BARTTORVIK_STATS_FILE)
+    if bt_stats:
+        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced metadata.")
+
     
     # Use current date in ET
     now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
@@ -97,8 +135,8 @@ def main():
         print("No games found on scoreboard.")
         return
 
-    print(f"{'Matchup':<40} | {'Proj Score':<15} | {'Total':<10} | {'Spread':<10}")
-    print("-" * 85)
+    print(f"{'Matchup':<35} | {'Proj Score':<15} | {'Spread':<8} | {'Adj T (A/H)':<12} | {'AdjOE (A/H)':<12} | {'AdjDE (A/H)':<12}")
+    print("-" * 120)
     
     for game_wrapper in board['games']:
         game = game_wrapper.get('game')
@@ -117,12 +155,21 @@ def main():
             scoreA = (tA['offense'] + tH['defense']) / 2
             scoreH = (tH['offense'] + tA['defense']) / 2
             
-            total = scoreA + scoreH
-            spread = scoreH - scoreA
-            
             match_str = f"{away_raw} @ {home_raw}"
             score_str = f"{scoreA:.1f} - {scoreH:.1f}"
-            print(f"{match_str:<40} | {score_str:<15} | {total:<10.1f} | {spread:<10.1f}")
+            spread_str = f"{scoreH - scoreA:+.1f}"
+            
+            # Metadata Lookup
+            btA_name = find_barttorvik_team(away_raw, bt_stats)
+            btH_name = find_barttorvik_team(home_raw, bt_stats)
+            btA = bt_stats.get(btA_name) if btA_name else None
+            btH = bt_stats.get(btH_name) if btH_name else None
+            
+            t_str = f"{round(btA['adj_t'], 1) if btA else 'N/A'} / {round(btH['adj_t'], 1) if btH else 'N/A'}"
+            oe_str = f"{round(btA['adj_off'], 1) if btA else 'N/A'} / {round(btH['adj_off'], 1) if btH else 'N/A'}"
+            de_str = f"{round(btA['adj_def'], 1) if btA else 'N/A'} / {round(btH['adj_def'], 1) if btH else 'N/A'}"
+            
+            print_row(match_str, score_str, spread_str, t_str, oe_str, de_str)
 
 if __name__ == "__main__":
     main()

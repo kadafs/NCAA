@@ -10,6 +10,7 @@ from datetime import datetime
 
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
+BARTTORVIK_STATS_FILE = "data/barttorvik_stats.json"
 
 def fetch_scoreboard(year, month, day):
     for base in BASE_URLS:
@@ -41,6 +42,35 @@ def find_team(name, teams_dict):
         t_low = t_name.lower()
         if name_low == t_low or name_low in t_low or t_low in name_low:
             return t_name
+    return None
+
+def find_barttorvik_team(name, barttorvik_dict):
+    if not name or not barttorvik_dict: return None
+    if name in barttorvik_dict: return name
+    
+    custom_map = {
+        "St. Mary's (CA)": "Saint Mary's",
+        "Saint Mary's (CA)": "Saint Mary's",
+        "UConn": "Connecticut",
+        "Ole Miss": "Mississippi",
+        "UMKC": "Kansas City",
+        "Penn": "Pennsylvania",
+        "Fullerton": "Cal St. Fullerton",
+        "Long Beach State": "Cal St. Long Beach",
+        "Northridge": "Cal St. Northridge",
+        "Bakersfield": "Cal St. Bakersfield",
+        "St. Thomas (MN)": "St. Thomas",
+        "UL Monroe": "Louisiana Monroe",
+        "Louisiana": "Louisiana Lafayette",
+    }
+    if name in custom_map and custom_map[name] in barttorvik_dict:
+        return custom_map[name]
+        
+    name_low = name.lower()
+    for bt_name in barttorvik_dict:
+        bt_low = bt_name.lower()
+        if name_low == bt_low or name_low in bt_low or bt_low in name_low:
+            return bt_name
     return None
 
 def get_total_metrics(stats_data):
@@ -86,18 +116,36 @@ def get_total_metrics(stats_data):
             
     return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_def_eff)/len(all_def_eff)
 
-def predict_total(away_raw, home_raw, metrics, league_avgs):
+def predict_total(away_raw, home_raw, metrics, league_avgs, barttorvik_data=None):
     nameA = find_team(away_raw, metrics)
     nameH = find_team(home_raw, metrics)
+    
+    # BartTorvik Specific Lookup
+    btA_name = find_barttorvik_team(away_raw, barttorvik_data) if barttorvik_data else None
+    btH_name = find_barttorvik_team(home_raw, barttorvik_data) if barttorvik_data else None
+    
     if not nameA or not nameH: return None
     
     tA, tH = metrics[nameA], metrics[nameH]
+    btA = barttorvik_data.get(btA_name) if btA_name else None
+    btH = barttorvik_data.get(btH_name) if btH_name else None
+    
     avg_tempo, avg_def = league_avgs[0], league_avgs[1]
     
+    # Use BartTorvik if available, else fallback
+    tempoA = btA['adj_t'] if btA else tA['tempo']
+    tempoH = btH['adj_t'] if btH else tH['tempo']
+    
+    offA = btA['adj_off'] if btA else tA['off_eff']
+    defA = btA['adj_def'] if btA else tA['def_eff']
+    
+    offH = btH['adj_off'] if btH else tH['off_eff']
+    defH = btH['adj_def'] if btH else tH['def_eff']
+    
     # 1. Base Projection
-    proj_tempo = (tA['tempo'] * tH['tempo']) / avg_tempo
-    effA = (tA['off_eff'] * tH['def_eff']) / avg_def
-    effH = (tH['off_eff'] * tA['def_eff']) / avg_def
+    proj_tempo = (tempoA * tempoH) / avg_tempo
+    effA = (offA * defH) / avg_def
+    effH = (offH * defA) / avg_def
     
     base_scoreA = (effA * proj_tempo) / 100
     base_scoreH = (effH * proj_tempo) / 100
@@ -126,7 +174,8 @@ def predict_total(away_raw, home_raw, metrics, league_avgs):
         "base_total": round(base_scoreA + base_scoreH, 1),
         "adj_total": round(finalA + finalH, 1),
         "diff": round((finalA + finalH) - (base_scoreA + base_scoreH), 1),
-        "logic": f"Reb: +{reb_bonusA+reb_bonusH:.1f} | 3PT Reg: {regA+regH:.1f} | FT Trap: +{ft_trap:.1f}"
+        "logic": f"Reb: +{reb_bonusA+reb_bonusH:.1f} | 3PT Reg: {regA+regH:.1f} | FT Trap: +{ft_trap:.1f}",
+        "using_bt": btA is not None and btH is not None
     }
 
 def main():
@@ -134,6 +183,13 @@ def main():
     if not stats_data: return
     
     metrics, avg_tempo, avg_eff = get_total_metrics(stats_data)
+    
+    bt_stats = load_json(BARTTORVIK_STATS_FILE)
+    if bt_stats:
+        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced precision.")
+        avg_tempo = sum(t['adj_t'] for t in bt_stats.values()) / len(bt_stats)
+        avg_eff = sum(t['adj_def'] for t in bt_stats.values()) / len(bt_stats)
+
     
     # Use current date in ET
     now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
@@ -154,9 +210,11 @@ def main():
         away = game['away']['names']['short']
         home = game['home']['names']['short']
         
-        res = predict_total(away, home, metrics, (avg_tempo, avg_eff))
+        res = predict_total(away, home, metrics, (avg_tempo, avg_eff), bt_stats)
         if res:
             match_str = f"{res['away']} @ {res['home']}"
+            if res.get('using_bt'):
+                match_str += " *"
             print(f"{match_str:<40} | {res['base_total']:<12} | {res['adj_total']:<12} | {res['diff']:<8}")
             print(f"  > Log: {res['logic']}")
 

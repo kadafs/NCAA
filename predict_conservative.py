@@ -11,6 +11,7 @@ from datetime import datetime
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
 STANDINGS_FILE = "data/standings.json"
+BARTTORVIK_STATS_FILE = "data/barttorvik_stats.json"
 
 def fetch_scoreboard(year, month, day):
     for base in BASE_URLS:
@@ -40,6 +41,35 @@ def find_team(name, teams_dict):
         t_low = t_name.lower()
         if name_low == t_low or name_low in t_low or t_low in name_low:
             return t_name
+    return None
+
+def find_barttorvik_team(name, barttorvik_dict):
+    if not name or not barttorvik_dict: return None
+    if name in barttorvik_dict: return name
+    
+    custom_map = {
+        "St. Mary's (CA)": "Saint Mary's",
+        "Saint Mary's (CA)": "Saint Mary's",
+        "UConn": "Connecticut",
+        "Ole Miss": "Mississippi",
+        "UMKC": "Kansas City",
+        "Penn": "Pennsylvania",
+        "Fullerton": "Cal St. Fullerton",
+        "Long Beach State": "Cal St. Long Beach",
+        "Northridge": "Cal St. Northridge",
+        "Bakersfield": "Cal St. Bakersfield",
+        "St. Thomas (MN)": "St. Thomas",
+        "UL Monroe": "Louisiana Monroe",
+        "Louisiana": "Louisiana Lafayette",
+    }
+    if name in custom_map and custom_map[name] in barttorvik_dict:
+        return custom_map[name]
+        
+    name_low = name.lower()
+    for bt_name in barttorvik_dict:
+        bt_low = bt_name.lower()
+        if name_low == bt_low or name_low in bt_low or bt_low in name_low:
+            return bt_name
     return None
 
 def get_pessimistic_metrics(stats_data, standings_data):
@@ -78,28 +108,47 @@ def get_pessimistic_metrics(stats_data, standings_data):
             
     return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_off_eff)/len(all_off_eff)
 
-def predict_pessimistic(away_raw, home_raw, metrics, league_avgs):
+def predict_pessimistic(away_raw, home_raw, metrics, league_avgs, barttorvik_data=None):
     nameA = find_team(away_raw, metrics)
     nameH = find_team(home_raw, metrics)
+    
+    # BartTorvik Specific Lookup
+    btA_name = find_barttorvik_team(away_raw, barttorvik_data) if barttorvik_data else None
+    btH_name = find_barttorvik_team(home_raw, barttorvik_data) if barttorvik_data else None
+    
     if not nameA or not nameH: return None
     
     tA, tH = metrics[nameA], metrics[nameH]
+    btA = barttorvik_data.get(btA_name) if btA_name else None
+    btH = barttorvik_data.get(btH_name) if btH_name else None
+    
     avg_tempo, avg_eff = league_avgs
     
+    # Use BartTorvik if available
+    tempoA = btA['adj_t'] if btA else tA['tempo']
+    tempoH = btH['adj_t'] if btH else tH['tempo']
+    
+    offA = btA['adj_off'] if btA else tA['off_eff']
+    defA = btA['adj_def'] if btA else tA['def_eff']
+    
+    offH = btH['adj_off'] if btH else tH['off_eff']
+    defH = btH['adj_def'] if btH else tH['def_eff']
+    
     # 1. Tempo Drag Adjustment (The slower team wins)
-    slow_tempo = min(tA['tempo'], tH['tempo'])
-    fast_tempo = max(tA['tempo'], tH['tempo'])
+    slow_tempo = min(tempoA, tempoH)
+    fast_tempo = max(tempoA, tempoH)
     # Weighted average favors the slow team
     proj_tempo = (slow_tempo * TEMPO_DRAG) + (fast_tempo * (1 - TEMPO_DRAG))
     
     # 2. Road Penalty
-    effA_raw = (tA['off_eff'] * tH['def_eff']) / 100
+    effA_raw = (offA * defH) / 100
     effA = effA_raw * ROAD_PENALTY # Harsh penalty for visitors
     
-    effH = (tH['off_eff'] * tA['def_eff']) / 100
+    effH = (offH * defA) / 100
     
     # 3. Mid-Major Cap
     # If a Mid-Major plays a Power Conference team, cap their efficiency
+    # We still use local conf info as BT data is efficiency focused
     if tA['conf'] not in POWER_CONFS and tH['conf'] in POWER_CONFS:
         effA = min(effA, 102) # Cap offensive output
     if tH['conf'] not in POWER_CONFS and tA['conf'] in POWER_CONFS:
@@ -112,7 +161,8 @@ def predict_pessimistic(away_raw, home_raw, metrics, league_avgs):
         "away": away_raw, "home": home_raw,
         "scoreA": round(scoreA, 1), "scoreH": round(scoreH, 1),
         "total": round(scoreA + scoreH, 1),
-        "notes": f"Away Penalty: {(1-ROAD_PENALTY)*100:.0f}% | Tempo Drag: {proj_tempo:.1f}"
+        "notes": f"Away Penalty: {(1-ROAD_PENALTY)*100:.0f}% | Tempo Drag: {proj_tempo:.1f}",
+        "using_bt": btA is not None and btH is not None
     }
 
 def main():
@@ -121,6 +171,13 @@ def main():
     if not stats_data or not standings_data: return
     
     metrics, avg_tempo, avg_eff = get_pessimistic_metrics(stats_data, standings_data)
+    
+    bt_stats = load_json(BARTTORVIK_STATS_FILE)
+    if bt_stats:
+        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced precision.")
+        avg_tempo = sum(t['adj_t'] for t in bt_stats.values()) / len(bt_stats)
+        avg_eff = sum(t['adj_off'] for t in bt_stats.values()) / len(bt_stats)
+
     
     # Use current date in ET
     now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
@@ -141,9 +198,11 @@ def main():
         away = game['away']['names']['short']
         home = game['home']['names']['short']
         
-        res = predict_pessimistic(away, home, metrics, (avg_tempo, avg_eff))
+        res = predict_pessimistic(away, home, metrics, (avg_tempo, avg_eff), bt_stats)
         if res:
             match_str = f"{res['away']} @ {res['home']}"
+            if res.get('using_bt'):
+                match_str += " *"
             score_str = f"{res['scoreA']} - {res['scoreH']}"
             print(f"{match_str:<40} | {score_str:<15} | {res['total']:<10}")
             print(f"  > Log: {res['notes']}")

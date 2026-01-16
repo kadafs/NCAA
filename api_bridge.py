@@ -41,8 +41,18 @@ def get_all_data(target_date=None):
     if not stats_data:
         return {"error": "Stats data missing"}
 
+    # Load BartTorvik stats for better precision
+    bt_stats = predict_advanced.load_json(predict_advanced.BARTTORVIK_STATS_FILE)
+    
     # Get metrics for all models
     metrics_adv, avg_tempo, avg_off, avg_def = predict_advanced.get_team_metrics(stats_data, standings_data)
+    
+    if bt_stats:
+        # Calculate BartTorvik league averages for more consistent normalization
+        avg_tempo = sum(t['adj_t'] for t in bt_stats.values()) / len(bt_stats)
+        avg_off = sum(t['adj_off'] for t in bt_stats.values()) / len(bt_stats)
+        avg_def = sum(t['adj_def'] for t in bt_stats.values()) / len(bt_stats)
+
     metrics_tot, _, _ = predict_totals.get_total_metrics(stats_data)
     metrics_con, _, _ = predict_conservative.get_pessimistic_metrics(stats_data, standings_data)
     metrics_simple = predict_simple.get_simple_metrics(stats_data)
@@ -82,7 +92,7 @@ def get_all_data(target_date=None):
         }
 
         # 1. Advanced Model
-        adv_res = predict_advanced.predict_game(away_name, home_name, metrics_adv, (avg_tempo, avg_off, avg_def))
+        adv_res = predict_advanced.predict_game(away_name, home_name, metrics_adv, (avg_tempo, avg_off, avg_def), bt_stats)
         if adv_res:
             game_data["predictions"]["advanced"] = adv_res
 
