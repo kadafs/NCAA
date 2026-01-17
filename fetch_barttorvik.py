@@ -1,47 +1,114 @@
 import requests
 import json
 import os
+import csv
+import io
+import time
 
 BARTTORVIK_JSON_URL = "https://barttorvik.com/2026_team_results.json"
+BARTTORVIK_CSV_URL = "https://barttorvik.com/trank.php?year=2026&csv=1"
 OUTPUT_FILE = "data/barttorvik_stats.json"
 
 def fetch_barttorvik_stats():
-    print(f"Fetching BartTorvik stats from {BARTTORVIK_JSON_URL}...")
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://barttorvik.com/"
     }
+
+    print(f"Fetching BartTorvik JSON (Conference) from {BARTTORVIK_JSON_URL}...")
+    conf_lookup = {}
     try:
-        response = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=10)
-        if response.status_code == 200:
-            raw_data = response.json()
-            processed_data = {}
-            
-            for team_data in raw_data:
-                # Based on research:
-                # Index 1: Team Name
-                # Index 4: AdjOE
-                # Index 6: AdjDE
-                # Index 44: Adj Tempo
-                try:
-                    name = team_data[1]
-                    processed_data[name] = {
-                        "adj_off": float(team_data[4]),
-                        "adj_def": float(team_data[6]),
-                        "adj_t": float(team_data[44])
-                    }
-                except (IndexError, ValueError) as e:
-                    continue
-            
-            os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-            with open(OUTPUT_FILE, "w") as f:
-                json.dump(processed_data, f, indent=2)
-            
-            print(f"Successfully saved {len(processed_data)} teams to {OUTPUT_FILE}")
-            return True
+        resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
+        if resp_json.status_code == 200:
+            raw_json = resp_json.json()
+            for team_data in raw_json:
+                # 1: Team Name, 2: Conference
+                name = team_data[1]
+                conf = team_data[2]
+                conf_lookup[name] = conf
         else:
-            print(f"Failed to fetch BartTorvik stats: HTTP {response.status_code}")
+            print(f"Failed to fetch JSON: {resp_json.status_code}")
     except Exception as e:
-        print(f"Error fetching BartTorvik stats: {e}")
+        print(f"Error fetching JSON: {e}")
+
+    print(f"Fetching BartTorvik CSV (Stats) from {BARTTORVIK_CSV_URL}...")
+    processed_data = {}
+    
+    # Use session to handle potential cookie/referrer checks
+    session = requests.Session()
+    session.headers.update(headers)
+    
+    try:
+        # Visit home page first to establish session
+        session.get("https://barttorvik.com/", timeout=10)
+        time.sleep(1)
+        resp_csv = session.get(BARTTORVIK_CSV_URL, timeout=15)
+        
+        if resp_csv.status_code == 200 and "Verifying browser" not in resp_csv.text:
+            # CSV Mapping (2026 Verified via Research):
+            # 0: Team
+            # 1: AdjOE, 2: AdjDE, 3: Barthag
+            # 4: Record, 5: W, 6: G
+            # 7: eFG% (O), 8: eFG% (D)
+            # 9: FTR (O), 10: FTR (D)
+            # 11: TO% (O), 12: TO% (D)
+            # 13: OR% (O), 14: OR% (D)
+            # 15: Adj Tempo
+            
+            f = io.StringIO(resp_csv.text)
+            reader = csv.reader(f)
+            for row in reader:
+                if not row or len(row) < 16: continue
+                try:
+                    name = row[0]
+                    processed_data[name] = {
+                        "conf": conf_lookup.get(name, "N/A"),
+                        "adj_off": float(row[1]),
+                        "adj_def": float(row[2]),
+                        "adj_t": float(row[15]),
+                        "efg": float(row[7]),
+                        "efg_d": float(row[8]),
+                        "ftr": float(row[9]),
+                        "ftr_d": float(row[10]),
+                        "to": float(row[11]),
+                        "to_d": float(row[12]),
+                        "or": float(row[13]),
+                        "or_d": float(row[14])
+                    }
+                except (IndexError, ValueError):
+                    continue
+        else:
+            print(f"Failed to fetch CSV: {resp_csv.status_code}. Using browser subagent fallback might be needed.")
+            # If CSV failed but we have JSON, we can at least get basic metrics from JSON
+            if conf_lookup:
+                print("Extracting basic stats from JSON fallback...")
+                resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
+                if resp_json.status_code == 200:
+                    raw_json = resp_json.json()
+                    for team_data in raw_json:
+                        # Index 1: Name, 2: Conf, 4: AdjOE, 6: AdjDE, 44: Adj Tempo
+                        name = team_data[1]
+                        if name not in processed_data:
+                            processed_data[name] = {
+                                "conf": team_data[2],
+                                "adj_off": float(team_data[4]),
+                                "adj_def": float(team_data[6]),
+                                "adj_t": float(team_data[44]),
+                                "efg": 0, "efg_d": 0, "ftr": 0, "ftr_d": 0, "to": 0, "to_d": 0, "or": 0, "or_d": 0
+                            }
+
+    except Exception as e:
+        print(f"Error fetching CSV stats: {e}")
+
+    if processed_data:
+        os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+        with open(OUTPUT_FILE, "w") as f:
+            json.dump(processed_data, f, indent=2)
+        print(f"Successfully saved {len(processed_data)} teams to {OUTPUT_FILE}")
+        return True
+    
     return False
 
 if __name__ == "__main__":
