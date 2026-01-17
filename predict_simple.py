@@ -11,6 +11,7 @@ from datetime import datetime
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
 TEAM_STATS_FILE = "data/consolidated_stats.json"
 BARTTORVIK_STATS_FILE = "data/barttorvik_stats.json"
+INJURY_NOTES_FILE = "data/injury_notes.json"
 
 def fetch_scoreboard(year, month, day):
     for base in BASE_URLS:
@@ -48,29 +49,62 @@ def find_barttorvik_team(name, barttorvik_dict):
     if not name or not barttorvik_dict: return None
     if name in barttorvik_dict: return name
     
-    custom_map = {
-        "St. Mary's (CA)": "Saint Mary's",
-        "Saint Mary's (CA)": "Saint Mary's",
-        "UConn": "Connecticut",
-        "Ole Miss": "Mississippi",
-        "UMKC": "Kansas City",
-        "Penn": "Pennsylvania",
-        "Fullerton": "Cal St. Fullerton",
-        "Long Beach State": "Cal St. Long Beach",
-        "Northridge": "Cal St. Northridge",
-        "Bakersfield": "Cal St. Bakersfield",
-        "St. Thomas (MN)": "St. Thomas",
-        "UL Monroe": "Louisiana Monroe",
-        "Louisiana": "Louisiana Lafayette",
-    }
-    if name in custom_map and custom_map[name] in barttorvik_dict:
-        return custom_map[name]
-        
-    name_low = name.lower()
+    def clean(n):
+        return n.replace("St.", "State").replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "").lower()
+
+    name_clean = clean(name)
+    
+    # 1. Try exact clean match
     for bt_name in barttorvik_dict:
-        bt_low = bt_name.lower()
-        if name_low == bt_low or name_low in bt_low or bt_low in name_low:
+        if clean(bt_name) == name_clean:
             return bt_name
+            
+    # 2. Common aliases
+    aliases = {
+        "uconn": "connecticut",
+        "olemiss": "mississippi",
+        "penn": "pennsylvania",
+        "upenn": "pennsylvania",
+        "miamifl": "miamifl",
+        "miamioh": "miamioh",
+        "stmarys": "saintmarys",
+        "stmarysca": "saintmarys",
+        "umkc": "kansascity",
+        "fullerton": "calstfullerton",
+        "longbeachstate": "calstlongbeach",
+        "northridge": "calstnorthridge",
+        "bakersfield": "calstbakersfield",
+        "stthomasmn": "stthomas",
+        "ulmonroe": "louisianamonroe",
+        "louisiana": "louisianalafayette",
+        "appstate": "appalachianstate",
+        "westerncaro": "westerncarolina",
+        "southerncaro": "southcarolina",
+        "eastcaro": "eastcarolina",
+        "coastalcaro": "coastalcarolina",
+    }
+    if name_clean in aliases:
+        target = aliases[name_clean]
+        for bt_name in barttorvik_dict:
+            if clean(bt_name) == target:
+                return bt_name
+                
+    # 3. Substring match
+    for bt_name in barttorvik_dict:
+        bt_clean = clean(bt_name)
+        if name_clean in bt_clean or bt_clean in name_clean:
+            return bt_name
+            
+    return None
+
+def find_injury_team(name, injury_dict):
+    if not name or not injury_dict: return None
+    # Action Network names are often "Team Name Mascot" e.g., "Alabama Crimson Tide"
+    name_low = name.lower()
+    for inj_team in injury_dict:
+        inj_low = inj_team.lower()
+        if name_low in inj_low or inj_low in name_low:
+            return inj_team
     return None
 
 def get_simple_metrics(stats_data):
@@ -109,8 +143,9 @@ def predict_simple(away_raw, home_raw, metrics):
         "spread": round(scoreH - scoreA, 1)
     }
 
-def print_row(matchup, p_score, spread, adj_t, adj_oe, adj_de):
-    print(f"{matchup:<35} | {p_score:<15} | {spread:<8} | {adj_t:<12} | {adj_oe:<12} | {adj_de:<12}")
+def print_row(matchup, p_score, spread, conf, adj_t, efg, to, or_rate, ftr):
+    # efg, to, or_rate, ftr are strings like "55.1 / 48.2"
+    print(f"{matchup:<35} | {p_score:<15} | {spread:<8} | {conf:<10} | {adj_t:<11} | {efg:<12} | {to:<12} | {or_rate:<12} | {ftr:<12}")
 
 def main():
     stats_data = load_json(TEAM_STATS_FILE)
@@ -122,7 +157,11 @@ def main():
     
     bt_stats = load_json(BARTTORVIK_STATS_FILE)
     if bt_stats:
-        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced metadata.")
+        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced metrics.")
+    
+    injury_notes = load_json(INJURY_NOTES_FILE)
+    if injury_notes:
+        print(f"Loaded injury notes for {len(injury_notes)} teams.")
 
     
     # Use current date in ET
@@ -135,9 +174,12 @@ def main():
         print("No games found on scoreboard.")
         return
 
-    print(f"{'Matchup':<35} | {'Proj Score':<15} | {'Spread':<8} | {'Adj T (A/H)':<12} | {'AdjOE (A/H)':<12} | {'AdjDE (A/H)':<12}")
-    print("-" * 120)
+    # Updated Header for Four Factors
+    header = f"{'Matchup':<35} | {'Proj Score':<15} | {'Spread':<8} | {'Conf (A/H)':<10} | {'Adj T(A/H)':<11} | {'eFG% (A/H)':<12} | {'TO% (A/H)':<12} | {'OR% (A/H)':<12} | {'FTR (A/H)':<12}"
+    print(header)
+    print("-" * len(header))
     
+    game_notes = []
     for game_wrapper in board['games']:
         game = game_wrapper.get('game')
         if not game: continue
@@ -165,11 +207,40 @@ def main():
             btA = bt_stats.get(btA_name) if btA_name else None
             btH = bt_stats.get(btH_name) if btH_name else None
             
-            t_str = f"{round(btA['adj_t'], 1) if btA else 'N/A'} / {round(btH['adj_t'], 1) if btH else 'N/A'}"
-            oe_str = f"{round(btA['adj_off'], 1) if btA else 'N/A'} / {round(btH['adj_off'], 1) if btH else 'N/A'}"
-            de_str = f"{round(btA['adj_def'], 1) if btA else 'N/A'} / {round(btH['adj_def'], 1) if btH else 'N/A'}"
+            conf_str = f"{btA['conf'] if (btA and 'conf' in btA) else 'N/A'}/{btH['conf'] if (btH and 'conf' in btH) else 'N/A'}"
+            t_str = f"{round(btA['adj_t'], 1) if btA else 'N/A'}/{round(btH['adj_t'], 1) if btH else 'N/A'}"
             
-            print_row(match_str, score_str, spread_str, t_str, oe_str, de_str)
+            # Use 0 check for Four Factors
+            efg_str = f"{round(btA['efg'], 1) if (btA and btA.get('efg')) else 'N/A'}/{round(btH['efg_d'], 1) if (btH and btH.get('efg_d')) else 'N/A'}"
+            to_str = f"{round(btA['to'], 1) if (btA and btA.get('to')) else 'N/A'}/{round(btH['to_d'], 1) if (btH and btH.get('to_d')) else 'N/A'}"
+            or_str = f"{round(btA['or'], 1) if (btA and btA.get('or')) else 'N/A'}/{round(btH['or_d'], 1) if (btH and btH.get('or_d')) else 'N/A'}"
+            ftr_str = f"{round(btA['ftr'], 1) if (btA and btA.get('ftr')) else 'N/A'}/{round(btH['ftr_d'], 1) if (btH and btH.get('ftr_d')) else 'N/A'}"
+            
+            print_row(match_str, score_str, spread_str, conf_str, t_str, efg_str, to_str, or_str, ftr_str)
+
+            # Injury Notes
+            injA_name = find_injury_team(away_raw, injury_notes)
+            injH_name = find_injury_team(home_raw, injury_notes)
+            
+            notes = []
+            if injA_name and injury_notes[injA_name]:
+                for item in injury_notes[injA_name]:
+                    notes.append(f"  [A] {item['player']} ({item['status']}): {item['note']}")
+            if injH_name and injury_notes[injH_name]:
+                for item in injury_notes[injH_name]:
+                    notes.append(f"  [H] {item['player']} ({item['status']}): {item['note']}")
+            
+            if notes:
+                game_notes.append((match_str, notes))
+
+    if game_notes:
+        print("\n" + "="*50)
+        print("SITUATIONAL NOTES (Injuries, Travel, etc.)")
+        print("="*50)
+        for matchup, notes in game_notes:
+            print(f"\n{matchup}:")
+            for n in notes:
+                print(n)
 
 if __name__ == "__main__":
     main()
