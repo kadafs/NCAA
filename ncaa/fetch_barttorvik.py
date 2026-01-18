@@ -7,7 +7,11 @@ import time
 
 BARTTORVIK_JSON_URL = "https://barttorvik.com/2026_team_results.json"
 BARTTORVIK_CSV_URL = "https://barttorvik.com/trank.php?year=2026&csv=1"
-OUTPUT_FILE = "data/barttorvik_stats.json"
+
+# Base paths relative to Project Root
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+OUTPUT_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
 
 def fetch_barttorvik_stats():
     headers = {

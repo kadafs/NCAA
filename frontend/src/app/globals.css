@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
-  --card: rgba(30, 41, 59, 0.7);
-  --card-border: rgba(255, 255, 255, 0.1);
-  --accent-blue: #38bdf8;
-  --accent-orange: #fb923c;
-  --glass-bg: rgba(15, 23, 42, 0.8);
+  --background: #0b0c10;
+  --foreground: #f0f1f5;
+  --card: rgba(17, 18, 25, 0.6);
+  --card-border: rgba(255, 255, 255, 0.04);
+  --accent-blue: #3b82f6; /* More professional blue */
+  --accent-orange: #f97316;
+  --glass-bg: rgba(10, 11, 15, 0.7);
 }
 
 @theme inline {
@@ -17,10 +17,11 @@
   --color-accent-blue: var(--accent-blue);
   --color-accent-orange: var(--accent-orange);
   --font-sans: "Inter", var(--font-geist-sans);
+  --font-display: "Outfit", var(--font-geist-sans);
 }
 
 body {
-  background: radial-gradient(circle at top center, #1e293b 0%, #020617 100%);
+  background: #0b0c10;
   color: var(--foreground);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -29,8 +30,12 @@ body {
 @layer utilities {
   .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
     border: 1px solid var(--card-border);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+  }
+  
+  .text-display {
+    font-family: var(--font-display);
   }
 }

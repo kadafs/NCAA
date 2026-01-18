@@ -4,7 +4,11 @@ import json
 import os
 
 INJURY_URL = "https://www.actionnetwork.com/nba/injury-report"
-OUTPUT_FILE = "data/nba_injury_notes.json"
+
+# Base paths (Absolute)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+OUTPUT_FILE = os.path.join(ROOT_DIR, "data", "nba_injury_notes.json")
 
 def fetch_nba_injuries():
     print(f"Fetching NBA injuries from {INJURY_URL}...")

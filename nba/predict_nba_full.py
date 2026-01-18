@@ -13,11 +13,13 @@ if sys.platform == "win32":
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES, NBA_TRICODES
 
-# Data Paths
-TEAM_STATS_FILE = "data/nba_stats.json"
-PLAYER_STATS_FILE = "data/nba_player_stats.json"
-MATCHUP_FILE = "data/nba_matchups.json"
-INJURY_FILE = "data/nba_injury_notes.json"
+# Data Paths (Absolute)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+TEAM_STATS_FILE = os.path.join(ROOT_DIR, "data", "nba_stats.json")
+PLAYER_STATS_FILE = os.path.join(ROOT_DIR, "data", "nba_player_stats.json")
+MATCHUP_FILE = os.path.join(ROOT_DIR, "data", "nba_matchups.json")
+INJURY_FILE = os.path.join(ROOT_DIR, "data", "nba_injury_notes.json")
 
 def load_json(path):
     if not os.path.exists(path): return None
@@ -108,15 +110,18 @@ def main():
                     if not team_tri: continue
                     team_players = [p for p in p_stats if p['team'] == team_tri]
                     # Sort by PPG to show stars
-                    team_players.sort(key=lambda x: x['pts'], reverse=True)
+                    team_players.sort(key=lambda x: x.get('seasonal', {}).get('pts', 0), reverse=True)
                     
                     for p in team_players[:4]: # Top 4 players
-                        p_pts = p['pts'] * factor
-                        p_ast = p['ast'] * factor
-                        p_reb = p['reb'] * vol
+                        # Use the 'seasonal' key for baseline
+                        s = p.get('seasonal', {})
+                        p_pts = s.get('pts', 0) * factor
+                        p_ast = s.get('ast', 0) * factor
+                        p_reb = s.get('reb', 0) * vol
                         
                         # Diff indicators for better insight
-                        diff = p_pts - p['pts']
+                        curr_pts = s.get('pts', 0)
+                        diff = p_pts - curr_pts
                         mark = "↑" if diff > 1.5 else "↓" if diff < -1.5 else ""
                         
                         print(f"     [{label}] {p['name']:20} | Proj Pts: {p_pts:4.1f} {mark:1} | Reb: {p_reb:4.1f} | Ast: {p_ast:3.1f}")

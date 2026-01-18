@@ -5,8 +5,12 @@ import zoneinfo
 from datetime import datetime
 
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
-TEAM_STATS_FILE = "data/consolidated_stats.json"
-INDIV_STATS_FILE = "data/individual_stats.json"
+# Base paths relative to Project Root
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+
+TEAM_STATS_FILE = os.path.join(ROOT_DIR, "data", "consolidated_stats.json")
+INDIV_STATS_FILE = os.path.join(ROOT_DIR, "data", "individual_stats.json")
 
 def fetch_scoreboard(year, month, day):
     for base in BASE_URLS:

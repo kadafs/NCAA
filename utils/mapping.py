@@ -3,7 +3,9 @@ def clean_team_name(name):
     Standardizes team names by removing common punctuation and formatting.
     """
     if not name: return ""
-    return name.replace("St.", "State").replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "").lower()
+    # Standardize common abbreviations before general punctuation stripping
+    n = name.replace("St.", "State").replace("Fla.", "Florida").replace("Pa.", "Pennsylvania")
+    return n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "").lower()
 
 def find_team_in_dict(name, target_dict, aliases=None):
     """
@@ -41,6 +43,8 @@ BASKETBALL_ALIASES = {
     "penn": "pennsylvania",
     "upenn": "pennsylvania",
     "stmarys": "saintmarys",
+    "stmarysca": "saintmarys",
+    "stmarys-ca": "saintmarys",
     "umkc": "kansascity",
     "fullerton": "calstfullerton",
     "longbeachstate": "calstlongbeach",
@@ -54,6 +58,9 @@ BASKETBALL_ALIASES = {
     "southerncaro": "southcarolina",
     "eastcaro": "eastcarolina",
     "coastalcaro": "coastalcarolina",
+    "ncstate": "northcarolinastate",
+    "armypowers": "army",
+    "armywestpoint": "army",
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {
@@ -69,5 +76,30 @@ NBA_TRICODES = {
     "TOR": "Toronto Raptors", "UTA": "Utah Jazz", "WAS": "Washington Wizards"
 }
 
+# EuroLeague Tricode Mapping
+EURO_TRICODES = {
+    "ALB": "ALBA Berlin",
+    "EFS": "Anadolu Efes Istanbul",
+    "ASM": "AS Monaco",
+    "BKN": "Baskonia Vitoria-Gasteiz",
+    "CZV": "Crvena Zvezda Meridianbet Belgrade",
+    "MIL": "EA7 Emporio Armani Milan",
+    "BAR": "FC Barcelona",
+    "BAY": "FC Bayern Munich",
+    "FBB": "Fenerbahce Beko Istanbul",
+    "ASV": "LDLC ASVEL Villeurbanne",
+    "MTA": "Maccabi Playtika Tel Aviv",
+    "OLY": "Olympiacos Piraeus",
+    "PAO": "Panathinaikos Aktor Athens",
+    "PAR": "Paris Basketball",
+    "PTZ": "Partizan Mozzart Bet Belgrade",
+    "RMB": "Real Madrid",
+    "VIR": "Virtus Segafredo Bologna",
+    "ZAL": "Zalgiris Kaunas"
+}
+
 def get_nba_team_from_tricode(tricode):
     return NBA_TRICODES.get(tricode, tricode)
+
+def get_euro_team_from_tricode(tricode):
+    return EURO_TRICODES.get(tricode, tricode)

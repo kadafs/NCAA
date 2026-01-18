@@ -1,7 +1,13 @@
+import os
 import json
 from datetime import datetime
 import zoneinfo
 from nba_api.live.nba.endpoints import scoreboard
+
+# Base paths (Absolute)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+MATCHUP_FILE = os.path.join(ROOT_DIR, "data", "nba_matchups.json")
 
 def fetch_nba_daily_schedule():
     print("Fetching today's NBA schedule...")
@@ -26,7 +32,7 @@ def fetch_nba_daily_schedule():
                 "game_time": game['gameStatusText']
             })
             
-        with open("data/nba_matchups.json", "w") as f:
+        with open(MATCHUP_FILE, "w") as f:
             json.dump(matchups, f, indent=2)
             
         return matchups
