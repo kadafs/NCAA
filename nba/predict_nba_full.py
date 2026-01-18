@@ -11,7 +11,7 @@ if sys.platform == "win32":
 
 # Add root to path for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
+from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES, NBA_TRICODES
 
 # Data Paths
 TEAM_STATS_FILE = "data/nba_stats.json"
@@ -30,7 +30,6 @@ def predict_game_with_props(matchup, team_stats, p_stats, injuries):
     # 1. Team Names
     teamA = find_team_in_dict(away_raw, team_stats)
     teamH = find_team_in_dict(home_raw, team_stats)
-    
     if not teamA or not teamH: return None
     
     sA, sH = team_stats[teamA], team_stats[teamH]
@@ -43,21 +42,17 @@ def predict_game_with_props(matchup, team_stats, p_stats, injuries):
     projA = (pace / 100) * effA
     projH = (pace / 100) * effH + 2.5 # Home court
     
-    # Factors for player adjustment
-    # If game projected higher scoring than team avg, players get boost
-    factorA = projA / (sA['adj_off'] * (sA['adj_t']/100)) # Simple multiplier
-    factorH = projH / (sH['adj_off'] * (sH['adj_t']/100))
+    # 3. Dynamic Factors for Props
+    # scoring_factor: ratio of projected score vs team's season average score
+    avg_ptsA = sA['adj_off'] * (sA['adj_t'] / 100)
+    avg_ptsH = sH['adj_off'] * (sH['adj_t'] / 100)
     
-    # 3. Player Props
-    # Map team name to tricode if needed (nba_api uses full names in stats usually)
-    away_props = [p for p in p_stats if p['team'] == matchup.get('away_abbr', away_raw)]
-    if not away_props: # Try by city
-        cityA = matchup.get('away_city', '')
-        away_props = [p for p in p_stats if cityA in p['name'] or p['team'] in away_raw]
+    factorA = projA / avg_ptsA if avg_ptsA > 0 else 1.0
+    factorH = projH / avg_ptsH if avg_ptsH > 0 else 1.0
     
-    # For now, let's just filter p_stats if they match team
-    # (Actually nba_stats.json uses full names, p_stats usually uses tricode)
-    # We'll use a simple direct filter for this demo
+    # volume_factor: for Rebounds/Possessions
+    volA = pace / sA['adj_t'] if sA['adj_t'] > 0 else 1.0
+    volH = pace / sH['adj_t'] if sH['adj_t'] > 0 else 1.0
     
     return {
         "matchup": f"{away_raw} @ {home_raw}",
@@ -66,7 +61,9 @@ def predict_game_with_props(matchup, team_stats, p_stats, injuries):
         "total": f"{projA + projH:.1f}",
         "pace": pace,
         "teamA": teamA,
-        "teamH": teamH
+        "teamH": teamH,
+        "factorA": factorA, "factorH": factorH,
+        "volA": volA, "volH": volH
     }
 
 def main():
@@ -79,9 +76,12 @@ def main():
         print("Required NBA data missing. Run fetch scripts first.")
         return
 
+    # Create mapping from full name to tricode for p_stats filter
+    full_to_tricode = {v: k for k, v in NBA_TRICODES.items()}
+
     now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     print(f"\n" + "="*80)
-    print(f"TOTAL NBA ANALYSIS: {now.strftime('%Y-%m-%d')}")
+    print(f"TOTAL NBA ANALYSIS & PROJECTIONS: {now.strftime('%Y-%m-%d')}")
     print("="*80)
     
     for m in matchups:
@@ -93,26 +93,33 @@ def main():
             # Show Injuries
             away_inj = injuries.get(res['teamA'], [])
             home_inj = injuries.get(res['teamH'], [])
-            
             if away_inj or home_inj:
                 print("   Status:")
                 for i in away_inj: print(f"     [A] {i['player']} ({i['status']}): {i['note'][:60]}...")
                 for i in home_inj: print(f"     [H] {i['player']} ({i['status']}): {i['note'][:60]}...")
             
-            # Show Prop Projections for Stars (if we have p_stats)
+            # Show Prop Projections
             if p_stats:
-                print("   Top Player Projections:")
-                # Simple logic to find key players for this matchup
-                # (This part needs robust team mapping for players, showing mockup logic)
-                found = 0
-                for p in p_stats:
-                    # Very simple matching for demo
-                    if p['team'] in res['teamA'] or p['team'] in res['teamH']:
-                        # Adjust stats based on pace/matchup (simulated)
-                        adj_pts = p['pts'] * 1.05 # Matchup boost
-                        print(f"     {p['name']:20} | Proj Pts: {adj_pts:4.1f} | Reb: {p['reb']:3.1f} | Ast: {p['ast']:3.1f}")
-                        found += 1
-                        if found > 4: break
+                triA = full_to_tricode.get(res['teamA'])
+                triH = full_to_tricode.get(res['teamH'])
+                
+                print("   Top Player Projections (Refined Matchup Scaling):")
+                for team_tri, factor, vol, label in [(triA, res['factorA'], res['volA'], 'A'), (triH, res['factorH'], res['volH'], 'H')]:
+                    if not team_tri: continue
+                    team_players = [p for p in p_stats if p['team'] == team_tri]
+                    # Sort by PPG to show stars
+                    team_players.sort(key=lambda x: x['pts'], reverse=True)
+                    
+                    for p in team_players[:4]: # Top 4 players
+                        p_pts = p['pts'] * factor
+                        p_ast = p['ast'] * factor
+                        p_reb = p['reb'] * vol
+                        
+                        # Diff indicators for better insight
+                        diff = p_pts - p['pts']
+                        mark = "↑" if diff > 1.5 else "↓" if diff < -1.5 else ""
+                        
+                        print(f"     [{label}] {p['name']:20} | Proj Pts: {p_pts:4.1f} {mark:1} | Reb: {p_reb:4.1f} | Ast: {p_ast:3.1f}")
 
 if __name__ == "__main__":
     main()
