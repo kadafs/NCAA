@@ -9,10 +9,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
+from utils.odds_provider import get_odds, extract_total_for_matchup
 
-BARTTORVIK_FILE = "data/barttorvik_stats.json"
-CONSOLIDATED_FILE = "data/consolidated_stats.json"
-INJURY_FILE = "data/injury_notes.json"
+# Base paths relative to Project Root
+# This script is in ncaa/v1_2/ (2 levels deep)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
+
+BARTTORVIK_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
+CONSOLIDATED_FILE = os.path.join(ROOT_DIR, "data", "consolidated_stats.json")
+INJURY_FILE = os.path.join(ROOT_DIR, "data", "injury_notes.json")
 
 def load_json(path):
     if not os.path.exists(path): return {}
@@ -92,9 +98,16 @@ def get_daily_input_sheet():
     sh = load_json(CONSOLIDATED_FILE)
     matchups = fetch_matchups()
     
+    # Fetch live odds
+    odds_data = get_odds("basketball_ncaa")
+    
     daily_sheet = []
     for m in matchups:
-        data = get_game_data(m['away'], m['home'], bt, sh, m['total'])
+        # Try to find a live total for this matchup
+        live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
+        market_total = live_total if live_total else m['total']
+        
+        data = get_game_data(m['away'], m['home'], bt, sh, market_total)
         if data:
             daily_sheet.append(data)
             

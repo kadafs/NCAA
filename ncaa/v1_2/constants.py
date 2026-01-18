@@ -13,7 +13,8 @@ EFF_MODIFIERS = {
     "EFF_DELTA_WEIGHT": 0.6,      # Boost/Cut per unit of efficiency difference
     "STRONG_DEFENSE_DRAG": -3.0,  # If opponent def_eff < 95
     "ELITE_OFFENSE_BOOST": 2.0,   # If team off_eff > 115
-    "SYSTEMIC_DAMPENER": -12.5    # Baseline reduction to ground PPG+PPG math
+    "REGRESSION_FACTOR": 0.94,    # Percentage based regression to mean
+    "HCA_TOTAL_BUMP": 3.0         # Additive points for non-neutral games
 }
 
 # 3. Turnover & Foul Factors (Additive)

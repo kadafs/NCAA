@@ -8,9 +8,11 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
 
-# Data Paths
-STATS_FILE = "data/nba_stats.json"
-MATCHUP_FILE = "data/nba_matchups.json"
+# Data Paths (Absolute)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+STATS_FILE = os.path.join(ROOT_DIR, "data", "nba_stats.json")
+MATCHUP_FILE = os.path.join(ROOT_DIR, "data", "nba_matchups.json")
 
 def load_json(path):
     if not os.path.exists(path): return None
@@ -79,8 +81,8 @@ def main():
             score_str = f"{res['scoreA']} - {res['scoreH']}"
             spread_str = f"{res['spread']:+.1f}"
             pace_str = f"{res['metricsA']['adj_t']:.1f}" # Just showing away pace for now
-            efg_str = f"{res['metricsA']['efg']:.1f}/{res['metricsH']['efg']:.1f}"
-            or_str = f"{res['metricsA']['or']:.1f}/{res['metricsH']['or']:.1f}"
+            efg_str = f"{res['metricsA'].get('efg', 50.0):.1f}/{res['metricsH'].get('efg', 50.0):.1f}"
+            or_str = f"{res['metricsA'].get('or', 25.0):.1f}/{res['metricsH'].get('or', 25.0):.1f}"
             
             print(f"{match_str:<35} | {score_str:<15} | {spread_str:<8} | {pace_str:<6} | {efg_str:<12} | {or_str:<12}")
 

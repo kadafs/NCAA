@@ -4,11 +4,15 @@ import os
 import time
 
 BASE_URL = "http://localhost:3000"
-STATS_DIR = "data/stats"
-CONSOLIDATED_FILE = "data/consolidated_stats.json"
-INDIVIDUAL_DIR = "data/individual"
-INDIVIDUAL_CONSOLIDATED = "data/individual_stats.json"
-STANDINGS_FILE = "data/standings.json"
+# Base paths relative to Project Root
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+
+STATS_DIR = os.path.join(ROOT_DIR, "data", "stats")
+CONSOLIDATED_FILE = os.path.join(ROOT_DIR, "data", "consolidated_stats.json")
+INDIVIDUAL_DIR = os.path.join(ROOT_DIR, "data", "individual")
+INDIVIDUAL_CONSOLIDATED = os.path.join(ROOT_DIR, "data", "individual_stats.json")
+STANDINGS_FILE = os.path.join(ROOT_DIR, "data", "standings.json")
 
 TEAM_STAT_IDS = {
     "scoring_offense": 145,

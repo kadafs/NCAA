@@ -3,15 +3,22 @@ import os
 import requests
 import zoneinfo
 from datetime import datetime
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
 
 # Script 2: Over/Under Focused Model
 # Features: Offensive Rebounding (Possession Resets), 3PT Regression,
 # Late Game Fouling (Free Throw Trap), and Tempo Archetypes.
 
 BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
-TEAM_STATS_FILE = "data/consolidated_stats.json"
-BARTTORVIK_STATS_FILE = "data/barttorvik_stats.json"
-INJURY_NOTES_FILE = "data/injury_notes.json"
+# Base paths relative to Project Root
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+
+TEAM_STATS_FILE = os.path.join(ROOT_DIR, "data", "consolidated_stats.json")
+BARTTORVIK_STATS_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
+INJURY_NOTES_FILE = os.path.join(ROOT_DIR, "data", "injury_notes.json")
 
 def fetch_scoreboard(year, month, day):
     for base in BASE_URLS:
@@ -28,74 +35,7 @@ def load_json(path):
     if not os.path.exists(path): return None
     with open(path, "r") as f: return json.load(f)
 
-def find_team(name, teams_dict):
-    if not name: return None
-    if name in teams_dict: return name
-    standard_map = {
-        "St. Mary's (CA)": "Saint Mary's (CA)",
-        "St Mary's": "Saint Mary's (CA)",
-        "Saint Mary's": "Saint Mary's (CA)",
-        "UConn": "UConn", "Ole Miss": "Ole Miss", "UPenn": "Penn"
-    }
-    if name in standard_map: return standard_map[name]
-    name_low = name.lower()
-    for t_name in teams_dict:
-        t_low = t_name.lower()
-        if name_low == t_low or name_low in t_low or t_low in name_low:
-            return t_name
-    return None
-
-def find_barttorvik_team(name, barttorvik_dict):
-    if not name or not barttorvik_dict: return None
-    if name in barttorvik_dict: return name
-    
-    def clean(n):
-        return n.replace("St.", "State").replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "").lower()
-
-    name_clean = clean(name)
-    
-    # 1. Try exact clean match
-    for bt_name in barttorvik_dict:
-        if clean(bt_name) == name_clean:
-            return bt_name
-            
-    # 2. Common aliases
-    aliases = {
-        "uconn": "connecticut",
-        "olemiss": "mississippi",
-        "penn": "pennsylvania",
-        "upenn": "pennsylvania",
-        "miamifl": "miamifl",
-        "miamioh": "miamioh",
-        "stmarys": "saintmarys",
-        "stmarysca": "saintmarys",
-        "umkc": "kansascity",
-        "fullerton": "calstfullerton",
-        "longbeachstate": "calstlongbeach",
-        "northridge": "calstnorthridge",
-        "bakersfield": "calstbakersfield",
-        "stthomasmn": "stthomas",
-        "ulmonroe": "louisianamonroe",
-        "louisiana": "louisianalafayette",
-        "appstate": "appalachianstate",
-        "westerncaro": "westerncarolina",
-        "southerncaro": "southcarolina",
-        "eastcaro": "eastcarolina",
-        "coastalcaro": "coastalcarolina",
-    }
-    if name_clean in aliases:
-        target = aliases[name_clean]
-        for bt_name in barttorvik_dict:
-            if clean(bt_name) == target:
-                return bt_name
-                
-    # 3. Substring match
-    for bt_name in barttorvik_dict:
-        bt_clean = clean(bt_name)
-        if name_clean in bt_clean or bt_clean in name_clean:
-            return bt_name
-            
-    return None
+# Using shared find_team_in_dict from utils.mapping instead of local helpers
 
 def find_injury_team(name, injury_dict):
     if not name or not injury_dict: return None
@@ -150,12 +90,12 @@ def get_total_metrics(stats_data):
     return valid_teams, sum(all_tempo)/len(all_tempo), sum(all_def_eff)/len(all_def_eff)
 
 def predict_total(away_raw, home_raw, metrics, league_avgs, barttorvik_data=None):
-    nameA = find_team(away_raw, metrics)
-    nameH = find_team(home_raw, metrics)
+    nameA = find_team_in_dict(away_raw, metrics, BASKETBALL_ALIASES)
+    nameH = find_team_in_dict(home_raw, metrics, BASKETBALL_ALIASES)
     
     # BartTorvik Specific Lookup
-    btA_name = find_barttorvik_team(away_raw, barttorvik_data) if barttorvik_data else None
-    btH_name = find_barttorvik_team(home_raw, barttorvik_data) if barttorvik_data else None
+    btA_name = find_team_in_dict(away_raw, barttorvik_data, BASKETBALL_ALIASES) if barttorvik_data else None
+    btH_name = find_team_in_dict(home_raw, barttorvik_data, BASKETBALL_ALIASES) if barttorvik_data else None
     
     if not nameA or not nameH: return None
     

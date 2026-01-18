@@ -2,8 +2,11 @@ import json
 import os
 from nba_api.stats.endpoints import fantasywidget
 
-# Output path
-OUTPUT_FILE = "data/nba_player_stats.json"
+# Base paths (Absolute)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
+DATA_DIR = os.path.join(ROOT_DIR, "data")
+OUTPUT_FILE = os.path.join(DATA_DIR, "nba_player_stats.json")
 
 def fetch_nba_player_stats():
     print("Fetching NBA Player Stats (for props) from official API...")
@@ -41,8 +44,8 @@ def fetch_nba_player_stats():
                 "threes": p_dict['FG3M']
             })
 
-        if not os.path.exists('data'):
-            os.makedirs('data')
+        if not os.path.exists(DATA_DIR):
+            os.makedirs(DATA_DIR)
 
         with open(OUTPUT_FILE, "w") as f:
             json.dump(player_stats, f, indent=2)

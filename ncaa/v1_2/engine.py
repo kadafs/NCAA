@@ -1,6 +1,9 @@
 # NCAA PPG+PED Hybrid Totals v1.2 Core Engine
 import json
-from .constants import PACE_MODIFIERS, EFF_MODIFIERS, GAME_FLOW, CONF_BIAS, THRESHOLDS
+try:
+    from .constants import PACE_MODIFIERS, EFF_MODIFIERS, GAME_FLOW, CONF_BIAS, THRESHOLDS
+except (ImportError, ValueError):
+    from constants import PACE_MODIFIERS, EFF_MODIFIERS, GAME_FLOW, CONF_BIAS, THRESHOLDS
 
 class TotalsEngine:
     """
@@ -17,37 +20,46 @@ class TotalsEngine:
 
     def calculate_total(self, game_data, injury_notes=None):
         """
-        Main calculation pipeline.
-        game_data should be a dictionary containing the 'Master Input' columns.
+        Main calculation pipeline v1.3.
+        Transitioned to rate-based baseline and regression logic.
         """
         self.trace = [] # Reset trace
         
-        # 1. Baseline Total (Step 1)
-        team_ppg = game_data.get('team_ppg', 0)
-        opp_ppg = game_data.get('opp_ppg', 0)
-        baseline = team_ppg + opp_ppg
-        self._log(f"Step 1: Baseline Total (PPG + PPG) = {team_ppg} + {opp_ppg} = {baseline:.1f}")
+        # 1. Rate-Based Baseline (v1.3 Refinement)
+        pace_adj = game_data.get('pace_adjustment', 68.0)
+        eff_adj = game_data.get('efficiency_adjustment', 105.0)
+        
+        # Baseline = (Composite Efficiency * Pace) / 100 * 2 (for 2 teams)
+        baseline = ((eff_adj * pace_adj) / 100) * 2
+        self._log(f"Step 1: Rate-Based Baseline ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {baseline:.2f}")
 
-        # 2. Statistics Dampeners (Steps 2-4)
+        # 2. Statistics Dampeners & Regression
         total = baseline
         
         # Pace Adjustment (Delta from 68.0)
-        pace_adj = game_data.get('pace_adjustment', 68.0)
         pace_impact = (pace_adj - 68.0) * PACE_MODIFIERS['PACE_DELTA_WEIGHT']
         total += pace_impact
-        self._log(f"Step 2: Pace Adjustment ({pace_adj:.1f}) -> Impact: {pace_impact:+.2f}")
+        # self._log(f"Step 2: Pace Impact ({pace_adj:.1f}) -> {pace_impact:+.2f}")
 
-        # Efficiency Adjustment (Delta from 105.0)
-        eff_adj = game_data.get('efficiency_adjustment', 105.0)
-        eff_impact = (eff_adj - 105.0) * EFF_MODIFIERS['EFF_DELTA_WEIGHT']
+        # Efficiency Modifiers (Additive logic for elite/strong)
+        eff_mod = 0
+        if game_data.get('is_elite_offense'): eff_mod += EFF_MODIFIERS['ELITE_OFFENSE_BOOST']
+        if game_data.get('is_strong_defense'): eff_mod += EFF_MODIFIERS['STRONG_DEFENSE_DRAG']
         
-        # Static Modifiers
-        eff_impact += EFF_MODIFIERS['SYSTEMIC_DAMPENER']
-        if game_data.get('is_elite_offense'): eff_impact += EFF_MODIFIERS['ELITE_OFFENSE_BOOST']
-        if game_data.get('is_strong_defense'): eff_impact += EFF_MODIFIERS['STRONG_DEFENSE_DRAG']
+        total += eff_mod
         
-        total += eff_impact
-        self._log(f"Step 3: Efficiency Impact -> {eff_impact:+.2f}")
+        # Percentage-Based Regression (v1.3 Refinement)
+        reg_factor = EFF_MODIFIERS.get('REGRESSION_FACTOR', 0.97)
+        regressed_total = total * reg_factor
+        self._log(f"Step 3: Regression Applied ({reg_factor}x) -> {regressed_total:.2f}")
+        total = regressed_total
+
+        # Home Court Advantage (v1.3 Refinement)
+        hca_bump = 0
+        if not game_data.get('is_neutral', False):
+            hca_bump = EFF_MODIFIERS.get('HCA_TOTAL_BUMP', 3.0)
+            total += hca_bump
+            self._log(f"Step 3.5: Home Court Advantage -> +{hca_bump:.1f}")
 
         # Game Flow (Turnovers/Fouls)
         flow_impact = 0
