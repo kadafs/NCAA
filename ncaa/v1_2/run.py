@@ -50,6 +50,7 @@ def main():
     parser.add_argument("--mode", choices=["safe", "full"], default="safe", help="Prediction mode")
     parser.add_argument("--trace", action="store_true", help="Show full logic audit trace")
     parser.add_argument("--refresh", action="store_true", help="Automatically refresh stats and injuries before running")
+    parser.add_argument("--date", help="Target date (YYYY-MM-DD)")
     args = parser.parse_args()
 
     # 0. Optional Refresh
@@ -57,14 +58,19 @@ def main():
         refresh_data()
 
     # 1. Initialize
+    # utils.mapping has get_target_date. Let's use that.
+    sys.path.append(ROOT_DIR)
+    from utils.mapping import get_target_date
+    
+    target_date = get_target_date(args.date)
+    now = datetime.now(ET_TZ)
     engine = TotalsEngine(mode=args.mode)
-    daily_sheet = get_daily_input_sheet()
+    daily_sheet = get_daily_input_sheet(target_date)
     injuries = load_json(INJURY_FILE) if args.mode == "full" else {}
 
     # 2. Results Collection
-    now = datetime.now(ET_TZ)
     print("\n" + "="*80)
-    print(f"NCAA PPG+PED HYBRID TOTALS v1.2 | {args.mode.upper()} MODE | {now.strftime('%Y-%m-%d')}")
+    print(f"NCAA PPG+PED HYBRID TOTALS v1.2 | {args.mode.upper()} MODE | {target_date.strftime('%Y-%m-%d')}")
     print("="*80)
 
     results = []

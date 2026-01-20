@@ -50,17 +50,10 @@ def fetch_barttorvik_stats():
         time.sleep(1)
         resp_csv = session.get(BARTTORVIK_CSV_URL, timeout=15)
         
-        if resp_csv.status_code == 200 and "Verifying browser" not in resp_csv.text:
-            # CSV Mapping (2026 Verified via Research):
-            # 0: Team
-            # 1: AdjOE, 2: AdjDE, 3: Barthag
-            # 4: Record, 5: W, 6: G
-            # 7: eFG% (O), 8: eFG% (D)
-            # 9: FTR (O), 10: FTR (D)
-            # 11: TO% (O), 12: TO% (D)
-            # 13: OR% (O), 14: OR% (D)
-            # 15: Adj Tempo
-            
+        if resp_csv.status_code == 200 and "Verifying browser" not in resp_csv.text and "<!DOCTYPE html>" not in resp_csv.text[:100]:
+            print("Successfully fetched CSV data.")
+            # CSV Mapping (2026 Verified):
+            # 0: Team, 1: AdjOE, 2: AdjDE, 7-14: Four Factors, 15: Adj Tempo
             f = io.StringIO(resp_csv.text)
             reader = csv.reader(f)
             for row in reader:
@@ -84,24 +77,27 @@ def fetch_barttorvik_stats():
                 except (IndexError, ValueError):
                     continue
         else:
-            print(f"Failed to fetch CSV: {resp_csv.status_code}. Using browser subagent fallback might be needed.")
-            # If CSV failed but we have JSON, we can at least get basic metrics from JSON
-            if conf_lookup:
-                print("Extracting basic stats from JSON fallback...")
-                resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
-                if resp_json.status_code == 200:
-                    raw_json = resp_json.json()
-                    for team_data in raw_json:
-                        # Index 1: Name, 2: Conf, 4: AdjOE, 6: AdjDE, 44: Adj Tempo
+            print(f"CSV fetch blocked or failed (Status: {resp_csv.status_code}). Falling back to JSON source...")
+            # If CSV failed, we use the JSON data which is usually unprotected
+            resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
+            if resp_json.status_code == 200:
+                raw_json = resp_json.json()
+                for team_data in raw_json:
+                    # Index 1: Name, 2: Conf, 4: AdjOE, 6: AdjDE, 44: Adj Tempo
+                    try:
                         name = team_data[1]
-                        if name not in processed_data:
-                            processed_data[name] = {
-                                "conf": team_data[2],
-                                "adj_off": float(team_data[4]),
-                                "adj_def": float(team_data[6]),
-                                "adj_t": float(team_data[44]),
-                                "efg": 0, "efg_d": 0, "ftr": 0, "ftr_d": 0, "to": 0, "to_d": 0, "or": 0, "or_d": 0
-                            }
+                        processed_data[name] = {
+                            "conf": team_data[2],
+                            "adj_off": float(team_data[4]),
+                            "adj_def": float(team_data[6]),
+                            "adj_t": float(team_data[44]),
+                            # Default Four Factors (approx D1 averages) since they aren't in this JSON
+                            "efg": 50.0, "efg_d": 50.0, "ftr": 30.0, "ftr_d": 30.0, 
+                            "to": 18.0, "to_d": 18.0, "or": 28.0, "or_d": 28.0
+                        }
+                    except (IndexError, ValueError, TypeError):
+                        continue
+                print(f"Extracted {len(processed_data)} teams from JSON metadata.")
 
     except Exception as e:
         print(f"Error fetching CSV stats: {e}")

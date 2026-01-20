@@ -1,7 +1,7 @@
 import os
-import json
 import requests
 import xml.etree.ElementTree as ET
+import json
 from datetime import datetime
 import zoneinfo
 import argparse
@@ -14,65 +14,63 @@ from utils.mapping import get_target_date
 # Base paths (Absolute)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
-MATCHUP_FILE = os.path.join(ROOT_DIR, "data", "euro_matchups.json")
+DATA_DIR = os.path.join(ROOT_DIR, "data")
+MATCHUPS_FILE = os.path.join(DATA_DIR, "eurocup_matchups.json")
 
-ET_TZ = zoneinfo.ZoneInfo("America/New_York")
-
-def fetch_euro_daily_schedule(target_date=None):
+def fetch_eurocup_schedule(target_date=None):
     if target_date is None:
         target_date = get_target_date()
         
     date_str = target_date.strftime("%Y-%m-%d")
-    print(f"Fetching EuroLeague schedule for {date_str}...")
+    print(f"Fetching EuroCup schedule for {date_str}...")
     
-    # EuroLeague format in XML results is "Jan 20, 2026"
-    today_str = target_date.strftime("%b %d, %Y")
-    
-    # EuroLeague schedules endpoint provides the season's games
-    url = "https://api-live.euroleague.net/v1/schedules?seasonCode=E2025"
+    # Competition code 'U' for EuroCup, Season 'U2025'
+    url = "https://api-live.euroleague.net/v1/schedules?seasonCode=U2025"
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/xml"
     }
     
+    # XML format is "Jan 20, 2026"
+    today_val = target_date.strftime("%b %d, %Y")
+    
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         
-        # Parse XML
         root = ET.fromstring(response.content)
         
-        # Structure looks like <schedule><item><gamecode>...
-        all_games = root.findall('item')
-        
         matchups = []
-        for g in all_games:
-            gdate = g.find('date').text if g.find('date') is not None else ""
+        
+        # The XML structure has items under schedule
+        for game in root.findall(".//item"):
+            game_date = game.find('date').text # Format: "Jan 20, 2026"
             
-            # Match target date
-            if today_str == gdate:
-                away_name = g.find('awayteam').text if g.find('awayteam') is not None else "Unknown"
-                home_name = g.find('hometeam').text if g.find('hometeam') is not None else "Unknown"
+            if game_date == today_val:
+                away_name = game.find('awayteam').text
+                home_name = game.find('hometeam').text
                 
                 matchups.append({
                     "away": away_name,
                     "home": home_name,
                     "away_city": away_name.split(" ")[0],
                     "home_city": home_name.split(" ")[0],
-                    "game_time": g.find('startime').text if g.find('startime') is not None else "TBD",
-                    "game_code": g.find('gamecode').text if g.find('gamecode') is not None else ""
+                    "game_time": game.find('startime').text if game.find('startime') is not None else "TBD",
+                    "total": 165.0, # Placeholder
                 })
-        
-        print(f"Found {len(matchups)} EuroLeague games for {today_str}.")
-        
-        with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
+
+        if not os.path.exists(DATA_DIR):
+            os.makedirs(DATA_DIR)
+            
+        with open(MATCHUPS_FILE, "w", encoding="utf-8") as f:
             json.dump(matchups, f, indent=2)
             
+        print(f"Found {len(matchups)} EuroCup games for {today_val}.")
         return matchups
 
     except Exception as e:
-        print(f"Error fetching EuroLeague schedule: {e}")
+        print(f"Error fetching EuroCup schedule: {e}")
         return []
 
 if __name__ == "__main__":
@@ -81,4 +79,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     target = get_target_date(args.date)
-    fetch_euro_daily_schedule(target)
+    fetch_eurocup_schedule(target)
