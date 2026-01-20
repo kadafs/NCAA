@@ -59,16 +59,25 @@ The following scripts implement the **PPG+PED Hybrid Totals v1.2** system:
 
 ---
 
-## 🇪🇺 EuroLeague Scripts (v1.9 Expansion)
-The newest module for tracking European elite competition:
+## 🇪🇺 European Basketball Scripts (v2.0)
+Tracking the elite EuroLeague and EuroCup competitions:
+
+### EuroLeague (EL)
 - **[euro/fetch_euro_schedule.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/euro/fetch_euro_schedule.py)**: Fetches matchups from the official v1 Results API.
 - **[euro/fetch_euro_stats.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/euro/fetch_euro_stats.py)**: Fetches advanced team metrics (Possessions, Off/Def Ratings).
 - **[euro/fetch_euro_player_stats.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/euro/fetch_euro_player_stats.py)**: Fetches seasonal averages for 700+ Euro players.
 - **[euro/v1_2/populate.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/euro/v1_2/populate.py)**: Bridges Euro stats into the v1.2 engine.
 - **[euro/predict_simple.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/euro/predict_simple.py)**: Simple PPG-based scoring model for manual analysis.
 
+### EuroCup (EC)
+- **[eurocup/fetch_eurocup_schedule.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/eurocup/fetch_eurocup_schedule.py)**: Fetches matchups for EuroCup using v1 API.
+- **[eurocup/fetch_eurocup_stats.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/eurocup/fetch_eurocup_stats.py)**: Fetches advanced team stats (Off/Def ratings).
+- **[eurocup/fetch_eurocup_player_stats.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/eurocup/fetch_eurocup_player_stats.py)**: Fetches player-level traditional stats.
+- **[eurocup/v1_2/populate.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/eurocup/v1_2/populate.py)**: Bridges EuroCup data into the engine.
+- **[eurocup/predict_simple.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/eurocup/predict_simple.py)**: Standardized PPG-based analysis for EuroCup.
+
 ## 🛠️ Shared Utilities
-- **[utils/mapping.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/utils/mapping.py)**: Shared logic for team name cleaning, aliases, and NBA tricodes.
+- **[utils/mapping.py](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/utils/mapping.py)**: Shared logic for team mapping, aliases, and **centralized date parsing**.
 
 ---
 
@@ -83,6 +92,9 @@ Recommended for all league analysis (NBA, NCAA, Euro).
 | `python run_universal.py --league nba --mode full --trace` | **NBA Ultimate Dashboard** (Totals + Props) |
 | `python run_universal.py --league ncaa --mode safe --trace` | **NCAA Totals Prediction** |
 | `python run_universal.py --league euro --mode safe --trace` | **EuroLeague Totals + Props** |
+| `python run_universal.py --league eurocup --mode safe --trace` | **EuroCup Totals + Props** |
+
+**Pro Tip:** Use `--date YYYY-MM-DD --refresh` to fetch and predict games for any specific date (e.g., tomorrow's slates).
 
 ---
 

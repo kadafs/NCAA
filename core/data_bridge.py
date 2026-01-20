@@ -22,14 +22,20 @@ class UniversalDataBridge:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def get_standardized_sheet(self):
+    def get_standardized_sheet(self, date_obj=None):
         """Dispatches to league-specific population logic."""
         if self.league == "NBA":
             return self._pop_nba()
         elif self.league == "NCAA":
-            return self._pop_ncaa()
+            return self._pop_ncaa(date_obj=date_obj)
         elif self.league == "EURO":
             return self._pop_euro()
+        elif self.league == "EUROCUP":
+            return self._pop_eurocup()
+        elif self.league == "NBL":
+            return self._pop_nbl()
+        elif self.league == "ACB":
+            return self._pop_acb()
         else:
             return []
 
@@ -72,70 +78,41 @@ class UniversalDataBridge:
             })
         return daily_sheet
 
-    def _pop_ncaa(self):
+    def _pop_ncaa(self, date_obj=None):
         """NCAA-specific population logic moved to core."""
         bt_data = self._load_json("barttorvik_stats.json")
         score_data = self._load_json("consolidated_stats.json")
         
-        # We need a way to fetch matchups (reusing the API call or a saved file)
-        # For simplicity in the bridge, we'll look for a matchups file first
-        matchups = self._load_json("ncaa_matchups.json")
-        if not matchups:
-            # Fallback to fetching today (simplified)
-            from ncaa.v1_2.populate import fetch_matchups
-            matchups = fetch_matchups()
+        from ncaa.v1_2.populate import get_daily_input_sheet
+        daily_sheet = get_daily_input_sheet(date_obj=date_obj)
+        
+        processed_sheet = []
+        for d in daily_sheet:
+            # Stats are already bridged in get_daily_input_sheet v1.2
+            # We just need to wrap stats for the engine if it expects a specific nested structure
+            # (In v1.2 ncaa, it uses a flat dict for simplicity, but the universal bridge likes statsA/statsH)
+            teamA_bt = find_team_in_dict(d['team'], bt_data, BASKETBALL_ALIASES)
+            teamH_bt = find_team_in_dict(d['opponent'], bt_data, BASKETBALL_ALIASES)
             
-        daily_sheet = []
-        for m in matchups:
-            teamA = find_team_in_dict(m['away'], bt_data, BASKETBALL_ALIASES)
-            teamH = find_team_in_dict(m['home'], bt_data, BASKETBALL_ALIASES)
-            
-            if not teamA or not teamH: continue
-            
-            sA = bt_data[teamA]
-            sH = bt_data[teamH]
-            
-            # Find PPG helper
-            def get_ppg(name, stats):
-                for entry in score_data.get('scoring_offense', []):
-                    if entry['Team'] == name: return float(entry['PPG'])
-                return (stats['adj_off'] * (stats['adj_t'] / 100))
-                
-            daily_sheet.append({
-                "team": teamA,
-                "opponent": teamH,
-                "team_ppg": get_ppg(teamA, sA),
-                "opp_ppg": get_ppg(teamH, sH),
-                "pace_adjustment": (sA['adj_t'] + sH['adj_t']) / 2,
-                "efficiency_adjustment": (sA['adj_off'] + sH['adj_def'] + sH['adj_off'] + sA['adj_def']) / 4,
-                "market_total": m.get('total', 145.5),
-                "is_elite_offense": sA['adj_off'] > 115 or sH['adj_off'] > 115,
-                "is_strong_defense": sA['adj_def'] < 100 or sH['adj_def'] < 100,
-                "conf": sA['conf'],
+            sA = bt_data.get(teamA_bt, {})
+            sH = bt_data.get(teamH_bt, {})
+
+            processed_sheet.append({
+                **d,
                 "statsA": {
-                    "adj_off": sA['adj_off'],
-                    "adj_def": sA['adj_def'],
-                    "adj_t": sA['adj_t'],
-                    "four_factors": {
-                        "efg": sA.get('efg', 0),
-                        "tov": sA.get('to', 0),
-                        "orb": sA.get('or', 0),
-                        "ftr": sA.get('ftr', 0)
-                    }
+                    "adj_off": sA.get('adj_off', 110.0),
+                    "adj_def": sA.get('adj_def', 110.0),
+                    "adj_t": sA.get('adj_t', 70.0),
+                    "four_factors": {"efg": sA.get('efg', 0), "tov": sA.get('to', 0), "orb": sA.get('or', 0), "ftr": sA.get('ftr', 0)}
                 },
                 "statsH": {
-                    "adj_off": sH['adj_off'],
-                    "adj_def": sH['adj_def'],
-                    "adj_t": sH['adj_t'],
-                    "four_factors": {
-                        "efg": sH.get('efg', 0),
-                        "tov": sH.get('to', 0),
-                        "orb": sH.get('or', 0),
-                        "ftr": sH.get('ftr', 0)
-                    }
+                    "adj_off": sH.get('adj_off', 110.0),
+                    "adj_def": sH.get('adj_def', 110.0),
+                    "adj_t": sH.get('adj_t', 70.0),
+                    "four_factors": {"efg": sH.get('efg', 0), "tov": sH.get('to', 0), "orb": sH.get('or', 0), "ftr": sH.get('ftr', 0)}
                 }
             })
-        return daily_sheet
+        return processed_sheet
 
     def _pop_euro(self):
         """EuroLeague-specific population logic v1.9."""
@@ -176,3 +153,59 @@ class UniversalDataBridge:
                 }
             })
         return daily_sheet
+
+    def _pop_eurocup(self):
+        """EuroCup-specific population logic v2.0."""
+        matchups = self._load_json("eurocup_matchups.json")
+        all_stats = self._load_json("eurocup_stats.json")
+        
+        daily_sheet = []
+        for m in matchups:
+            teamA_name = find_team_in_dict(m['away'], all_stats)
+            teamH_name = find_team_in_dict(m['home'], all_stats)
+            
+            if not teamA_name or not teamH_name: continue
+            
+            sA = all_stats[teamA_name]
+            sH = all_stats[teamH_name]
+            
+            # EuroCup Pivots (Researched)
+            pivot_pace = 74.5
+            pivot_eff = 110.8
+            
+            daily_sheet.append({
+                "team": teamA_name,
+                "opponent": teamH_name,
+                "pace_adjustment": (sA.get('adj_t', pivot_pace) + sH.get('adj_t', pivot_pace)) / 2,
+                "efficiency_adjustment": (
+                    sA.get('adj_off', pivot_eff) + sH.get('adj_def', pivot_eff) +
+                    sH.get('adj_off', pivot_eff) + sA.get('adj_def', pivot_eff)
+                ) / 4,
+                "market_total": m.get('total', 165.0),
+                "is_elite_offense": sA.get('adj_off', pivot_eff) > (pivot_eff * 1.05),
+                "is_strong_defense": sA.get('adj_def', pivot_eff) < (pivot_eff * 0.95),
+                "three_pa_total": sA.get('fg3a', 25.0) + sH.get('fg3a', 25.0),
+                "statsA": {
+                    "adj_off": sA.get('adj_off', pivot_eff),
+                    "adj_def": sA.get('adj_def', pivot_eff),
+                    "adj_t": sA.get('adj_t', pivot_pace),
+                    "four_factors": sA.get('four_factors', {})
+                },
+                "statsH": {
+                    "adj_off": sH.get('adj_off', pivot_eff),
+                    "adj_def": sH.get('adj_def', pivot_eff),
+                    "adj_t": sH.get('adj_t', pivot_pace),
+                    "four_factors": sH.get('four_factors', {})
+                }
+            })
+        return daily_sheet
+
+    def _pop_nbl(self):
+        """NBL-specific population logic v3.0."""
+        from nbl.v1_2.populate import get_daily_input_sheet
+        return get_daily_input_sheet()
+
+    def _pop_acb(self):
+        """ACB-specific population logic v3.0."""
+        from acb.v1_2.populate import get_daily_input_sheet
+        return get_daily_input_sheet()

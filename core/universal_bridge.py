@@ -19,7 +19,10 @@ def get_universal_predictions(league="nba", mode="safe"):
     config_map = {
         "nba": "configs/leagues/nba.json",
         "ncaa": "configs/leagues/ncaa.json",
-        "euro": "configs/leagues/euro.json"
+        "euro": "configs/leagues/euro.json",
+        "eurocup": "configs/leagues/eurocup.json",
+        "nbl": "configs/leagues/nbl.json",
+        "acb": "configs/leagues/acb.json"
     }
     
     if league not in config_map:
@@ -82,6 +85,28 @@ def get_universal_predictions(league="nba", mode="safe"):
                 injuries = load_json("data/euro_injury_notes.json")
         except Exception as e:
             print(f"Error loading EuroLeague metadata: {e}")
+    elif league == "eurocup":
+        try:
+            from eurocup.v1_2.populate import load_json
+            p_stats_raw = load_json("data/eurocup_player_stats.json")
+            for p in p_stats_raw:
+                p_stats.append({
+                    **p,
+                    "id": p.get('id'),
+                    "league": "eurocup",
+                    "seasonal": {"pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0)},
+                    "recent": {"pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0)}
+                })
+            if mode == "full":
+                injuries = load_json("data/eurocup_injury_notes.json")
+        except Exception as e:
+            print(f"Error loading EuroCup metadata: {e}")
+    elif league == "nbl":
+        # NBL metadata stubs
+        pass
+    elif league == "acb":
+        # ACB metadata stubs
+        pass
             
     # 3. Fetch Data
     daily_sheet = bridge.get_standardized_sheet()
@@ -166,6 +191,36 @@ def get_universal_predictions(league="nba", mode="safe"):
                         "name": p['name'],
                         "team_label": label,
                         "league": "euro",
+                        "pts": round(p_proj['proj_pts'], 1),
+                        "reb": round(p_proj['proj_reb'], 1),
+                        "ast": round(p_proj['proj_ast'], 1),
+                        "trace": p_proj['trace']
+                    })
+        elif league == "eurocup" and p_stats:
+            from utils.mapping import EUROCUP_TRICODES
+            full_to_tricode = {v: k for k, v in EUROCUP_TRICODES.items()}
+            triA = full_to_tricode.get(away)
+            triH = full_to_tricode.get(home)
+            if not triA: triA = away if any(p['team'] == away for p in p_stats) else None
+            if not triH: triH = home if any(p['team'] == home for p in p_stats) else None
+            
+            # EuroCup scaling factor
+            factor = res['final_model_total'] / 165.0
+            context = {"factor": factor, "vol_factor": 1.0}
+
+            for team_tri, label in [(triA, 'A'), (triH, 'H')]:
+                if not team_tri: continue
+                players = [p for p in p_stats if p['team'] == team_tri]
+                players.sort(key=lambda x: x['seasonal']['pts'], reverse=True)
+                
+                for p in players[:10]:
+                    team_injs = injuries.get(away if label == 'A' else home, [])
+                    p_proj = prop_engine.project_player(p, context, team_injs)
+                    player_props.append({
+                        "id": p.get('id'),
+                        "name": p['name'],
+                        "team_label": label,
+                        "league": "eurocup",
                         "pts": round(p_proj['proj_pts'], 1),
                         "reb": round(p_proj['proj_reb'], 1),
                         "ast": round(p_proj['proj_ast'], 1),

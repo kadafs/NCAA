@@ -1,3 +1,19 @@
+import zoneinfo
+from datetime import datetime
+
+def get_target_date(date_str=None):
+    """
+    Returns a datetime object for the target date.
+    Accepts 'YYYY-MM-DD'. Defaults to current date in ET.
+    """
+    et_tz = zoneinfo.ZoneInfo("America/New_York")
+    if date_str:
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=et_tz)
+        except ValueError:
+            print(f"Invalid date format: {date_str}. Expected YYYY-MM-DD.")
+    return datetime.now(et_tz)
+
 def clean_team_name(name):
     """
     Standardizes team names by removing common punctuation and formatting.
@@ -61,6 +77,31 @@ BASKETBALL_ALIASES = {
     "ncstate": "northcarolinastate",
     "armypowers": "army",
     "armywestpoint": "army",
+    "ark-pinebluff": "arkansaspinebluff",
+    "bethune-cookman": "bethunecookman",
+    "csubakersfield": "calstatebakersfield",
+    "csun": "calstatenorthridge",
+    "centralconnstate": "centralconnecticut",
+    "etsu": "easttennesseestate",
+    "easternky": "easternkentucky",
+    "fdu": "fairleighdickinson",
+    "fgcu": "floridagulfcoast",
+    "gardner-webb": "gardnerwebb",
+    "lmuca": "loyolamarymount",
+    "nca&t": "northcarolinaa&t",
+    "nccentral": "northcarolinacentral",
+    "niu": "northernillinois",
+    "northernky": "northernkentucky",
+    "sfa": "stephenfaustin",
+    "southeastmostate": "southeastmissouristate",
+    "southeasternla": "southeasternlouisiana",
+    "uic": "illinoischicago",
+    "uiw": "incarnateword",
+    "ulm": "louisianamonroe",
+    "umes": "marylandeasternshore",
+    "utmartin": "tennesseemartin",
+    "utrgv": "utriograndevalley",
+    "westernky": "westernkentucky",
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {
@@ -88,14 +129,75 @@ EURO_TRICODES = {
     "BAY": "FC Bayern Munich",
     "FBB": "Fenerbahce Beko Istanbul",
     "ASV": "LDLC ASVEL Villeurbanne",
-    "MTA": "Maccabi Playtika Tel Aviv",
+    "MTA": "Maccabi Rapyd Tel Aviv",
     "OLY": "Olympiacos Piraeus",
-    "PAO": "Panathinaikos Aktor Athens",
+    "PAO": "Panathinaikos AKTOR Athens",
     "PAR": "Paris Basketball",
+    "DUB": "Dubai Basketball",
     "PTZ": "Partizan Mozzart Bet Belgrade",
     "RMB": "Real Madrid",
-    "VIR": "Virtus Segafredo Bologna",
+    "VIR": "Virtus Bologna",
     "ZAL": "Zalgiris Kaunas"
+}
+
+# EuroCup Tricode Mapping (v2.0)
+EUROCUP_TRICODES = {
+    "PAM": "Valencia Basket",
+    "JER": "Hapoel Jerusalem Basketball Club",
+    "TTK": "Turk Telekom Ankara",
+    "LJU": "KK Cedevita Olimpija",
+    "RED": "Crvena Zvezda Meridianbet Belgrade",
+    "PAR": "Partizan Mozzart Bet Belgrade",
+    "ULM": "ratiopharm ulm",
+    "JOV": "Club Joventut Badalona",
+    "CAN": "Club Baloncesto Gran Canaria",
+    "UNK": "UNICS Kazan",
+    "KHI": "BC Khimki",
+    "TIV": "Lokomotiv Kuban",
+    "MAL": "Unicaja Malaga",
+    "HTA": "Hapoel Tel Aviv",
+    "BOU": "JL Bourg",
+    "CLU": "U-BT Cluj-Napoca",
+    "ANR": "MoraBanc Andorra",
+    "BIL": "Bilbao Basket",
+    "VNC": "Umana Reyer Venice",
+    "TRN": "Dolomiti Energia Trento"
+}
+
+# NBL Tricode Mapping (v3.0)
+NBL_TRICODES = {
+    "ADE": "Adelaide 36ers",
+    "BRI": "Brisbane Bullets",
+    "CNS": "Cairns Taipans",
+    "ILL": "Illawarra Hawks",
+    "MEL": "Melbourne United",
+    "NZB": "New Zealand Breakers",
+    "PER": "Perth Wildcats",
+    "SEM": "South East Melbourne Phoenix",
+    "SYD": "Sydney Kings",
+    "TAS": "Tasmania JackJumpers"
+}
+
+# ACB Tricode Mapping (v3.0)
+ACB_TRICODES = {
+    "BAR": "FC Barcelona",
+    "RMB": "Real Madrid",
+    "UNI": "Unicaja",
+    "VBC": "Valencia Basket",
+    "JOV": "Joventut Badalona",
+    "GCA": "Dreamland Gran Canaria",
+    "BAS": "Baskonia",
+    "UCAM": "UCAM Murcia",
+    "TEN": "Lenovo Tenerife",
+    "BAX": "BAXI Manresa",
+    "MAO": "MoraBanc Andorra",
+    "CAS": "Casademont Zaragoza",
+    "BIL": "Surne Bilbao Basket",
+    "GIR": "Bàsquet Girona",
+    "BRE": "Río Breogán",
+    "COV": "Coviran Granada",
+    "LLD": "Hiopos Lleida",
+    "COR": "Leyma Coruña"
 }
 
 def get_nba_team_from_tricode(tricode):
@@ -103,3 +205,12 @@ def get_nba_team_from_tricode(tricode):
 
 def get_euro_team_from_tricode(tricode):
     return EURO_TRICODES.get(tricode, tricode)
+
+def get_eurocup_team_from_tricode(tricode):
+    return EUROCUP_TRICODES.get(tricode, tricode)
+
+def get_nbl_team_from_tricode(tricode):
+    return NBL_TRICODES.get(tricode, tricode)
+
+def get_acb_team_from_tricode(tricode):
+    return ACB_TRICODES.get(tricode, tricode)

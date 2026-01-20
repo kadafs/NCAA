@@ -25,12 +25,20 @@ def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def fetch_matchups():
-    """Fetch today's D1 matchups from the scoreboard endpoint."""
+def fetch_matchups(date_obj=None):
+    """Fetch D1 matchups for a specific date from the scoreboard endpoint."""
     from datetime import datetime
     import zoneinfo
-    now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
-    url = f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{now.year}/{now.month:02d}/{now.day:02d}"
+    
+    if date_obj is None:
+        date_obj = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
+        
+    year = date_obj.year
+    month = date_obj.month
+    day = date_obj.day
+    
+    url = f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+    print(f"Fetching NCAA matchups from: {url}")
     
     try:
         resp = requests.get(url, timeout=10)
@@ -43,12 +51,11 @@ def fetch_matchups():
                 games.append({
                     "away": g['away']['names']['short'],
                     "home": g['home']['names']['short'],
-                    # Scoreboard might have totals in odds section
-                    "total": g.get('odds', {}).get('total', 145.5) # Default/Example
+                    "total": g.get('odds', {}).get('total', 145.5)
                 })
             return games
     except Exception as e:
-        print(f"Error fetching matchups: {e}")
+        print(f"Error fetching NCAA matchups: {e}")
     return []
 
 def get_game_data(away_name, home_name, bt_data, score_data, market_total=0):
@@ -93,12 +100,12 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=0):
     
     return input_data
 
-def get_daily_input_sheet():
+def get_daily_input_sheet(date_obj=None):
     bt = load_json(BARTTORVIK_FILE)
     sh = load_json(CONSOLIDATED_FILE)
-    matchups = fetch_matchups()
+    matchups = fetch_matchups(date_obj)
     
-    # Fetch live odds
+    # Fetch live odds (Note: get_odds might need date support too if Odds API supports it, but for now we fallback)
     odds_data = get_odds("basketball_ncaa")
     
     daily_sheet = []
