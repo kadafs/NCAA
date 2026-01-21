@@ -46,6 +46,8 @@ def main():
     print("-" * len(header))
     
     for m in matchups:
+        if m.get('played'): continue
+        
         away_raw = m['away']
         home_raw = m['home']
         
