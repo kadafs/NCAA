@@ -23,13 +23,10 @@ def fetch_euro_daily_schedule(target_date=None):
         target_date = get_target_date()
         
     date_str = target_date.strftime("%Y-%m-%d")
-    print(f"Fetching EuroLeague schedule for {date_str}...")
+    print(f"Fetching EuroLeague hybrid schedule/results for {date_str}...")
     
-    # EuroLeague format in XML results is "Jan 20, 2026"
+    # Format matches XML: "Oct 17, 2025" or "Jan 21, 2026"
     today_str = target_date.strftime("%b %d, %Y")
-    
-    # EuroLeague schedules endpoint provides the season's games
-    url = "https://api-live.euroleague.net/v1/schedules?seasonCode=E2025"
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -37,39 +34,66 @@ def fetch_euro_daily_schedule(target_date=None):
     }
     
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
+        # 1. Fetch Full Season Schedule (The Source of Truth for "When/Who")
+        sched_url = "https://api-live.euroleague.net/v1/schedules?seasonCode=E2025"
+        sched_resp = requests.get(sched_url, headers=headers)
+        sched_resp.raise_for_status()
+        sched_root = ET.fromstring(sched_resp.content)
         
-        # Parse XML
-        root = ET.fromstring(response.content)
+        # 2. Fetch Results (The Source of Truth for "Scores/Played")
+        res_url = "https://api-live.euroleague.net/v1/results?seasonCode=E2025"
+        res_resp = requests.get(res_url, headers=headers)
+        res_resp.raise_for_status()
+        res_root = ET.fromstring(res_resp.content)
         
-        # Structure looks like <schedule><item><gamecode>...
-        all_games = root.findall('item')
+        # Map results by game_code for easy overlay
+        results_map = {}
+        for g in res_root.findall('game'):
+            gc = g.find('gamecode').text if g.find('gamecode') is not None else ""
+            if gc:
+                results_map[gc] = {
+                    "played": (g.find('played').text.lower() == 'true') if g.find('played') is not None else False,
+                    "away_score": int(g.find('awayscore').text) if g.find('awayscore') is not None else None,
+                    "home_score": int(g.find('homescore').text) if g.find('homescore') is not None else None
+                }
         
-        matchups = []
+        # 3. Process Schedule and Overlay Results
+        daily_matchups = []
+        # v1/schedules uses <item>
+        all_games = sched_root.findall('item')
+        
         for g in all_games:
             gdate = g.find('date').text if g.find('date') is not None else ""
             
             # Match target date
             if today_str == gdate:
+                game_code = g.find('gamecode').text if g.find('gamecode') is not None else ""
                 away_name = g.find('awayteam').text if g.find('awayteam') is not None else "Unknown"
                 home_name = g.find('hometeam').text if g.find('hometeam') is not None else "Unknown"
                 
-                matchups.append({
+                # Overlay results if available
+                res = results_map.get(game_code, {})
+                played = res.get('played', False) or (g.find('played').text.lower() == 'true' if g.find('played') is not None else False)
+                
+                daily_matchups.append({
                     "away": away_name,
                     "home": home_name,
                     "away_city": away_name.split(" ")[0],
                     "home_city": home_name.split(" ")[0],
                     "game_time": g.find('startime').text if g.find('startime') is not None else "TBD",
-                    "game_code": g.find('gamecode').text if g.find('gamecode') is not None else ""
+                    "game_code": game_code,
+                    "played": played,
+                    "away_score": res.get('away_score'),
+                    "home_score": res.get('home_score'),
+                    "total": 165.5 
                 })
         
-        print(f"Found {len(matchups)} EuroLeague games for {today_str}.")
+        print(f"Found {len(daily_matchups)} EuroLeague games for {today_str}.")
         
         with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
-            json.dump(matchups, f, indent=2)
+            json.dump(daily_matchups, f, indent=2)
             
-        return matchups
+        return daily_matchups
 
     except Exception as e:
         print(f"Error fetching EuroLeague schedule: {e}")
