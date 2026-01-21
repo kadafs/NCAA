@@ -41,7 +41,7 @@ def main():
         return
 
     # Standardized Header
-    header = f"{'Matchup':<35} | {'Proj Score':<15} | {'Spread':<8} | {'Conf (A/H)':<10} | {'AdjT(A/H)':<11} | {'AdjO(A/H)':<12} | {'AdjD(A/H)':<12} | {'eFG% (A/H)':<12} | {'TO% (A/H)':<12} | {'OR% (A/H)':<12} | {'FTR (A/H)':<12}"
+    header = f"{'Matchup':<35} | {'Proj Score':<15} | {'Spread':<8} | {'Conf (A/H)':<10} | {'Adj T(A/H)':<11} | {'AdjOE(A/H)':<12} | {'AdjDE(A/H)':<12} | {'eFG% (A/H)':<12} | {'TO% (A/H)':<12} | {'OR% (A/H)':<12} | {'FTR (A/H)':<12}"
     print(header)
     print("-" * len(header))
     

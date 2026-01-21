@@ -2,7 +2,21 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, ChevronDown, Zap, BarChart3, TrendingUp, Activity, Users, ShieldAlert, Award, X } from "lucide-react";
+import {
+    Info,
+    ChevronDown,
+    Zap,
+    BarChart3,
+    TrendingUp,
+    Activity,
+    Users,
+    ShieldAlert,
+    Award,
+    X,
+    Clock,
+    ArrowUpRight,
+    ArrowDownRight
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PlayerProp {
@@ -57,6 +71,7 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
     // Logic to determine badge type
     const isModeA = Math.abs(game.edge) > 10;
     const isModeB = Math.abs(game.edge) > 6 && !isModeA;
+    const isPositiveEdge = game.edge > 0;
 
     return (
         <>
@@ -64,114 +79,152 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                    "glass group p-0 rounded-[32px] border border-white/[0.04] overflow-hidden transition-all duration-500 hover:bg-white/[0.04]",
-                    showTrace ? "ring-1 ring-accent-blue/20" : ""
+                    "card overflow-hidden transition-all duration-200",
+                    showTrace ? "ring-2 ring-primary/20" : ""
                 )}
             >
-                <div className="p-8">
-                    <div className="flex items-center justify-between mb-8">
+                {/* Main Card Content */}
+                <div className="p-6">
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
-                            <div className={cn("px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border", leagueBg, leagueColor, leagueBorder)}>
+                            <div className={cn(
+                                "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide",
+                                leagueBg, leagueColor
+                            )}>
                                 {leagueName}
                             </div>
-                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-green-500/5 border border-green-500/10">
-                                <div className="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse" />
-                                <span className="text-[8px] font-black text-green-400 uppercase tracking-tighter">Live Odds</span>
+                            <div className="flex items-center gap-1.5 text-text-muted">
+                                <Clock className="w-4 h-4" />
+                                <span className="text-xs font-medium">Live</span>
                             </div>
                         </div>
+
                         <div className="flex items-center gap-2">
                             {isModeA && (
-                                <div className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-black uppercase tracking-[0.1em] shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                                    LOCK: MODE A
+                                <div className="px-3 py-1 rounded-full bg-success/10 text-success text-xs font-bold uppercase tracking-wide">
+                                    🔒 Lock
                                 </div>
                             )}
                             {isModeB && (
-                                <div className="px-3 py-1 rounded-full bg-accent-blue/10 text-accent-blue border border-accent-blue/20 text-[9px] font-black uppercase tracking-[0.1em]">
-                                    VALUE: MODE B
+                                <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wide">
+                                    Value
                                 </div>
                             )}
                             <div className={cn(
-                                "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors",
-                                game.decision === "PLAY" ? "bg-white/10 text-white" : "bg-white/5 text-gray-500 border border-white/5"
+                                "px-3 py-1 rounded-full text-xs font-bold uppercase",
+                                game.decision === "PLAY"
+                                    ? "bg-success/10 text-success"
+                                    : "bg-bg-subtle text-text-muted"
                             )}>
                                 {game.decision}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-                        <div className="flex-1 flex items-center gap-8 w-full md:w-auto">
-                            <div className="space-y-1">
-                                <div className="text-3xl font-black tracking-tighter text-display text-white">{game.away}</div>
-                                <div className="text-sm text-gray-400 font-medium">at {game.home}</div>
+                    {/* Matchup Display */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        {/* Teams */}
+                        <div className="flex items-center gap-6">
+                            <div className="text-center">
+                                <div className="text-2xl md:text-3xl font-bold text-text-dark text-display">
+                                    {game.away}
+                                </div>
+                                <div className="text-xs text-text-muted mt-1">Away</div>
+                            </div>
+                            <div className="text-2xl font-bold text-text-muted">@</div>
+                            <div className="text-center">
+                                <div className="text-2xl md:text-3xl font-bold text-text-dark text-display">
+                                    {game.home}
+                                </div>
+                                <div className="text-xs text-text-muted mt-1">Home</div>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-12 w-full md:w-auto justify-between md:justify-end">
-                            <div className="space-y-1.5 text-center md:text-right">
-                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none text-nowrap">Market</div>
-                                <div className="text-xl font-mono font-medium text-gray-400">{game.market_total}</div>
+                        {/* Prediction Stats */}
+                        <div className="flex items-center gap-8">
+                            <div className="text-center">
+                                <div className="text-xs text-text-muted font-medium mb-1">Market</div>
+                                <div className="text-xl font-bold text-text-dark font-mono">
+                                    {game.market_total}
+                                </div>
                             </div>
-                            <div className="space-y-1.5 text-center md:text-right">
-                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none text-nowrap">Model</div>
-                                <div className="text-2xl font-mono font-black text-accent-blue">{game.model_total}</div>
+
+                            <div className="text-center">
+                                <div className="text-xs text-text-muted font-medium mb-1">Model</div>
+                                <div className="text-2xl font-bold text-primary font-mono">
+                                    {game.model_total}
+                                </div>
                             </div>
-                            <div className="space-y-1.5 text-center md:text-right min-w-[60px]">
-                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest leading-none text-nowrap">Edge</div>
-                                <div className={cn("text-xl font-mono font-black py-1 px-3 rounded-lg", game.edge > 0 ? "text-green-400 bg-green-400/5 shadow-[0_0_20px_rgba(74,222,128,0.05)]" : "text-red-400 bg-red-400/5")}>
-                                    {game.edge > 0 ? `+${game.edge}` : game.edge}
+
+                            <div className="text-center">
+                                <div className="text-xs text-text-muted font-medium mb-1">Edge</div>
+                                <div className={cn(
+                                    "text-xl font-bold font-mono flex items-center gap-1",
+                                    isPositiveEdge ? "text-success" : "text-danger"
+                                )}>
+                                    {isPositiveEdge ? (
+                                        <ArrowUpRight className="w-4 h-4" />
+                                    ) : (
+                                        <ArrowDownRight className="w-4 h-4" />
+                                    )}
+                                    {isPositiveEdge ? `+${game.edge}` : game.edge}
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-10 flex items-center justify-between">
+                    {/* Footer Row */}
+                    <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
                         <button
                             onClick={() => setShowTrace(!showTrace)}
-                            className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-white transition-colors group/btn"
+                            className="flex items-center gap-2 text-sm font-semibold text-text-muted hover:text-primary transition-colors"
                         >
-                            <Zap className="w-3.5 h-3.5 opacity-50 text-accent-blue group-hover/btn:opacity-100 transition-opacity" />
-                            Logic Intelligence
-                            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", showTrace ? "rotate-180" : "")} />
+                            <BarChart3 className="w-4 h-4" />
+                            View Analysis
+                            <ChevronDown className={cn(
+                                "w-4 h-4 transition-transform duration-300",
+                                showTrace ? "rotate-180" : ""
+                            )} />
                         </button>
 
                         {game.props && game.props.length > 0 && (
-                            <div className="flex items-center gap-4">
-                                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Player Intel</span>
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-semibold text-text-muted">
+                                    {game.props.length} Player Props
+                                </span>
                                 <div className="flex -space-x-2">
-                                    {/* Show up to 8 avatars */}
-                                    {game.props.slice(0, 8).map((p: PlayerProp, idx: number) => (
+                                    {game.props.slice(0, 5).map((p: PlayerProp, idx: number) => (
                                         <button
                                             key={idx}
                                             onClick={() => setSelectedPlayer(p)}
                                             className={cn(
-                                                "w-9 h-9 rounded-full border-2 border-[#0b0c10] overflow-hidden flex items-center justify-center transition-all hover:scale-110 hover:z-10 ring-1 ring-white/5 shadow-2xl relative group/avatar",
-                                                p.team_label === 'A' ? "bg-accent-blue/10" : "bg-accent-orange/10"
+                                                "w-8 h-8 rounded-full border-2 border-white overflow-hidden flex items-center justify-center transition-all hover:scale-110 hover:z-10",
+                                                p.team_label === 'A' ? "bg-primary/10" : "bg-navy/10"
                                             )}
                                         >
                                             {p.id && p.league === 'nba' ? (
                                                 <img
                                                     src={`https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png`}
                                                     alt={p.name}
-                                                    className="w-full h-full object-cover scale-110 group-hover/avatar:scale-125 transition-transform"
+                                                    className="w-full h-full object-cover"
                                                     onError={(e) => {
                                                         (e.target as HTMLImageElement).style.display = 'none';
-                                                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                                                     }}
                                                 />
-                                            ) : null}
-                                            <span className={cn(
-                                                "text-[11px] font-black pointer-events-none",
-                                                p.id && p.league === 'nba' ? "hidden" : "",
-                                                p.team_label === 'A' ? "text-accent-blue" : "text-accent-orange"
-                                            )}>
-                                                {p.name.charAt(0)}
-                                            </span>
+                                            ) : (
+                                                <span className={cn(
+                                                    "text-xs font-bold",
+                                                    p.team_label === 'A' ? "text-primary" : "text-navy"
+                                                )}>
+                                                    {p.name.charAt(0)}
+                                                </span>
+                                            )}
                                         </button>
                                     ))}
-                                    {game.props.length > 8 && (
-                                        <div className="w-8 h-8 rounded-full bg-white/5 border-2 border-[#0b0c10] flex items-center justify-center text-[10px] font-black text-gray-500 ring-1 ring-white/5">
-                                            +{game.props.length - 8}
+                                    {game.props.length > 5 && (
+                                        <div className="w-8 h-8 rounded-full bg-bg-subtle border-2 border-white flex items-center justify-center text-xs font-bold text-text-muted">
+                                            +{game.props.length - 5}
                                         </div>
                                     )}
                                 </div>
@@ -180,21 +233,25 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                     </div>
                 </div>
 
+                {/* Expanded Analysis Panel */}
                 <AnimatePresence>
                     {showTrace && (
                         <motion.div
-                            initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-white/[0.04] bg-white/[0.01]"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-border bg-bg-subtle"
                         >
-                            <div className="p-8 space-y-12">
-                                {/* Advanced Metrics Comparison */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                    <div className="space-y-6">
-                                        <div className="text-[10px] font-bold uppercase text-accent-blue tracking-widest opacity-80 flex items-center gap-2">
-                                            <BarChart3 className="w-3.5 h-3.5" />
-                                            Mathematical Footprint
+                            <div className="p-6 space-y-8">
+                                {/* Metrics Comparison */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    {/* Model Trace */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-text-dark">
+                                            <BarChart3 className="w-4 h-4 text-primary" />
+                                            Model Calculation
                                         </div>
-                                        <div className="space-y-3">
+                                        <div className="space-y-2">
                                             {(() => {
                                                 let currentVal = 0;
                                                 return game.trace.map((t: string, idx: number) => {
@@ -204,35 +261,27 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                                                     const val = parseFloat(valStr.replace(/[^+0-9.-]/g, '')) || 0;
 
                                                     const isBase = idx === 0;
-                                                    const prevVal = currentVal;
                                                     currentVal = isBase ? val : currentVal + val;
 
                                                     const isPositive = val > 0 && !isBase;
                                                     const isNegative = val < 0;
 
                                                     return (
-                                                        <div key={idx} className="group/trace relative">
-                                                            <div className="flex items-center justify-between mb-1.5">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">{label}</span>
-                                                                    {!isBase && (
-                                                                        <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded", isPositive ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400")}>
-                                                                            {val > 0 ? `+${val}` : val}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <span className="text-[10px] font-mono font-bold text-white">
-                                                                    {currentVal.toFixed(1)}
-                                                                </span>
+                                                        <div key={idx} className="flex items-center justify-between py-2 px-3 rounded-lg bg-white">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-medium text-text-dark">{label}</span>
+                                                                {!isBase && (
+                                                                    <span className={cn(
+                                                                        "text-xs font-bold px-2 py-0.5 rounded",
+                                                                        isPositive ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                                                                    )}>
+                                                                        {val > 0 ? `+${val}` : val}
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
-                                                                <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${(currentVal / 300) * 100}%` }}
-                                                                    transition={{ delay: idx * 0.1, duration: 0.5 }}
-                                                                    className={cn("h-full", isBase ? "bg-white/20" : isPositive ? "bg-green-500/40" : isNegative ? "bg-red-500/40" : "bg-white/10")}
-                                                                />
-                                                            </div>
+                                                            <span className="text-sm font-bold text-text-dark font-mono">
+                                                                {currentVal.toFixed(1)}
+                                                            </span>
                                                         </div>
                                                     );
                                                 });
@@ -240,38 +289,52 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                                         </div>
                                     </div>
 
-                                    <div className="space-y-6">
-                                        <div className="text-[10px] font-bold uppercase text-sky-400 tracking-widest opacity-80 flex items-center gap-2">
-                                            <TrendingUp className="w-3.5 h-3.5" />
-                                            Advanced Metrics Grid
+                                    {/* Four Factors Grid */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-text-dark">
+                                            <TrendingUp className="w-4 h-4 text-primary" />
+                                            Four Factors
                                         </div>
-                                        <div className="grid grid-cols-4 gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                                            <div className="col-span-1" />
-                                            <div className="text-[8px] font-black text-gray-500 uppercase text-center">eFG%</div>
-                                            <div className="text-[8px] font-black text-gray-500 uppercase text-center">TO%</div>
-                                            <div className="text-[8px] font-black text-gray-500 uppercase text-center">ORB%</div>
-
-                                            <div className="text-[8px] font-black text-white uppercase">{game.away}</div>
-                                            <div className="text-xs font-mono font-bold text-center text-gray-300">{game.statsA?.four_factors?.efg?.toFixed(1) || '—'}%</div>
-                                            <div className="text-xs font-mono font-bold text-center text-gray-300">{game.statsA?.four_factors?.tov?.toFixed(1) || '—'}%</div>
-                                            <div className="text-xs font-mono font-bold text-center text-gray-300">{game.statsA?.four_factors?.orb?.toFixed(1) || '—'}%</div>
-
-                                            <div className="text-[8px] font-black text-accent-blue uppercase">{game.home}</div>
-                                            <div className="text-xs font-mono font-bold text-center text-accent-blue">{game.statsH?.four_factors?.efg?.toFixed(1) || '—'}%</div>
-                                            <div className="text-xs font-mono font-bold text-center text-accent-blue">{game.statsH?.four_factors?.tov?.toFixed(1) || '—'}%</div>
-                                            <div className="text-xs font-mono font-bold text-center text-accent-blue">{game.statsH?.four_factors?.orb?.toFixed(1) || '—'}%</div>
+                                        <div className="bg-white rounded-lg overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="bg-bg-subtle">
+                                                        <th className="px-4 py-2 text-left font-semibold text-text-muted">Team</th>
+                                                        <th className="px-4 py-2 text-center font-semibold text-text-muted">eFG%</th>
+                                                        <th className="px-4 py-2 text-center font-semibold text-text-muted">TO%</th>
+                                                        <th className="px-4 py-2 text-center font-semibold text-text-muted">ORB%</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr className="border-t border-border">
+                                                        <td className="px-4 py-3 font-bold text-text-dark">{game.away}</td>
+                                                        <td className="px-4 py-3 text-center font-mono">{game.statsA?.four_factors?.efg?.toFixed(1) || '—'}%</td>
+                                                        <td className="px-4 py-3 text-center font-mono">{game.statsA?.four_factors?.tov?.toFixed(1) || '—'}%</td>
+                                                        <td className="px-4 py-3 text-center font-mono">{game.statsA?.four_factors?.orb?.toFixed(1) || '—'}%</td>
+                                                    </tr>
+                                                    <tr className="border-t border-border">
+                                                        <td className="px-4 py-3 font-bold text-primary">{game.home}</td>
+                                                        <td className="px-4 py-3 text-center font-mono text-primary">{game.statsH?.four_factors?.efg?.toFixed(1) || '—'}%</td>
+                                                        <td className="px-4 py-3 text-center font-mono text-primary">{game.statsH?.four_factors?.tov?.toFixed(1) || '—'}%</td>
+                                                        <td className="px-4 py-3 text-center font-mono text-primary">{game.statsH?.four_factors?.orb?.toFixed(1) || '—'}%</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
 
-                                        <div className="flex gap-4">
-                                            <div className="flex-1 p-4 rounded-xl bg-white/[0.01] border border-white/[0.04] space-y-2">
-                                                <div className="text-[8px] font-black text-gray-600 uppercase">AdjOE Mismatch</div>
-                                                <div className="text-sm font-mono font-black text-white">
-                                                    {(game.statsA?.adj_off || 0) > (game.statsH?.adj_off || 0) ? `+${((game.statsA?.adj_off || 0) - (game.statsH?.adj_off || 0)).toFixed(1)}` : '—'}
+                                        {/* Efficiency Comparison */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white p-4 rounded-lg">
+                                                <div className="text-xs text-text-muted font-medium mb-1">AdjOE Mismatch</div>
+                                                <div className="text-lg font-bold text-text-dark font-mono">
+                                                    {(game.statsA?.adj_off || 0) > (game.statsH?.adj_off || 0)
+                                                        ? `+${((game.statsA?.adj_off || 0) - (game.statsH?.adj_off || 0)).toFixed(1)}`
+                                                        : '—'}
                                                 </div>
                                             </div>
-                                            <div className="flex-1 p-4 rounded-xl bg-white/[0.01] border border-white/[0.04] space-y-2">
-                                                <div className="text-[8px] font-black text-gray-600 uppercase">AdjDE Differential</div>
-                                                <div className="text-sm font-mono font-black text-white">
+                                            <div className="bg-white p-4 rounded-lg">
+                                                <div className="text-xs text-text-muted font-medium mb-1">AdjDE Differential</div>
+                                                <div className="text-lg font-bold text-text-dark font-mono">
                                                     {((game.statsA?.adj_def || 0) - (game.statsH?.adj_def || 0)).toFixed(1)}
                                                 </div>
                                             </div>
@@ -279,21 +342,22 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                                     </div>
                                 </div>
 
+                                {/* Injuries Section */}
                                 {game.injuries && game.injuries.length > 0 && (
-                                    <div className="space-y-6 pt-8 border-t border-white/[0.04]">
-                                        <div className="text-[10px] font-bold uppercase text-red-400 tracking-widest opacity-80 flex items-center gap-2">
-                                            <ShieldAlert className="w-3.5 h-3.5" />
-                                            Situational Intelligence
+                                    <div className="space-y-4 pt-6 border-t border-border">
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-danger">
+                                            <ShieldAlert className="w-4 h-4" />
+                                            Injury Report
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             {game.injuries.map((inj: any, idx: number) => (
-                                                <div key={idx} className="flex gap-4 items-start p-4 rounded-2xl bg-red-500/[0.02] border border-red-500/10">
-                                                    <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                                                        <Users className="w-4 h-4 text-red-400" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <div className="text-[10px] font-black text-white tracking-widest uppercase">{inj.name} <span className="text-red-400 ml-2">[{inj.status}]</span></div>
-                                                        <p className="text-[10px] text-gray-500 leading-relaxed font-medium italic">"{inj.note}"</p>
+                                                <div key={idx} className="flex gap-3 items-start p-4 rounded-lg bg-danger/5 border border-danger/10">
+                                                    <Users className="w-5 h-5 text-danger shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <div className="font-semibold text-text-dark">
+                                                            {inj.name} <span className="text-danger">[{inj.status}]</span>
+                                                        </div>
+                                                        <p className="text-sm text-text-muted mt-1">{inj.note}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -301,40 +365,44 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                                     </div>
                                 )}
 
+                                {/* Player Props Section */}
                                 {game.props && game.props.length > 0 && (
-                                    <div className="space-y-6 pt-8 border-t border-white/[0.04]">
-                                        <div className="text-[10px] font-bold uppercase text-sky-400 tracking-widest opacity-80 flex items-center gap-2">
-                                            <TrendingUp className="w-3.5 h-3.5" />
-                                            Direct Projections
+                                    <div className="space-y-4 pt-6 border-t border-border">
+                                        <div className="flex items-center gap-2 text-sm font-semibold text-text-dark">
+                                            <Zap className="w-4 h-4 text-warning" />
+                                            Player Projections
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             {game.props.map((p: PlayerProp, idx: number) => (
                                                 <button
                                                     key={idx}
                                                     onClick={() => setSelectedPlayer(p)}
-                                                    className="group/pcard relative p-4 rounded-2xl border transition-all duration-300 bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.04] hover:border-accent-blue/30 text-left"
+                                                    className="bg-white p-4 rounded-lg border border-border hover:border-primary hover:shadow-md transition-all text-left group"
                                                 >
                                                     <div className="flex items-center justify-between mb-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className={cn("text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-tighter", p.team_label === 'A' ? "bg-accent-blue/10 text-accent-blue" : "bg-accent-orange/10 text-accent-orange")}>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={cn(
+                                                                "text-xs px-2 py-0.5 rounded font-semibold",
+                                                                p.team_label === 'A' ? "bg-primary/10 text-primary" : "bg-navy/10 text-navy"
+                                                            )}>
                                                                 {p.team_label === 'A' ? 'AWAY' : 'HOME'}
                                                             </span>
-                                                            <span className="text-white font-bold tracking-tight">{p.name}</span>
+                                                            <span className="font-semibold text-text-dark">{p.name}</span>
                                                         </div>
-                                                        <Award className="w-3.5 h-3.5 text-accent-blue opacity-0 group-hover/pcard:opacity-100 transition-opacity" />
+                                                        <Award className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="text-center">
-                                                            <div className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mb-0.5">PTS</div>
-                                                            <div className="text-sm font-black text-white">{p.pts}</div>
+                                                    <div className="flex items-center gap-6 text-sm">
+                                                        <div>
+                                                            <span className="text-text-muted">PTS</span>
+                                                            <span className="ml-2 font-bold text-primary">{p.pts}</span>
                                                         </div>
-                                                        <div className="text-center">
-                                                            <div className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mb-0.5">REB</div>
-                                                            <div className="text-sm font-black text-gray-400">{p.reb}</div>
+                                                        <div>
+                                                            <span className="text-text-muted">REB</span>
+                                                            <span className="ml-2 font-bold text-text-dark">{p.reb}</span>
                                                         </div>
-                                                        <div className="text-center">
-                                                            <div className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mb-0.5">AST</div>
-                                                            <div className="text-sm font-black text-gray-400">{p.ast}</div>
+                                                        <div>
+                                                            <span className="text-text-muted">AST</span>
+                                                            <span className="ml-2 font-bold text-text-dark">{p.ast}</span>
                                                         </div>
                                                     </div>
                                                 </button>
@@ -351,82 +419,82 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
             {/* Player Intel Modal */}
             <AnimatePresence>
                 {selectedPlayer && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass relative w-full max-w-2xl bg-[#0b0c10] border border-white/10 rounded-[44px] overflow-hidden shadow-2xl"
+                            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
                         >
                             <button
                                 onClick={() => setSelectedPlayer(null)}
-                                className="absolute top-8 right-8 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-colors z-10"
+                                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-bg-subtle flex items-center justify-center text-text-muted hover:text-text-dark transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
 
-                            <div className="p-12">
-                                <div className="flex items-center gap-6 mb-12">
+                            <div className="p-8">
+                                {/* Player Header */}
+                                <div className="flex items-center gap-4 mb-8">
                                     <div className={cn(
-                                        "w-24 h-24 rounded-[32px] overflow-hidden flex items-center justify-center text-4xl font-black text-white relative shadow-2xl",
-                                        selectedPlayer.team_label === 'A' ? "bg-gradient-to-br from-accent-blue/30 to-accent-blue/5" : "bg-gradient-to-br from-accent-orange/30 to-accent-orange/5"
+                                        "w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold text-white",
+                                        selectedPlayer.team_label === 'A'
+                                            ? "bg-gradient-to-br from-primary to-primary-dark"
+                                            : "bg-gradient-to-br from-navy to-navy-light"
                                     )}>
                                         {selectedPlayer.id && selectedPlayer.league === 'nba' ? (
                                             <img
                                                 src={`https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${selectedPlayer.id}.png`}
                                                 alt={selectedPlayer.name}
-                                                className="w-full h-full object-cover scale-110"
+                                                className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).style.display = 'none';
-                                                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                                                 }}
                                             />
-                                        ) : null}
-                                        <span className={cn(
-                                            selectedPlayer.id && selectedPlayer.league === 'nba' ? "hidden" : ""
-                                        )}>
-                                            {selectedPlayer.name.charAt(0)}
-                                        </span>
+                                        ) : (
+                                            selectedPlayer.name.charAt(0)
+                                        )}
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-3">
-                                            <span className={cn("px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-tighter", selectedPlayer.team_label === 'A' ? "bg-accent-blue/20 text-accent-blue" : "bg-accent-orange/20 text-accent-orange")}>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className={cn(
+                                                "text-xs px-2 py-0.5 rounded font-semibold",
+                                                selectedPlayer.team_label === 'A' ? "bg-primary/10 text-primary" : "bg-navy/10 text-navy"
+                                            )}>
                                                 {selectedPlayer.team_label === 'A' ? 'AWAY' : 'HOME'}
                                             </span>
-                                            <h2 className="text-3xl font-black text-white tracking-tighter leading-none">{selectedPlayer.name}</h2>
                                         </div>
-                                        <div className="text-sm text-gray-500 font-bold uppercase tracking-widest">Model Intelligence Projection</div>
+                                        <h2 className="text-2xl font-bold text-text-dark">{selectedPlayer.name}</h2>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-8 mb-12">
-                                    <div className="p-8 rounded-[32px] bg-white/[0.02] border border-white/[0.04] text-center space-y-2">
-                                        <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Predicted Pts</div>
-                                        <div className="text-4xl font-black text-white tracking-tighter">{selectedPlayer.pts}</div>
+                                {/* Projection Stats */}
+                                <div className="grid grid-cols-3 gap-4 mb-8">
+                                    <div className="bg-bg-subtle p-6 rounded-xl text-center">
+                                        <div className="text-xs text-text-muted font-medium mb-2">Points</div>
+                                        <div className="text-3xl font-bold text-primary">{selectedPlayer.pts}</div>
                                     </div>
-                                    <div className="p-8 rounded-[32px] bg-white/[0.02] border border-white/[0.04] text-center space-y-2">
-                                        <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Predicted Reb</div>
-                                        <div className="text-4xl font-black text-gray-300 tracking-tighter">{selectedPlayer.reb}</div>
+                                    <div className="bg-bg-subtle p-6 rounded-xl text-center">
+                                        <div className="text-xs text-text-muted font-medium mb-2">Rebounds</div>
+                                        <div className="text-3xl font-bold text-text-dark">{selectedPlayer.reb}</div>
                                     </div>
-                                    <div className="p-8 rounded-[32px] bg-white/[0.02] border border-white/[0.04] text-center space-y-2">
-                                        <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">Predicted Ast</div>
-                                        <div className="text-4xl font-black text-gray-300 tracking-tighter">{selectedPlayer.ast}</div>
+                                    <div className="bg-bg-subtle p-6 rounded-xl text-center">
+                                        <div className="text-xs text-text-muted font-medium mb-2">Assists</div>
+                                        <div className="text-3xl font-bold text-text-dark">{selectedPlayer.ast}</div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
+                                {/* Trace Details */}
+                                <div className="space-y-4">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[10px] font-bold text-accent-blue uppercase tracking-widest">Usage Vacuum Redistribution</h3>
-                                        <Activity className="w-4 h-4 text-accent-blue opacity-50" />
+                                        <h3 className="text-sm font-semibold text-text-dark">Projection Breakdown</h3>
+                                        <Activity className="w-4 h-4 text-text-muted" />
                                     </div>
-                                    <div className="space-y-4">
+                                    <div className="space-y-2">
                                         {selectedPlayer.trace.map((tr, idx) => (
-                                            <div key={idx} className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.01] border border-white/[0.04] transition-all hover:bg-white/[0.02]">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-2 h-2 rounded-full bg-accent-blue" />
-                                                    <span className="text-[11px] font-bold text-gray-400 text-nowrap">{tr.split(":")[0]}</span>
-                                                </div>
-                                                <span className="text-[11px] font-mono font-black text-white">{tr.split(":")[1] || ""}</span>
+                                            <div key={idx} className="flex items-center justify-between py-3 px-4 rounded-lg bg-bg-subtle">
+                                                <span className="text-sm text-text-muted">{tr.split(":")[0]}</span>
+                                                <span className="text-sm font-bold text-text-dark font-mono">{tr.split(":")[1] || ""}</span>
                                             </div>
                                         ))}
                                     </div>

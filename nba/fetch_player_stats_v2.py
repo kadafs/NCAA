@@ -10,16 +10,20 @@ def fetch_player_positions():
     """Fetches player positions using FantasyWidget."""
     from nba_api.stats.endpoints import fantasywidget
     print("Fetching Player Positions...")
-    widget = fantasywidget.FantasyWidget(todays_players='N')
-    data = widget.get_dict()
-    headers = data['resultSets'][0]['headers']
-    rows = data['resultSets'][0]['rowSet']
-    
-    pos_map = {}
-    for row in rows:
-        d = dict(zip(headers, row))
-        pos_map[d['PLAYER_ID']] = d.get('PLAYER_POSITION', 'G') # Default to G
-    return pos_map
+    try:
+        widget = fantasywidget.FantasyWidget(todays_players='N')
+        data = widget.get_dict()
+        headers = data['resultSets'][0]['headers']
+        rows = data['resultSets'][0]['rowSet']
+        
+        pos_map = {}
+        for row in rows:
+            d = dict(zip(headers, row))
+            pos_map[d['PLAYER_ID']] = d.get('PLAYER_POSITION', 'G') # Default to G
+        return pos_map
+    except Exception as e:
+        print(f"Warning: Could not fetch positions ({e}). Using defaults.")
+        return {}
 
 def fetch_player_data(last_n=0):
     """Fetches player stats for the current season."""
@@ -48,7 +52,11 @@ def fetch_player_data(last_n=0):
             "stl": d['STL'],
             "blk": d['BLK'],
             "tov": d['TOV'],
-            "fg3m": d['FG3M']
+            "fg3m": d['FG3M'],
+            "fgm": d['FGM'],
+            "fga": d['FGA'],
+            "ftm": d['FTM'],
+            "fta": d['FTA']
         }
     return processed
 
@@ -83,7 +91,11 @@ def fetch_and_merge_player_stats():
                     "stl": s_data['stl'],
                     "blk": s_data['blk'],
                     "tov": s_data['tov'],
-                    "fg3m": s_data['fg3m']
+                    "fg3m": s_data['fg3m'],
+                    "fgm": s_data['fgm'],
+                    "fga": s_data['fga'],
+                    "ftm": s_data['ftm'],
+                    "fta": s_data['fta']
                 },
                 "recent": {
                     "min": r_data['min'],
@@ -93,7 +105,11 @@ def fetch_and_merge_player_stats():
                     "stl": r_data['stl'],
                     "blk": r_data['blk'],
                     "tov": r_data['tov'],
-                    "fg3m": r_data['fg3m']
+                    "fg3m": r_data['fg3m'],
+                    "fgm": r_data['fgm'],
+                    "fga": r_data['fga'],
+                    "ftm": r_data['ftm'],
+                    "fta": r_data['fta']
                 }
             })
 

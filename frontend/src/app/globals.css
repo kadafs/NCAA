@@ -1,41 +1,226 @@
 @import "tailwindcss";
 
+/* blowrout Brand Colors - FIBA Inspired */
 :root {
-  --background: #0b0c10;
-  --foreground: #f0f1f5;
-  --card: rgba(17, 18, 25, 0.6);
-  --card-border: rgba(255, 255, 255, 0.04);
-  --accent-blue: #3b82f6; /* More professional blue */
-  --accent-orange: #f97316;
-  --glass-bg: rgba(10, 11, 15, 0.7);
+  /* Primary Brand Colors */
+  --primary-orange: #E85D04;
+  --primary-orange-dark: #D4410F;
+  --primary-orange-light: #FF6B1A;
+  
+  /* Neutral Colors */
+  --navy: #1A202C;
+  --navy-light: #2D3748;
+  --text-dark: #1A1A2E;
+  --text-muted: #64748B;
+  --text-light: #94A3B8;
+  
+  /* Backgrounds */
+  --bg-white: #FFFFFF;
+  --bg-light: #F8F9FA;
+  --bg-subtle: #F1F5F9;
+  --bg-dark: #0F172A;
+  
+  /* Borders & Dividers */
+  --border-light: #E2E8F0;
+  --border-medium: #CBD5E1;
+  
+  /* Status Colors */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+  
+  /* Card Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-accent-blue: var(--accent-blue);
-  --color-accent-orange: var(--accent-orange);
-  --font-sans: "Inter", var(--font-geist-sans);
-  --font-display: "Outfit", var(--font-geist-sans);
+  --color-primary: var(--primary-orange);
+  --color-primary-dark: var(--primary-orange-dark);
+  --color-navy: var(--navy);
+  --color-text-dark: var(--text-dark);
+  --color-text-muted: var(--text-muted);
+  --color-bg-light: var(--bg-light);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-border: var(--border-light);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
 }
 
+/* Base Styles */
 body {
-  background: #0b0c10;
-  color: var(--foreground);
+  background: var(--bg-light);
+  color: var(--text-dark);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
 }
 
+/* Typography Classes */
 @layer utilities {
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--card-border);
-    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
-  }
-  
   .text-display {
     font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
+  
+  .text-headline {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  
+  /* Card Styles */
+  .card {
+    background: var(--bg-white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-light);
+  }
+  
+  .card-hover {
+    transition: all 0.2s ease;
+  }
+  
+  .card-hover:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+  
+  /* Game Card Styles (FIBA-inspired) */
+  .game-card {
+    background: var(--bg-white);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    transition: all 0.15s ease;
+  }
+  
+  .game-card:hover {
+    border-color: var(--primary-orange);
+    box-shadow: 0 4px 12px rgba(232, 93, 4, 0.15);
+  }
+  
+  /* Button Styles */
+  .btn-primary {
+    background: var(--primary-orange);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+  }
+  
+  .btn-primary:hover {
+    background: var(--primary-orange-dark);
+  }
+  
+  .btn-secondary {
+    background: var(--navy);
+    color: white;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+  }
+  
+  .btn-secondary:hover {
+    background: var(--navy-light);
+  }
+  
+  /* Navigation active state */
+  .nav-active {
+    color: var(--primary-orange);
+    border-bottom: 3px solid var(--primary-orange);
+  }
+  
+  /* Tag/Badge Styles */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .badge-live {
+    background: var(--danger);
+    color: white;
+  }
+  
+  .badge-upcoming {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+  }
+  
+  .badge-over {
+    background: var(--success);
+    color: white;
+  }
+  
+  .badge-under {
+    background: var(--info);
+    color: white;
+  }
+  
+  /* League-specific accent colors */
+  .accent-nba {
+    color: #C9082A;
+  }
+  
+  .accent-ncaa {
+    color: #0033A0;
+  }
+  
+  .accent-euro {
+    color: #FF6600;
+  }
+  
+  /* Prediction Edge Styling */
+  .edge-positive {
+    color: var(--success);
+  }
+  
+  .edge-negative {
+    color: var(--danger);
+  }
+  
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+  
+  /* Featured Banner (FIBA Hero Style) */
+  .hero-gradient {
+    background: linear-gradient(135deg, var(--navy) 0%, #0F172A 50%, var(--navy-light) 100%);
+  }
+  
+  .hero-overlay {
+    background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+  }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-light);
 }

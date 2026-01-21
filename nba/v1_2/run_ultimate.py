@@ -52,14 +52,16 @@ def main():
             wrapped = {
                 **p,
                 "seasonal": {
-                    "pts": p.get('pts', 0),
-                    "reb": p.get('reb', 0),
-                    "ast": p.get('ast', 0)
+                    "pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0),
+                    "stl": p.get('stl', 0), "tov": p.get('tov', 0),
+                    "fgm": p.get('fgm', 0), "fga": p.get('fga', 0),
+                    "ftm": p.get('ftm', 0), "fta": p.get('fta', 0)
                 },
                 "recent": {
-                    "pts": p.get('pts', 0),
-                    "reb": p.get('reb', 0),
-                    "ast": p.get('ast', 0)
+                    "pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0),
+                    "stl": p.get('stl', 0), "tov": p.get('tov', 0),
+                    "fgm": p.get('fgm', 0), "fga": p.get('fga', 0),
+                    "ftm": p.get('ftm', 0), "fta": p.get('fta', 0)
                 }
             }
             p_stats.append(wrapped)
@@ -140,7 +142,8 @@ def main():
                     diff = p_proj['proj_pts'] - p['seasonal']['pts']
                     mark = "↑" if diff > 1.5 else "↓" if diff < -1.5 else " "
                     
-                    print(f"     [{label}] {p['name']:20} | Pts: {p_proj['proj_pts']:4.1f} {mark} | Reb: {p_proj['proj_reb']:4.1f} | Ast: {p_proj['proj_ast']:3.1f}")
+                    print(f"     [{label}] {p['name']:18} | Pts: {p_proj['proj_pts']:4.1f} {mark} | Reb: {p_proj['proj_reb']:4.1f} | Ast: {p_proj['proj_ast']:3.1f}")
+                    print(f"                                | Stl: {p_proj['proj_stl']:3.1f} | Tov: {p_proj['proj_tov']:3.1f} | FGM/A: {p_proj['proj_fgm']:3.1f}/{p_proj['proj_fga']:3.1f} | FTM/A: {p_proj['proj_ftm']:3.1f}/{p_proj['proj_fta']:3.1f}")
                     if args.trace:
                         for pt in p_proj['trace']: print(f"        - {pt}")
 
