@@ -4,6 +4,7 @@ import os
 import csv
 import io
 import time
+from datetime import datetime
 
 BARTTORVIK_JSON_URL = "https://barttorvik.com/2026_team_results.json"
 BARTTORVIK_CSV_URL = "https://barttorvik.com/trank.php?year=2026&csv=1"
@@ -12,6 +13,7 @@ BARTTORVIK_CSV_URL = "https://barttorvik.com/trank.php?year=2026&csv=1"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 OUTPUT_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
+RAW_INPUT_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_raw.json") # High-quality browser-fetched backup
 
 def fetch_barttorvik_stats():
     headers = {
@@ -77,27 +79,64 @@ def fetch_barttorvik_stats():
                 except (IndexError, ValueError):
                     continue
         else:
-            print(f"CSV fetch blocked or failed (Status: {resp_csv.status_code}). Falling back to JSON source...")
-            # If CSV failed, we use the JSON data which is usually unprotected
-            resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
-            if resp_json.status_code == 200:
-                raw_json = resp_json.json()
-                for team_data in raw_json:
-                    # Index 1: Name, 2: Conf, 4: AdjOE, 6: AdjDE, 44: Adj Tempo
-                    try:
-                        name = team_data[1]
-                        processed_data[name] = {
-                            "conf": team_data[2],
-                            "adj_off": float(team_data[4]),
-                            "adj_def": float(team_data[6]),
-                            "adj_t": float(team_data[44]),
-                            # Default Four Factors (approx D1 averages) since they aren't in this JSON
-                            "efg": 50.0, "efg_d": 50.0, "ftr": 30.0, "ftr_d": 30.0, 
-                            "to": 18.0, "to_d": 18.0, "or": 28.0, "or_d": 28.0
-                        }
-                    except (IndexError, ValueError, TypeError):
-                        continue
-                print(f"Extracted {len(processed_data)} teams from JSON metadata.")
+            print(f"CSV fetch blocked or failed (Status: {resp_csv.status_code}). Trying Fallback sources...")
+            
+            # High-Quality Fallback: Check for BARTTORVIK_RAW.json (browser-fetched full data)
+            if os.path.exists(RAW_INPUT_FILE):
+                mtime = os.path.getmtime(RAW_INPUT_FILE)
+                mtime_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
+                print(f"Loading high-quality metrics from {RAW_INPUT_FILE} (Cached: {mtime_str})...")
+                try:
+                    with open(RAW_INPUT_FILE, "r") as f_raw:
+                        raw_json = json.load(f_raw)
+                        for team_data in raw_json:
+                            # Index mapping for json=1 (Verified 2026):
+                            # 0: Team, 1: AdjOE, 2: AdjDE, 7: eFG, 8: eFG_D, 9: FTR, 10: FTR_D, 
+                            # 11: TO, 12: TO_D, 13: OR, 14: OR_D, 15: AdjT
+                            try:
+                                name = team_data[0]
+                                processed_data[name] = {
+                                    "conf": conf_lookup.get(name, "N/A"),
+                                    "adj_off": float(team_data[1]),
+                                    "adj_def": float(team_data[2]),
+                                    "adj_t": float(team_data[15]),
+                                    "efg": float(team_data[7]),
+                                    "efg_d": float(team_data[8]),
+                                    "ftr": float(team_data[9]),
+                                    "ftr_d": float(team_data[10]),
+                                    "to": float(team_data[11]),
+                                    "to_d": float(team_data[12]),
+                                    "or": float(team_data[13]),
+                                    "or_d": float(team_data[14])
+                                }
+                            except (IndexError, ValueError, TypeError):
+                                continue
+                        print(f"Parsed {len(processed_data)} teams from high-quality raw fallback.")
+                except Exception as e:
+                    print(f"Error reading {RAW_INPUT_FILE}: {e}")
+
+            # Basic Fallback: Use 2026_team_results.json (accessible but no four factors)
+            if not processed_data:
+                print("No high-quality raw data found. Falling back to basic results JSON...")
+                resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
+                if resp_json.status_code == 200:
+                    raw_json = resp_json.json()
+                    for team_data in raw_json:
+                        # Index 1: Name, 2: Conf, 4: AdjOE, 6: AdjDE, 44: Adj Tempo
+                        try:
+                            name = team_data[1]
+                            processed_data[name] = {
+                                "conf": team_data[2],
+                                "adj_off": float(team_data[4]),
+                                "adj_def": float(team_data[6]),
+                                "adj_t": float(team_data[44]),
+                                # Default Four Factors (approx D1 averages) since they aren't in this JSON
+                                "efg": 50.0, "efg_d": 50.0, "ftr": 30.0, "ftr_d": 30.0, 
+                                "to": 18.0, "to_d": 18.0, "or": 28.0, "or_d": 28.0
+                            }
+                        except (IndexError, ValueError, TypeError):
+                            continue
+                    print(f"Extracted {len(processed_data)} teams from basic JSON metadata.")
 
     except Exception as e:
         print(f"Error fetching CSV stats: {e}")

@@ -41,7 +41,11 @@ def fetch_nba_player_stats():
                 "stl": p_dict['STL'],
                 "blk": p_dict['BLK'],
                 "tov": p_dict['TOV'],
-                "threes": p_dict['FG3M']
+                "threes": p_dict['FG3M'],
+                "fgm": p_dict['FGM'],
+                "fga": p_dict['FGA'],
+                "ftm": p_dict['FTM'],
+                "fta": p_dict['FTA']
             })
 
         if not os.path.exists(DATA_DIR):

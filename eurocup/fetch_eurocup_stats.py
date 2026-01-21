@@ -2,6 +2,10 @@ import os
 import json
 import requests
 import xml.etree.ElementTree as ET
+import sys
+# Add root to path for imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
 
 # Base paths (Absolute)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -114,9 +118,11 @@ def fetch_eurocup_team_stats():
 
         # 5. Overlay Advanced Stats
         for t in adv_data.get('teams', []):
-            name = t['team']['name']
-            if name in merged_stats:
-                merged_stats[name]["four_factors"].update({
+            raw_name = t['team']['name']
+            matched_name = find_team_in_dict(raw_name, merged_stats, BASKETBALL_ALIASES)
+            
+            if matched_name:
+                merged_stats[matched_name]["four_factors"].update({
                     "efg": parse_pct(t.get('effectiveFieldGoalPercentage', 51.5)),
                     "tov": parse_pct(t.get('turnoversRatio', 15.0)),
                     "orb": parse_pct(t.get('offensiveReboundsPercentage', 30.0)),
@@ -124,9 +130,10 @@ def fetch_eurocup_team_stats():
                 })
             
         # 6. Overlay FG3A
-        for name, t_stats in trad_map.items():
-            if name in merged_stats:
-                merged_stats[name]["fg3a"] = t_stats.get('fieldGoals3Attempted', 25.0)
+        for raw_name, t_stats in trad_map.items():
+            matched_name = find_team_in_dict(raw_name, merged_stats, BASKETBALL_ALIASES)
+            if matched_name:
+                merged_stats[matched_name]["fg3a"] = t_stats.get('fieldGoals3Attempted', 25.0)
         
         print(f"Processed stats for {len(merged_stats)} EuroCup teams.")
         
