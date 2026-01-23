@@ -86,88 +86,79 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                 {/* Main Card Content */}
                 <div className="p-6">
                     {/* Header Row */}
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
                             <div className={cn(
-                                "px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide",
+                                "h-8 px-4 flex items-center bg-navy text-white text-[10px] font-black uppercase tracking-widest rounded-sm",
                                 leagueBg, leagueColor
                             )}>
                                 {leagueName}
                             </div>
-                            <div className="flex items-center gap-1.5 text-text-muted">
-                                <Clock className="w-4 h-4" />
-                                <span className="text-xs font-medium">Live</span>
+                            <div className="flex items-center gap-2 text-primary">
+                                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Live Analysis</span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            {isModeA && (
-                                <div className="px-3 py-1 rounded-full bg-success/10 text-success text-xs font-bold uppercase tracking-wide">
-                                    🔒 Lock
+                        <div className="flex items-center gap-1">
+                            {isModeA ? (
+                                <div className="px-3 py-1 bg-success text-white text-[9px] font-black uppercase rounded-full">
+                                    Top Lock
                                 </div>
-                            )}
-                            {isModeB && (
-                                <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wide">
-                                    Value
+                            ) : isModeB ? (
+                                <div className="px-3 py-1 bg-primary text-white text-[9px] font-black uppercase rounded-full">
+                                    High Value
                                 </div>
-                            )}
-                            <div className={cn(
-                                "px-3 py-1 rounded-full text-xs font-bold uppercase",
-                                game.decision === "PLAY"
-                                    ? "bg-success/10 text-success"
-                                    : "bg-bg-subtle text-text-muted"
-                            )}>
-                                {game.decision}
-                            </div>
+                            ) : null}
                         </div>
                     </div>
 
-                    {/* Matchup Display */}
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    {/* Matchup Display - Euro Style */}
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
                         {/* Teams */}
-                        <div className="flex items-center gap-6">
-                            <div className="text-center">
-                                <div className="text-2xl md:text-3xl font-bold text-text-dark text-display">
+                        <div className="flex items-center gap-12 flex-1">
+                            <div className="flex-1 text-center">
+                                <div className="text-3xl font-black text-navy uppercase tracking-tighter mb-1">
                                     {game.away}
                                 </div>
-                                <div className="text-xs text-text-muted mt-1">Away</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Away</div>
                             </div>
-                            <div className="text-2xl font-bold text-text-muted">@</div>
-                            <div className="text-center">
-                                <div className="text-2xl md:text-3xl font-bold text-text-dark text-display">
+
+                            <div className="flex flex-col items-center">
+                                <div className="text-[10px] font-black text-primary uppercase italic mb-1">VS</div>
+                                <div className="w-[1px] h-12 bg-gray-100" />
+                            </div>
+
+                            <div className="flex-1 text-center">
+                                <div className="text-3xl font-black text-navy uppercase tracking-tighter mb-1">
                                     {game.home}
                                 </div>
-                                <div className="text-xs text-text-muted mt-1">Home</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Home</div>
                             </div>
                         </div>
 
-                        {/* Prediction Stats */}
-                        <div className="flex items-center gap-8">
-                            <div className="text-center">
-                                <div className="text-xs text-text-muted font-medium mb-1">Market</div>
-                                <div className="text-xl font-bold text-text-dark font-mono">
-                                    {game.market_total}
-                                </div>
+                        {/* Prediction Stats - Clean Vertical Columns */}
+                        <div className="flex items-stretch bg-gray-50 rounded-2xl p-6 gap-10 border border-gray-100">
+                            <div className="flex flex-col items-center justify-center">
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter mb-2">Market</span>
+                                <span className="text-xl font-black text-navy">{game.market_total}</span>
                             </div>
 
-                            <div className="text-center">
-                                <div className="text-xs text-text-muted font-medium mb-1">Model</div>
-                                <div className="text-2xl font-bold text-primary font-mono">
-                                    {game.model_total}
-                                </div>
+                            <div className="w-[1px] bg-gray-200" />
+
+                            <div className="flex flex-col items-center justify-center">
+                                <span className="text-[9px] font-black text-primary uppercase tracking-tighter mb-2">Advance Model</span>
+                                <span className="text-3xl font-black text-primary leading-none">{game.model_total}</span>
                             </div>
 
-                            <div className="text-center">
-                                <div className="text-xs text-text-muted font-medium mb-1">Edge</div>
+                            <div className="w-[1px] bg-gray-200" />
+
+                            <div className="flex flex-col items-center justify-center">
+                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-tighter mb-2">Edge</span>
                                 <div className={cn(
-                                    "text-xl font-bold font-mono flex items-center gap-1",
+                                    "text-xl font-black flex items-center gap-1",
                                     isPositiveEdge ? "text-success" : "text-danger"
                                 )}>
-                                    {isPositiveEdge ? (
-                                        <ArrowUpRight className="w-4 h-4" />
-                                    ) : (
-                                        <ArrowDownRight className="w-4 h-4" />
-                                    )}
                                     {isPositiveEdge ? `+${game.edge}` : game.edge}
                                 </div>
                             </div>

@@ -55,6 +55,55 @@ function log(str: string) {
   console.log(`[${y}-${m}-${d} ${time}] ${str}`);
 }
 
+/** Direct fetch helper to bypass DNS issues */
+async function ncaaFetch(url: string, options: RequestInit = {}) {
+  // Map ncaa.com and subdomains to known good IPs from nslookup
+  const MAPPINGS: Record<string, string> = {
+    "www.ncaa.com": "92.123.173.87",
+    "ncaa.com": "92.123.173.87",
+    "data.ncaa.com": "23.42.7.171",
+    "sdataprod.ncaa.com": "23.222.51.114"
+  };
+
+  try {
+    // 1. Try standard domain fetch first
+    const res = await fetch(url, options);
+    if (res.ok) return res;
+    // If we got a response but it's not OK, still return it unless it's a network error
+    return res;
+  } catch (e) {
+    log(`Domain-based fetch failed: ${e}. Attempting IP bypass...`);
+
+    let host = "";
+    let updatedUrl = url;
+
+    for (const [domain, ip] of Object.entries(MAPPINGS)) {
+      if (url.includes(`https://${domain}`)) {
+        updatedUrl = url.replace(`https://${domain}`, `https://${ip}`);
+        host = domain;
+        break;
+      }
+    }
+
+    if (host) {
+      const headers = {
+        ...options.headers as Record<string, string>,
+        Host: host
+      };
+      try {
+        log(`Bypassing DNS for ${host} -> ${updatedUrl}`);
+        // @ts-ignore - Bun specific option
+        return await fetch(updatedUrl, { ...options, headers, tls: { rejectUnauthorized: false } });
+      } catch (ipErr) {
+        log(`IP bypass also failed for ${host}: ${ipErr}`);
+      }
+    }
+
+    // Final throw if everything failed
+    throw e;
+  }
+}
+
 /** Get current year in ET */
 function getETYear() {
   return parseInt(new Intl.DateTimeFormat('en-US', {
@@ -69,7 +118,8 @@ function getETYear() {
 
 export const app = new Elysia()
   .use(openapiSpec)
-  .onError(({ error, code }) => {
+  .onError(({ error, code, request }) => {
+    console.error(`[${new Date().toISOString()}] Error ${code} on ${request.method} ${request.url}:`, error);
     if (code === "VALIDATION") return error.detail(error.message);
   })
   // redirect index to github page
@@ -78,7 +128,7 @@ export const app = new Elysia()
   .get("/logo/:school", async ({ params: { school }, query: { dark }, set, status }) => {
     const bgParam = dark !== undefined && dark !== "false" ? "bgd" : "bgl";
     const url = `https://www.ncaa.com/sites/default/files/images/logos/schools/${bgParam}/${school.replace(".svg", "")}.svg`;
-    const res = await fetch(url);
+    const res = await ncaaFetch(url);
 
     if (!res.ok) {
       return status(404, "Logo not found");
@@ -128,7 +178,7 @@ export const app = new Elysia()
   })
   // schools-index route to return list of all schools
   .get("/schools-index", async ({ cache, cacheKey, status }) => {
-    const req = await fetch("https://www.ncaa.com/json/schools");
+    const req = await ncaaFetch("https://www.ncaa.com/json/schools");
     try {
       const json = (await req.json()).map((school: Record<string, string>) => ({
         slug: school.slug,
@@ -151,7 +201,7 @@ export const app = new Elysia()
     }
 
     const url = `https://www.ncaa.com/news/${params.sport}/${params.division}/rss.xml`;
-    const res = await fetch(url);
+    const res = await ncaaFetch(url);
 
     if (!res.ok) {
       return status(404, "RSS feed not found");
@@ -225,7 +275,7 @@ export const app = new Elysia()
     app
       // game route to retrieve game details
       .get("/:id", async ({ cache, cacheKey, status, params: { id } }) => {
-        const req = await fetch(
+        const req = await ncaaFetch(
           `https://sdataprod.ncaa.com/?meta=GetGamecenterGameById_web&extensions={%22persistedQuery%22:{%22version%22:1,%22sha256Hash%22:%2293a02c7193c89d85bcdda8c1784925d9b64657f73ef584382e2297af555acd4b%22}}&variables={%22id%22:%22${id}%22,%22week%22:null,%22staticTestEnv%22:null}`
         );
         if (!req.ok) {
@@ -248,7 +298,7 @@ export const app = new Elysia()
           if (!hash || hashes.length > 2) {
             continue;
           }
-          const req = await fetch(
+          const req = await ncaaFetch(
             `https://sdataprod.ncaa.com/?extensions={"persistedQuery":{"version":1,"sha256Hash":"${hash}"}}&variables={"contestId":"${id}","staticTestEnv":null}`
           );
           if (!req.ok) {
@@ -286,7 +336,7 @@ export const app = new Elysia()
           if (!hash || hashes.length > 2) {
             continue;
           }
-          const req = await fetch(
+          const req = await ncaaFetch(
             `https://sdataprod.ncaa.com/?extensions={"persistedQuery":{"version":1,"sha256Hash":"${hash}"}}&variables={"contestId":"${id}","staticTestEnv":null}`
           );
           if (!req.ok) {
@@ -321,7 +371,7 @@ export const app = new Elysia()
       )
       .get("/:id/scoring-summary", async ({ cache, cacheKey, status, params: { id } }) => {
         const hash = "7f86673d4875cd18102b7fa598e2bc5da3f49d05a1c15b1add0e2367ee890198";
-        const req = await fetch(
+        const req = await ncaaFetch(
           `https://sdataprod.ncaa.com/?extensions={"persistedQuery":{"version":1,"sha256Hash":"${hash}"}}&variables={"contestId":"${id}","staticTestEnv":null}`
         );
         if (req.ok) {
@@ -347,7 +397,7 @@ export const app = new Elysia()
           if (!hash || hashes.length > 2) {
             continue;
           }
-          const req = await fetch(
+          const req = await ncaaFetch(
             `https://sdataprod.ncaa.com/?extensions={"persistedQuery":{"version":1,"sha256Hash":"${hash}"}}&variables={"contestId":"${id}","staticTestEnv":null}`
           );
           if (!req.ok) {
@@ -407,7 +457,7 @@ export const app = new Elysia()
       return status(400, "Invalid division");
     }
     const url = `https://sdataprod.ncaa.com/?extensions={"persistedQuery":{"version":1,"sha256Hash":"a25ad021179ce1d97fb951a49954dc98da150089f9766e7e85890e439516ffbf"}}&queryName=NCAA_schedules_today_web&variables={"sportCode":"${sportCode}","division":${divisionCode},"seasonYear":${params.year}}`;
-    const req = await fetch(url);
+    const req = await ncaaFetch(url);
 
     if (!req.ok) {
       return status(404, "Resource not found");
@@ -529,7 +579,7 @@ export const app = new Elysia()
           return cache.get(url);
         }
         // fetch data
-        const res = await fetch(url);
+        const res = await ncaaFetch(url);
         if (!res.ok) {
           return status(404, "Resource not found");
         }
@@ -598,7 +648,7 @@ async function getTodayUrl(sport: string, division: string): Promise<string> {
     log(`Failed to fetch schedule from new endpoint, falling back to old endpoint: ${err}`);
     // Fall through to old endpoint logic
   }
-  const req = await fetch(
+  const req = await ncaaFetch(
     `https://data.ncaa.com/casablanca/schedule/${sport}/${division}/today.json`
   );
   if (!req.ok) {
@@ -619,7 +669,7 @@ async function getData(opts: { path: string; page?: string }) {
   const url = `https://www.ncaa.com${opts.path}${opts.page && Number(opts.page) > 1 ? `/p${opts.page}` : ""
     }`;
   log(`Fetching ${url}`);
-  const res = await fetch(url);
+  const res = await ncaaFetch(url);
 
   if (!res.ok) {
     throw new NotFoundError(JSON.stringify({ message: "Resource not found" }));

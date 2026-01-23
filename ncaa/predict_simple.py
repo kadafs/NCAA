@@ -21,13 +21,20 @@ BARTTORVIK_STATS_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
 INJURY_NOTES_FILE = os.path.join(ROOT_DIR, "data", "injury_notes.json")
 
 def fetch_scoreboard(year, month, day):
+    # Try local first, then external
     for base in BASE_URLS:
         url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+        print(f"DEBUG: Attempting fetch from {base}...")
         try:
-            response = requests.get(url, timeout=5)
+            # Increased timeout to 15s to handle cold starts or slow networks
+            response = requests.get(url, timeout=15)
             if response.status_code == 200:
+                print(f"DEBUG: Success from {base}")
                 return response.json()
-        except:
+            else:
+                print(f"DEBUG: HTTP {response.status_code} from {base}")
+        except Exception as e:
+            print(f"DEBUG: Error from {base}: {e}")
             continue
     return None
 

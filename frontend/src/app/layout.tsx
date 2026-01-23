@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Header } from "@/components/Header";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -20,17 +19,22 @@ export const metadata: Metadata = {
   keywords: ["basketball", "predictions", "NBA", "NCAA", "EuroLeague", "sports analytics"],
 };
 
+/**
+ * Root Layout - Dark Theme Foundation
+ * 
+ * No global header - pages handle their own navigation
+ * (Landing has nav bar, dashboard pages have sidebar)
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} antialiased`}>
+    <html lang="en" className="dark">
+      <body className={`${inter.variable} ${outfit.variable} antialiased bg-dash-bg text-dash-text-primary`}>
         <Providers>
-          <Header />
-          <main>{children}</main>
+          {children}
         </Providers>
       </body>
     </html>
