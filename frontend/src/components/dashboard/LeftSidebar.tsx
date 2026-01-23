@@ -23,10 +23,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { icon: User, label: "Profile", href: "/dashboard" },
-    { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics" },
-    { icon: Activity, label: "Live", href: "/dashboard/live" },
-    { icon: PieChart, label: "Props", href: "/dashboard/props" },
+    { icon: User, label: "Profile", href: "/profile" },
+    { icon: BarChart2, label: "Analytics", href: "/dashboard" },
+    { icon: Activity, label: "Live", href: "/scoreboard" },
+    { icon: PieChart, label: "Props", href: "/props" },
     { icon: TrendingUp, label: "Trends", href: "/dashboard/trends" },
     { icon: Award, label: "Performance", href: "/performance" },
     { icon: Layers, label: "History", href: "/history" },
