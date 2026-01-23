@@ -11,11 +11,18 @@ import {
     Save,
     Plus,
     Trash2,
-    Trophy
+    ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+/**
+ * Admin Dashboard - Dark Theme
+ * 
+ * Provides admin-only access for user management and payment settings
+ */
 
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
@@ -39,7 +46,6 @@ export default function AdminDashboard() {
             const settingsRes = await fetch('/api/admin/settings');
             const usersData = await usersRes.json();
             const settingsData = await settingsRes.json();
-            // Normalize users (Supabase is_pro -> frontend isPro)
             const normalizedUsers = usersData.map((u: any) => ({
                 ...u,
                 isPro: u.is_pro ?? u.isPro ?? false
@@ -93,61 +99,100 @@ export default function AdminDashboard() {
         }
     };
 
-    if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center font-bold">LOADING ADMIN...</div>;
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-dash-bg flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        className="w-12 h-12 border-2 border-gold/20 border-t-gold rounded-full"
+                    />
+                    <span className="text-[10px] font-bold text-dash-text-muted uppercase tracking-widest">
+                        Loading Admin...
+                    </span>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-[#050510] text-gray-200 font-sans selection:bg-accent-blue/30">
+        <div className="min-h-screen bg-dash-bg text-dash-text-primary">
             {/* Header */}
-            <nav className="glass border-b border-white/5 p-6 flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-accent-orange rounded-lg flex items-center justify-center">
-                        <Settings className="text-white w-5 h-5" />
-                    </div>
-                    <h1 className="text-lg font-black tracking-tighter">NCAA <span className="text-accent-orange">ADMIN</span></h1>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", activeTab === 'users' ? "bg-white/10 text-white" : "text-gray-500 hover:text-white")}
+            <header className="sticky top-0 z-30 bg-dash-bg/80 backdrop-blur-xl border-b border-dash-border">
+                <div className="max-w-6xl mx-auto px-4 py-4">
+                    <Link
+                        href="/dashboard"
+                        className="inline-flex items-center gap-2 text-[10px] font-bold text-dash-text-muted uppercase tracking-widest hover:text-white transition-colors mb-4 group"
                     >
-                        Users
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('settings')}
-                        className={cn("px-4 py-2 rounded-lg text-sm font-bold transition-all", activeTab === 'settings' ? "bg-white/10 text-white" : "text-gray-500 hover:text-white")}
-                    >
-                        Payment settings
-                    </button>
-                </div>
-            </nav>
+                        <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+                        Back to Dashboard
+                    </Link>
 
-            <main className="p-8 max-w-6xl mx-auto">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gold rounded-xl flex items-center justify-center">
+                                <Settings className="text-dash-bg w-5 h-5" />
+                            </div>
+                            <h1 className="text-xl font-black text-white uppercase tracking-tighter">
+                                Admin <span className="text-gold italic">Panel</span>
+                            </h1>
+                        </div>
+                        <div className="flex gap-2 bg-dash-card border border-dash-border rounded-xl p-1">
+                            <button
+                                onClick={() => setActiveTab('users')}
+                                className={cn(
+                                    "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
+                                    activeTab === 'users'
+                                        ? "bg-gold text-dash-bg"
+                                        : "text-dash-text-muted hover:text-white"
+                                )}
+                            >
+                                Users
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('settings')}
+                                className={cn(
+                                    "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
+                                    activeTab === 'settings'
+                                        ? "bg-gold text-dash-bg"
+                                        : "text-dash-text-muted hover:text-white"
+                                )}
+                            >
+                                Payments
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main className="p-4 md:p-8 max-w-6xl mx-auto">
                 {activeTab === 'users' ? (
                     <section className="space-y-6">
-                        <h2 className="text-2xl font-bold flex items-center gap-2">
-                            <Users className="text-accent-orange" />
+                        <h2 className="text-lg font-black text-white uppercase flex items-center gap-2">
+                            <Users className="text-gold w-5 h-5" />
                             Manage User Access
                         </h2>
-                        <div className="glass overflow-hidden rounded-2xl border border-white/5">
+                        <div className="bg-dash-card border border-dash-border rounded-2xl overflow-hidden">
                             <table className="w-full text-left">
-                                <thead className="bg-white/5 border-b border-white/5">
+                                <thead className="bg-dash-bg border-b border-dash-border">
                                     <tr>
-                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Username</th>
-                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                                        <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Action</th>
+                                        <th className="p-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Username</th>
+                                        <th className="p-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Status</th>
+                                        <th className="p-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest text-right">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/5">
+                                <tbody className="divide-y divide-dash-border">
                                     {users.map((user) => (
-                                        <tr key={user.username} className="hover:bg-white/[0.02] transition-colors">
+                                        <tr key={user.username} className="hover:bg-dash-bg-secondary transition-colors">
                                             <td className="p-4 font-bold text-white">{user.username}</td>
                                             <td className="p-4">
                                                 {user.isPro ? (
-                                                    <span className="flex items-center gap-1.5 text-xs font-bold text-green-400">
+                                                    <span className="flex items-center gap-1.5 text-[10px] font-black text-dash-success uppercase">
                                                         <CheckCircle2 className="w-4 h-4" /> PRO
                                                     </span>
                                                 ) : (
-                                                    <span className="flex items-center gap-1.5 text-xs font-bold text-gray-500">
+                                                    <span className="flex items-center gap-1.5 text-[10px] font-black text-dash-text-muted uppercase">
                                                         <XCircle className="w-4 h-4" /> BASIC
                                                     </span>
                                                 )}
@@ -156,8 +201,10 @@ export default function AdminDashboard() {
                                                 <button
                                                     onClick={() => togglePro(user.username, user.isPro)}
                                                     className={cn(
-                                                        "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
-                                                        user.isPro ? "bg-red-500/10 text-red-500 hover:bg-red-500/20" : "bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                                                        "px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all",
+                                                        user.isPro
+                                                            ? "bg-dash-danger/10 text-dash-danger hover:bg-dash-danger/20"
+                                                            : "bg-dash-success/10 text-dash-success hover:bg-dash-success/20"
                                                     )}
                                                 >
                                                     {user.isPro ? "Revoke Pro" : "Grant Pro"}
@@ -167,7 +214,9 @@ export default function AdminDashboard() {
                                     ))}
                                     {users.length === 0 && (
                                         <tr>
-                                            <td colSpan={3} className="p-12 text-center text-gray-500 font-medium">No users found. Wait for registrations.</td>
+                                            <td colSpan={3} className="p-12 text-center text-dash-text-muted font-medium">
+                                                No users found. Wait for registrations.
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -177,13 +226,13 @@ export default function AdminDashboard() {
                 ) : (
                     <section className="space-y-6 max-w-2xl">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-bold flex items-center gap-2">
-                                <Wallet className="text-accent-orange" />
+                            <h2 className="text-lg font-black text-white uppercase flex items-center gap-2">
+                                <Wallet className="text-gold w-5 h-5" />
                                 Wallet Addresses
                             </h2>
                             <button
                                 onClick={addWallet}
-                                className="flex items-center gap-2 bg-accent-orange text-white px-4 py-2 rounded-xl text-xs font-bold hover:scale-105 transition-all"
+                                className="flex items-center gap-2 bg-gold text-dash-bg px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all"
                             >
                                 <Plus className="w-4 h-4" /> Add Coin
                             </button>
@@ -191,26 +240,26 @@ export default function AdminDashboard() {
 
                         <div className="space-y-4">
                             {wallets.map((wallet, i) => (
-                                <div key={i} className="glass p-4 rounded-2xl flex gap-4 items-end border border-white/5">
+                                <div key={i} className="bg-dash-card border border-dash-border p-4 rounded-2xl flex gap-4 items-end">
                                     <div className="flex-1 space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase">Coin Name (e.g. USDT TRC20)</label>
+                                        <label className="text-[10px] font-bold text-dash-text-muted uppercase">Coin Name</label>
                                         <input
-                                            className="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-white"
+                                            className="w-full bg-dash-bg border border-dash-border rounded-lg p-2.5 text-white text-sm focus:border-gold/50 outline-none transition-colors"
                                             value={wallet.type}
                                             onChange={(e) => updateWallet(i, 'type', e.target.value)}
                                         />
                                     </div>
                                     <div className="flex-[2] space-y-2">
-                                        <label className="text-[10px] font-bold text-gray-500 uppercase">Wallet Address</label>
+                                        <label className="text-[10px] font-bold text-dash-text-muted uppercase">Wallet Address</label>
                                         <input
-                                            className="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-white font-mono"
+                                            className="w-full bg-dash-bg border border-dash-border rounded-lg p-2.5 text-white font-mono text-sm focus:border-gold/50 outline-none transition-colors"
                                             value={wallet.address}
                                             onChange={(e) => updateWallet(i, 'address', e.target.value)}
                                         />
                                     </div>
                                     <button
                                         onClick={() => removeWallet(i)}
-                                        className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors"
+                                        className="p-3 text-dash-danger hover:bg-dash-danger/10 rounded-xl transition-colors"
                                     >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
@@ -219,9 +268,9 @@ export default function AdminDashboard() {
 
                             <button
                                 onClick={saveSettings}
-                                className="w-full mt-8 flex items-center justify-center gap-2 bg-white text-black py-4 rounded-2xl font-black hover:scale-[1.02] transition-all"
+                                className="w-full mt-8 flex items-center justify-center gap-2 bg-gold text-dash-bg py-4 rounded-2xl font-black uppercase hover:scale-[1.02] transition-all"
                             >
-                                <Save className="w-5 h-5" /> SAVE PAYMENT SETTINGS
+                                <Save className="w-5 h-5" /> Save Payment Settings
                             </button>
                         </div>
                     </section>

@@ -6,48 +6,91 @@
   --primary-orange: #E85D04;
   --primary-orange-dark: #D4410F;
   --primary-orange-light: #FF6B1A;
-  
+
+  /* EuroLeague Inspired Colors */
+  --euro-blue: #004690;
+  --euro-blue-dark: #002D5E;
+  --euro-blue-light: #0056B3;
+
   /* Neutral Colors */
-  --navy: #1A202C;
-  --navy-light: #2D3748;
-  --text-dark: #1A1A2E;
-  --text-muted: #64748B;
+  --navy: #0B0E13;
+  --navy-light: #1A202C;
+  --text-dark: #0F172A;
+  --text-muted: #475569;
   --text-light: #94A3B8;
-  
+
   /* Backgrounds */
   --bg-white: #FFFFFF;
-  --bg-light: #F8F9FA;
-  --bg-subtle: #F1F5F9;
-  --bg-dark: #0F172A;
-  
+  --bg-light: #F1F5F9;
+  --bg-subtle: #F8FAFC;
+  --bg-dark: #020617;
+
   /* Borders & Dividers */
   --border-light: #E2E8F0;
   --border-medium: #CBD5E1;
-  
+
   /* Status Colors */
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
   --info: #3B82F6;
-  
+
   /* Card Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  /* Dashboard v2.0 Colors - High Performance Dark Mode */
+  --dash-bg: #0B0D11;
+  --dash-bg-secondary: #121419;
+  --dash-card: #161920;
+  --dash-card-hover: #1E222B;
+  --dash-border: rgba(255, 255, 255, 0.05);
+
+  --dash-accent-gold: #FBBF24;
+  --dash-accent-gold-glow: rgba(251, 191, 36, 0.15);
+  --dash-accent-blue: #3B82F6;
+  --dash-accent-cyan: #06B6D4;
+  --dash-accent-cyan-glow: rgba(6, 182, 212, 0.15);
+
+  --dash-success: #10B981;
+  --dash-warning: #F59E0B;
+  --dash-danger: #EF4444;
+
+  --dash-text-primary: #F1F5F9;
+  --dash-text-secondary: #94A3B8;
+  --dash-text-muted: #64748B;
+
+  /* Legacy Compat */
+  --primary-orange: #FBBF24;
+  --euro-blue: #06B6D4;
+  --navy: #0B0D11;
+  --bg-light: #0B0D11;
+  --text-dark: #F1F5F9;
 }
 
 @theme inline {
-  --color-primary: var(--primary-orange);
-  --color-primary-dark: var(--primary-orange-dark);
-  --color-navy: var(--navy);
-  --color-text-dark: var(--text-dark);
-  --color-text-muted: var(--text-muted);
-  --color-bg-light: var(--bg-light);
-  --color-bg-subtle: var(--bg-subtle);
-  --color-border: var(--border-light);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
+  --color-dash-bg: var(--dash-bg);
+  --color-dash-bg-secondary: var(--dash-bg-secondary);
+  --color-dash-card: var(--dash-card);
+  --color-dash-card-hover: var(--dash-card-hover);
+  --color-dash-border: var(--dash-border);
+
+  --color-gold: var(--dash-accent-gold);
+  --color-cyan: var(--dash-accent-cyan);
+  --color-blue: var(--dash-accent-blue);
+
+  --color-text-primary: var(--dash-text-primary);
+  --color-text-secondary: var(--dash-text-secondary);
+  --color-text-muted: var(--dash-text-muted);
+
+  --color-primary: var(--dash-accent-gold);
+
+  --color-dash-success: var(--dash-success);
+  --color-dash-warning: var(--dash-warning);
+  --color-dash-danger: var(--dash-danger);
+
   --font-sans: "Inter", system-ui, sans-serif;
   --font-display: "Outfit", system-ui, sans-serif;
 }
@@ -68,13 +111,13 @@ body {
     font-weight: 800;
     letter-spacing: -0.02em;
   }
-  
+
   .text-headline {
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: -0.01em;
   }
-  
+
   /* Card Styles */
   .card {
     background: var(--bg-white);
@@ -82,16 +125,16 @@ body {
     box-shadow: var(--shadow-card);
     border: 1px solid var(--border-light);
   }
-  
+
   .card-hover {
     transition: all 0.2s ease;
   }
-  
+
   .card-hover:hover {
     box-shadow: var(--shadow-lg);
     transform: translateY(-2px);
   }
-  
+
   /* Game Card Styles (FIBA-inspired) */
   .game-card {
     background: var(--bg-white);
@@ -99,12 +142,12 @@ body {
     border: 1px solid var(--border-light);
     transition: all 0.15s ease;
   }
-  
+
   .game-card:hover {
     border-color: var(--primary-orange);
     box-shadow: 0 4px 12px rgba(232, 93, 4, 0.15);
   }
-  
+
   /* Button Styles */
   .btn-primary {
     background: var(--primary-orange);
@@ -114,11 +157,11 @@ body {
     border-radius: 8px;
     transition: all 0.15s ease;
   }
-  
+
   .btn-primary:hover {
     background: var(--primary-orange-dark);
   }
-  
+
   .btn-secondary {
     background: var(--navy);
     color: white;
@@ -127,17 +170,17 @@ body {
     border-radius: 8px;
     transition: all 0.15s ease;
   }
-  
+
   .btn-secondary:hover {
     background: var(--navy-light);
   }
-  
+
   /* Navigation active state */
   .nav-active {
     color: var(--primary-orange);
     border-bottom: 3px solid var(--primary-orange);
   }
-  
+
   /* Tag/Badge Styles */
   .badge {
     display: inline-flex;
@@ -147,63 +190,92 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
   }
-  
+
   .badge-live {
     background: var(--danger);
     color: white;
   }
-  
+
   .badge-upcoming {
     background: var(--bg-subtle);
     color: var(--text-muted);
   }
-  
+
   .badge-over {
     background: var(--success);
     color: white;
   }
-  
+
   .badge-under {
     background: var(--info);
     color: white;
   }
-  
+
   /* League-specific accent colors */
   .accent-nba {
     color: #C9082A;
   }
-  
+
   .accent-ncaa {
     color: #0033A0;
   }
-  
+
   .accent-euro {
     color: #FF6600;
   }
-  
+
   /* Prediction Edge Styling */
   .edge-positive {
     color: var(--success);
   }
-  
+
   .edge-negative {
     color: var(--danger);
   }
-  
+
   /* Stats Grid */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
   }
-  
+
   /* Featured Banner (FIBA Hero Style) */
   .hero-gradient {
     background: linear-gradient(135deg, var(--navy) 0%, #0F172A 50%, var(--navy-light) 100%);
   }
-  
+
   .hero-overlay {
-    background: linear-gradient(to right, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+  }
+
+  /* Carousel Utilities */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .game-carousel-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    scroll-behavior: smooth;
+    /* no-scrollbar utility matches .no-scrollbar defined above */
+  }
+
+  /* Glass Effects */
+  .glass-nav {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
 }
 

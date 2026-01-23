@@ -37,25 +37,35 @@ def fetch_matchups(date_obj=None):
     month = date_obj.month
     day = date_obj.day
     
-    url = f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
-    print(f"Fetching NCAA matchups from: {url}")
+    # Try local ports first, then external
+    sources = [
+        f"http://localhost:3005/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}",
+        f"http://localhost:3000/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}",
+        f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+    ]
     
-    try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json()
-            games = []
-            for g_wrapper in data.get('games', []):
-                g = g_wrapper.get('game')
-                if not g: continue
-                games.append({
-                    "away": g['away']['names']['short'],
-                    "home": g['home']['names']['short'],
-                    "total": g.get('odds', {}).get('total', 145.5)
-                })
-            return games
-    except Exception as e:
-        print(f"Error fetching NCAA matchups: {e}")
+    for url in sources:
+        try:
+            print(f"DEBUG: Fetching NCAA matchups from: {url}")
+            resp = requests.get(url, timeout=20)
+            if resp.status_code == 200:
+                data = resp.json()
+                games = []
+                for g_wrapper in data.get('games', []):
+                    g = g_wrapper.get('game')
+                    if not g: continue
+                    games.append({
+                        "away": g['away']['names']['short'],
+                        "home": g['home']['names']['short'],
+                        "total": g.get('odds', {}).get('total', 145.5)
+                    })
+                if games:
+                    print(f"DEBUG: Successfully fetched {len(games)} games from {url}")
+                    return games
+        except Exception as e:
+            print(f"DEBUG: Error fetching from {url}: {e}")
+            continue
+            
     return []
 
 def get_game_data(away_name, home_name, bt_data, score_data, market_total=0):
