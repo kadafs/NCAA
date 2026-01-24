@@ -50,14 +50,20 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
         awayTeam: {
             name: isNBA ? "Lakers" : isNCAA ? "Duke" : isEuro ? "Real Madrid" : isNBL ? "Wildcats" : "Barcelona",
             code: isNBA ? "LAL" : isNCAA ? "DUKE" : isEuro ? "RMA" : isNBL ? "PER" : "BAR",
-            logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" : "https://a.espncdn.com/i/teamlogos/ncaa/500/duke.png",
+            logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" :
+                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/duke.png" :
+                    isEuro ? "https://a.espncdn.com/combine/i/teamlogos/euro/500/512.png" :
+                        "https://a.espncdn.com/i/teamlogos/basketball/500/default.png",
             record: "21-22",
             stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
         },
         homeTeam: {
-            name: isNBA ? "Celtics" : isNCAA ? "UNC" : isEuro ? "Anadolu Efes" : isNBL ? "Kings" : "Real Madrid",
+            name: isNBA ? "Celtics" : isNCAA ? "North Carolina" : isEuro ? "Anadolu Efes" : isNBL ? "Kings" : "Real Madrid",
             code: isNBA ? "BOS" : isNCAA ? "UNC" : isEuro ? "EFS" : isNBL ? "SYD" : "RMA",
-            logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" : "https://a.espncdn.com/i/teamlogos/ncaa/500/unc.png",
+            logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" :
+                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/unc.png" :
+                    isEuro ? "https://a.espncdn.com/combine/i/teamlogos/euro/500/512.png" :
+                        "https://a.espncdn.com/i/teamlogos/basketball/500/default.png",
             record: "32-9",
             stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
         },
@@ -194,9 +200,15 @@ export default function LeagueDashboard() {
                                     <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">
                                         {currentLeague.name} <span className="text-gold italic">Dashboard</span>
                                     </h1>
-                                    <p className="text-[10px] md:text-xs font-bold text-dash-text-muted uppercase tracking-widest mt-1">
-                                        {currentLeague.fullName} • Live Predictions
-                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <div className={cn(
+                                            "w-1.5 h-1.5 rounded-full animate-pulse",
+                                            games[0]?.id.startsWith('mock') ? "bg-dash-text-muted" : "bg-dash-success"
+                                        )} />
+                                        <p className="text-[10px] md:text-xs font-bold text-dash-text-muted uppercase tracking-widest">
+                                            {games[0]?.id.startsWith('mock') ? "Demo Mode (No Live Data)" : "Live Database Connection"}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 

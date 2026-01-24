@@ -23,8 +23,10 @@ export async function GET(req: Request) {
 
         if (error || !storeData) {
             console.error("Supabase Read Error:", error);
+            const isConfigured = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
             return NextResponse.json({
-                error: "Predictions not found. Automation might still be running.",
+                error: error?.message || "Predictions not found in database.",
+                details: error || (isConfigured ? "Table 'predictions_store' might be empty." : "Supabase Environment variables are MISSING on Vercel."),
                 league,
                 timestamp: new Date().toISOString()
             }, { status: 404 });
