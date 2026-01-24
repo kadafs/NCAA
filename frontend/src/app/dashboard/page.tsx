@@ -1,248 +1,277 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Bell, Trophy } from "lucide-react";
+import {
+    Trophy,
+    Target,
+    TrendingUp,
+    Calendar,
+    RefreshCw,
+    Zap,
+    ChevronRight,
+    BarChart3
+} from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-// Types
-import { Player, PlayerComparison, PlayerAdvancedStats } from "@/types";
-
-// Components
 import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
-import { PlayerComparisonCard } from "@/components/dashboard/PlayerComparisonCard";
-import { StatsComparisonTable } from "@/components/dashboard/StatsComparisonTable";
-import { HorizontalBarChart } from "@/components/dashboard/HorizontalBarChart";
-import { CircularGauge } from "@/components/dashboard/CircularGauge";
-import { ForecastLineChart } from "@/components/dashboard/ForecastLineChart";
-
-// --- MOCK DATA ---
-const MOCK_PLAYER_1: Player = {
-    id: "lebron",
-    name: "LeBron James",
-    team: "Lakers",
-    teamCode: "LAL",
-    teamLogo: "https://a.espncdn.com/i/teamlogos/nba/500/lal.png",
-    number: 23,
-    position: "Forward",
-    image: "https://a.espncdn.com/i/headshots/nba/players/full/1966.png",
-    height: "6ft 9in",
-    weight: "250 lbs",
-    experience: "16 yrs",
-    ppg: 25.4,
-    rpg: 7.0,
-    apg: 10.8,
-    pie: 19.8,
-    netRating: 59.8,
-    advancedStats: {
-        astRatio: 29.3,
-        rebPct: 29.5,
-        efgPct: 79.2,
-        tsPct: 39.7,
-        usgPct: 59.3,
-        orebPct: 64.8,
-        drebPct: 44.2,
-    }
-};
-
-const MOCK_PLAYER_2: Player = {
-    id: "marcus",
-    name: "Marcus Morris Sr.",
-    team: "Knicks",
-    teamCode: "NYK",
-    teamLogo: "https://a.espncdn.com/i/teamlogos/nba/500/nyk.png",
-    number: 13,
-    position: "Forward",
-    image: "https://a.espncdn.com/i/headshots/nba/players/full/6462.png",
-    height: "6ft 8in",
-    weight: "218 lbs",
-    experience: "8 yrs",
-    ppg: 18.4,
-    rpg: 6.0,
-    apg: 10.3,
-    pie: 10.4,
-    netRating: 65.4,
-    advancedStats: {
-        astRatio: 32.5,
-        rebPct: 27.4,
-        efgPct: 83.9,
-        tsPct: 29.7,
-        usgPct: 61.8,
-        orebPct: 42.1,
-        drebPct: 51.9,
-    }
-};
-
-const MOCK_COMPARISON_BARS = [
-    { label: "Points from 2-Point Makes", labelShort: "Pts 2Pt Mr", player1Value: 12.1, player2Value: 8.4, player1Pct: 27.1, player2Pct: 35.3 },
-    { label: "Points from 3-Point Makes", labelShort: "Pts 3Pt Mr", player1Value: 8.5, player2Value: 6.2, player1Pct: 57.5, player2Pct: 46.0 },
-    { label: "Points from Putbacks", labelShort: "Pts Pb", player1Value: 2.1, player2Value: 1.8, player1Pct: 29.0, player2Pct: 37.9 },
-    { label: "Points from Free Throws", labelShort: "Pts Ft", player1Value: 4.8, player2Value: 3.2, player1Pct: 68.9, player2Pct: 77.5 },
-];
-
-const MOCK_FORECAST_DATA = [
-    { time: "Q1", awayVal: 45, homeVal: 52 },
-    { time: "Q2", awayVal: 52, homeVal: 48 },
-    { time: "Q3", awayVal: 58, homeVal: 55 },
-    { time: "Q4", awayVal: 55, homeVal: 62 },
-    { time: "OT", awayVal: 60, homeVal: 65 },
-];
+import { PredictionCard } from "@/components/dashboard/PredictionCard";
+import { PropCard } from "@/components/dashboard/PropCard";
+import { Prediction, PlayerProp } from "@/types";
 
 /**
- * Dashboard - Main analytics dashboard matching reference design
+ * Dashboard Index - Dark Theme
  * 
- * Layout Structure:
- * - Left sidebar: Icon navigation (desktop only)
- * - Main content: Player comparison, stats, charts
- * - Right section: Gauges and forecast
- * - Bottom nav: Mobile navigation
- * 
- * Mobile-first responsive design with:
- * - Single column on mobile
- * - Two columns on tablet
- * - Full layout on desktop
+ * Main dashboard landing page showing overview of all leagues
  */
-export default function Dashboard() {
+
+const LEAGUES = [
+    { id: "nba", name: "NBA", fullName: "National Basketball Association" },
+    { id: "ncaa", name: "NCAA", fullName: "Division I Basketball" },
+    { id: "euro", name: "EURO", fullName: "EuroLeague & Eurocup" },
+    { id: "nbl", name: "NBL", fullName: "Australia NBL" },
+    { id: "acb", name: "ACB", fullName: "Liga ACB Spain" },
+];
+
+// Mock data for demo
+const MOCK_PREDICTION: Prediction = {
+    id: "mock-1",
+    league: "nba",
+    time: "7:30 PM",
+    date: "TODAY",
+    awayTeam: {
+        name: "Lakers",
+        code: "LAL",
+        logo: "https://a.espncdn.com/i/teamlogos/nba/500/lal.png",
+        record: "21-22",
+        stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
+    },
+    homeTeam: {
+        name: "Celtics",
+        code: "BOS",
+        logo: "https://a.espncdn.com/i/teamlogos/nba/500/bos.png",
+        record: "32-9",
+        stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
+    },
+    marketTotal: 234.5,
+    modelTotal: 238.2,
+    edge: 3.7,
+    confidence: "strong",
+    trace: ["Baseline Efficiency: BOS (121.2) vs LAL (112.5) @ 101.2 Pace."],
+    factors: [{ label: "Elite Offense", value: 88, impact: 'positive' }],
+    forecastData: [{ time: "Q1", awayVal: 28, homeVal: 32 }]
+};
+
+const MOCK_PROPS: PlayerProp[] = [
+    {
+        id: "p1",
+        name: "LeBron James",
+        team: "Lakers",
+        teamCode: "LAL",
+        position: "Forward",
+        image: "https://a.espncdn.com/i/headshots/nba/players/full/1966.png",
+        propType: "PTS",
+        line: 24.5,
+        projection: 28.2,
+        edge: 3.7,
+        edgePct: 15.1,
+        usageBoost: true,
+        recentTrend: [1, 1, -1, 1, 1]
+    },
+];
+
+export default function DashboardIndex() {
+    const [games, setGames] = useState<Prediction[]>([]);
+    const [props, setProps] = useState<PlayerProp[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("home");
-    const [searchQuery, setSearchQuery] = useState("");
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/predictions?league=nba&mode=safe`);
+            const data = await res.json();
+
+            if (data.games && data.games.length > 0) {
+                const transformedGames: Prediction[] = data.games.slice(0, 3).map((g: any, idx: number) => ({
+                    id: `nba-${idx}`,
+                    league: "nba",
+                    time: g.time || "TBD",
+                    date: g.date || "TODAY",
+                    awayTeam: {
+                        name: g.away?.name || g.away_team || g.away || "Away",
+                        code: g.away?.code || g.away_tri || "AWY",
+                        logo: g.away?.logo || "",
+                        record: g.away?.record || "",
+                        stats: { pointsPerGame: 100, reboundsPerGame: 40, assistsPerGame: 25, fieldGoalPct: 45, threePointPct: 35, freeThrowPct: 75, netRating: 50 }
+                    },
+                    homeTeam: {
+                        name: g.home?.name || g.home_team || g.home || "Home",
+                        code: g.home?.code || g.home_tri || "HME",
+                        logo: g.home?.logo || "",
+                        record: g.home?.record || "",
+                        stats: { pointsPerGame: 100, reboundsPerGame: 40, assistsPerGame: 25, fieldGoalPct: 45, threePointPct: 35, freeThrowPct: 75, netRating: 50 }
+                    },
+                    marketTotal: g.market_total || g.marketTotal || 220,
+                    modelTotal: g.model_total || g.modelTotal || 225,
+                    edge: g.edge || 2.5,
+                    confidence: g.confidence || "lean",
+                    trace: g.trace || [],
+                    factors: g.factors || [],
+                    forecastData: g.forecastData || []
+                }));
+                setGames(transformedGames);
+            } else {
+                setGames([MOCK_PREDICTION]);
+            }
+
+            setProps(MOCK_PROPS);
+        } catch (err) {
+            console.error("Fetch error:", err);
+            setGames([MOCK_PREDICTION]);
+            setProps(MOCK_PROPS);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-dash-bg text-dash-text-primary">
-            {/* Left Sidebar - Desktop Only */}
             <LeftSidebar />
 
-            {/* Main Content Area - offset for sidebar on desktop */}
             <div className="lg:ml-16 xl:ml-20">
-                {/* Top Header Bar */}
+                {/* Header */}
                 <header className="sticky top-0 z-30 bg-dash-bg/80 backdrop-blur-xl border-b border-dash-border">
-                    <div className="flex items-center justify-between px-4 py-3 md:px-6 lg:px-8">
-                        {/* Search Bar */}
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dash-text-muted" />
-                            <input
-                                type="text"
-                                placeholder="Search for a Player or Team"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-dash-bg-secondary border border-dash-border rounded-xl py-2.5 pl-10 pr-4 text-xs font-medium text-white placeholder:text-dash-text-muted focus:outline-none focus:border-gold/50 transition-colors"
-                            />
+                    <div className="px-4 py-4 md:px-6 lg:px-8">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-gold/10 border border-gold/20 rounded-2xl flex items-center justify-center">
+                                    <Trophy className="w-6 h-6 text-gold" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">
+                                        blow<span className="text-gold italic">rout</span>
+                                    </h1>
+                                    <p className="text-[10px] md:text-xs font-bold text-dash-text-muted uppercase tracking-widest mt-1">
+                                        Advanced Basketball Predictions
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={fetchData}
+                                className="p-3 bg-dash-card border border-dash-border rounded-xl hover:border-gold/30 transition-colors"
+                            >
+                                <RefreshCw className={cn("w-4 h-4 text-dash-text-muted", loading && "animate-spin")} />
+                            </button>
                         </div>
 
-                        {/* Right Actions */}
-                        <div className="flex items-center gap-3 ml-4">
-                            <button
-                                className="w-10 h-10 rounded-xl bg-dash-card border border-dash-border flex items-center justify-center hover:border-gold/30 transition-colors"
-                                aria-label="Notifications"
-                            >
-                                <Bell className="w-4 h-4 text-dash-text-muted" />
-                            </button>
-                            <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
-                                <Trophy className="w-5 h-5 text-gold" />
-                            </div>
+                        {/* League Tabs */}
+                        <div className="flex items-center gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+                            {LEAGUES.map((league) => (
+                                <Link
+                                    key={league.id}
+                                    href={`/dashboard/${league.id}`}
+                                    className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-dash-card border border-dash-border text-dash-text-muted hover:text-white hover:border-gold/30"
+                                >
+                                    {league.name}
+                                </Link>
+                            ))}
                         </div>
                     </div>
                 </header>
 
-                {/* Main Dashboard Content */}
+                {/* Main Content */}
                 <main className="p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
                     <div className="max-w-[1600px] mx-auto">
-                        {/* Main Grid Layout */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                            {/* Left Column: Player Comparison + Horizontal Bars */}
-                            <div className="lg:col-span-7 space-y-6">
-                                {/* Player VS Card */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                >
-                                    <PlayerComparisonCard
-                                        player1={MOCK_PLAYER_1}
-                                        player2={MOCK_PLAYER_2}
-                                    />
-                                </motion.div>
+                            {/* Featured Games */}
+                            <section className="lg:col-span-8 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                        <Target className="w-4 h-4 text-gold" />
+                                        Featured Predictions
+                                    </h2>
+                                    <Link href="/dashboard/nba" className="text-[10px] font-bold text-gold uppercase hover:underline">
+                                        View All
+                                    </Link>
+                                </div>
 
-                                {/* Horizontal Bar Charts */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.1 }}
-                                >
-                                    <HorizontalBarChart data={MOCK_COMPARISON_BARS} />
-                                </motion.div>
-                            </div>
-
-                            {/* Right Column: Gauges + Stats + Forecast */}
-                            <div className="lg:col-span-5 space-y-6">
-                                {/* Circular Gauges Row */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.15 }}
-                                    className="bg-dash-card border border-dash-border rounded-3xl p-4 md:p-6"
-                                >
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="flex justify-center">
-                                            <CircularGauge
-                                                value={MOCK_PLAYER_1.netRating}
-                                                label="Net Rating"
-                                                color="#FBBF24"
-                                                size={120}
-                                            />
-                                        </div>
-                                        <div className="flex justify-center">
-                                            <CircularGauge
-                                                value={MOCK_PLAYER_2.netRating}
-                                                label="Net Rating"
-                                                color="#06B6D4"
-                                                size={120}
-                                            />
-                                        </div>
+                                {loading ? (
+                                    <div className="bg-dash-card border border-dash-border rounded-3xl p-12 flex flex-col items-center justify-center gap-4">
+                                        <RefreshCw className="w-8 h-8 text-gold animate-spin" />
+                                        <p className="text-sm font-bold text-dash-text-muted">Loading predictions...</p>
                                     </div>
-                                </motion.div>
-
-                                {/* Stats Comparison Table */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                >
-                                    <StatsComparisonTable
-                                        player1Stats={MOCK_PLAYER_1.advancedStats}
-                                        player2Stats={MOCK_PLAYER_2.advancedStats}
-                                        player1Name={MOCK_PLAYER_1.name}
-                                        player2Name={MOCK_PLAYER_2.name}
-                                    />
-                                </motion.div>
-
-                                {/* Forecast Chart */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.25 }}
-                                    className="bg-dash-card border border-dash-border rounded-3xl p-4 md:p-6"
-                                >
-                                    <div className="mb-4">
-                                        <h3 className="text-sm font-bold text-white">Forecasts</h3>
-                                        <p className="text-[10px] text-dash-text-muted mt-0.5">
-                                            Projected performance trends
-                                        </p>
+                                ) : games.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {games.map((game) => (
+                                            <PredictionCard key={game.id} prediction={game} />
+                                        ))}
                                     </div>
-                                    <ForecastLineChart
-                                        data={MOCK_FORECAST_DATA}
-                                        height={180}
-                                        awayLabel={MOCK_PLAYER_1.name}
-                                        homeLabel={MOCK_PLAYER_2.name}
-                                    />
-                                </motion.div>
-                            </div>
+                                ) : (
+                                    <div className="bg-dash-card border border-dash-border rounded-3xl p-12 flex flex-col items-center justify-center gap-4">
+                                        <Calendar className="w-8 h-8 text-dash-text-muted" />
+                                        <p className="text-sm font-bold text-white">No games available</p>
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* Sidebar */}
+                            <aside className="lg:col-span-4 space-y-6">
+                                {/* Props Card */}
+                                <div className="bg-dash-card border border-dash-border rounded-3xl p-6">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                            <Zap className="w-4 h-4 text-gold fill-current" />
+                                            Top Props
+                                        </h3>
+                                        <Link href="/props" className="text-[9px] font-bold text-gold uppercase hover:underline">
+                                            View All
+                                        </Link>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {props.slice(0, 3).map((prop) => (
+                                            <PropCard key={prop.id} prop={prop} />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* League Switcher */}
+                                <div className="bg-dash-card border border-dash-border rounded-3xl p-6">
+                                    <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">League Predictions</h3>
+                                    <div className="space-y-2">
+                                        {LEAGUES.map((league) => (
+                                            <Link
+                                                key={league.id}
+                                                href={`/dashboard/${league.id}`}
+                                                className="flex items-center justify-between p-3 rounded-xl bg-dash-bg hover:bg-dash-bg-secondary border border-transparent hover:border-dash-border transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-gold/10 rounded-lg flex items-center justify-center">
+                                                        <Trophy className="w-4 h-4 text-gold" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-bold text-white uppercase">{league.name}</div>
+                                                        <div className="text-[9px] text-dash-text-muted">{league.fullName}</div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-dash-text-muted group-hover:text-gold transition-colors" />
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            </aside>
                         </div>
                     </div>
                 </main>
             </div>
 
-            {/* Bottom Navigation - Mobile Only */}
             <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
     );

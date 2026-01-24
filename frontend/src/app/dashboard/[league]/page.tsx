@@ -35,79 +35,61 @@ const LEAGUES = [
     { id: "acb", name: "ACB", fullName: "Liga ACB Spain" },
 ];
 
-// Mock data for when API doesn't return data
-const MOCK_PREDICTION: Prediction = {
-    id: "mock-1",
-    league: "nba",
-    time: "7:30 PM",
-    date: "JAN 22",
-    awayTeam: {
-        name: "Lakers",
-        code: "LAL",
-        logo: "https://a.espncdn.com/i/teamlogos/nba/500/lal.png",
-        record: "21-22",
-        stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
-    },
-    homeTeam: {
-        name: "Celtics",
-        code: "BOS",
-        logo: "https://a.espncdn.com/i/teamlogos/nba/500/bos.png",
-        record: "32-9",
-        stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
-    },
-    marketTotal: 234.5,
-    modelTotal: 238.2,
-    edge: 3.7,
-    confidence: "strong",
-    trace: [
-        "Baseline Efficiency: BOS (121.2) vs LAL (112.5) @ 101.2 Pace.",
-        "LAL Away Fatigue Factor: -1.2 projection drag applied.",
-        "BOS Home Court Advantage: +3.5 net rating boost.",
-    ],
-    factors: [
-        { label: "Elite Offense", value: 88, impact: 'positive' },
-        { label: "Pace Up Game", value: 72, impact: 'positive' },
-    ],
-    forecastData: [
-        { time: "Q1", awayVal: 28, homeVal: 32 },
-        { time: "Q2", awayVal: 55, homeVal: 64 },
-        { time: "Q3", awayVal: 84, homeVal: 92 },
-        { time: "Q4", awayVal: 112, homeVal: 121 }
-    ]
-};
+const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: PlayerProp[] } => {
+    const isNBA = leagueId === "nba";
+    const isNCAA = leagueId === "ncaa";
+    const isEuro = leagueId === "euro";
+    const isNBL = leagueId === "nbl";
+    const isACB = leagueId === "acb";
 
-const MOCK_PROPS: PlayerProp[] = [
-    {
-        id: "p1",
-        name: "LeBron James",
-        team: "Lakers",
-        teamCode: "LAL",
-        position: "Forward",
-        image: "https://a.espncdn.com/i/headshots/nba/players/full/1966.png",
-        propType: "PTS",
-        line: 24.5,
-        projection: 28.2,
+    const prediction: Prediction = {
+        id: `mock-${leagueId}`,
+        league: leagueId as any,
+        time: "LIVE",
+        date: "TODAY",
+        awayTeam: {
+            name: isNBA ? "Lakers" : isNCAA ? "Duke" : isEuro ? "Real Madrid" : isNBL ? "Wildcats" : "Barcelona",
+            code: isNBA ? "LAL" : isNCAA ? "DUKE" : isEuro ? "RMA" : isNBL ? "PER" : "BAR",
+            logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" : "https://a.espncdn.com/i/teamlogos/ncaa/500/duke.png",
+            record: "21-22",
+            stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
+        },
+        homeTeam: {
+            name: isNBA ? "Celtics" : isNCAA ? "UNC" : isEuro ? "Anadolu Efes" : isNBL ? "Kings" : "Real Madrid",
+            code: isNBA ? "BOS" : isNCAA ? "UNC" : isEuro ? "EFS" : isNBL ? "SYD" : "RMA",
+            logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" : "https://a.espncdn.com/i/teamlogos/ncaa/500/unc.png",
+            record: "32-9",
+            stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
+        },
+        marketTotal: isNBA ? 234.5 : 145.5,
+        modelTotal: isNBA ? 238.2 : 148.7,
         edge: 3.7,
-        edgePct: 15.1,
-        usageBoost: true,
-        recentTrend: [1, 1, -1, 1, 1]
-    },
-    {
-        id: "p2",
-        name: "Jayson Tatum",
-        team: "Celtics",
-        teamCode: "BOS",
-        position: "Forward",
-        image: "https://a.espncdn.com/i/headshots/nba/players/full/4065648.png",
-        propType: "PTS",
-        line: 27.5,
-        projection: 29.8,
-        edge: 2.3,
-        edgePct: 8.4,
-        usageBoost: false,
-        recentTrend: [1, -1, 1, 1, 1]
-    },
-];
+        confidence: "strong",
+        trace: ["Power Efficiency Ranking applied.", "Historical pace adjustment match."],
+        factors: [{ label: "Efficiency", value: 85, impact: 'positive' }],
+        forecastData: [{ time: "Q1", awayVal: 28, homeVal: 32 }]
+    };
+
+    const props: PlayerProp[] = [
+        {
+            id: `p-${leagueId}`,
+            name: isNBA ? "LeBron James" : isNCAA ? "RJ Davis" : "Facundo Campazzo",
+            team: prediction.awayTeam.name,
+            teamCode: prediction.awayTeam.code,
+            position: "G/F",
+            image: isNBA ? "https://a.espncdn.com/i/headshots/nba/players/full/1966.png" : "",
+            propType: "PTS",
+            line: 24.5,
+            projection: 28.2,
+            edge: 3.7,
+            edgePct: 15.1,
+            usageBoost: true,
+            recentTrend: [1, 1, -1, 1, 1]
+        }
+    ];
+
+    return { prediction, props };
+};
 
 export default function LeagueDashboard() {
     const params = useParams();
@@ -178,16 +160,18 @@ export default function LeagueDashboard() {
                 }));
                 setGames(transformedGames);
             } else {
-                // Use mock data if no API data
-                setGames([{ ...MOCK_PREDICTION, league: leagueId as any }]);
+                // Use dynamic mock data if no API data
+                const mock = GET_MOCK_DATA(leagueId);
+                setGames([mock.prediction]);
+                setProps(mock.props);
             }
 
             if (data.audit) setAudit(data.audit);
-            setProps(MOCK_PROPS);
         } catch (err) {
             console.error("Fetch error:", err);
-            setGames([{ ...MOCK_PREDICTION, league: leagueId as any }]);
-            setProps(MOCK_PROPS);
+            const mock = GET_MOCK_DATA(leagueId);
+            setGames([mock.prediction]);
+            setProps(mock.props);
         } finally {
             setLoading(false);
         }
@@ -282,11 +266,11 @@ export default function LeagueDashboard() {
                             <section className="lg:col-span-8 space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                                        <BarChart3 className="w-4 h-4 text-gold" />
-                                        Today's Games
+                                        <Target className="w-4 h-4 text-gold" />
+                                        Model Predictions
                                     </h2>
                                     <span className="text-[10px] font-bold text-dash-text-muted">
-                                        {games.length} predictions
+                                        {games.length} active insights
                                     </span>
                                 </div>
 
