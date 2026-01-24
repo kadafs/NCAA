@@ -44,3 +44,15 @@ jobs:
           
           # 4. Generate and Push Predictions
           python core/supabase_pusher.py
+
+      - name: Debug Fetched Data (On Failure or Success)
+        if: always()
+        run: |
+          echo "Listing data directory..."
+          ls -R data/ || echo "No data directory found"
+          echo "Matchup Files Content Summary:"
+          cat data/nba_matchups.json 2>/dev/null | head -n 20 || echo "No NBA matchups"
+          cat data/ncaa_matchups.json 2>/dev/null | head -n 20 || echo "No NCAA matchups"
+          cat data/euro_matchups.json 2>/dev/null | head -n 20 || echo "No EURO matchups"
+          cat data/acb_matchups.json 2>/dev/null | head -n 20 || echo "No ACB matchups"
+
