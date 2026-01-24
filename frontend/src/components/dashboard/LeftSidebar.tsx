@@ -23,14 +23,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { icon: User, label: "Profile", href: "/profile" },
-    { icon: BarChart2, label: "Analytics", href: "/dashboard" },
-    { icon: Activity, label: "Live", href: "/scoreboard" },
-    { icon: PieChart, label: "Props", href: "/props" },
-    { icon: TrendingUp, label: "Trends", href: "/dashboard/trends" },
-    { icon: Award, label: "Performance", href: "/performance" },
+    { icon: BarChart2, label: "Predictions", href: "/dashboard" },
+    { icon: Activity, label: "Live Scores", href: "/scoreboard" },
+    { icon: PieChart, label: "Player Props", href: "/props" },
+    { icon: TrendingUp, label: "Trends", href: "/performance" },
     { icon: Layers, label: "History", href: "/history" },
-    { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+    { icon: Settings, label: "Admin", href: "/admin" },
 ];
 
 /**
