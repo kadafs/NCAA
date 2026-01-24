@@ -43,11 +43,16 @@ def fetch_matchups(date_obj=None):
         f"http://localhost:3000/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}",
         f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
     ]
-    
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json"
+    }
+
     for url in sources:
         try:
             print(f"DEBUG: Fetching NCAA matchups from: {url}")
-            resp = requests.get(url, timeout=20)
+            resp = requests.get(url, headers=headers, timeout=20)
             if resp.status_code == 200:
                 data = resp.json()
                 games = []
@@ -55,13 +60,17 @@ def fetch_matchups(date_obj=None):
                     g = g_wrapper.get('game')
                     if not g: continue
                     games.append({
-                        "away": g['away']['names']['short'],
-                        "home": g['home']['names']['short'],
+                        "away": g.get('away', {}).get('names', {}).get('short', 'AWY'),
+                        "home": g.get('home', {}).get('names', {}).get('short', 'HME'),
                         "total": g.get('odds', {}).get('total', 145.5)
                     })
                 if games:
                     print(f"DEBUG: Successfully fetched {len(games)} games from {url}")
                     return games
+                else:
+                    print(f"DEBUG: URL {url} returned successful status but 0 games.")
+            else:
+                print(f"DEBUG: Failed to fetch from {url} (Status: {resp.status_code})")
         except Exception as e:
             print(f"DEBUG: Error fetching from {url}: {e}")
             continue

@@ -36,6 +36,10 @@ async def push_league_predictions(league, mode="safe"):
             print(f"Error generating predictions for {league}: {data['error']}")
             return
 
+        if not data.get("games"):
+            print(f"No games found for {league.upper()} today. Skipping Supabase push to preserve existing data.")
+            return
+
         # Upsert into Supabase
         # Table schema: league (pk), data (jsonb), updated_at (timestamptz)
         result = supabase.table("predictions_store").upsert({
@@ -44,7 +48,7 @@ async def push_league_predictions(league, mode="safe"):
             "updated_at": datetime.now().isoformat()
         }, on_conflict="league").execute()
         
-        print(f"Successfully pushed {league.upper()} predictions to Supabase.")
+        print(f"✅ Successfully pushed {len(data['games'])} {league.upper()} predictions to Supabase.")
     except Exception as e:
         print(f"Failed to push {league} predictions: {e}")
 

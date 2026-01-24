@@ -24,7 +24,19 @@ def fetch_nba_daily_schedule(target_date=None):
     
     try:
         # scoreboardv2 is better for specific dates
-        sb = scoreboardv2.ScoreboardV2(game_date=date_str)
+        # Use custom headers to avoid blocks in GitHub Actions
+        custom_headers = {
+            'Host': 'stats.nba.com',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'max-age=0',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'en-US,en;q=0.9',
+        }
+        
+        sb = scoreboardv2.ScoreboardV2(game_date=date_str, headers=custom_headers, timeout=30)
         data = sb.get_dict()
         
         # In scoreboardv2, games are in 'GameHeader' rowSet
