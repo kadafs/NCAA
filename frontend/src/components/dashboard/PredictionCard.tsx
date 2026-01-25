@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Prediction } from "@/types";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Info, Zap, AlertTriangle, TrendingUp } from "lucide-react";
+import { ChevronDown, Info, Zap, AlertTriangle, TrendingUp, Trophy } from "lucide-react";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { CircularGauge } from "./CircularGauge";
 
@@ -14,6 +14,8 @@ interface PredictionCardProps {
 
 export function PredictionCard({ prediction }: PredictionCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [awayLogoError, setAwayLogoError] = useState(false);
+    const [homeLogoError, setHomeLogoError] = useState(false);
 
     return (
         <div className="group flex flex-col bg-dash-card border border-dash-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-white/10 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
@@ -38,32 +40,18 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {/* Away */}
                         <div className="flex-1 flex flex-col items-center md:items-end text-center md:text-right gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
-                                <img
-                                    src={prediction.awayTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/2.png`}
-                                    alt={prediction.awayTeam.name}
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        const league = prediction.league?.toLowerCase() || 'ncaa';
-                                        
-                                        // Final fallback to avoid infinite loops
-                                        const finalFallback = 'https://a.espncdn.com/i/teamlogos/basketball/500/default-team-logo.png';
-                                        
-                                        if (target.src === finalFallback) return;
-
-                                        const leagueMap: Record<string, string> = {
-                                            nba: 'nba',
-                                            ncaa: 'ncaa',
-                                            euro: 'euro',
-                                            eurocup: 'euro',
-                                            nbl: 'nbl',
-                                            acb: 'acb'
-                                        };
-
-                                        // If it's not already the final fallback, try league logo, then final
-                                        target.src = finalFallback;
-                                    }}
-                                    className="max-w-full max-h-full object-contain"
-                                />
+                                {awayLogoError ? (
+                                    <div className="w-full h-full flex items-center justify-center bg-dash-bg rounded-lg">
+                                        <Trophy className="w-8 h-8 text-gold/20" />
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={prediction.awayTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/lal.png`}
+                                        alt={prediction.awayTeam.name}
+                                        onError={() => setAwayLogoError(true)}
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                )}
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.awayTeam.name}</h3>
@@ -80,17 +68,18 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {/* Home */}
                         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
-                                <img
-                                    src={prediction.homeTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/2.png`}
-                                    alt={prediction.homeTeam.name}
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        const finalFallback = 'https://a.espncdn.com/i/teamlogos/basketball/500/default-team-logo.png';
-                                        if (target.src === finalFallback) return;
-                                        target.src = finalFallback;
-                                    }}
-                                    className="max-w-full max-h-full object-contain"
-                                />
+                                {homeLogoError ? (
+                                    <div className="w-full h-full flex items-center justify-center bg-dash-bg rounded-lg">
+                                        <Trophy className="w-8 h-8 text-gold/20" />
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={prediction.homeTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/bos.png`}
+                                        alt={prediction.homeTeam.name}
+                                        onError={() => setHomeLogoError(true)}
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                )}
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.homeTeam.name}</h3>

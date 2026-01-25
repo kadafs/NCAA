@@ -51,9 +51,9 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             name: isNBA ? "Lakers" : isNCAA ? "Duke" : isEuro ? "Real Madrid" : isNBL ? "Wildcats" : "Barcelona",
             code: isNBA ? "LAL" : isNCAA ? "DUKE" : isEuro ? "RMA" : isNBL ? "PER" : "BAR",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" :
-                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/duke.png" :
-                    isEuro ? "https://a.espncdn.com/combine/i/teamlogos/euro/500/512.png" :
-                        "https://a.espncdn.com/i/teamlogos/basketball/500/2.png",
+                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png" : // Duke
+                    isEuro ? "" :
+                        "",
             record: "21-22",
             stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
         },
@@ -61,9 +61,9 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             name: isNBA ? "Celtics" : isNCAA ? "North Carolina" : isEuro ? "Anadolu Efes" : isNBL ? "Kings" : "Real Madrid",
             code: isNBA ? "BOS" : isNCAA ? "UNC" : isEuro ? "EFS" : isNBL ? "SYD" : "RMA",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" :
-                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/unc.png" :
-                    isEuro ? "https://a.espncdn.com/combine/i/teamlogos/euro/500/512.png" :
-                        "https://a.espncdn.com/i/teamlogos/basketball/500/2.png",
+                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png" : // UNC
+                    isEuro ? "" :
+                        "",
             record: "32-9",
             stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
         },
@@ -129,7 +129,27 @@ export default function LeagueDashboard() {
                     awayTeam: {
                         name: g.away_details?.name || g.away?.name || g.away_team || g.away || "Away",
                         code: g.away_details?.code || g.away?.code || g.away_tri || "AWY",
-                        logo: g.away_details?.logo || g.away?.logo || (leagueId === 'ncaa' ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.away_details?.id || 2}.png` : ""),
+                        logo: g.away_details?.logo || g.away?.logo || (() => {
+                            const league = leagueId.toLowerCase();
+                            const rawCode = (g.away_details?.code || g.away?.code || "").toLowerCase();
+
+                            // Map problematic tri-codes
+                            const codeMap: Record<string, string> = {
+                                'nop': 'no', // Pelicans
+                                'nyk': 'ny', // Knicks
+                                'gsw': 'gs', // Warriors
+                                'sas': 'sa', // Spurs
+                                'phx': 'phx',
+                                'bkn': 'bkn'
+                            };
+
+                            const code = codeMap[rawCode] || rawCode;
+                            if (!code) return "";
+
+                            if (league === 'nba') return `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png`;
+                            if (league === 'ncaa') return `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.away_details?.id || code}.png`;
+                            return "";
+                        })(),
                         record: g.away?.record || "",
                         stats: {
                             pointsPerGame: g.away?.stats?.ppg || 100,
@@ -144,7 +164,17 @@ export default function LeagueDashboard() {
                     homeTeam: {
                         name: g.home_details?.name || g.home?.name || g.home_team || g.home || "Home",
                         code: g.home_details?.code || g.home?.code || g.home_tri || "HME",
-                        logo: g.home_details?.logo || g.home?.logo || (leagueId === 'ncaa' ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.home_details?.id || 2}.png` : ""),
+                        logo: g.home_details?.logo || g.home?.logo || (() => {
+                            const league = leagueId.toLowerCase();
+                            const rawCode = (g.home_details?.code || g.home?.code || "").toLowerCase();
+                            const codeMap: Record<string, string> = { 'nop': 'no', 'nyk': 'ny', 'gsw': 'gs', 'sas': 'sa' };
+                            const code = codeMap[rawCode] || rawCode;
+                            if (!code) return "";
+
+                            if (league === 'nba') return `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png`;
+                            if (league === 'ncaa') return `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.home_details?.id || code}.png`;
+                            return "";
+                        })(),
                         record: g.home?.record || "",
                         stats: {
                             pointsPerGame: g.home?.stats?.ppg || 100,
