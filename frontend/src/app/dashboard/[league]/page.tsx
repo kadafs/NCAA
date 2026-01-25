@@ -51,7 +51,7 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             name: isNBA ? "Lakers" : isNCAA ? "Duke" : isEuro ? "Real Madrid" : isNBL ? "Wildcats" : "Barcelona",
             code: isNBA ? "LAL" : isNCAA ? "DUKE" : isEuro ? "RMA" : isNBL ? "PER" : "BAR",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" :
-                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png" : // Duke
+                isNCAA ? "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/duke.svg" :
                     isEuro ? "" :
                         "",
             record: "21-22",
@@ -61,7 +61,7 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             name: isNBA ? "Celtics" : isNCAA ? "North Carolina" : isEuro ? "Anadolu Efes" : isNBL ? "Kings" : "Real Madrid",
             code: isNBA ? "BOS" : isNCAA ? "UNC" : isEuro ? "EFS" : isNBL ? "SYD" : "RMA",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" :
-                isNCAA ? "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png" : // UNC
+                isNCAA ? "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/north-carolina.svg" :
                     isEuro ? "" :
                         "",
             record: "32-9",
@@ -132,22 +132,22 @@ export default function LeagueDashboard() {
                         logo: g.away_details?.logo || g.away?.logo || (() => {
                             const league = leagueId.toLowerCase();
                             const rawCode = (g.away_details?.code || g.away?.code || "").toLowerCase();
+                            const name = (g.away_details?.name || g.away?.name || g.away_team || g.away || "")
+                                .toLowerCase()
+                                .trim()
+                                .replace(/\s+/g, '-')
+                                .replace(/[^a-z0-9-]/g, '');
 
-                            // Map problematic tri-codes
-                            const codeMap: Record<string, string> = {
-                                'nop': 'no', // Pelicans
-                                'nyk': 'ny', // Knicks
-                                'gsw': 'gs', // Warriors
-                                'sas': 'sa', // Spurs
-                                'phx': 'phx',
-                                'bkn': 'bkn'
-                            };
+                            if (league === 'nba') {
+                                const codeMap: Record<string, string> = { 'nop': 'no', 'nyk': 'ny', 'gsw': 'gs', 'sas': 'sa' };
+                                const code = codeMap[rawCode] || rawCode;
+                                return code ? `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png` : "";
+                            }
 
-                            const code = codeMap[rawCode] || rawCode;
-                            if (!code) return "";
+                            if (league === 'ncaa') {
+                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/${name}.svg` : "";
+                            }
 
-                            if (league === 'nba') return `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png`;
-                            if (league === 'ncaa') return `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.away_details?.id || code}.png`;
                             return "";
                         })(),
                         record: g.away?.record || "",
@@ -167,12 +167,22 @@ export default function LeagueDashboard() {
                         logo: g.home_details?.logo || g.home?.logo || (() => {
                             const league = leagueId.toLowerCase();
                             const rawCode = (g.home_details?.code || g.home?.code || "").toLowerCase();
-                            const codeMap: Record<string, string> = { 'nop': 'no', 'nyk': 'ny', 'gsw': 'gs', 'sas': 'sa' };
-                            const code = codeMap[rawCode] || rawCode;
-                            if (!code) return "";
+                            const name = (g.home_details?.name || g.home?.name || g.home_team || g.home || "")
+                                .toLowerCase()
+                                .trim()
+                                .replace(/\s+/g, '-')
+                                .replace(/[^a-z0-9-]/g, '');
 
-                            if (league === 'nba') return `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png`;
-                            if (league === 'ncaa') return `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.home_details?.id || code}.png`;
+                            if (league === 'nba') {
+                                const codeMap: Record<string, string> = { 'nop': 'no', 'nyk': 'ny', 'gsw': 'gs', 'sas': 'sa' };
+                                const code = codeMap[rawCode] || rawCode;
+                                return code ? `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png` : "";
+                            }
+
+                            if (league === 'ncaa') {
+                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/${name}.svg` : "";
+                            }
+
                             return "";
                         })(),
                         record: g.home?.record || "",
