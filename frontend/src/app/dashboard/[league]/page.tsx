@@ -127,9 +127,9 @@ export default function LeagueDashboard() {
                     time: g.time || "TBD",
                     date: g.date || "TODAY",
                     awayTeam: {
-                        name: g.away?.name || g.away_team || "Away",
-                        code: g.away?.code || g.away_tri || "AWY",
-                        logo: g.away?.logo || "",
+                        name: g.away_details?.name || g.away?.name || g.away_team || g.away || "Away",
+                        code: g.away_details?.code || g.away?.code || g.away_tri || "AWY",
+                        logo: g.away_details?.logo || g.away?.logo || (leagueId === 'ncaa' ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.away?.toLowerCase()}.png` : ""),
                         record: g.away?.record || "",
                         stats: {
                             pointsPerGame: g.away?.stats?.ppg || 100,
@@ -138,13 +138,13 @@ export default function LeagueDashboard() {
                             fieldGoalPct: 45,
                             threePointPct: 35,
                             freeThrowPct: 75,
-                            netRating: 50
+                            netRating: g.statsA?.net_rating || 50
                         }
                     },
                     homeTeam: {
-                        name: g.home?.name || g.home_team || "Home",
-                        code: g.home?.code || g.home_tri || "HME",
-                        logo: g.home?.logo || "",
+                        name: g.home_details?.name || g.home?.name || g.home_team || g.home || "Home",
+                        code: g.home_details?.code || g.home?.code || g.home_tri || "HME",
+                        logo: g.home_details?.logo || g.home?.logo || (leagueId === 'ncaa' ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${g.home?.toLowerCase()}.png` : ""),
                         record: g.home?.record || "",
                         stats: {
                             pointsPerGame: g.home?.stats?.ppg || 100,
@@ -153,7 +153,7 @@ export default function LeagueDashboard() {
                             fieldGoalPct: 45,
                             threePointPct: 35,
                             freeThrowPct: 75,
-                            netRating: 50
+                            netRating: g.statsH?.net_rating || 50
                         }
                     },
                     marketTotal: g.market_total || g.marketTotal || 220,

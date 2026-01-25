@@ -231,6 +231,8 @@ def get_universal_predictions(league="nba", mode="safe"):
             "matchup": f"{away} @ {home}",
             "away": away,
             "home": home,
+            "away_details": game.get('away_details'),
+            "home_details": game.get('home_details'),
             "market_total": round(res['market_total'], 1),
             "model_total": round(res['final_model_total'], 1),
             "edge": round(res['edge'], 2),
