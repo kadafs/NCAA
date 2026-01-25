@@ -12,6 +12,15 @@ interface PredictionCardProps {
     prediction: Prediction;
 }
 
+const LEAGUE_FALLBACKS: Record<string, string> = {
+    nba: 'https://upload.wikimedia.org/wikipedia/en/0/03/National_Basketball_Association_logo.svg',
+    ncaa: 'https://upload.wikimedia.org/wikipedia/commons/d/dd/NCAA_logo.svg',
+    euro: 'https://upload.wikimedia.org/wikipedia/en/3/30/Euroleague_logo.svg',
+    eurocup: 'https://upload.wikimedia.org/wikipedia/en/3/30/Euroleague_logo.svg',
+    nbl: 'https://upload.wikimedia.org/wikipedia/en/d/d9/National_Basketball_League_%28Australia%29_logo.svg',
+    acb: 'https://upload.wikimedia.org/wikipedia/en/d/df/Liga_ACB_logo.svg'
+};
+
 export function PredictionCard({ prediction }: PredictionCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [awayLogoError, setAwayLogoError] = useState(false);
@@ -40,18 +49,19 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {/* Away */}
                         <div className="flex-1 flex flex-col items-center md:items-end text-center md:text-right gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
-                                {awayLogoError ? (
-                                    <div className="w-full h-full flex items-center justify-center bg-dash-bg rounded-lg">
-                                        <Trophy className="w-8 h-8 text-gold/20" />
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={prediction.awayTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/lal.png`}
-                                        alt={prediction.awayTeam.name}
-                                        onError={() => setAwayLogoError(true)}
-                                        className="max-w-full max-h-full object-contain"
-                                    />
-                                )}
+                                <img
+                                    src={prediction.awayTeam.logo || LEAGUE_FALLBACKS[prediction.league?.toLowerCase()] || LEAGUE_FALLBACKS.ncaa}
+                                    alt={prediction.awayTeam.name}
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        const league = prediction.league?.toLowerCase() || 'ncaa';
+                                        const fallback = LEAGUE_FALLBACKS[league] || LEAGUE_FALLBACKS.ncaa;
+
+                                        if (target.src === fallback) return;
+                                        target.src = fallback;
+                                    }}
+                                    className="max-w-full max-h-full object-contain"
+                                />
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.awayTeam.name}</h3>
@@ -68,18 +78,19 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {/* Home */}
                         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
-                                {homeLogoError ? (
-                                    <div className="w-full h-full flex items-center justify-center bg-dash-bg rounded-lg">
-                                        <Trophy className="w-8 h-8 text-gold/20" />
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={prediction.homeTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/bos.png`}
-                                        alt={prediction.homeTeam.name}
-                                        onError={() => setHomeLogoError(true)}
-                                        className="max-w-full max-h-full object-contain"
-                                    />
-                                )}
+                                <img
+                                    src={prediction.homeTeam.logo || LEAGUE_FALLBACKS[prediction.league?.toLowerCase()] || LEAGUE_FALLBACKS.ncaa}
+                                    alt={prediction.homeTeam.name}
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        const league = prediction.league?.toLowerCase() || 'ncaa';
+                                        const fallback = LEAGUE_FALLBACKS[league] || LEAGUE_FALLBACKS.ncaa;
+
+                                        if (target.src === fallback) return;
+                                        target.src = fallback;
+                                    }}
+                                    className="max-w-full max-h-full object-contain"
+                                />
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.homeTeam.name}</h3>
