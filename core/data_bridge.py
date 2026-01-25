@@ -53,10 +53,24 @@ class UniversalDataBridge:
             
             sA = all_stats[teamA_name]
             sH = all_stats[teamH_name]
+
+            # NBA ESPN logo mapping
+            triA = [k for k, v in NBA_TRICODES.items() if v == teamA_name][0] if teamA_name in NBA_TRICODES.values() else "NBA"
+            triH = [k for k, v in NBA_TRICODES.items() if v == teamH_name][0] if teamH_name in NBA_TRICODES.values() else "NBA"
             
             daily_sheet.append({
                 "team": teamA_name,
                 "opponent": teamH_name,
+                "away_details": {
+                    "name": teamA_name,
+                    "code": triA,
+                    "logo": f"https://a.espncdn.com/i/teamlogos/nba/500/{triA.lower()}.png"
+                },
+                "home_details": {
+                    "name": teamH_name,
+                    "code": triH,
+                    "logo": f"https://a.espncdn.com/i/teamlogos/nba/500/{triH.lower()}.png"
+                },
                 "pace_adjustment": (sA['adj_t'] + sH['adj_t']) / 2,
                 "efficiency_adjustment": (sA['adj_off'] + sH['adj_def'] + sH['adj_off'] + sA['adj_def']) / 4,
                 "market_total": m.get('total', 230.5),
@@ -81,24 +95,33 @@ class UniversalDataBridge:
     def _pop_ncaa(self, date_obj=None):
         """NCAA-specific population logic moved to core."""
         bt_data = self._load_json("barttorvik_stats.json")
-        score_data = self._load_json("consolidated_stats.json")
         
         from ncaa.v1_2.populate import get_daily_input_sheet
         daily_sheet = get_daily_input_sheet(date_obj=date_obj)
         
         processed_sheet = []
         for d in daily_sheet:
-            # Stats are already bridged in get_daily_input_sheet v1.2
-            # We just need to wrap stats for the engine if it expects a specific nested structure
-            # (In v1.2 ncaa, it uses a flat dict for simplicity, but the universal bridge likes statsA/statsH)
             teamA_bt = find_team_in_dict(d['team'], bt_data, BASKETBALL_ALIASES)
             teamH_bt = find_team_in_dict(d['opponent'], bt_data, BASKETBALL_ALIASES)
             
             sA = bt_data.get(teamA_bt, {})
             sH = bt_data.get(teamH_bt, {})
 
+            # Logo strategy for NCAA could vary, often requires more complex mapping
+            # We'll use a placeholder or best-effort short name
+            
             processed_sheet.append({
                 **d,
+                "away_details": {
+                    "name": teamA_bt or d['team'],
+                    "code": d['team'][:4].upper(),
+                    "logo": ""
+                },
+                "home_details": {
+                    "name": teamH_bt or d['opponent'],
+                    "code": d['opponent'][:4].upper(),
+                    "logo": ""
+                },
                 "statsA": {
                     "adj_off": sA.get('adj_off', 110.0),
                     "adj_def": sA.get('adj_def', 110.0),
