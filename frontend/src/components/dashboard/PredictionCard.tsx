@@ -38,7 +38,14 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {/* Away */}
                         <div className="flex-1 flex flex-col items-center md:items-end text-center md:text-right gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
-                                <img src={prediction.awayTeam.logo} alt={prediction.awayTeam.name} className="max-w-full max-h-full object-contain" />
+                                <img
+                                    src={prediction.awayTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/${prediction.league.toLowerCase()}.png`}
+                                    alt={prediction.awayTeam.name}
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = `https://a.espncdn.com/i/teamlogos/basketball/500/${prediction.league.toLowerCase()}.png`;
+                                    }}
+                                    className="max-w-full max-h-full object-contain"
+                                />
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.awayTeam.name}</h3>
@@ -55,7 +62,14 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {/* Home */}
                         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
-                                <img src={prediction.homeTeam.logo} alt={prediction.homeTeam.name} className="max-w-full max-h-full object-contain" />
+                                <img
+                                    src={prediction.homeTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/${prediction.league.toLowerCase()}.png`}
+                                    alt={prediction.homeTeam.name}
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = `https://a.espncdn.com/i/teamlogos/basketball/500/${prediction.league.toLowerCase()}.png`;
+                                    }}
+                                    className="max-w-full max-h-full object-contain"
+                                />
                             </div>
                             <div>
                                 <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.homeTeam.name}</h3>
