@@ -3,7 +3,7 @@ import json
 import os
 import time
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = "https://ncaa-api.henrygd.me"
 # Base paths relative to Project Root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))

@@ -19,9 +19,28 @@ def clean_team_name(name):
     Standardizes team names by removing common punctuation and formatting.
     """
     if not name: return ""
-    # Standardize common abbreviations before general punctuation stripping
+    import re
+    # 1. Expand common abbreviations
     n = name.replace("St.", "State").replace("Fla.", "Florida").replace("Pa.", "Pennsylvania")
-    return n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "").lower()
+    n = n.replace("Mich.", "Michigan").replace("Wash.", "Washington").replace("Colo.", "Colorado")
+    n = n.replace("Ariz.", "Arizona").replace("Tenn.", "Tennessee").replace("Ga.", "Georgia")
+    n = n.replace("Ky.", "Kentucky").replace("Ill.", "Illinois").replace("Miss.", "Mississippi")
+    n = n.replace("N.", "North").replace("S.", "South").replace("E.", "East").replace("W.", "West")
+    n = n.replace("App.", "Appalachian").replace("Ark.", "Arkansas").replace("Atl.", "Atlantic")
+    n = n.replace("Car.", "Carolina").replace("Cent.", "Central").replace("Geo.", "Georgia")
+    n = n.replace("Mass.", "Massachusetts").replace("Md.", "Maryland")
+    
+    # 2. General cleaning (punctuation, case, spaces)
+    n = n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "")
+    n = n.replace("-", "").replace("&", "and").lower()
+    
+    # 3. Strip trailing 'u' or 'university' if it's there (often inconsistent)
+    if n.endswith("u") and len(n) > 4:
+        n = n[:-1]
+    if n.endswith("university"):
+        n = n[:-10]
+        
+    return n
 
 def find_team_in_dict(name, target_dict, aliases=None):
     """
@@ -102,6 +121,10 @@ BASKETBALL_ALIASES = {
     "utmartin": "tennesseemartin",
     "utrgv": "utriograndevalley",
     "westernky": "westernkentucky",
+    "omaha": "nebraskaomaha",
+    "iuindy": "iuindy",
+    "amcorpuschristi": "texasamcorpuschris",
+    "little-rock": "arkansaslittlerock",
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {

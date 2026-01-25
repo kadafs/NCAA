@@ -28,21 +28,35 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # 1. Fetch NBA Schedule/Odds
-          python -m nba.fetch_nba_schedule
+          # 1. Fetch Reference Stats (Essential for engine to match teams)
+          echo "Fetching NCAA Stats (BartTorvik)..."
+          python -m ncaa.fetch_barttorvik
           
-          # 2. Fetch European Schedules
+          echo "Fetching NCAA Consolidated Standings..."
+          python -m ncaa.data_fetcher
+
+          # 2. Fetch NBA Schedule/Odds (Retry loop for flakiness)
+          echo "Fetching NBA Schedule..."
+          for i in {1..3}; do 
+            python -m nba.fetch_nba_schedule && break || sleep 10
+            echo "NBA Schedule fetch failed, retrying ($i/3)..."
+          done
+          
+          echo "Fetching NBA Stats..."
+          for i in {1..3}; do
+            python -m nba.fetch_nba_stats && break || sleep 10
+            echo "NBA Stats fetch failed, retrying ($i/3)..."
+          done
+          
+          # 3. Fetch European Schedules
           python -m euro.fetch_euro_schedule
           python -m eurocup.fetch_eurocup_schedule
           
-          # 3. Fetch NBL/ACB
+          # 4. Fetch NBL/ACB
           python -m nbl.fetch_nbl_schedule
           python -m acb.fetch_acb_schedule
           
-          # NBA Stats (Optional if data/nba_stats.json is static, but usually needed)
-          python -m nba.fetch_nba_stats
-          
-          # 4. Generate and Push Predictions
+          # 5. Generate and Push Predictions
           python core/supabase_pusher.py
 
       - name: Debug Fetched Data (On Failure or Success)
