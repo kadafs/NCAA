@@ -168,12 +168,12 @@ class UniversalDataBridge:
                 "away_details": {
                     "name": teamA_name,
                     "code": triA,
-                    "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/euro/{triA.lower()}.png"
+                    "logo": ""  # ESPN CDN doesn't have EuroLeague logos - frontend handles fallback
                 },
                 "home_details": {
                     "name": teamH_name,
                     "code": triH,
-                    "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/euro/{triH.lower()}.png"
+                    "logo": ""  # ESPN CDN doesn't have EuroLeague logos - frontend handles fallback
                 },
                 "pace_adjustment": (sA.get('adj_t', 72.0) + sH.get('adj_t', 72.0)) / 2,
                 "efficiency_adjustment": (
@@ -227,12 +227,12 @@ class UniversalDataBridge:
                 "away_details": {
                     "name": teamA_name,
                     "code": triA,
-                    "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/euro/{triA.lower()}.png"
+                    "logo": ""  # ESPN CDN doesn't have EuroCup logos - frontend handles fallback
                 },
                 "home_details": {
                     "name": teamH_name,
                     "code": triH,
-                    "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/euro/{triH.lower()}.png"
+                    "logo": ""  # ESPN CDN doesn't have EuroCup logos - frontend handles fallback
                 },
                 "pace_adjustment": (sA.get('adj_t', pivot_pace) + sH.get('adj_t', pivot_pace)) / 2,
                 "efficiency_adjustment": (
@@ -266,8 +266,8 @@ class UniversalDataBridge:
         for d in sheet:
             triA = [k for k, v in NBL_TRICODES.items() if v in d['team'] or d['team'] in v][0] if any(v in d['team'] or d['team'] in v for v in NBL_TRICODES.values()) else "NBL"
             triH = [k for k, v in NBL_TRICODES.items() if v in d['opponent'] or d['opponent'] in v][0] if any(v in d['opponent'] or d['opponent'] in v for v in NBL_TRICODES.values()) else "NBL"
-            d["away_details"] = {"name": d['team'], "code": triA, "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/nbl/{triA.lower()}.png"}
-            d["home_details"] = {"name": d["opponent"], "code": triH, "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/nbl/{triH.lower()}.png"}
+            d["away_details"] = {"name": d['team'], "code": triA, "logo": ""}  # ESPN CDN doesn't have NBL logos - frontend handles fallback
+            d["home_details"] = {"name": d["opponent"], "code": triH, "logo": ""}  # ESPN CDN doesn't have NBL logos - frontend handles fallback
         return sheet
 
     def _pop_acb(self):
@@ -278,7 +278,7 @@ class UniversalDataBridge:
         for d in sheet:
             triA = [k for k, v in ACB_TRICODES.items() if v in d['team'] or d['team'] in v][0] if any(v in d['team'] or d['team'] in v for v in ACB_TRICODES.values()) else "ACB"
             triH = [k for k, v in ACB_TRICODES.items() if v in d['opponent'] or d['opponent'] in v][0] if any(v in d['opponent'] or d['opponent'] in v for v in ACB_TRICODES.values()) else "ACB"
-            d["away_details"] = {"name": d['team'], "code": triA, "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/acb/{triA.lower()}.png"}
-            d["home_details"] = {"name": d["opponent"], "code": triH, "logo": f"https://a.espncdn.com/i/teamlogos/basketball/500/acb/{triH.lower()}.png"}
+            d["away_details"] = {"name": d['team'], "code": triA, "logo": ""}  # ESPN CDN doesn't have ACB logos - frontend handles fallback
+            d["home_details"] = {"name": d["opponent"], "code": triH, "logo": ""}  # ESPN CDN doesn't have ACB logos - frontend handles fallback
         return sheet
 
