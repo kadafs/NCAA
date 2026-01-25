@@ -62,6 +62,8 @@ def fetch_matchups(date_obj=None):
                     games.append({
                         "away": g.get('away', {}).get('names', {}).get('short', 'AWY'),
                         "home": g.get('home', {}).get('names', {}).get('short', 'HME'),
+                        "away_seo": g.get('away', {}).get('names', {}).get('seo', ''),
+                        "home_seo": g.get('home', {}).get('names', {}).get('seo', ''),
                         "total": g.get('odds', {}).get('total', 145.5)
                     })
                 if games:
@@ -77,7 +79,7 @@ def fetch_matchups(date_obj=None):
             
     return []
 
-def get_game_data(away_name, home_name, bt_data, score_data, market_total=0):
+def get_game_data(away_name, home_name, bt_data, score_data, market_total=0, away_seo="", home_seo=""):
     """Bridge raw stats to v1.2 Input Sheet columns."""
     
     # 1. Resolve Teams
@@ -105,6 +107,8 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=0):
     input_data = {
         "team": teamA,
         "opponent": teamH,
+        "away_seo": away_seo,
+        "home_seo": home_seo,
         "team_ppg": ppgA,
         "opp_ppg": ppgH,
         "market_total": market_total,
@@ -133,7 +137,7 @@ def get_daily_input_sheet(date_obj=None):
         live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
         market_total = live_total if live_total else m['total']
         
-        data = get_game_data(m['away'], m['home'], bt, sh, market_total)
+        data = get_game_data(m['away'], m['home'], bt, sh, market_total, m.get('away_seo'), m.get('home_seo'))
         if data:
             daily_sheet.append(data)
             
