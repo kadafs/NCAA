@@ -107,20 +107,23 @@ class UniversalDataBridge:
             sA = bt_data.get(teamA_bt, {})
             sH = bt_data.get(teamH_bt, {})
 
-            # Logo strategy for NCAA could vary, often requires more complex mapping
-            # We'll use a placeholder or best-effort short name
+            # Dynamic ESPN NCAA logo resolution
+            def get_ncaa_logo(name):
+                # slug = name.lower().replace(" ", "-").replace(".", "").replace("'", "")
+                # ESPN uses specific IDs, but many short names work in their path
+                return f"https://a.espncdn.com/i/teamlogos/ncaa/500/{name.lower().replace(' ', '-').replace('.', '').replace('state', 'st')}.png"
             
             processed_sheet.append({
                 **d,
                 "away_details": {
                     "name": teamA_bt or d['team'],
                     "code": d['team'][:4].upper(),
-                    "logo": ""
+                    "logo": get_ncaa_logo(teamA_bt or d['team'])
                 },
                 "home_details": {
                     "name": teamH_bt or d['opponent'],
                     "code": d['opponent'][:4].upper(),
-                    "logo": ""
+                    "logo": get_ncaa_logo(teamH_bt or d['opponent'])
                 },
                 "statsA": {
                     "adj_off": sA.get('adj_off', 110.0),
@@ -141,7 +144,8 @@ class UniversalDataBridge:
         """EuroLeague-specific population logic v1.9."""
         matchups = self._load_json("euro_matchups.json")
         all_stats = self._load_json("euro_stats.json")
-        
+        from utils.mapping import EURO_TRICODES
+
         daily_sheet = []
         for m in matchups:
             teamA_name = find_team_in_dict(m['away'], all_stats)
@@ -152,9 +156,23 @@ class UniversalDataBridge:
             sA = all_stats[teamA_name]
             sH = all_stats[teamH_name]
             
+            # Euro tricode mapping
+            triA = [k for k, v in EURO_TRICODES.items() if v in teamA_name or teamA_name in v][0] if any(v in teamA_name or teamA_name in v for v in EURO_TRICODES.values()) else "EURO"
+            triH = [k for k, v in EURO_TRICODES.items() if v in teamH_name or teamH_name in v][0] if any(v in teamH_name or teamH_name in v for v in EURO_TRICODES.values()) else "EURO"
+
             daily_sheet.append({
                 "team": teamA_name,
                 "opponent": teamH_name,
+                "away_details": {
+                    "name": teamA_name,
+                    "code": triA,
+                    "logo": f"https://a.espncdn.com/combine/i/teamlogos/euro/500/{triA.lower()}.png"
+                },
+                "home_details": {
+                    "name": teamH_name,
+                    "code": triH,
+                    "logo": f"https://a.espncdn.com/combine/i/teamlogos/euro/500/{triH.lower()}.png"
+                },
                 "pace_adjustment": (sA.get('adj_t', 72.0) + sH.get('adj_t', 72.0)) / 2,
                 "efficiency_adjustment": (
                     sA.get('adj_off', 110.0) + sH.get('adj_def', 110.0) +
@@ -181,7 +199,8 @@ class UniversalDataBridge:
         """EuroCup-specific population logic v2.0."""
         matchups = self._load_json("eurocup_matchups.json")
         all_stats = self._load_json("eurocup_stats.json")
-        
+        from utils.mapping import EUROCUP_TRICODES
+
         daily_sheet = []
         for m in matchups:
             teamA_name = find_team_in_dict(m['away'], all_stats)
@@ -192,6 +211,10 @@ class UniversalDataBridge:
             sA = all_stats[teamA_name]
             sH = all_stats[teamH_name]
             
+            # EuroCup tricode mapping
+            triA = [k for k, v in EUROCUP_TRICODES.items() if v in teamA_name or teamA_name in v][0] if any(v in teamA_name or teamA_name in v for v in EUROCUP_TRICODES.values()) else "EC"
+            triH = [k for k, v in EUROCUP_TRICODES.items() if v in teamH_name or teamH_name in v][0] if any(v in teamH_name or teamH_name in v for v in EUROCUP_TRICODES.values()) else "EC"
+
             # EuroCup Pivots (Researched)
             pivot_pace = 74.5
             pivot_eff = 110.8
@@ -199,6 +222,16 @@ class UniversalDataBridge:
             daily_sheet.append({
                 "team": teamA_name,
                 "opponent": teamH_name,
+                "away_details": {
+                    "name": teamA_name,
+                    "code": triA,
+                    "logo": "" # EuroCup logos are inconsistent on ESPN CDN
+                },
+                "home_details": {
+                    "name": teamH_name,
+                    "code": triH,
+                    "logo": ""
+                },
                 "pace_adjustment": (sA.get('adj_t', pivot_pace) + sH.get('adj_t', pivot_pace)) / 2,
                 "efficiency_adjustment": (
                     sA.get('adj_off', pivot_eff) + sH.get('adj_def', pivot_eff) +
@@ -226,9 +259,23 @@ class UniversalDataBridge:
     def _pop_nbl(self):
         """NBL-specific population logic v3.0."""
         from nbl.v1_2.populate import get_daily_input_sheet
-        return get_daily_input_sheet()
+        from utils.mapping import NBL_TRICODES
+        sheet = get_daily_input_sheet()
+        for d in sheet:
+            triA = [k for k, v in NBL_TRICODES.items() if v in d['team'] or d['team'] in v][0] if any(v in d['team'] or d['team'] in v for v in NBL_TRICODES.values()) else "NBL"
+            triH = [k for k, v in NBL_TRICODES.items() if v in d['opponent'] or d['opponent'] in v][0] if any(v in d['opponent'] or d['opponent'] in v for v in NBL_TRICODES.values()) else "NBL"
+            d["away_details"] = {"name": d['team'], "code": triA, "logo": ""}
+            d["home_details"] = {"name": d["opponent"], "code": triH, "logo": ""}
+        return sheet
 
     def _pop_acb(self):
         """ACB-specific population logic v3.0."""
         from acb.v1_2.populate import get_daily_input_sheet
-        return get_daily_input_sheet()
+        from utils.mapping import ACB_TRICODES
+        sheet = get_daily_input_sheet()
+        for d in sheet:
+            triA = [k for k, v in ACB_TRICODES.items() if v in d['team'] or d['team'] in v][0] if any(v in d['team'] or d['team'] in v for v in ACB_TRICODES.values()) else "ACB"
+            triH = [k for k, v in ACB_TRICODES.items() if v in d['opponent'] or d['opponent'] in v][0] if any(v in d['opponent'] or d['opponent'] in v for v in ACB_TRICODES.values()) else "ACB"
+            d["away_details"] = {"name": d['team'], "code": triA, "logo": ""}
+            d["home_details"] = {"name": d["opponent"], "code": triH, "logo": ""}
+        return sheet
