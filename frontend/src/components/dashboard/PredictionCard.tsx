@@ -39,25 +39,28 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         <div className="flex-1 flex flex-col items-center md:items-end text-center md:text-right gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
                                 <img
-                                    src={prediction.awayTeam.logo || `https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png`}
+                                    src={prediction.awayTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/2.png`}
                                     alt={prediction.awayTeam.name}
                                     onError={(e) => {
-                                        const league = prediction.league.toLowerCase();
                                         const target = e.target as HTMLImageElement;
-                                        // Cascade: Team -> League Brand -> Generic
-                                        if (target.src.includes('leagues')) {
-                                            target.src = 'https://a.espncdn.com/i/teamlogos/basketball/500/2.png';
-                                        } else {
-                                            const leagueMap: Record<string, string> = {
-                                                nba: 'nba',
-                                                ncaa: 'ncaa',
-                                                euro: 'euro',
-                                                eurocup: 'euro',
-                                                nbl: 'nbl',
-                                                acb: 'acb'
-                                            };
-                                            target.src = `https://a.espncdn.com/i/teamlogos/leagues/500/${leagueMap[league] || 'ncaa'}.png`;
-                                        }
+                                        const league = prediction.league?.toLowerCase() || 'ncaa';
+                                        
+                                        // Final fallback to avoid infinite loops
+                                        const finalFallback = 'https://a.espncdn.com/i/teamlogos/basketball/500/default-team-logo.png';
+                                        
+                                        if (target.src === finalFallback) return;
+
+                                        const leagueMap: Record<string, string> = {
+                                            nba: 'nba',
+                                            ncaa: 'ncaa',
+                                            euro: 'euro',
+                                            eurocup: 'euro',
+                                            nbl: 'nbl',
+                                            acb: 'acb'
+                                        };
+
+                                        // If it's not already the final fallback, try league logo, then final
+                                        target.src = finalFallback;
                                     }}
                                     className="max-w-full max-h-full object-contain"
                                 />
@@ -78,25 +81,13 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-2">
                             <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
                                 <img
-                                    src={prediction.homeTeam.logo || `https://a.espncdn.com/i/teamlogos/leagues/500/ncaa.png`}
+                                    src={prediction.homeTeam.logo || `https://a.espncdn.com/i/teamlogos/basketball/500/2.png`}
                                     alt={prediction.homeTeam.name}
                                     onError={(e) => {
-                                        const league = prediction.league.toLowerCase();
                                         const target = e.target as HTMLImageElement;
-                                        // Cascade: Team -> League Brand -> Generic
-                                        if (target.src.includes('leagues')) {
-                                            target.src = 'https://a.espncdn.com/i/teamlogos/basketball/500/2.png';
-                                        } else {
-                                            const leagueMap: Record<string, string> = {
-                                                nba: 'nba',
-                                                ncaa: 'ncaa',
-                                                euro: 'euro',
-                                                eurocup: 'euro',
-                                                nbl: 'nbl',
-                                                acb: 'acb'
-                                            };
-                                            target.src = `https://a.espncdn.com/i/teamlogos/leagues/500/${leagueMap[league] || 'ncaa'}.png`;
-                                        }
+                                        const finalFallback = 'https://a.espncdn.com/i/teamlogos/basketball/500/default-team-logo.png';
+                                        if (target.src === finalFallback) return;
+                                        target.src = finalFallback;
                                     }}
                                     className="max-w-full max-h-full object-contain"
                                 />

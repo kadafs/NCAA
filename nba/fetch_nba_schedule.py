@@ -3,7 +3,7 @@ import json
 import argparse
 from datetime import datetime
 import zoneinfo
-from nba_api.stats.endpoints import scoreboardv2
+from nba_api.stats.endpoints import scoreboardv3
 import sys
 
 # Root addition for imports
@@ -23,58 +23,39 @@ def fetch_nba_daily_schedule(target_date=None):
     print(f"Fetching NBA schedule for {date_str}...")
     
     try:
-        # scoreboardv2 is better for specific dates
-        # Use custom headers to avoid blocks in GitHub Actions
+        # ScoreboardV3 is the newer, flat structure endpoint
         custom_headers = {
-            'Host': 'stats.nba.com',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://www.nba.com/',
+            'Origin': 'https://www.nba.com',
+            'DNT': '1',
             'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=0',
-            'Upgrade-Insecure-Requests': '1',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'en-US,en;q=0.9',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
         }
         
-        sb = scoreboardv2.ScoreboardV2(game_date=date_str, headers=custom_headers, timeout=30)
+        sb = scoreboardv3.ScoreboardV3(game_date=date_str, headers=custom_headers, timeout=30)
         data = sb.get_dict()
         
-        # In scoreboardv2, games are in 'GameHeader' rowSet
-        headers = data['resultSets'][0]['headers']
-        rows = data['resultSets'][0]['rowSet']
+        games = data.get('scoreboard', {}).get('games', [])
         
-        # Map headers to indices
-        idx_game_id = headers.index('GAME_ID')
-        idx_home_id = headers.index('HOME_TEAM_ID')
-        idx_away_id = headers.index('VISITOR_TEAM_ID')
-        idx_status = headers.index('GAME_STATUS_TEXT')
-        
-        # Team info is in 'LineScore'
-        ls_headers = data['resultSets'][1]['headers']
-        ls_rows = data['resultSets'][1]['rowSet']
-        
-        idx_ls_team_id = ls_headers.index('TEAM_ID')
-        idx_ls_team_name = ls_headers.index('TEAM_NAME')
-        idx_ls_city = ls_headers.index('TEAM_CITY_NAME')
-        
-        team_map = {}
-        for row in ls_rows:
-            team_map[row[idx_ls_team_id]] = {
-                "name": row[idx_ls_team_name],
-                "city": row[idx_ls_city]
-            }
-
         matchups = []
-        for row in rows:
-            home_team = team_map.get(row[idx_home_id], {"name": "Unknown", "city": "Unknown"})
-            away_team = team_map.get(row[idx_away_id], {"name": "Unknown", "city": "Unknown"})
+        for g in games:
+            home = g['homeTeam']
+            away = g['awayTeam']
+            
+            # Status text like "7:00 pm ET" or "Final"
+            status = g.get('gameStatusText', 'Scheduled')
             
             matchups.append({
-                "away": away_team['name'],
-                "home": home_team['name'],
-                "away_city": away_team['city'],
-                "home_city": home_team['city'],
-                "game_time": row[idx_status]
+                "away": away['teamName'],
+                "home": home['teamName'],
+                "away_city": away['teamCity'],
+                "home_city": home['teamCity'],
+                "game_time": status
             })
             
         print(f"Found {len(matchups)} games for {date_str}.")

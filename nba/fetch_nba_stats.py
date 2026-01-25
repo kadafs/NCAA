@@ -12,20 +12,38 @@ OUTPUT_FILE = os.path.join(DATA_DIR, "nba_stats.json")
 def fetch_nba_complete_stats():
     print("Fetching NBA Complete Stats (Team, Advanced, Opponent) from official API...")
     
+    # Verified headers to bypass connection blocks
+    custom_headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://www.nba.com/',
+        'Origin': 'https://www.nba.com',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+    }
+    
     try:
         # 1. Fetch Base Stats (PerGame)
         base_stats = leaguedashteamstats.LeagueDashTeamStats(
             measure_type_detailed_defense='Base',
             per_mode_detailed='PerGame',
             season='2025-26',
-            season_type_all_star='Regular Season'
+            season_type_all_star='Regular Season',
+            headers=custom_headers,
+            timeout=30
         ).get_dict()
 
         # 2. Fetch Advanced Stats
         advanced_stats = leaguedashteamstats.LeagueDashTeamStats(
             measure_type_detailed_defense='Advanced',
             season='2025-26',
-            season_type_all_star='Regular Season'
+            season_type_all_star='Regular Season',
+            headers=custom_headers,
+            timeout=30
         ).get_dict()
 
         # 3. Fetch Opponent Stats (What they allow)
@@ -33,7 +51,9 @@ def fetch_nba_complete_stats():
             measure_type_detailed_defense='Opponent',
             per_mode_detailed='PerGame',
             season='2025-26',
-            season_type_all_star='Regular Season'
+            season_type_all_star='Regular Season',
+            headers=custom_headers,
+            timeout=30
         ).get_dict()
 
         # Extract headers and rows

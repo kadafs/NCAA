@@ -6,12 +6,26 @@ from nba_api.stats.endpoints import leaguedashplayerstats
 # Output path
 OUTPUT_FILE = "data/nba_player_stats.json"
 
+# Shared headers for NBA API
+NBA_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': 'https://www.nba.com/',
+    'Origin': 'https://www.nba.com',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+}
+
 def fetch_player_positions():
     """Fetches player positions using FantasyWidget."""
     from nba_api.stats.endpoints import fantasywidget
     print("Fetching Player Positions...")
     try:
-        widget = fantasywidget.FantasyWidget(todays_players='N')
+        widget = fantasywidget.FantasyWidget(todays_players='N', headers=NBA_HEADERS, timeout=30)
         data = widget.get_dict()
         headers = data['resultSets'][0]['headers']
         rows = data['resultSets'][0]['rowSet']
@@ -32,7 +46,9 @@ def fetch_player_data(last_n=0):
         last_n_games=last_n,
         per_mode_detailed='PerGame',
         season='2025-26',
-        season_type_all_star='Regular Season'
+        season_type_all_star='Regular Season',
+        headers=NBA_HEADERS,
+        timeout=30
     ).get_dict()
     
     headers = stats['resultSets'][0]['headers']
