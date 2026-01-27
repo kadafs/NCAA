@@ -33,7 +33,6 @@ const MOCK_METRICS: PerformanceMetric[] = [
     { league: "TOTAL", record: "142-98-4", roi: 12.4, profit: 4520, winPct: 59.2, trend: [55, 58, 62, 59, 61, 59] },
     { league: "nba", record: "45-32-1", roi: 8.2, profit: 1240, winPct: 58.4, trend: [52, 55, 58, 56, 59, 58] },
     { league: "ncaa", record: "62-41-2", roi: 15.1, profit: 2180, winPct: 60.2, trend: [58, 60, 63, 61, 62, 60] },
-    { league: "euro", record: "35-25-1", roi: 10.5, profit: 1100, winPct: 58.3, trend: [54, 56, 59, 57, 58, 58] },
 ];
 
 const RECENT_PICKS = [

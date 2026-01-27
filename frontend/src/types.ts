@@ -1,4 +1,4 @@
-export type League = 'nba' | 'ncaa' | 'euro' | 'eurocup' | 'nbl' | 'acb';
+export type League = 'nba' | 'ncaa';
 
 export interface TeamStats {
     pointsPerGame: number;
@@ -15,6 +15,11 @@ export interface GameFactor {
     value: number; // 0-100
     impact: 'positive' | 'negative' | 'neutral';
 }
+
+export const LEAGUES = [
+    { id: "nba", name: "NBA", fullName: "National Basketball Association" },
+    { id: "ncaa", name: "NCAA", fullName: "College Basketball" },
+];
 
 export interface Prediction {
     id: string;

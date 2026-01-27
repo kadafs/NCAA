@@ -5,9 +5,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const LEAGUES = [
-    { id: "nba", name: "NBA" },
-    { id: "ncaa", name: "NCAA" },
-    { id: "euro", name: "EURO" },
+    { id: "nba", name: "NBA", fullName: "National Basketball Association" },
+    { id: "ncaa", name: "NCAA", fullName: "College Basketball" },
 ];
 
 interface LeagueSwitcherProps {

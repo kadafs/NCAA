@@ -70,36 +70,9 @@ const MOCK_GAMES: Game[] = [
         home: { code: "UNC", name: "North Carolina", score: 71 },
         prediction: { type: "SPREAD", line: -4.5, pick: "UNC -4.5", edge: 5.2, confidence: "strong" }
     },
-    {
-        id: "4",
-        league: "EURO",
-        status: "scheduled",
-        time: "2:00 PM",
-        away: { code: "REAL", name: "Real Madrid" },
-        home: { code: "FENER", name: "Fenerbahce" },
-        prediction: { type: "UNDER", line: 155.5, pick: "UNDER 155.5", edge: 4.1, confidence: "strong" }
-    },
-    {
-        id: "5",
-        league: "NBL",
-        status: "final",
-        time: "FINAL",
-        away: { code: "MEL", name: "Melbourne", score: 88 },
-        home: { code: "SYD", name: "Sydney", score: 92 },
-        prediction: { type: "OVER", line: 178.5, pick: "OVER 178.5", edge: 2.8, confidence: "lean" }
-    },
-    {
-        id: "6",
-        league: "ACB",
-        status: "scheduled",
-        time: "3:30 PM",
-        away: { code: "MAD", name: "Real Madrid" },
-        home: { code: "BARCA", name: "Barcelona" },
-        prediction: { type: "SPREAD", line: -3.5, pick: "BARCA -3.5", edge: 6.1, confidence: "lock" }
-    },
 ];
 
-const LEAGUES = ["All", "NBA", "NCAA", "EURO", "NBL", "ACB"];
+const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function ScoreboardPage() {
     const [activeTab, setActiveTab] = useState("live");
