@@ -50,6 +50,7 @@ export default function Performance() {
     const [metrics, setMetrics] = useState<PerformanceMetric[]>(MOCK_METRICS);
     const [recentPicks, setRecentPicks] = useState<any[]>(RECENT_PICKS);
     const [loading, setLoading] = useState(true);
+    const [isMock, setIsMock] = useState(true);
 
     React.useEffect(() => {
         fetchAuditData();
@@ -61,6 +62,8 @@ export default function Performance() {
             const res = await fetch('/api/audit');
             const data = await res.json();
 
+            let hasRealData = false;
+
             if (data.metrics && data.metrics.length > 0) {
                 const transformedMetrics: PerformanceMetric[] = data.metrics.map((m: any) => ({
                     league: m.league,
@@ -71,6 +74,7 @@ export default function Performance() {
                     trend: m.rolling_trend || [60, 60, 60, 60, 60, 60]
                 }));
                 setMetrics(transformedMetrics);
+                hasRealData = true;
             }
 
             if (data.recent && data.recent.length > 0) {
@@ -84,9 +88,13 @@ export default function Performance() {
                     date: p.game_date
                 }));
                 setRecentPicks(transformedPicks);
+                hasRealData = true;
             }
+
+            setIsMock(!hasRealData);
         } catch (err) {
             console.error("Audit fetch error:", err);
+            setIsMock(true);
         } finally {
             setLoading(false);
         }
@@ -109,9 +117,15 @@ export default function Performance() {
                                     <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">
                                         Model <span className="text-gold italic">Performance</span>
                                     </h1>
-                                    <p className="text-[10px] md:text-xs font-bold text-dash-text-muted uppercase tracking-widest mt-1">
-                                        Transparency & Historical Trust Protocol
-                                    </p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <div className={cn(
+                                            "w-1.5 h-1.5 rounded-full",
+                                            isMock ? "bg-dash-text-muted animate-pulse" : "bg-dash-success"
+                                        )} />
+                                        <p className="text-[10px] md:text-xs font-bold text-dash-text-muted uppercase tracking-widest ">
+                                            {isMock ? "Demo Mode (Mock History)" : "Live Audit Connection"}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
