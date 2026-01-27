@@ -160,6 +160,14 @@ def get_universal_predictions(league="nba", mode="safe"):
                         "pts": round(p_proj['proj_pts'], 1),
                         "reb": round(p_proj['proj_reb'], 1),
                         "ast": round(p_proj['proj_ast'], 1),
+                        "stl": round(p_proj.get('proj_stl', 0), 1),
+                        "blk": round(p_proj.get('proj_blk', 0), 1),
+                        "tov": round(p_proj.get('proj_tov', 0), 1),
+                        "threes": round(p_proj.get('proj_3pm', 0), 1),
+                        "fgm": round(p_proj.get('proj_fgm', 0), 1),
+                        "fga": round(p_proj.get('proj_fga', 0), 1),
+                        "ftm": round(p_proj.get('proj_ftm', 0), 1),
+                        "fta": round(p_proj.get('proj_fta', 0), 1),
                         "trace": p_proj['trace']
                     })
         elif league == "euro" and p_stats:
@@ -194,6 +202,10 @@ def get_universal_predictions(league="nba", mode="safe"):
                         "pts": round(p_proj['proj_pts'], 1),
                         "reb": round(p_proj['proj_reb'], 1),
                         "ast": round(p_proj['proj_ast'], 1),
+                        "stl": round(p_proj.get('proj_stl', 0), 1),
+                        "blk": round(p_proj.get('proj_blk', 0), 1),
+                        "tov": round(p_proj.get('proj_tov', 0), 1),
+                        "threes": round(p_proj.get('proj_3pm', 0), 1),
                         "trace": p_proj['trace']
                     })
         elif league == "eurocup" and p_stats:
@@ -224,6 +236,10 @@ def get_universal_predictions(league="nba", mode="safe"):
                         "pts": round(p_proj['proj_pts'], 1),
                         "reb": round(p_proj['proj_reb'], 1),
                         "ast": round(p_proj['proj_ast'], 1),
+                        "stl": round(p_proj.get('proj_stl', 0), 1),
+                        "blk": round(p_proj.get('proj_blk', 0), 1),
+                        "tov": round(p_proj.get('proj_tov', 0), 1),
+                        "threes": round(p_proj.get('proj_3pm', 0), 1),
                         "trace": p_proj['trace']
                     })
         
