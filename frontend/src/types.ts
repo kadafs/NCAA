@@ -60,7 +60,7 @@ export interface PlayerProp {
     teamCode: string;
     position: string;
     image: string;
-    propType: 'PTS' | 'REB' | 'AST' | 'P+R+A';
+    propType: 'PTS' | 'REB' | 'AST' | 'P+R+A' | 'STL' | 'BLK' | 'TOV' | '3PM' | 'FGM' | 'FGA' | 'FTM' | 'FTA';
     line: number;
     projection: number;
     edge: number;

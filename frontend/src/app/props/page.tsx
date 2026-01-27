@@ -119,7 +119,7 @@ const MOCK_PROPS: PlayerProp[] = [
     },
 ];
 
-const PROP_TYPES = ["All", "PTS", "REB", "AST", "P+R+A"];
+const PROP_TYPES = ["All", "PTS", "REB", "AST", "STL", "BLK", "TOV", "3PM", "FGM", "FGA", "FTM", "FTA"];
 const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function PropsPage() {
@@ -149,32 +149,60 @@ export default function PropsPage() {
                 data.games.forEach((game: any) => {
                     if (game.props && game.props.length > 0) {
                         game.props.forEach((p: any) => {
-                            // Map incoming API prop to our frontend type
-                            // Temporary: logic to make the 'line' look realistic
-                            const baseline = p.pts > 25 ? Math.floor(p.pts - 1.5) + 0.5 : Math.floor(p.pts - 0.5) + 0.5;
-                            const edge = p.pts - baseline;
-                            const edgePct = (edge / baseline) * 100;
+                            // Define available prop categories to generate cards for
+                            const categories = [
+                                { type: 'PTS', key: 'pts', threshold: 10 },
+                                { type: 'REB', key: 'reb', threshold: 4 },
+                                { type: 'AST', key: 'ast', threshold: 3 },
+                                { type: 'STL', key: 'stl', threshold: 0.5 },
+                                { type: 'BLK', key: 'blk', threshold: 0.5 },
+                                { type: 'TOV', key: 'tov', threshold: 1.5 },
+                                { type: '3PM', key: 'threes', threshold: 1.5 },
+                                { type: 'FGM', key: 'fgm', threshold: 4 },
+                                { type: 'FGA', key: 'fga', threshold: 8 },
+                                { type: 'FTM', key: 'ftm', threshold: 2 },
+                                { type: 'FTA', key: 'fta', threshold: 2.5 }
+                            ];
 
-                            allProps.push({
-                                id: p.id || `${game.matchup}-${p.name}`,
-                                name: p.name,
-                                team: p.team_label === 'A' ? game.away : game.home,
-                                teamCode: p.team_label === 'A' ? game.away_details?.code : game.home_details?.code,
-                                position: "G/F",
-                                image: p.id ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
-                                propType: "PTS",
-                                line: baseline,
-                                projection: p.pts,
-                                edge: edge,
-                                edgePct: edgePct,
-                                usageBoost: p.trace?.some((t: string) => t.includes('usage')),
-                                recentTrend: [1, 1, 1]
+                            categories.forEach(cat => {
+                                const val = p[cat.key];
+                                if (val && val >= cat.threshold) {
+                                    // Logic to generate a realistic "Line"
+                                    // For low-count stats (steals/blocks), line is usually 0.5 or 1.5
+                                    let baseline;
+                                    if (val < 2.5) baseline = 1.5; // e.g. proj 1.8 -> line 1.5
+                                    else if (val < 5) baseline = Math.floor(val) + 0.5;
+                                    else baseline = Math.floor(val - 0.5) + 0.5;
+
+                                    const edge = val - baseline;
+                                    const edgePct = (edge / baseline) * 100;
+
+                                    if (edge > 0) { // Only show positive edges for cleanliness
+                                        allProps.push({
+                                            id: `${p.id}-${cat.type}`,
+                                            name: p.name,
+                                            team: p.team_label === 'A' ? game.away : game.home,
+                                            teamCode: p.team_label === 'A' ? game.away_details?.code : game.home_details?.code,
+                                            position: "G/F",
+                                            image: p.id ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
+                                            propType: cat.type as any,
+                                            line: baseline,
+                                            projection: val,
+                                            edge: edge,
+                                            edgePct: edgePct,
+                                            usageBoost: p.trace?.some((t: string) => t.includes('usage')),
+                                            recentTrend: [1, 1, 1] // Placeholder
+                                        });
+                                    }
+                                }
                             });
                         });
                     }
                 });
 
-                setProps(allProps);
+                // Filter out duplicates if any (safety check)
+                const uniqueProps = Array.from(new Map(allProps.map(item => [item.id, item])).values());
+                setProps(uniqueProps);
             } else {
                 setProps(MOCK_PROPS);
             }

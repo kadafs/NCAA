@@ -27,8 +27,16 @@ class UniversalPropEngine:
         p_pts = (s.get('pts', 0) * weight_s) + (r.get('pts', 0) * weight_r)
         p_reb = (s.get('reb', 0) * weight_s) + (r.get('reb', 0) * weight_r)
         p_ast = (s.get('ast', 0) * weight_s) + (r.get('ast', 0) * weight_r)
+        p_stl = (s.get('stl', 0) * weight_s) + (r.get('stl', 0) * weight_r)
+        p_blk = (s.get('blk', 0) * weight_s) + (r.get('blk', 0) * weight_r)
+        p_tov = (s.get('tov', 0) * weight_s) + (r.get('tov', 0) * weight_r)
+        p_threes = (s.get('threes', 0) * weight_s) + (r.get('threes', 0) * weight_r)
+        p_fgm = (s.get('fgm', 0) * weight_s) + (r.get('fgm', 0) * weight_r)
+        p_fga = (s.get('fga', 0) * weight_s) + (r.get('fga', 0) * weight_r)
+        p_ftm = (s.get('ftm', 0) * weight_s) + (r.get('ftm', 0) * weight_r)
+        p_fta = (s.get('fta', 0) * weight_s) + (r.get('fta', 0) * weight_r)
         
-        trace.append(f"Baseline (40/60): Pts {p_pts:.1f} | Reb {p_reb:.1f} | Ast {p_ast:.1f}")
+        trace.append(f"Baseline (40/60): Pts {p_pts:.1f} | Reb {p_reb:.1f} | Ast {p_ast:.1f} | Stl {p_stl:.1f}")
 
         # 2. Environment Scaling (Pace & Team Total)
         # factor = projected team score / season average score
@@ -38,7 +46,15 @@ class UniversalPropEngine:
         p_pts *= factor
         p_reb *= vol_factor
         p_ast *= vol_factor
-        trace.append(f"Environment Scaling: Pts {p_pts:.1f} | Reb {p_reb:.1f} (Factor: {factor:.2f})")
+        p_stl *= vol_factor
+        p_blk *= vol_factor
+        p_tov *= vol_factor
+        p_threes *= vol_factor
+        p_fgm *= vol_factor
+        p_fga *= vol_factor
+        p_ftm *= vol_factor
+        p_fta *= vol_factor
+        trace.append(f"Environment Scaling: Pts {p_pts:.1f} (Factor: {factor:.2f})")
 
         # 3. Defensive Funnel (Opponent Weaknesses)
         allowed = game_context.get('opp_allowed', {})
@@ -86,13 +102,26 @@ class UniversalPropEngine:
                 p_pts *= (1 + bump_pts)
                 p_ast *= (1 + bump_ast)
                 p_reb *= (1 + bump_reb)
-                trace.append(f"Usage Vacuum: Pts +{bump_pts*100:.0f}% | Ast +{bump_ast*100:.0f}% | Reb +{bump_reb*100:.0f}%")
+                # Apply minor usage bump to other volume stats
+                p_stl *= (1 + bump_pts * 0.5)
+                p_tov *= (1 + bump_pts * 0.8)
+                p_fgm *= (1 + bump_pts)
+                p_fga *= (1 + bump_pts)
+                trace.append(f"Usage Vacuum: Pts +{bump_pts*100:.0f}% applied")
 
         # 5. Final Regression
         prop_reg = game_context.get('prop_regression', 0.95)
         p_pts *= prop_reg
         p_ast *= prop_reg
         p_reb *= prop_reg
+        p_stl *= prop_reg
+        p_blk *= prop_reg
+        p_tov *= prop_reg
+        p_threes *= prop_reg
+        p_fgm *= prop_reg
+        p_fga *= prop_reg
+        p_ftm *= prop_reg
+        p_fta *= prop_reg
         trace.append(f"Final Prop Regression: {prop_reg}x applied")
 
         return {
@@ -100,6 +129,14 @@ class UniversalPropEngine:
             "proj_pts": round(p_pts, 2),
             "proj_ast": round(p_ast, 2),
             "proj_reb": round(p_reb, 2),
+            "proj_stl": round(p_stl, 2),
+            "proj_blk": round(p_blk, 2),
+            "proj_tov": round(p_tov, 2),
+            "proj_3pm": round(p_threes, 2),
+            "proj_fgm": round(p_fgm, 2),
+            "proj_fga": round(p_fga, 2),
+            "proj_ftm": round(p_ftm, 2),
+            "proj_fta": round(p_fta, 2),
             "seasonal": s,
             "recent": r,
             "trace": trace
