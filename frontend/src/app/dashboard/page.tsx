@@ -78,8 +78,8 @@ const MOCK_PROPS: PlayerProp[] = [
 ];
 
 export default function DashboardIndex() {
-    const [games, setGames] = useState<Prediction[]>([]);
     const [props, setProps] = useState<PlayerProp[]>([]);
+    const [audit, setAudit] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("home");
 
@@ -93,43 +93,10 @@ export default function DashboardIndex() {
             const res = await fetch(`/api/predictions?league=nba&mode=safe`);
             const data = await res.json();
 
-            if (data.games && data.games.length > 0) {
-                const transformedGames: Prediction[] = data.games.slice(0, 3).map((g: any, idx: number) => ({
-                    id: `nba-${idx}`,
-                    league: "nba",
-                    time: g.time || "TBD",
-                    date: g.date || "TODAY",
-                    awayTeam: {
-                        name: g.away?.name || g.away_team || g.away || "Away",
-                        code: g.away?.code || g.away_tri || "AWY",
-                        logo: g.away?.logo || "",
-                        record: g.away?.record || "",
-                        stats: { pointsPerGame: 100, reboundsPerGame: 40, assistsPerGame: 25, fieldGoalPct: 45, threePointPct: 35, freeThrowPct: 75, netRating: 50 }
-                    },
-                    homeTeam: {
-                        name: g.home?.name || g.home_team || g.home || "Home",
-                        code: g.home?.code || g.home_tri || "HME",
-                        logo: g.home?.logo || "",
-                        record: g.home?.record || "",
-                        stats: { pointsPerGame: 100, reboundsPerGame: 40, assistsPerGame: 25, fieldGoalPct: 45, threePointPct: 35, freeThrowPct: 75, netRating: 50 }
-                    },
-                    marketTotal: g.market_total || g.marketTotal || 220,
-                    modelTotal: g.model_total || g.modelTotal || 225,
-                    edge: g.edge || 2.5,
-                    confidence: g.confidence || "lean",
-                    trace: g.trace || [],
-                    factors: g.factors || [],
-                    forecastData: g.forecastData || []
-                }));
-                setGames(transformedGames);
-            } else {
-                setGames([MOCK_PREDICTION]);
-            }
-
             setProps(MOCK_PROPS);
+            if (data.audit) setAudit(data.audit);
         } catch (err) {
             console.error("Fetch error:", err);
-            setGames([MOCK_PREDICTION]);
             setProps(MOCK_PROPS);
         } finally {
             setLoading(false);
@@ -187,35 +154,33 @@ export default function DashboardIndex() {
                     <div className="max-w-[1600px] mx-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                            {/* Featured Games */}
+                            {/* Sidebar / Quick Actions */}
                             <section className="lg:col-span-8 space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                                        <Target className="w-4 h-4 text-gold" />
-                                        Featured Predictions
-                                    </h2>
-                                    <Link href="/dashboard/nba" className="text-[10px] font-bold text-gold uppercase hover:underline">
-                                        View All
-                                    </Link>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {LEAGUES.map((league) => (
+                                        <Link
+                                            key={league.id}
+                                            href={`/dashboard/${league.id}`}
+                                            className="group block bg-dash-card border border-dash-border rounded-3xl p-8 hover:border-gold/30 hover:scale-[1.02] transition-all"
+                                        >
+                                            <div className="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center mb-6">
+                                                <Trophy className="w-8 h-8 text-gold" />
+                                            </div>
+                                            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
+                                                {league.name}
+                                            </h3>
+                                            <p className="text-sm text-dash-text-muted leading-relaxed mb-6">
+                                                Access advanced predictions, efficiency metrics, and line logic for {league.fullName}.
+                                            </p>
+                                            <div className="flex items-center justify-between pt-6 border-t border-dash-border">
+                                                <span className="text-xs font-bold text-gold uppercase tracking-widest">
+                                                    Enter Dashboard
+                                                </span>
+                                                <ChevronRight className="w-5 h-5 text-dash-text-muted group-hover:text-gold transition-colors" />
+                                            </div>
+                                        </Link>
+                                    ))}
                                 </div>
-
-                                {loading ? (
-                                    <div className="bg-dash-card border border-dash-border rounded-3xl p-12 flex flex-col items-center justify-center gap-4">
-                                        <RefreshCw className="w-8 h-8 text-gold animate-spin" />
-                                        <p className="text-sm font-bold text-dash-text-muted">Loading predictions...</p>
-                                    </div>
-                                ) : games.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {games.map((game) => (
-                                            <PredictionCard key={game.id} prediction={game} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="bg-dash-card border border-dash-border rounded-3xl p-12 flex flex-col items-center justify-center gap-4">
-                                        <Calendar className="w-8 h-8 text-dash-text-muted" />
-                                        <p className="text-sm font-bold text-white">No games available</p>
-                                    </div>
-                                )}
                             </section>
 
                             {/* Sidebar */}
