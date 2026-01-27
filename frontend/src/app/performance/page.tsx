@@ -47,6 +47,50 @@ const RECENT_PICKS = [
 export default function Performance() {
     const [activeTab, setActiveTab] = useState("performance");
     const [selectedPeriod, setSelectedPeriod] = useState("30d");
+    const [metrics, setMetrics] = useState<PerformanceMetric[]>(MOCK_METRICS);
+    const [recentPicks, setRecentPicks] = useState<any[]>(RECENT_PICKS);
+    const [loading, setLoading] = useState(true);
+
+    React.useEffect(() => {
+        fetchAuditData();
+    }, []);
+
+    const fetchAuditData = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/audit');
+            const data = await res.json();
+
+            if (data.metrics && data.metrics.length > 0) {
+                const transformedMetrics: PerformanceMetric[] = data.metrics.map((m: any) => ({
+                    league: m.league,
+                    record: `${m.wins}-${m.losses}-${m.pushes}`,
+                    roi: m.roi,
+                    profit: m.profit,
+                    winPct: m.win_pct,
+                    trend: m.rolling_trend || [60, 60, 60, 60, 60, 60]
+                }));
+                setMetrics(transformedMetrics);
+            }
+
+            if (data.recent && data.recent.length > 0) {
+                const transformedPicks = data.recent.map((p: any) => ({
+                    id: p.id,
+                    matchup: p.matchup,
+                    type: "TOTAL",
+                    line: p.market_total,
+                    result: p.is_win === true ? "WIN" : p.is_win === false ? "LOSS" : "PUSH",
+                    edge: `+${p.edge.toFixed(1)}`,
+                    date: p.game_date
+                }));
+                setRecentPicks(transformedPicks);
+            }
+        } catch (err) {
+            console.error("Audit fetch error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-dash-bg text-dash-text-primary">
@@ -92,7 +136,7 @@ export default function Performance() {
 
                         {/* Metrics Grid */}
                         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {MOCK_METRICS.map((metric, idx) => (
+                            {metrics.map((metric, idx) => (
                                 <motion.div
                                     key={metric.league}
                                     initial={{ opacity: 0, y: 20 }}
@@ -205,7 +249,7 @@ export default function Performance() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    {RECENT_PICKS.map((pick) => (
+                                    {recentPicks.map((pick) => (
                                         <div
                                             key={pick.id}
                                             className="flex flex-col gap-2 p-3 bg-dash-bg-secondary border border-dash-border rounded-xl group hover:border-gold/20 transition-all"

@@ -1,16 +1,37 @@
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
+import { supabase } from "@/lib/supabase";
 
-export async function GET() {
+/**
+ * Audit API Route
+ * 
+ * Fetches real performance metrics from Supabase 'audit_summary' and 'predictions_history' tables.
+ */
+
+export async function GET(req: Request) {
     try {
-        const auditPath = path.join(process.cwd(), "..", "data", "performance_audit.json");
-        if (fs.existsSync(auditPath)) {
-            const auditContent = fs.readFileSync(auditPath, "utf-8");
-            const audit = JSON.parse(auditContent);
-            return NextResponse.json(audit);
-        }
-        return NextResponse.json({ error: "Audit file not found" }, { status: 404 });
+        // 1. Fetch Summary Data
+        const { data: summaryData, error: summaryError } = await supabase
+            .from("audit_summary")
+            .select("*");
+
+        if (summaryError) throw summaryError;
+
+        // 2. Fetch Recent Graded Picks
+        const { data: recentPicks, error: picksError } = await supabase
+            .from("predictions_history")
+            .select("*")
+            .eq("status", "graded")
+            .order("game_date", { ascending: false })
+            .limit(10);
+
+        if (picksError) throw picksError;
+
+        return NextResponse.json({
+            metrics: summaryData || [],
+            recent: recentPicks || [],
+            timestamp: new Date().toISOString()
+        });
+
     } catch (error) {
         console.error("Audit API Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
