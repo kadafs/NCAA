@@ -98,95 +98,106 @@ export default function PerformanceHistory() {
 
                 {/* Content */}
                 <main className="p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
-                    <div className="max-w-5xl mx-auto space-y-8">
+                    <div className="max-w-6xl mx-auto space-y-8">
                         {/* League Cards Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {["nba", "ncaa"].map((league) => {
-                                const stats = audit?.[league];
-                                if (!stats) return null;
-
-                                return (
-                                    <motion.div
-                                        key={league}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="bg-dash-card border border-dash-border rounded-3xl p-6 md:p-8"
-                                    >
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn(
-                                                    "w-12 h-12 rounded-2xl flex items-center justify-center border",
-                                                    league === 'nba'
-                                                        ? "bg-gold/10 border-gold/20 text-gold"
-                                                        : "bg-cyan/10 border-cyan/20 text-cyan"
-                                                )}>
-                                                    <Trophy className="w-6 h-6" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black text-white uppercase">{league}</h3>
-                                                    <div className="text-[10px] text-dash-text-muted font-bold uppercase tracking-widest">
-                                                        Reliability Score
-                                                    </div>
-                                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {audit?.metrics?.map((m: any) => (
+                                <motion.div
+                                    key={m.league}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-dash-card border border-dash-border rounded-3xl p-6"
+                                >
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-gold/10 border-gold/20 text-gold">
+                                                <Trophy className="w-5 h-5" />
                                             </div>
-                                            <div className="px-3 py-1 rounded-full bg-dash-success/10 border border-dash-success/20 text-[8px] font-black text-dash-success uppercase tracking-widest">
-                                                VERIFIED
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 mb-6">
-                                            <div className="p-4 rounded-2xl bg-dash-bg border border-dash-border">
-                                                <div className="text-[9px] font-bold text-dash-text-muted uppercase mb-1">48h Accuracy</div>
-                                                <div className="text-2xl font-black text-white">{stats.last_48h.pct}%</div>
-                                                <div className="text-[9px] font-bold text-dash-text-muted uppercase">
-                                                    {stats.last_48h.wins}W - {stats.last_48h.losses}L
-                                                </div>
-                                            </div>
-                                            <div className="p-4 rounded-2xl bg-dash-bg border border-dash-border">
-                                                <div className="text-[9px] font-bold text-dash-text-muted uppercase mb-1">All-Time</div>
-                                                <div className={cn(
-                                                    "text-2xl font-black",
-                                                    league === 'nba' ? "text-gold" : "text-cyan"
-                                                )}>
-                                                    {stats.all_time.pct}%
-                                                </div>
-                                                <div className="text-[9px] font-bold text-dash-text-muted uppercase">
-                                                    {stats.all_time.wins}W - {stats.all_time.losses}L
+                                            <div>
+                                                <h3 className="text-sm font-black text-white uppercase">{m.league}</h3>
+                                                <div className="text-[8px] text-dash-text-muted font-bold uppercase tracking-widest">
+                                                    Reliability Score
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="space-y-2">
-                                            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-dash-text-muted">
-                                                <span>Confidence Curve</span>
-                                                <span>High Retention</span>
-                                            </div>
-                                            <div className="h-2 w-full bg-dash-bg rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${stats.all_time.pct}%` }}
-                                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                                    className={cn(
-                                                        "h-full",
-                                                        league === 'nba' ? "bg-gold" : "bg-cyan"
-                                                    )}
-                                                />
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <div className="p-3 rounded-xl bg-dash-bg border border-dash-border">
+                                            <div className="text-[8px] font-bold text-dash-text-muted uppercase mb-1">Accuracy</div>
+                                            <div className="text-xl font-black text-white">{m.win_pct}%</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-dash-bg border border-dash-border">
+                                            <div className="text-[8px] font-bold text-dash-text-muted uppercase mb-1">Record</div>
+                                            <div className="text-xl font-black text-gold">
+                                                {m.wins}-{m.losses}-{m.pushes}
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="pt-6 mt-6 border-t border-dash-border flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-widest text-dash-text-muted">
-                                                <Calendar className="w-3 h-3" />
-                                                Last Update: {new Date(stats.last_update).toLocaleDateString()}
-                                            </div>
-                                            <ShieldCheck className={cn(
-                                                "w-4 h-4",
-                                                league === 'nba' ? "text-gold" : "text-cyan"
-                                            )} />
+                                    <div className="space-y-2">
+                                        <div className="h-1.5 w-full bg-dash-bg rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${m.win_pct}%` }}
+                                                className="h-full bg-gold"
+                                            />
                                         </div>
-                                    </motion.div>
-                                );
-                            })}
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+
+                        {/* Full History Log */}
+                        <div className="bg-dash-card border border-dash-border rounded-3xl overflow-hidden">
+                            <div className="p-6 md:p-8 border-b border-dash-border flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Calendar className="w-5 h-5 text-gold" />
+                                    <h4 className="text-lg font-black text-white uppercase">Historical Result Log</h4>
+                                </div>
+                                <span className="text-[10px] font-bold text-dash-text-muted uppercase">Verified Results Only</span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="bg-white/5 border-b border-dash-border">
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Date</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Matchup</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Line</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Outcome</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Result</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-dash-border">
+                                        {audit?.recent?.map((p: any) => (
+                                            <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                                                <td className="px-6 py-4 text-xs font-bold text-dash-text-muted uppercase">{p.game_date}</td>
+                                                <td className="px-6 py-4 text-xs font-black text-white uppercase">{p.matchup}</td>
+                                                <td className="px-6 py-4 text-xs font-bold text-dash-text-muted uppercase">{p.market_total}</td>
+                                                <td className="px-6 py-4 text-xs font-black text-white">{p.actual_total}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={cn(
+                                                        "text-[9px] font-black px-2 py-0.5 rounded uppercase",
+                                                        p.is_win === true ? "bg-dash-success/20 text-dash-success" :
+                                                            p.is_win === false ? "bg-dash-danger/20 text-dash-danger" :
+                                                                "bg-dash-text-muted/20 text-dash-text-muted"
+                                                    )}>
+                                                        {p.is_win === true ? "WIN" : p.is_win === false ? "LOSS" : "PUSH"}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {!audit?.recent?.length && (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-xs font-bold text-dash-text-muted uppercase tracking-widest bg-dash-bg/30">
+                                                    No results archived yet. Real results will appear here after the first audit.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         {/* Methodology Card */}
