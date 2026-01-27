@@ -26,9 +26,6 @@ import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
 const LEAGUES = [
     { id: "nba", name: "NBA" },
     { id: "ncaa", name: "NCAA" },
-    { id: "euro", name: "EURO" },
-    { id: "nbl", name: "NBL" },
-    { id: "acb", name: "ACB" },
 ];
 
 export default function LeagueScoreboard() {

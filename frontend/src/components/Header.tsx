@@ -11,7 +11,6 @@ import Image from "next/image";
 const LEAGUES = [
     { id: "nba", name: "NBA", fullName: "National Basketball Association" },
     { id: "ncaa", name: "NCAA", fullName: "College Basketball" },
-    { id: "euro", name: "EURO", fullName: "European Leagues" },
 ];
 
 const NAV_LINKS = [

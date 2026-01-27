@@ -23,13 +23,47 @@ export async function GET(req: Request) {
 
         if (error || !storeData) {
             console.error("Supabase Read Error:", error);
-            const isConfigured = !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+            // Fallback for development/demo mode if Supabase is failing or unconfigured
+            const mockData: Record<string, any> = {
+                nba: {
+                    games: [
+                        {
+                            time: "LIVE",
+                            date: "TODAY",
+                            away: { name: "Lakers", code: "LAL", score: 102 },
+                            home: { name: "Celtics", code: "BOS", score: 108 },
+                            market_total: 234.5,
+                            model_total: 238.2,
+                            edge: 3.7,
+                            confidence: "strong"
+                        }
+                    ],
+                    audit: { last_48h: { wins: 24, losses: 11, pct: 84.2 } }
+                },
+                ncaa: {
+                    games: [
+                        {
+                            time: "7:00 PM",
+                            date: "TODAY",
+                            away: { name: "Duke", code: "DUKE" },
+                            home: { name: "UNC", code: "UNC" },
+                            market_total: 145.5,
+                            model_total: 148.7,
+                            edge: 3.2,
+                            confidence: "strong"
+                        }
+                    ],
+                    audit: { last_48h: { wins: 42, losses: 18, pct: 70.0 } }
+                }
+            };
+
+            const fallback = mockData[league] || mockData.nba;
             return NextResponse.json({
-                error: error?.message || "Predictions not found in database.",
-                details: error || (isConfigured ? "Table 'predictions_store' might be empty." : "Supabase Environment variables are MISSING on Vercel."),
-                league,
-                timestamp: new Date().toISOString()
-            }, { status: 404 });
+                ...fallback,
+                isMock: true,
+                warning: "Using mock data due to Supabase connection failure."
+            });
         }
 
         const predictions = storeData.data;

@@ -30,17 +30,11 @@ import { Prediction, PlayerProp } from "@/types";
 const LEAGUES = [
     { id: "nba", name: "NBA", fullName: "National Basketball Association" },
     { id: "ncaa", name: "NCAA", fullName: "Division I Basketball" },
-    { id: "euro", name: "EURO", fullName: "EuroLeague & Eurocup" },
-    { id: "nbl", name: "NBL", fullName: "Australia NBL" },
-    { id: "acb", name: "ACB", fullName: "Liga ACB Spain" },
 ];
 
 const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: PlayerProp[] } => {
     const isNBA = leagueId === "nba";
     const isNCAA = leagueId === "ncaa";
-    const isEuro = leagueId === "euro";
-    const isNBL = leagueId === "nbl";
-    const isACB = leagueId === "acb";
 
     const prediction: Prediction = {
         id: `mock-${leagueId}`,
@@ -48,22 +42,18 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
         time: "LIVE",
         date: "TODAY",
         awayTeam: {
-            name: isNBA ? "Lakers" : isNCAA ? "Duke" : isEuro ? "Real Madrid" : isNBL ? "Wildcats" : "Barcelona",
-            code: isNBA ? "LAL" : isNCAA ? "DUKE" : isEuro ? "RMA" : isNBL ? "PER" : "BAR",
+            name: isNBA ? "Lakers" : "Duke",
+            code: isNBA ? "LAL" : "DUKE",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" :
-                isNCAA ? "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/duke.svg" :
-                    isEuro ? "" :
-                        "",
+                "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/duke.svg",
             record: "21-22",
             stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
         },
         homeTeam: {
-            name: isNBA ? "Celtics" : isNCAA ? "North Carolina" : isEuro ? "Anadolu Efes" : isNBL ? "Kings" : "Real Madrid",
-            code: isNBA ? "BOS" : isNCAA ? "UNC" : isEuro ? "EFS" : isNBL ? "SYD" : "RMA",
+            name: isNBA ? "Celtics" : "North Carolina",
+            code: isNBA ? "BOS" : "UNC",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" :
-                isNCAA ? "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/north-carolina.svg" :
-                    isEuro ? "" :
-                        "",
+                "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/north-carolina.svg",
             record: "32-9",
             stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
         },
@@ -79,7 +69,7 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
     const props: PlayerProp[] = [
         {
             id: `p-${leagueId}`,
-            name: isNBA ? "LeBron James" : isNCAA ? "RJ Davis" : "Facundo Campazzo",
+            name: isNBA ? "LeBron James" : "RJ Davis",
             team: prediction.awayTeam.name,
             teamCode: prediction.awayTeam.code,
             position: "G/F",

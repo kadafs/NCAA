@@ -28,9 +28,6 @@ import { Prediction, PlayerProp } from "@/types";
 const LEAGUES = [
     { id: "nba", name: "NBA", fullName: "National Basketball Association" },
     { id: "ncaa", name: "NCAA", fullName: "Division I Basketball" },
-    { id: "euro", name: "EURO", fullName: "EuroLeague & Eurocup" },
-    { id: "nbl", name: "NBL", fullName: "Australia NBL" },
-    { id: "acb", name: "ACB", fullName: "Liga ACB Spain" },
 ];
 
 // Mock data for demo

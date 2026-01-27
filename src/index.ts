@@ -62,7 +62,8 @@ async function ncaaFetch(url: string, options: RequestInit = {}) {
     "www.ncaa.com": "92.123.173.87",
     "ncaa.com": "92.123.173.87",
     "data.ncaa.com": "23.42.7.171",
-    "sdataprod.ncaa.com": "23.222.51.114"
+    "sdataprod.ncaa.com": "23.222.51.114",
+    "ncaa-api.henrygd.me": "207.211.214.145"
   };
 
   try {

@@ -49,33 +49,6 @@ const LEAGUES = [
     gamesCount: 24,
     description: "Advanced efficiency metrics for 350+ D1 programs.",
   },
-  {
-    id: "euro",
-    name: "EURO",
-    fullName: "EuroLeague & Eurocup",
-    icon: Award,
-    accentColor: "gold",
-    gamesCount: 8,
-    description: "European leagues with tempo-adjusted predictions.",
-  },
-  {
-    id: "nbl",
-    name: "NBL",
-    fullName: "Australia NBL",
-    icon: Activity,
-    accentColor: "cyan",
-    gamesCount: 4,
-    description: "Southern hemisphere basketball analytics.",
-  },
-  {
-    id: "acb",
-    name: "ACB",
-    fullName: "Liga ACB Spain",
-    icon: Shield,
-    accentColor: "gold",
-    gamesCount: 6,
-    description: "Spanish league with advanced metrics.",
-  },
 ];
 
 const PLATFORM_STATS = [
@@ -106,7 +79,6 @@ const FEATURES = [
 const LIVE_GAMES = [
   { id: "1", away: "LAL", home: "BOS", awayScore: 102, homeScore: 108, quarter: "Q4", time: "2:34", league: "NBA", edge: "+3.2" },
   { id: "2", away: "DUKE", home: "UNC", awayScore: 68, homeScore: 71, quarter: "2H", time: "8:45", league: "NCAA", edge: "+5.1" },
-  { id: "3", away: "REAL", home: "BARCA", awayScore: 78, homeScore: 82, quarter: "Q3", time: "5:12", league: "EURO", edge: "+2.8" },
 ];
 
 export default function LandingPage() {
@@ -173,7 +145,7 @@ export default function LandingPage() {
 
             {/* Tagline */}
             <p className="text-base md:text-lg text-dash-text-muted max-w-2xl mx-auto mb-10 leading-relaxed">
-              The world's most advanced prediction engine for NBA, NCAA, and European leagues.
+              The world's most advanced prediction engine for NBA and NCAA basketball.
               Real-time analytics powered by proprietary models with full transparency.
             </p>
 
