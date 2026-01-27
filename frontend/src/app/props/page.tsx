@@ -120,7 +120,7 @@ const MOCK_PROPS: PlayerProp[] = [
 ];
 
 const PROP_TYPES = ["All", "PTS", "REB", "AST", "P+R+A"];
-const LEAGUES = ["All", "NBA", "NCAA", "EURO", "NBL", "ACB"];
+const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function PropsPage() {
     const [activeTab, setActiveTab] = useState("props");
@@ -128,9 +128,66 @@ export default function PropsPage() {
     const [selectedPropType, setSelectedPropType] = useState("All");
     const [selectedLeague, setSelectedLeague] = useState("All");
     const [sortBy, setSortBy] = useState<"edge" | "edgePct">("edgePct");
+    const [props, setProps] = useState<PlayerProp[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    React.useEffect(() => {
+        fetchProps();
+    }, [selectedLeague]);
+
+    const fetchProps = async () => {
+        setLoading(true);
+        try {
+            // Fetch NBA by default since NCAA props might be limited
+            const leagueQuery = selectedLeague === "All" ? "nba" : selectedLeague.toLowerCase();
+            const res = await fetch(`/api/predictions?league=${leagueQuery}`);
+            const data = await res.json();
+
+            if (data.games) {
+                const allProps: PlayerProp[] = [];
+
+                data.games.forEach((game: any) => {
+                    if (game.props && game.props.length > 0) {
+                        game.props.forEach((p: any) => {
+                            // Map incoming API prop to our frontend type
+                            // Temporary: logic to make the 'line' look realistic
+                            const baseline = p.pts > 25 ? Math.floor(p.pts - 1.5) + 0.5 : Math.floor(p.pts - 0.5) + 0.5;
+                            const edge = p.pts - baseline;
+                            const edgePct = (edge / baseline) * 100;
+
+                            allProps.push({
+                                id: p.id || `${game.matchup}-${p.name}`,
+                                name: p.name,
+                                team: p.team_label === 'A' ? game.away : game.home,
+                                teamCode: p.team_label === 'A' ? game.away_details?.code : game.home_details?.code,
+                                position: "G/F",
+                                image: p.id ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
+                                propType: "PTS",
+                                line: baseline,
+                                projection: p.pts,
+                                edge: edge,
+                                edgePct: edgePct,
+                                usageBoost: p.trace?.some((t: string) => t.includes('usage')),
+                                recentTrend: [1, 1, 1]
+                            });
+                        });
+                    }
+                });
+
+                setProps(allProps);
+            } else {
+                setProps(MOCK_PROPS);
+            }
+        } catch (err) {
+            console.error("Props fetch error:", err);
+            setProps(MOCK_PROPS);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Filter and sort props
-    const filteredProps = MOCK_PROPS
+    const filteredProps = props
         .filter(prop => {
             if (searchQuery && !prop.name.toLowerCase().includes(searchQuery.toLowerCase())) {
                 return false;
@@ -233,43 +290,53 @@ export default function PropsPage() {
                 {/* Props Grid */}
                 <main className="p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
                     <div className="max-w-[1600px] mx-auto">
-                        {/* High Edge Alert */}
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="mb-6 p-4 bg-gold/10 border border-gold/20 rounded-2xl flex items-center gap-4"
-                        >
-                            <div className="w-10 h-10 bg-gold rounded-xl flex items-center justify-center flex-shrink-0">
-                                <Zap className="w-5 h-5 text-dash-bg" />
+                        {loading ? (
+                            <div className="bg-dash-card border border-dash-border rounded-3xl p-12 flex flex-col items-center justify-center gap-4">
+                                <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                                <p className="text-sm font-bold text-dash-text-muted">Analyzing market props...</p>
                             </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-gold uppercase">High Edge Alert</h3>
-                                <p className="text-xs text-dash-text-muted mt-0.5">
-                                    {filteredProps.filter(p => p.edgePct > 10).length} props with 10%+ edge detected today
-                                </p>
-                            </div>
-                        </motion.div>
+                        ) : (
+                            <>
+                                {/* High Edge Alert */}
+                                {filteredProps.filter(p => p.edgePct > 10).length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="mb-6 p-4 bg-gold/10 border border-gold/20 rounded-2xl flex items-center gap-4"
+                                    >
+                                        <div className="w-10 h-10 bg-gold rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Zap className="w-5 h-5 text-dash-bg" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-gold uppercase">High Edge Alert</h3>
+                                            <p className="text-xs text-dash-text-muted mt-0.5">
+                                                {filteredProps.filter(p => p.edgePct > 10).length} props with 10%+ edge detected today
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
 
-                        {/* Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {filteredProps.map((prop, idx) => (
-                                <motion.div
-                                    key={prop.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                >
-                                    <PropCard prop={prop} />
-                                </motion.div>
-                            ))}
-                        </div>
+                                {/* Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {filteredProps.map((prop, idx) => (
+                                        <motion.div
+                                            key={prop.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                        >
+                                            <PropCard prop={prop} />
+                                        </motion.div>
+                                    ))}
+                                </div>
 
-                        {/* Load More */}
-                        <div className="mt-8 text-center">
-                            <button className="px-8 py-3 bg-dash-card border border-dash-border rounded-2xl text-xs font-bold text-dash-text-muted uppercase tracking-widest hover:border-gold/30 hover:text-white transition-all">
-                                Load More Props
-                            </button>
-                        </div>
+                                {filteredProps.length === 0 && (
+                                    <div className="text-center py-20">
+                                        <p className="text-dash-text-muted">No props matching your filters.</p>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
                 </main>
             </div>

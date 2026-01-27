@@ -11,6 +11,8 @@ interface PropCardProps {
 }
 
 export function PropCard({ prop }: PropCardProps) {
+    const [imgError, setImgError] = React.useState(false);
+
     return (
         <motion.div
             whileHover={{ scale: 1.01 }}
@@ -20,8 +22,13 @@ export function PropCard({ prop }: PropCardProps) {
                 {/* Headshot & Team */}
                 <div className="relative flex-shrink-0">
                     <div className="w-14 h-14 bg-dash-bg-secondary rounded-xl flex items-center justify-center p-1 border border-dash-border overflow-hidden">
-                        {prop.image ? (
-                            <img src={prop.image} alt={prop.name} className="w-full h-full object-cover rounded-md" />
+                        {prop.image && !imgError ? (
+                            <img
+                                src={prop.image}
+                                alt={prop.name}
+                                className="w-full h-full object-cover rounded-md"
+                                onError={() => setImgError(true)}
+                            />
                         ) : (
                             <User className="w-6 h-6 text-dash-text-muted" />
                         )}
@@ -60,13 +67,13 @@ export function PropCard({ prop }: PropCardProps) {
             <div className="px-4 py-3 bg-white/5 border-t border-dash-border flex items-center justify-between">
                 <div className="flex flex-col">
                     <span className="text-[8px] font-bold text-dash-text-muted uppercase">Model Result</span>
-                    <span className="text-sm font-black text-dash-accent-cyan italic">{prop.projection}</span>
+                    <span className="text-sm font-black text-dash-accent-cyan italic">{prop.projection.toFixed(1)}</span>
                 </div>
 
                 <div className="text-right flex flex-col items-end">
                     <span className="text-[8px] font-black text-gold uppercase flex items-center gap-1">
                         <TrendingUp className="w-2 h-2" />
-                        +{prop.edgePct}% Edge
+                        +{prop.edgePct.toFixed(1)}% Edge
                     </span>
                     <div className="flex gap-0.5 mt-1">
                         {prop.recentTrend.map((v, i) => (
