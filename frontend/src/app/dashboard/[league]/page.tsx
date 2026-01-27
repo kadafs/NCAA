@@ -73,7 +73,7 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             team: prediction.awayTeam.name,
             teamCode: prediction.awayTeam.code,
             position: "G/F",
-            image: isNBA ? "https://a.espncdn.com/i/headshots/nba/players/full/1966.png" : "",
+            image: isNBA ? "https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/2544.png" : "",
             propType: "PTS",
             line: 24.5,
             projection: 28.2,
