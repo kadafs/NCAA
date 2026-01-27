@@ -29,35 +29,26 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           # 1. Fetch Reference Stats (Essential for engine to match teams)
-          echo "Fetching NCAA Stats (BartTorvik)..."
+          echo "Fetching NCAA Reference Data..."
           python -m ncaa.fetch_barttorvik
-          
-          echo "Fetching NCAA Consolidated Standings..."
           python -m ncaa.data_fetcher
+          python -m ncaa.v1_2.populate # Ensure D1 matchups are refreshed
 
-          # 2. Fetch NBA Schedule/Odds (Retry loop for flakiness)
-          echo "Fetching NBA Schedule..."
-          for i in {1..3}; do 
-            python -m nba.fetch_nba_schedule && break || sleep 10
-            echo "NBA Schedule fetch failed, retrying ($i/3)..."
+          # 2. Fetch NBA Core Data (Retry loop for flakiness)
+          echo "Fetching NBA Schedule and Player Stats..."
+          for i in {1..2}; do 
+            python -m nba.fetch_nba_schedule && \
+            python -m nba.fetch_nba_player_stats && break || sleep 10
+            echo "NBA Data fetch failed, retrying ($i/2)..."
           done
           
-          echo "Fetching NBA Stats..."
-          for i in {1..3}; do
-            python -m nba.fetch_nba_stats && break || sleep 10
-            echo "NBA Stats fetch failed, retrying ($i/3)..."
-          done
-          
-          # 3. Fetch European Schedules
-          python -m euro.fetch_euro_schedule
-          python -m eurocup.fetch_eurocup_schedule
-          
-          # 4. Fetch NBL/ACB
-          python -m nbl.fetch_nbl_schedule
-          python -m acb.fetch_acb_schedule
-          
-          # 5. Generate and Push Predictions
+          # 3. Generate Predictions and Archive History
+          echo "Pushing Predictions to Supabase..."
           python core/supabase_pusher.py
+          
+          # 4. Run Performance Audit (Grades yesterday's games)
+          echo "Running Performance Audit Engine..."
+          python core/audit_engine.py --days 1
 
       - name: Debug Fetched Data (On Failure or Success)
         if: always()
