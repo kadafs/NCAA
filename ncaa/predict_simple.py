@@ -24,17 +24,12 @@ def fetch_scoreboard(year, month, day):
     # Try local first, then external
     for base in BASE_URLS:
         url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
-        print(f"DEBUG: Attempting fetch from {base}...")
         try:
             # Increased timeout to 15s to handle cold starts or slow networks
             response = requests.get(url, timeout=15)
             if response.status_code == 200:
-                print(f"DEBUG: Success from {base}")
                 return response.json()
-            else:
-                print(f"DEBUG: HTTP {response.status_code} from {base}")
-        except Exception as e:
-            print(f"DEBUG: Error from {base}: {e}")
+        except Exception:
             continue
     return None
 
@@ -103,30 +98,23 @@ def main():
     metrics = get_simple_metrics(stats_data)
     
     bt_stats = load_json(BARTTORVIK_STATS_FILE)
-    if bt_stats:
-        print(f"Loaded {len(bt_stats)} teams from BartTorvik for advanced metrics.")
-    
-    injury_notes = load_json(INJURY_NOTES_FILE)
-    if injury_notes:
-        print(f"Loaded injury notes for {len(injury_notes)} teams.")
-
     
     # Use current date in ET
     now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
-    print(f"\n--- Simple Predictions for {now.strftime('%Y-%m-%d')} ---")
-    print("(Based ONLY on PPG and OPP PPG averages)")
     
     board = fetch_scoreboard(now.year, now.month, now.day)
     if not board or 'games' not in board or not board['games']:
-        print("No games found on scoreboard.")
         return
 
-    # Updated Header for v1.8 Intelligence (Split OE/DE)
-    header = f"{'Matchup':<35} | {'Proj Score':<15} | {'Spread':<8} | {'Conf (A/H)':<10} | {'Adj T(A/H)':<11} | {'AdjOE(A/H)':<12} | {'AdjDE(A/H)':<12} | {'eFG% (A/H)':<12} | {'TO% (A/H)':<12} | {'OR% (A/H)':<12} | {'FTR (A/H)':<12}"
-    print(header)
-    print("-" * len(header))
+    # CSV Header
+    header = ["Matchup", "Proj_Score_A", "Proj_Score_H", "Spread", "Conf_A", "Conf_H", 
+              "AdjT_A", "AdjT_H", "AdjOE_A", "AdjOE_H", "AdjDE_A", "AdjDE_H", 
+              "eFG_A", "eFG_H", "TO_A", "TO_H", "OR_A", "OR_H", "FTR_A", "FTR_H", "Market_Total"]
     
-    game_notes = []
+    import csv
+    writer = csv.writer(sys.stdout)
+    writer.writerow(header)
+    
     for game_wrapper in board['games']:
         game = game_wrapper.get('game')
         if not game: continue
@@ -145,8 +133,6 @@ def main():
             scoreH = (tH['offense'] + tA['defense']) / 2
             
             match_str = f"{away_raw} @ {home_raw}"
-            score_str = f"{scoreA:.1f} - {scoreH:.1f}"
-            spread_str = f"{scoreH - scoreA:+.1f}"
             
             # Metadata Lookup
             btA_name = find_team_in_dict(away_raw, bt_stats, BASKETBALL_ALIASES)
@@ -154,45 +140,64 @@ def main():
             btA = bt_stats.get(btA_name) if btA_name else None
             btH = bt_stats.get(btH_name) if btH_name else None
             
-            conf_str = f"{btA['conf'] if (btA and 'conf' in btA) else 'N/A'}/{btH['conf'] if (btH and 'conf' in btH) else 'N/A'}"
-            t_str = f"{round(btA['adj_t'], 1) if btA else 'N/A'}/{round(btH['adj_t'], 1) if btH else 'N/A'}"
-            
-            # Separate AdjOE and AdjDE
-            oe_str = f"{round(btA['adj_off'], 1) if btA else 'N/A'}/{round(btH['adj_off'], 1) if btH else 'N/A'}"
-            de_str = f"{round(btA['adj_def'], 1) if btA else 'N/A'}/{round(btH['adj_def'], 1) if btH else 'N/A'}"
-            
-            # Use 0 check for Four Factors
-            efg_str = f"{round(btA['efg'], 1) if (btA and btA.get('efg')) else 'N/A'}/{round(btH['efg_d'], 1) if (btH and btH.get('efg_d')) else 'N/A'}"
-            to_str = f"{round(btA['to'], 1) if (btA and btA.get('to')) else 'N/A'}/{round(btH['to_d'], 1) if (btH and btH.get('to_d')) else 'N/A'}"
-            or_str = f"{round(btA['or'], 1) if (btA and btA.get('or')) else 'N/A'}/{round(btH['or_d'], 1) if (btH and btH.get('or_d')) else 'N/A'}"
-            ftr_str = f"{round(btA['ftr'], 1) if (btA and btA.get('ftr')) else 'N/A'}/{round(btH['ftr_d'], 1) if (btH and btH.get('ftr_d')) else 'N/A'}"
-            
-            # Custom print for split columns
-            print(f"{match_str:<35} | {score_str:<15} | {spread_str:<8} | {conf_str:<10} | {t_str:<11} | {oe_str:<12} | {de_str:<12} | {efg_str:<12} | {to_str:<12} | {or_str:<12} | {ftr_str:<12}")
+            # Helper to safely get value or N/A
+            def get_val(data, key, default="N/A", precision=1):
+                if not data: return default
+                val = data.get(key)
+                if val is None: return default
+                try:
+                    return round(float(val), precision)
+                except:
+                    return default
 
-            # Injury Notes
-            injA_name = find_injury_team(away_raw, injury_notes)
-            injH_name = find_injury_team(home_raw, injury_notes)
+            # Row Data Construction
+            row = [
+                match_str,
+                round(scoreA, 1),
+                round(scoreH, 1),
+                round(scoreH - scoreA, 1), # Spread
+                btA['conf'] if (btA and 'conf' in btA) else 'N/A',
+                btH['conf'] if (btH and 'conf' in btH) else 'N/A',
+                get_val(btA, 'adj_t'),
+                get_val(btH, 'adj_t'),
+                get_val(btA, 'adj_off'),
+                get_val(btH, 'adj_off'),
+                get_val(btA, 'adj_def'),
+                get_val(btH, 'adj_def'),
+                get_val(btA, 'efg'),
+                get_val(btH, 'efg_d'), # Use opponent defense stats for H? No, usually side-by-side means Team Stats
+                # WAIT: User example "eFG_A, eFG_H". Usually compares the teams' own stats? 
+                # Or Offense vs Defense? 
+                # Context: "Tempo, Efficiency... All must be numeric only". 
+                # Standard analysis lists Team A stats vs Team B stats.
+                # Let's assume Team A's eFG% and Team B's eFG% (Offensive).
+                # Re-reading: "AdjOE_A", "AdjOE_H". Yes, Team specific stats.
+                get_val(btA, 'to'),
+                get_val(btH, 'to'), # Team H Turnovers? Or Forced? "TO_H" usually means Team H's TO %.
+                get_val(btA, 'or'),
+                get_val(btH, 'or'),
+                get_val(btA, 'ftr'),
+                get_val(btH, 'ftr'),
+                "N/A" # Market_Total
+            ]
             
-            notes = []
-            if injA_name and injury_notes[injA_name]:
-                for item in injury_notes[injA_name]:
-                    notes.append(f"  [A] {item['player']} ({item['status']}): {item['note']}")
-            if injH_name and injury_notes[injH_name]:
-                for item in injury_notes[injH_name]:
-                    notes.append(f"  [H] {item['player']} ({item['status']}): {item['note']}")
+            # Correction: eFG_H in previous code used 'efg_d' (Defense) for H?
+            # Previous Line 165: "round(btA['efg'], 1) ... / ... round(btH['efg_d'], 1)"
+            # That was weird. Usually you compare A Off vs H Def. 
+            # BUT the headers are "eFG_A", "eFG_H". This implies Team A's eFG and Team H's eFG. 
+            # I will use 'efg' for both (Offensive eFG%).
             
-            if notes:
-                game_notes.append((match_str, notes))
+            # Update row with correct keys
+            row[12] = get_val(btA, 'efg')
+            row[13] = get_val(btH, 'efg') # Fixed to use H's offensive eFG
+            row[14] = get_val(btA, 'to')
+            row[15] = get_val(btH, 'to')
+            row[16] = get_val(btA, 'or')
+            row[17] = get_val(btH, 'or')
+            row[18] = get_val(btA, 'ftr')
+            row[19] = get_val(btH, 'ftr')
 
-    if game_notes:
-        print("\n" + "="*50)
-        print("SITUATIONAL NOTES (Injuries, Travel, etc.)")
-        print("="*50)
-        for matchup, notes in game_notes:
-            print(f"\n{matchup}:")
-            for n in notes:
-                print(n)
+            writer.writerow(row)
 
 if __name__ == "__main__":
     main()
