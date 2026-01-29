@@ -26,12 +26,19 @@ class UniversalBasketballEngine:
         self.trace = []
         c = self.config
         
-        # 0. Time Scaling Factor (Normalize to Pivot duration)
-        # If league is 40m but we have 48m data (rare) or vice versa.
-        # Most data is already per-session, but pace is per-duration.
+        # 0. Context Extraction
+        conf = game_data.get('conf', 'DEFAULT')
         
         # 1. Rate-Based Baseline (Step 1)
         pace_adj = game_data.get('pace_adjustment', c['pace_pivot'])
+        
+        # Apply Conference Pace Multiplier
+        pace_mult = c.get('conf_pace_multipliers', {}).get(conf, c.get('conf_pace_multipliers', {}).get('DEFAULT', 1.0))
+        if pace_mult != 1.0:
+            original_pace = pace_adj
+            pace_adj *= pace_mult
+            self._log(f"Step 0: Pace Multiplier ({conf}) -> {original_pace:.1f} to {pace_adj:.1f} (x{pace_mult})")
+
         eff_adj = game_data.get('efficiency_adjustment', c['eff_pivot'])
         
         # Formula: ((Off + Def) / 2 * Pace) / 100 * 2
@@ -91,6 +98,23 @@ class UniversalBasketballEngine:
 
         total += sit_total
         
+        # 4. Outlier Clamping (V1.3 - The Volatility Buffer)
+        market = game_data.get('market_total', 0)
+        raw_edge = total - market
+        threshold = c.get('volatility_threshold', 15.0)
+        
+        if abs(raw_edge) > threshold:
+            excess = abs(raw_edge) - threshold
+            dampener = c.get('volatility_dampener', 0.7)
+            clamped_excess = excess * dampener
+            
+            # Apply clamping
+            multiplier = 1 if raw_edge > 0 else -1
+            clamped_total = market + (multiplier * (threshold + clamped_excess))
+            
+            self._log(f"Step 6: Volatility Buffer! Raw Edge {raw_edge:+.1f} clamped to {multiplier*(threshold+clamped_excess):+.1f}")
+            total = clamped_total
+
         final_safe_total = total
         self._log(f"Safe Mode Result: {final_safe_total:.2f}")
 
@@ -108,7 +132,7 @@ class UniversalBasketballEngine:
             
             final_total += star_impact
             notes_applied = True
-            self._log(f"Step 6: Contextual Adjustment (Full) -> {star_impact:+.2f}")
+            self._log(f"Step 7: Contextual Adjustment (Full) -> {star_impact:+.2f}")
 
         # 5. Result Object
         market = game_data.get('market_total', 0)
@@ -136,5 +160,6 @@ class UniversalBasketballEngine:
             "decision": decision,
             "lean": "OVER" if edge > 0 else "UNDER" if edge < 0 else "NONE",
             "notes_applied": notes_applied,
+            "market_source": game_data.get('market_source', 'Unknown'),
             "trace": self.trace
         }

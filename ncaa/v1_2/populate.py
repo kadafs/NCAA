@@ -79,7 +79,67 @@ def fetch_matchups(date_obj=None):
             
     return []
 
-def get_game_data(away_name, home_name, bt_data, score_data, market_total=0, away_seo="", home_seo=""):
+def load_market_csv(target_date_obj):
+    """
+    Looks for a file named data/ncaa_market_YYYY-MM-DD.csv.
+    Returns a dictionary of {Home_Team_Name: Market_Total}.
+    """
+    import csv
+    date_str = target_date_obj.strftime("%Y-%m-%d")
+    filename = os.path.join(ROOT_DIR, "data", f"ncaa_market_{date_str}.csv")
+    
+    market_map = {}
+    if not os.path.exists(filename):
+        print(f"DEBUG: No market CSV found for {date_str}. Using safety defaults.")
+        return market_map
+
+    print(f"DEBUG: Found Market CSV for {date_str}. Injecting priorities...")
+    try:
+        # Load BT data to resolve names
+        from ncaa.v1_2.populate import BARTTORVIK_FILE, BASKETBALL_ALIASES, find_team_in_dict, load_json
+        bt_data = load_json(BARTTORVIK_FILE)
+        
+        with open(filename, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                matchup = row.get('Matchup', '')
+                total_raw = row.get('Market_Odds') or row.get('Market Total')
+                
+                if not matchup or not total_raw:
+                    continue
+                
+                import re
+                total_match = re.search(r"(\d+\.?\d*)", str(total_raw))
+                if not total_match:
+                    continue
+                total = float(total_match.group(1))
+
+                # Identify teams in the CSV string
+                temp_a, temp_b = None, None
+                if ' vs ' in matchup:
+                    parts = matchup.split(' vs ')
+                    temp_a, temp_b = parts[0].strip(), parts[1].strip()
+                elif '@' in matchup:
+                    parts = matchup.split('@')
+                    temp_a, temp_b = parts[0].strip(), parts[1].strip()
+                
+                if temp_a and temp_b:
+                    # Resolve both to official names
+                    team_a = find_team_in_dict(temp_a, bt_data, BASKETBALL_ALIASES)
+                    team_b = find_team_in_dict(temp_b, bt_data, BASKETBALL_ALIASES)
+                    
+                    if team_a and team_b:
+                        # Use frozenset for order-independent key
+                        key = frozenset({team_a.lower(), team_b.lower()})
+                        market_map[key] = total
+        
+        print(f"DEBUG: Successfully mapped {len(market_map)} market totals from CSV.")
+        return market_map
+    except Exception as e:
+        print(f"ERROR: Failed to parse market CSV: {e}")
+        return {}
+
+def get_game_data(away_name, home_name, bt_data, score_data, market_total=145.5, away_seo="", home_seo=""):
     """Bridge raw stats to v1.2 Input Sheet columns."""
     
     # 1. Resolve Teams
@@ -92,12 +152,10 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=0, awa
     sH = bt_data[teamH]
     
     # 2. Extract PPG (from consolidated_stats.json)
-    # We need to find the team in the 'scoring_offense' list
     def find_ppg(team_name):
         for entry in score_data.get('scoring_offense', []):
             if entry['Team'] == team_name:
                 return float(entry['PPG'])
-        # Fallback to BartTorvik estimate if not found
         return (sA['adj_off'] * (sA['adj_t'] / 100)) if team_name == teamA else (sH['adj_off'] * (sH['adj_t'] / 100))
 
     ppgA = find_ppg(teamA)
@@ -112,33 +170,64 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=0, awa
         "team_ppg": ppgA,
         "opp_ppg": ppgH,
         "market_total": market_total,
-        "pace_adjustment": (sA['adj_t'] + sH['adj_t']) / 2, # Mean pace
+        "pace_adjustment": (sA['adj_t'] + sH['adj_t']) / 2,
         "efficiency_adjustment": (sA['adj_off'] + sH['adj_def'] + sH['adj_off'] + sA['adj_def']) / 4,
         "is_elite_offense": sA['adj_off'] > 115 or sH['adj_off'] > 115,
         "is_strong_defense": sA['adj_def'] < 100 or sH['adj_def'] < 100,
         "turnover_adjustment": (sA['to'] + sH['to']) / 2,
         "foul_adjustment": (sA['ftr'] + sH['ftr']) / 2,
-        "conf": sA['conf'] # Use away team conf as proxy or create composite
+        "conf": sA['conf']
     }
     
     return input_data
 
 def get_daily_input_sheet(date_obj=None):
+    from datetime import datetime
+    import zoneinfo
+    
+    if date_obj is None:
+        date_obj = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
+
     bt = load_json(BARTTORVIK_FILE)
     sh = load_json(CONSOLIDATED_FILE)
     matchups = fetch_matchups(date_obj)
     
-    # Fetch live odds (Note: get_odds might need date support too if Odds API supports it, but for now we fallback)
+    # NEW: Load Market CSV for date-enforced overrides
+    manual_market = load_market_csv(date_obj)
+    
+    # Fetch live odds fallback
     odds_data = get_odds("basketball_ncaa")
     
     daily_sheet = []
     for m in matchups:
-        # Try to find a live total for this matchup
-        live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
-        market_total = live_total if live_total else m['total']
+        # Priority 1: Manual CSV Injection
+        # Priority 2: Real-time Odds API
+        # Priority 3: Scoreboard Data
+        # Priority 4: Demo Fallback (145.5)
+        
+        # Resolve scoreboard name to official key first
+        home_clean = m['home']
+        away_clean = m['away']
+        
+        resolved_home = find_team_in_dict(home_clean, bt, BASKETBALL_ALIASES)
+        resolved_away = find_team_in_dict(away_clean, bt, BASKETBALL_ALIASES)
+        
+        h_key = resolved_home.lower() if resolved_home else home_clean.lower()
+        a_key = resolved_away.lower() if resolved_away else away_clean.lower()
+        
+        lookup_key = frozenset({h_key, a_key})
+
+        if lookup_key in manual_market:
+            market_total = manual_market[lookup_key]
+            source = "Manual CSV Injection"
+        else:
+            live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
+            market_total = live_total if live_total else m.get('total', 145.5)
+            source = "API/Scoreboard"
         
         data = get_game_data(m['away'], m['home'], bt, sh, market_total, m.get('away_seo'), m.get('home_seo'))
         if data:
+            data['market_source'] = source
             daily_sheet.append(data)
             
     return daily_sheet

@@ -73,7 +73,7 @@ async def push_league_predictions(league, mode="safe"):
 
         if history_rows:
             supabase.table("predictions_history").upsert(history_rows, on_conflict="id").execute()
-            print(f"✅ Archived {len(history_rows)} games into history.")
+            print(f"Archived {len(history_rows)} games into history.")
     except Exception as e:
         print(f"Failed to push {league} predictions: {e}")
 

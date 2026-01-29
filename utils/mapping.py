@@ -122,9 +122,21 @@ BASKETBALL_ALIASES = {
     "utrgv": "utriograndevalley",
     "westernky": "westernkentucky",
     "omaha": "nebraskaomaha",
-    "iuindy": "iuindy",
-    "amcorpuschristi": "texasamcorpuschris",
     "little-rock": "arkansaslittlerock",
+    "thecitadel": "thecitadel",
+    "citadelbulldogs": "thecitadel",
+    "scupstatespartans": "uscupstate",
+    "uscupstatespartans": "uscupstate",
+    "moreheadstateeagles": "moreheadstate",
+    "moreheadsteagles": "moreheadstate",
+    "utmartinskyhawks": "tennesseemartin",
+    "tennesseemartinskyhawks": "tennesseemartin",
+    "easternillinoispanthers": "easternillinois",
+    "ualbany": "albany",
+    "albanygreatdanes": "albany",
+    "njithighlanders": "njit",
+    "samfordbulldogs": "samford",
+    "furmanpaladins": "furman",
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {
