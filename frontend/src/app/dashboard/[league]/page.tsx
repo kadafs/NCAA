@@ -188,6 +188,7 @@ export default function LeagueDashboard() {
                     },
                     marketTotal: g.market_total || g.marketTotal || 220,
                     modelTotal: g.model_total || g.modelTotal || 225,
+                    rawModelTotal: g.raw_model_total || g.rawModelTotal,
                     edge: g.edge || 2.5,
                     confidence: g.confidence || "lean",
                     trace: g.trace || [],

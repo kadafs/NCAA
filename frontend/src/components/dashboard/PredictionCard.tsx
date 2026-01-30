@@ -116,6 +116,9 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                             <div className="w-full h-px bg-dash-border my-2" />
                             <span className="text-[9px] font-bold text-dash-text-muted uppercase mb-1">Model Predict</span>
                             <span className="text-xl font-black text-gold italic">{prediction.modelTotal}</span>
+                            {prediction.rawModelTotal && Math.abs(prediction.rawModelTotal - prediction.modelTotal) > 0.5 && (
+                                <span className="text-[8px] font-bold text-dash-text-muted mt-1">Raw: {prediction.rawModelTotal}</span>
+                            )}
                         </div>
                     </div>
                 </div>

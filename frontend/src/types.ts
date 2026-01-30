@@ -40,6 +40,7 @@ export interface Prediction {
     };
     marketTotal: number;
     modelTotal: number;
+    rawModelTotal?: number;
     edge: number;
     confidence: 'lock' | 'strong' | 'lean';
     time: string;
