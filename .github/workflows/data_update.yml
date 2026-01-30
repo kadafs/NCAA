@@ -38,6 +38,7 @@ jobs:
           echo "Fetching NBA Schedule and Player Stats..."
           for i in {1..2}; do 
             python -m nba.fetch_nba_schedule && \
+            python -m nba.fetch_nba_stats && \
             python -m nba.fetch_nba_player_stats && break || sleep 10
             echo "NBA Data fetch failed, retrying ($i/2)..."
           done
