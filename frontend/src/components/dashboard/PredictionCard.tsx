@@ -61,9 +61,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                         if (league === 'ncaa') {
                                             const rawName = prediction.awayTeam.name.toLowerCase().trim();
                                             const cleanName = NCAA_LOGO_MAP[rawName] || rawName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                                            // Use backend proxy to avoid 403/CORS
-                                            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-                                            const smartUrl = `${apiUrl}/logo/${cleanName}`;
+                                            const smartUrl = `/api/logo/${cleanName}`;
 
                                             // Start: Prevent infinite loop if smart URL also fails
                                             // If the current src is already the smart URL, or the fallback, stop.
@@ -108,9 +106,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
 
                                         if (league === 'ncaa') {
                                             const cleanName = prediction.homeTeam.name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                                            // Use backend proxy to avoid 403/CORS
-                                            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-                                            const smartUrl = `${apiUrl}/logo/${cleanName}`;
+                                            const smartUrl = `/api/logo/${cleanName}`;
 
                                             if (target.src === smartUrl || target.src === fallback) {
                                                 if (target.src !== fallback) target.src = fallback;

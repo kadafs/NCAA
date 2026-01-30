@@ -139,8 +139,7 @@ export default function LeagueDashboard() {
                                 // Use backend proxy with mapping
                                 const rawTeamName = (g.away_details?.name || g.away?.name || g.away_team || g.away || "").toLowerCase().trim();
                                 const slug = NCAA_LOGO_MAP[rawTeamName] || name;
-                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-                                return slug ? `${apiUrl}/logo/${slug}` : "";
+                                return slug ? `/api/logo/${slug}` : "";
                             }
 
                             return "";
@@ -178,8 +177,7 @@ export default function LeagueDashboard() {
                                 // Use backend proxy with mapping
                                 const rawTeamName = (g.home_details?.name || g.home?.name || g.home_team || g.home || "").toLowerCase().trim();
                                 const slug = NCAA_LOGO_MAP[rawTeamName] || name;
-                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-                                return slug ? `${apiUrl}/logo/${slug}` : "";
+                                return slug ? `/api/logo/${slug}` : "";
                             }
 
                             return "";
