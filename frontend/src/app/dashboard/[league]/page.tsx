@@ -19,6 +19,7 @@ import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
 import { PredictionCard } from "@/components/dashboard/PredictionCard";
 import { PropCard } from "@/components/dashboard/PropCard";
 import { Prediction, PlayerProp } from "@/types";
+import { NCAA_LOGO_MAP } from "@/lib/ncaa-mappings";
 
 /**
  * League Dashboard - Dark Theme
@@ -45,7 +46,7 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             name: isNBA ? "Lakers" : "Duke",
             code: isNBA ? "LAL" : "DUKE",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/lal.png" :
-                "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/duke.svg",
+                "http://localhost:3000/logo/duke",
             record: "21-22",
             stats: { pointsPerGame: 114.2, reboundsPerGame: 42.1, assistsPerGame: 28.3, fieldGoalPct: 48.2, threePointPct: 35.8, freeThrowPct: 77.1, netRating: 59.8 }
         },
@@ -53,7 +54,7 @@ const GET_MOCK_DATA = (leagueId: string): { prediction: Prediction; props: Playe
             name: isNBA ? "Celtics" : "North Carolina",
             code: isNBA ? "BOS" : "UNC",
             logo: isNBA ? "https://a.espncdn.com/i/teamlogos/nba/500/bos.png" :
-                "https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/north-carolina.svg",
+                "http://localhost:3000/logo/north-carolina",
             record: "32-9",
             stats: { pointsPerGame: 120.5, reboundsPerGame: 47.4, assistsPerGame: 26.1, fieldGoalPct: 49.1, threePointPct: 38.9, freeThrowPct: 80.5, netRating: 65.4 }
         },
@@ -135,7 +136,11 @@ export default function LeagueDashboard() {
                             }
 
                             if (league === 'ncaa') {
-                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/${name.charAt(0)}/${name}.svg` : "";
+                                // Use backend proxy with mapping
+                                const rawTeamName = (g.away_details?.name || g.away?.name || g.away_team || g.away || "").toLowerCase().trim();
+                                const slug = NCAA_LOGO_MAP[rawTeamName] || name;
+                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+                                return slug ? `${apiUrl}/logo/${slug}` : "";
                             }
 
                             return "";
@@ -170,7 +175,11 @@ export default function LeagueDashboard() {
                             }
 
                             if (league === 'ncaa') {
-                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/${name.charAt(0)}/${name}.svg` : "";
+                                // Use backend proxy with mapping
+                                const rawTeamName = (g.home_details?.name || g.home?.name || g.home_team || g.home || "").toLowerCase().trim();
+                                const slug = NCAA_LOGO_MAP[rawTeamName] || name;
+                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+                                return slug ? `${apiUrl}/logo/${slug}` : "";
                             }
 
                             return "";
