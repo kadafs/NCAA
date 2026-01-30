@@ -74,7 +74,7 @@ export default function Performance() {
                         winPct: m.win_pct,
                         trend: m.rolling_trend || [60, 60, 60, 60, 60, 60]
                     }))
-                    .sort((a, b) => {
+                    .sort((a: PerformanceMetric, b: PerformanceMetric) => {
                         if (a.league === "TOTAL") return -1;
                         if (b.league === "TOTAL") return 1;
                         return a.league.localeCompare(b.league);
