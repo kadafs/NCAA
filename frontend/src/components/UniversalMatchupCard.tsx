@@ -49,6 +49,7 @@ interface GameProps {
         home: string;
         market_total: number;
         model_total: number;
+        raw_model_total?: number;
         edge: number;
         decision: string;
         mode: string;
@@ -161,6 +162,11 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
                                 )}>
                                     {isPositiveEdge ? `+${game.edge}` : game.edge}
                                 </div>
+                                {game.raw_model_total && Math.abs(game.raw_model_total - game.model_total) > 0.5 && (
+                                    <span className="text-[8px] font-bold text-gray-300 mt-1">
+                                        (Raw: {game.raw_model_total})
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
