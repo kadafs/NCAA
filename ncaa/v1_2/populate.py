@@ -176,7 +176,9 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=145.5,
         "is_strong_defense": sA['adj_def'] < 100 or sH['adj_def'] < 100,
         "turnover_adjustment": (sA['to'] + sH['to']) / 2,
         "foul_adjustment": (sA['ftr'] + sH['ftr']) / 2,
-        "conf": sA['conf']
+        "conf": sA['conf'],
+        "statsA": sA,
+        "statsH": sH
     }
     
     return input_data

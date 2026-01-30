@@ -124,6 +124,26 @@ def main():
         
         if args.trace:
             for t in res['trace']: print(f"     > {t}")
+        
+        # Advanced Metrics Display (NCAA)
+        # Advanced Metrics Display (NCAA)
+        if args.league == "ncaa" and "statsA" in game and "statsH" in game:
+            sA = game['statsA']
+            sH = game['statsH']
+            print("\n   Advanced Metrics:")
+            
+            def fmt_stat(label, s):
+                ff = s.get('four_factors', {})
+                # Try top level first (raw), then nested (bridge normalized)
+                efg = s.get('efg', ff.get('efg', 0))
+                to = s.get('to', ff.get('tov', 0))
+                orb = s.get('or', ff.get('orb', 0))
+                ftr = s.get('ftr', ff.get('ftr', 0))
+                
+                return f"{label}: {s.get('adj_t', 0):4.1f} | OE: {s.get('adj_off', 0):5.1f} | DE: {s.get('adj_def', 0):4.1f} | eFG: {efg:4.1f} | TO: {to:4.1f} | OR: {orb:4.1f} | FTR: {ftr:4.1f}"
+
+            print(f"     [Away] {fmt_stat('AdjT', sA)}")
+            print(f"     [Home] {fmt_stat('AdjT', sH)}")
             
         # Props
         if args.league in ["nba", "euro", "eurocup"] and p_stats:
