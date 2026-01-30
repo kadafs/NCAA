@@ -15,6 +15,44 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 MATCHUP_FILE = os.path.join(ROOT_DIR, "data", "nba_matchups.json")
 
+import requests
+
+def fetch_schedule_espn(date_str):
+    """
+    Fallback: Fetches NBA schedule from ESPN's public API.
+    Reliable for cloud environments.
+    """
+    print(f"Attempting ESPN Fallback for {date_str}...")
+    try:
+        # ESPN uses YYYYMMDD format
+        espn_date = date_str.replace("-", "")
+        url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={espn_date}"
+        
+        resp = requests.get(url, timeout=10)
+        data = resp.json()
+        
+        matchups = []
+        for event in data.get('events', []):
+            comp = event['competitions'][0]
+            
+            # Competitors: usually home is index 0, but check homeAway
+            home = next(c for c in comp['competitors'] if c['homeAway'] == 'home')
+            away = next(c for c in comp['competitors'] if c['homeAway'] == 'away')
+            
+            matchups.append({
+                "away": away['team']['name'], # e.g. "Lakers"
+                "home": home['team']['name'], # e.g. "Celtics"
+                "away_city": away['team']['location'],
+                "home_city": home['team']['location'],
+                "game_time": event['status']['type']['detail'] # e.g. "Final" or "7:00 PM ET"
+            })
+            
+        print(f"ESPN found {len(matchups)} games.")
+        return matchups
+    except Exception as e:
+        print(f"ESPN Fallback failed: {e}")
+        return []
+
 def fetch_nba_daily_schedule(target_date=None):
     if target_date is None:
         target_date = get_target_date()
@@ -22,52 +60,49 @@ def fetch_nba_daily_schedule(target_date=None):
     date_str = target_date.strftime("%Y-%m-%d")
     print(f"Fetching NBA schedule for {date_str}...")
     
+    matchups = []
+    
+    # 1. Try Official API (nba_api)
     try:
         # ScoreboardV3 is the newer, flat structure endpoint
         custom_headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
             'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.5',
             'Referer': 'https://www.nba.com/',
             'Origin': 'https://www.nba.com',
-            'DNT': '1',
             'Connection': 'keep-alive',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-site',
         }
         
-        sb = scoreboardv3.ScoreboardV3(game_date=date_str, headers=custom_headers, timeout=30)
+        sb = scoreboardv3.ScoreboardV3(game_date=date_str, headers=custom_headers, timeout=15)
         data = sb.get_dict()
         
         games = data.get('scoreboard', {}).get('games', [])
         
-        matchups = []
         for g in games:
             home = g['homeTeam']
             away = g['awayTeam']
-            
-            # Status text like "7:00 pm ET" or "Final"
-            status = g.get('gameStatusText', 'Scheduled')
-            
             matchups.append({
                 "away": away['teamName'],
                 "home": home['teamName'],
                 "away_city": away['teamCity'],
                 "home_city": home['teamCity'],
-                "game_time": status
+                "game_time": g.get('gameStatusText', 'Scheduled')
             })
             
-        print(f"Found {len(matchups)} games for {date_str}.")
+        print(f"Nba_api found {len(matchups)} games.")
         
-        with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
-            json.dump(matchups, f, indent=2)
-            
-        return matchups
-
     except Exception as e:
-        print(f"Error fetching NBA schedule: {e}")
-        return []
+        print(f"Primary NBA API failed: {e}")
+
+    # 2. Fallback to ESPN if primary failed (or found 0 games, which might mean blocked)
+    if not matchups:
+        matchups = fetch_schedule_espn(date_str)
+        
+    # Save results
+    with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
+        json.dump(matchups, f, indent=2)
+        
+    return matchups
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
