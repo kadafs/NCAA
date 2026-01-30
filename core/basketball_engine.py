@@ -98,6 +98,9 @@ class UniversalBasketballEngine:
 
         total += sit_total
         
+        # Capture Raw Model Total (Pre-Clamping)
+        raw_model_total = total
+
         # 4. Outlier Clamping (V1.3 - The Volatility Buffer)
         market = game_data.get('market_total', 0)
         raw_edge = total - market
@@ -153,6 +156,8 @@ class UniversalBasketballEngine:
 
         return {
             "final_model_total": round(final_total, 2),
+            "raw_model_total": round(raw_model_total, 2),
+            "safe_total": round(final_safe_total, 2),
             "safe_total": round(final_safe_total, 2),
             "market_total": market,
             "edge": round(edge, 2),
