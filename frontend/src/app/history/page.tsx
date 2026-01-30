@@ -163,6 +163,7 @@ export default function PerformanceHistory() {
                                     <thead>
                                         <tr className="bg-white/5 border-b border-dash-border">
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Date</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">League</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Matchup</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Line</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Outcome</th>
@@ -173,6 +174,11 @@ export default function PerformanceHistory() {
                                         {audit?.recent?.map((p: any) => (
                                             <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                                                 <td className="px-6 py-4 text-xs font-bold text-dash-text-muted uppercase">{p.game_date}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className="text-[10px] font-black px-2 py-0.5 bg-dash-bg border border-dash-border rounded text-gold uppercase">
+                                                        {p.league}
+                                                    </span>
+                                                </td>
                                                 <td className="px-6 py-4 text-xs font-black text-white uppercase">{p.matchup}</td>
                                                 <td className="px-6 py-4 text-xs font-bold text-dash-text-muted uppercase">{p.market_total}</td>
                                                 <td className="px-6 py-4 text-xs font-black text-white">{p.actual_total}</td>

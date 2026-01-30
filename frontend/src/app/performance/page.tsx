@@ -65,14 +65,20 @@ export default function Performance() {
             let hasRealData = false;
 
             if (data.metrics && data.metrics.length > 0) {
-                const transformedMetrics: PerformanceMetric[] = data.metrics.map((m: any) => ({
-                    league: m.league,
-                    record: `${m.wins}-${m.losses}-${m.pushes}`,
-                    roi: m.roi,
-                    profit: m.profit,
-                    winPct: m.win_pct,
-                    trend: m.rolling_trend || [60, 60, 60, 60, 60, 60]
-                }));
+                const transformedMetrics: PerformanceMetric[] = data.metrics
+                    .map((m: any) => ({
+                        league: m.league,
+                        record: `${m.wins}-${m.losses}-${m.pushes}`,
+                        roi: m.roi,
+                        profit: m.profit,
+                        winPct: m.win_pct,
+                        trend: m.rolling_trend || [60, 60, 60, 60, 60, 60]
+                    }))
+                    .sort((a, b) => {
+                        if (a.league === "TOTAL") return -1;
+                        if (b.league === "TOTAL") return 1;
+                        return a.league.localeCompare(b.league);
+                    });
                 setMetrics(transformedMetrics);
                 hasRealData = true;
             }
@@ -81,6 +87,7 @@ export default function Performance() {
                 const transformedPicks = data.recent.map((p: any) => ({
                     id: p.id,
                     matchup: p.matchup,
+                    league: p.league, // Add league
                     type: "TOTAL",
                     line: p.market_total,
                     result: p.is_win === true ? "WIN" : p.is_win === false ? "LOSS" : "PUSH",
@@ -269,7 +276,12 @@ export default function Performance() {
                                             className="flex flex-col gap-2 p-3 bg-dash-bg-secondary border border-dash-border rounded-xl group hover:border-gold/20 transition-all"
                                         >
                                             <div className="flex justify-between items-center">
-                                                <span className="text-[9px] font-black text-dash-text-muted uppercase">{pick.date}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[9px] font-black text-dash-text-muted uppercase">{pick.date}</span>
+                                                    <span className="text-[8px] font-black px-1.5 py-0.5 bg-dash-bg border border-dash-border rounded text-gold uppercase">
+                                                        {pick.league}
+                                                    </span>
+                                                </div>
                                                 <span className={cn(
                                                     "flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full uppercase",
                                                     pick.result === "WIN"
