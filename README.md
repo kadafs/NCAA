@@ -4,13 +4,11 @@ Free API to return consumable data from ncaa.com.
 
 Works with scores, stats, rankings, standings, schedules, history, logos, and game details (box score, play by play, scoring summary, team stats).
 
-Try it out here: <https://ncaa-api.henrygd.me/openapi>
-
 ## Usage
 
 Make a GET request using the same path as the URL on ncaa.com. You'll get a JSON response with the data.
 
-You can test using the [demo API](https://ncaa-api.henrygd.me/openapi). [Host your own](#deployment) if you need it to be reliable long term.
+You can test using the [demo API](http://localhost:3000). [Host your own](#deployment) if you need it to be reliable long term.
 
 > Note: The public API is limited to 5 requests per second per IP.
 
@@ -24,7 +22,7 @@ The following URL parameters are supported:
 
 ## Routes
 
-All routes can be tested here: <https://ncaa-api.henrygd.me/openapi>
+All routes can be tested locally.
 
 ### Scoreboard
 
@@ -372,7 +370,7 @@ Website: <https://www.ncaa.com/schools-index>
 Use the included [docker-compose.yml](/docker-compose.yml) or run directly with docker:
 
 ```bash
-docker run --rm -p 3000:3000 henrygd/ncaa-api
+docker run --rm -p 3000:3000 kadafs/ncaa-api
 ```
 
 The app should be available at [http://localhost:3000](http://localhost:3000/history/bowling/nc).
