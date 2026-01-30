@@ -140,7 +140,7 @@ def load_market_csv(target_date_obj):
         return {}
 
 def get_game_data(away_name, home_name, bt_data, score_data, market_total=145.5, away_seo="", home_seo=""):
-    """Bridge raw stats to v1.2 Input Sheet columns."""
+    """Bridge raw stats to v1.2 Input Sheet columns. Fixed market propagation (V1.3)."""
     
     # 1. Resolve Teams
     teamA = find_team_in_dict(away_name, bt_data, BASKETBALL_ALIASES)
