@@ -129,7 +129,11 @@ export const app = new Elysia()
   .get("/logo/:school", async ({ params: { school }, query: { dark }, set, status }) => {
     const cleanName = school.replace(".svg", "");
     const url = `https://www.ncaa.com/sites/default/files/images/logos/schools/${cleanName.charAt(0).toLowerCase()}/${cleanName}.svg`;
-    const res = await ncaaFetch(url);
+    const res = await ncaaFetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+      }
+    });
 
     if (!res.ok) {
       return status(404, "Logo not found");
