@@ -34,11 +34,11 @@ jobs:
           python -m ncaa.data_fetcher
           python -m ncaa.v1_2.populate # Ensure D1 matchups are refreshed
 
-          # 2. Fetch NBA Core Data (Retry loop for flakiness)
+          # 2. Fetch NBA Core Data (Retry loop for flakiness, with fallback for advanced stats)
           echo "Fetching NBA Schedule and Player Stats..."
           for i in {1..2}; do 
             python -m nba.fetch_nba_schedule && \
-            python -m nba.fetch_nba_stats && \
+            (python -m nba.fetch_nba_stats || echo "Warning: Advanced Stats API blocked, using cached data") && \
             python -m nba.fetch_nba_player_stats && break || sleep 10
             echo "NBA Data fetch failed, retrying ($i/2)..."
           done
