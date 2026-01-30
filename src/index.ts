@@ -59,18 +59,24 @@ function log(str: string) {
 async function ncaaFetch(url: string, options: RequestInit = {}) {
   // Map ncaa.com and subdomains to known good IPs from nslookup
   const MAPPINGS: Record<string, string> = {
-    "www.ncaa.com": "92.123.173.87",
-    "ncaa.com": "92.123.173.87",
+    // Ubiquitous Akamai IP (updated 2026-01-30)
+    "www.ncaa.com": "23.192.26.53",
+    "ncaa.com": "23.192.26.53",
     "data.ncaa.com": "23.42.7.171",
     "sdataprod.ncaa.com": "23.222.51.114",
     "ncaa-api.henrygd.me": "207.211.214.145"
   };
 
   try {
-    // 1. Try standard domain fetch first
-    const res = await fetch(url, options);
+    // 1. Try standard domain fetch first with 5s timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
     if (res.ok) return res;
     // If we got a response but it's not OK, still return it unless it's a network error
+    // (Actually if it's 403, we might want to try bypass? But for now stick to network error fallback)
+    if (res.status === 403) throw new Error("403 Forbidden - forcing IP bypass");
     return res;
   } catch (e) {
     log(`Domain-based fetch failed: ${e}. Attempting IP bypass...`);
@@ -94,7 +100,14 @@ async function ncaaFetch(url: string, options: RequestInit = {}) {
       try {
         log(`Bypassing DNS for ${host} -> ${updatedUrl}`);
         // @ts-ignore - Bun specific option
-        return await fetch(updatedUrl, { ...options, headers, tls: { rejectUnauthorized: false } });
+        return await fetch(updatedUrl, {
+          ...options,
+          headers,
+          tls: {
+            rejectUnauthorized: false,
+            servername: host
+          }
+        });
       } catch (ipErr) {
         log(`IP bypass also failed for ${host}: ${ipErr}`);
       }
@@ -127,11 +140,13 @@ export const app = new Elysia()
   .get("/", ({ redirect }) => redirect("/openapi"), { detail: { hide: true } })
   // fetch and return logo svg
   .get("/logo/:school", async ({ params: { school }, query: { dark }, set, status }) => {
-    const cleanName = school.replace(".svg", "");
-    const url = `https://www.ncaa.com/sites/default/files/images/logos/schools/${cleanName.charAt(0).toLowerCase()}/${cleanName}.svg`;
+    const bgParam = dark !== undefined && dark !== "false" ? "bgd" : "bgl";
+    const url = `https://www.ncaa.com/sites/default/files/images/logos/schools/${bgParam}/${school.replace(".svg", "")}.svg`;
     const res = await ncaaFetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://www.ncaa.com/",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
       }
     });
 
