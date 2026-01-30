@@ -135,7 +135,7 @@ export default function LeagueDashboard() {
                             }
 
                             if (league === 'ncaa') {
-                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/${name}.svg` : "";
+                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/${name.charAt(0)}/${name}.svg` : "";
                             }
 
                             return "";
@@ -170,7 +170,7 @@ export default function LeagueDashboard() {
                             }
 
                             if (league === 'ncaa') {
-                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/bgl/${name}.svg` : "";
+                                return name ? `https://www.ncaa.com/sites/default/files/images/logos/schools/${name.charAt(0)}/${name}.svg` : "";
                             }
 
                             return "";

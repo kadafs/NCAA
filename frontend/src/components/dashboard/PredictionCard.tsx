@@ -57,6 +57,22 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                         const league = prediction.league?.toLowerCase() || 'ncaa';
                                         const fallback = LEAGUE_FALLBACKS[league] || LEAGUE_FALLBACKS.ncaa;
 
+                                        if (league === 'ncaa') {
+                                            const cleanName = prediction.awayTeam.name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                                            const smartUrl = `https://www.ncaa.com/sites/default/files/images/logos/schools/${cleanName.charAt(0)}/${cleanName}.svg`;
+
+                                            // Start: Prevent infinite loop if smart URL also fails
+                                            // If the current src is already the smart URL, or the fallback, stop.
+                                            if (target.src === smartUrl || target.src === fallback) {
+                                                if (target.src !== fallback) target.src = fallback;
+                                                return;
+                                            }
+
+                                            // Try smart URL
+                                            target.src = smartUrl;
+                                            return;
+                                        }
+
                                         if (target.src === fallback) return;
                                         target.src = fallback;
                                     }}
@@ -85,6 +101,19 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                         const target = e.target as HTMLImageElement;
                                         const league = prediction.league?.toLowerCase() || 'ncaa';
                                         const fallback = LEAGUE_FALLBACKS[league] || LEAGUE_FALLBACKS.ncaa;
+
+                                        if (league === 'ncaa') {
+                                            const cleanName = prediction.homeTeam.name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                                            const smartUrl = `https://www.ncaa.com/sites/default/files/images/logos/schools/${cleanName.charAt(0)}/${cleanName}.svg`;
+
+                                            if (target.src === smartUrl || target.src === fallback) {
+                                                if (target.src !== fallback) target.src = fallback;
+                                                return;
+                                            }
+
+                                            target.src = smartUrl;
+                                            return;
+                                        }
 
                                         if (target.src === fallback) return;
                                         target.src = fallback;
