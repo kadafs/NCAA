@@ -127,8 +127,8 @@ export const app = new Elysia()
   .get("/", ({ redirect }) => redirect("/openapi"), { detail: { hide: true } })
   // fetch and return logo svg
   .get("/logo/:school", async ({ params: { school }, query: { dark }, set, status }) => {
-    const bgParam = dark !== undefined && dark !== "false" ? "bgd" : "bgl";
-    const url = `https://www.ncaa.com/sites/default/files/images/logos/schools/${bgParam}/${school.replace(".svg", "")}.svg`;
+    const cleanName = school.replace(".svg", "");
+    const url = `https://www.ncaa.com/sites/default/files/images/logos/schools/${cleanName.charAt(0).toLowerCase()}/${cleanName}.svg`;
     const res = await ncaaFetch(url);
 
     if (!res.ok) {
