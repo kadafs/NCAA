@@ -132,6 +132,13 @@ def get_universal_predictions(league="nba", mode="safe"):
         # Calculation
         res = engine.calculate_total(game, game_injuries)
         
+        # Route based on Mode (Safe = Legacy, Full = Sharp)
+        final_total = res['sharp_total'] if mode == "full" else res['legacy_total']
+        final_edge = res['edge'] if mode == "full" else res['legacy_edge']
+        
+        # Props scaling factor
+        factor = final_total / (230.0 if league == "nba" else 150.0)
+        
         # Props
         player_props = []
         if league == "nba" and p_stats:
@@ -140,8 +147,6 @@ def get_universal_predictions(league="nba", mode="safe"):
             triA = full_to_tricode.get(away)
             triH = full_to_tricode.get(home)
             
-            # Simple scaling factor (consistent with run_universal.py)
-            factor = res['final_model_total'] / 230.0
             context = {"factor": factor, "vol_factor": 1.0}
 
             for team_tri, label in [(triA, 'A'), (triH, 'H')]:
