@@ -98,7 +98,6 @@ export default function LeagueDashboard() {
     const [audit, setAudit] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [mode, setMode] = useState("safe");
-    const [activeTab, setActiveTab] = useState("home");
 
     useEffect(() => {
         fetchData();
@@ -439,7 +438,7 @@ export default function LeagueDashboard() {
                 </main>
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }

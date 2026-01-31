@@ -75,7 +75,6 @@ const MOCK_GAMES: Game[] = [
 const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function ScoreboardPage() {
-    const [activeTab, setActiveTab] = useState("live");
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedLeague, setSelectedLeague] = useState("All");
 
@@ -208,7 +207,7 @@ export default function ScoreboardPage() {
                 </main>
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }

@@ -123,7 +123,6 @@ const PROP_TYPES = ["All", "PTS", "REB", "AST", "STL", "BLK", "TOV", "3PM", "FGM
 const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function PropsPage() {
-    const [activeTab, setActiveTab] = useState("props");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedPropType, setSelectedPropType] = useState("All");
     const [selectedLeague, setSelectedLeague] = useState("All");
@@ -370,7 +369,7 @@ export default function PropsPage() {
             </div>
 
             {/* Bottom Nav - Mobile */}
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }

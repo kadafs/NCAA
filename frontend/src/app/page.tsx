@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy,
   ChevronRight,
@@ -14,7 +14,9 @@ import {
   Activity,
   Users,
   ArrowUpRight,
-  Play
+  Play,
+  Menu,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -82,8 +84,17 @@ const LIVE_GAMES = [
 ];
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navLinks = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Props", href: "/props" },
+    { label: "Performance", href: "/performance" },
+    { label: "History", href: "/history" },
+  ];
+
   return (
-    <div className="min-h-screen bg-dash-bg text-dash-text-primary">
+    <div className="min-h-screen bg-dash-bg text-dash-text-primary text-dash-text-primary">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-dash-bg/80 backdrop-blur-xl border-b border-dash-border">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -99,25 +110,67 @@ export default function LandingPage() {
 
           {/* Nav Links - Desktop */}
           <div className="hidden md:flex items-center gap-8">
-            {["Dashboard", "Props", "Performance", "History"].map((item) => (
+            {navLinks.map((item) => (
               <Link
-                key={item}
-                href={`/${item.toLowerCase()}`}
+                key={item.label}
+                href={item.href}
                 className="text-xs font-bold text-dash-text-muted uppercase tracking-widest hover:text-white transition-colors"
               >
-                {item}
+                {item.label}
               </Link>
             ))}
           </div>
 
-          {/* CTA */}
-          <Link
-            href="/dashboard"
-            className="px-5 py-2.5 bg-gold text-dash-bg text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(251,191,36,0.2)]"
-          >
-            Launch App
-          </Link>
+          {/* CTA & Mobile Toggle */}
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="hidden sm:block px-5 py-2.5 bg-gold text-dash-bg text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(251,191,36,0.2)]"
+            >
+              Launch App
+            </Link>
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-dash-text-muted hover:text-white transition-colors"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-dash-bg-secondary border-b border-dash-border overflow-hidden"
+            >
+              <div className="px-4 py-6 space-y-4">
+                {navLinks.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block text-sm font-bold text-dash-text-muted uppercase tracking-widest hover:text-white transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full py-4 bg-gold text-dash-bg text-center text-xs font-black uppercase tracking-widest rounded-xl"
+                >
+                  Launch App
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}

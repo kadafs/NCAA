@@ -81,7 +81,6 @@ export default function DashboardIndex() {
     const [props, setProps] = useState<PlayerProp[]>([]);
     const [audit, setAudit] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("home");
 
     useEffect(() => {
         fetchData();
@@ -234,7 +233,7 @@ export default function DashboardIndex() {
                 </main>
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }

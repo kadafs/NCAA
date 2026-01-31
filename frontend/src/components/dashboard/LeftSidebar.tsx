@@ -118,32 +118,29 @@ export function LeftSidebar() {
  * - 44x44px touch targets
  * - Visible only on mobile (< lg breakpoint)
  */
-interface BottomNavProps {
-    activeTab?: string;
-    onTabChange?: (tab: string) => void;
-}
-
 const BOTTOM_NAV_ITEMS = [
-    { id: "home", icon: Layers, label: "Home" },
-    { id: "props", icon: PieChart, label: "Props" },
-    { id: "live", icon: Activity, label: "Live" },
-    { id: "performance", icon: TrendingUp, label: "Trust" },
+    { id: "home", icon: Layers, label: "Home", href: "/dashboard" },
+    { id: "props", icon: PieChart, label: "Props", href: "/props" },
+    { id: "live", icon: Activity, label: "Live", href: "/scoreboard" },
+    { id: "performance", icon: TrendingUp, label: "Trust", href: "/performance" },
 ];
 
-export function BottomNav({ activeTab = "home", onTabChange }: BottomNavProps) {
+export function BottomNav() {
+    const pathname = usePathname();
+
     return (
         <nav className="fixed bottom-0 left-0 right-0 h-16 bg-dash-bg/95 backdrop-blur-xl border-t border-dash-border lg:hidden flex items-center justify-around px-4 z-50 safe-area-pb">
             {BOTTOM_NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const isActive = activeTab === item.id;
+                const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
 
                 return (
-                    <button
+                    <Link
                         key={item.id}
-                        onClick={() => onTabChange?.(item.id)}
+                        href={item.href}
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] transition-colors",
-                            isActive ? "text-gold" : "text-dash-text-muted"
+                            isActive ? "text-gold" : "text-dash-text-muted hover:text-white"
                         )}
                         aria-label={item.label}
                     >
@@ -151,7 +148,7 @@ export function BottomNav({ activeTab = "home", onTabChange }: BottomNavProps) {
                         <span className="text-[8px] font-black uppercase tracking-tight">
                             {item.label}
                         </span>
-                    </button>
+                    </Link>
                 );
             })}
         </nav>

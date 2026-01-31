@@ -16,7 +16,6 @@ import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
 export default function PerformanceHistory() {
     const [audit, setAudit] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("history");
 
     useEffect(() => {
         fetchAudit();
@@ -223,7 +222,7 @@ export default function PerformanceHistory() {
                 </main>
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }

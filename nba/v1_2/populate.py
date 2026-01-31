@@ -26,7 +26,7 @@ def load_json(path):
 
 def get_nba_game_data(matchup, all_stats, injury_notes):
     """Bridge nba_api data to v1.2 Input Sheet columns."""
-    # 1. Resolve stats using robust mapping
+    # Resolve stats using robust mapping
     away_team = find_team_in_dict(matchup['away'], all_stats, BASKETBALL_ALIASES)
     home_team = find_team_in_dict(matchup['home'], all_stats, BASKETBALL_ALIASES)
     
@@ -35,12 +35,7 @@ def get_nba_game_data(matchup, all_stats, injury_notes):
     statsA = all_stats.get(away_team)
     statsH = all_stats.get(home_team)
     
-    # 2. Extract Metrics
-    # Note: nba_api stats vary; assuming standard 'PTS', 'PACE', 'OFF_RATING', 'DEF_RATING' keys
-    # and situational flags like B2B (optional for now, can be manual via notes)
-    
     # Heuristic for B2B based on game count in notes or schedule (limited in current fetchers)
-    # We'll default to False unless we find specific "B2B" strings in injury notes
     def check_b2b(tn):
         notes = injury_notes.get(tn, [])
         for n in notes:
@@ -50,11 +45,10 @@ def get_nba_game_data(matchup, all_stats, injury_notes):
     is_b2bA = check_b2b(away_team)
     is_b2bH = check_b2b(home_team)
     
-    # 2. Extract Metrics using correct keys
     input_data = {
         "team": away_team,
         "opponent": home_team,
-        "team_ppg": statsA.get('pts', 115.0), # Fallback if pts not present
+        "team_ppg": statsA.get('pts', 115.0),
         "opp_ppg": statsH.get('pts', 115.0),
         "market_total": matchup.get('total', 230.5), 
         "pace_adjustment": (statsA.get('adj_t', 100.0) + statsH.get('adj_t', 100.0)) / 2,
@@ -70,26 +64,94 @@ def get_nba_game_data(matchup, all_stats, injury_notes):
     
     return input_data
 
-def get_nba_daily_input_sheet():
+def load_nba_market_csv(target_date_obj):
+    """
+    Looks for a file named data/nba_market_YYYY-MM-DD.csv.
+    Returns a dictionary of {frozenset({away, home}): Market_Total}.
+    """
+    import csv
+    import re
+    date_str = target_date_obj.strftime("%Y-%m-%d")
+    filename = os.path.join(ROOT_DIR, "data", f"nba_market_{date_str}.csv")
+    
+    market_map = {}
+    if not os.path.exists(filename):
+        return market_map
+
+    print(f"DEBUG: Found NBA Market CSV for {date_str}. Injecting priorities...")
+    try:
+        stats = load_json(NBA_STATS_FILE)
+        with open(filename, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                matchup = row.get('Matchup', '')
+                total_raw = row.get('Market_Odds') or row.get('Market Total')
+                
+                if not matchup or not total_raw: continue
+                
+                total_match = re.search(r"(\d+\.?\d*)", str(total_raw))
+                if not total_match: continue
+                total = float(total_match.group(1))
+
+                temp_a, temp_b = None, None
+                if ' vs ' in matchup:
+                    parts = matchup.split(' vs ')
+                    temp_a, temp_b = parts[0].strip(), parts[1].strip()
+                elif '@' in matchup:
+                    parts = matchup.split('@')
+                    temp_a, temp_b = parts[0].strip(), parts[1].strip()
+                
+                if temp_a and temp_b:
+                    team_a = find_team_in_dict(temp_a, stats, BASKETBALL_ALIASES)
+                    team_b = find_team_in_dict(temp_b, stats, BASKETBALL_ALIASES)
+                    if team_a and team_b:
+                        key = frozenset({team_a.lower(), team_b.lower()})
+                        market_map[key] = total
+        
+        print(f"DEBUG: Successfully mapped {len(market_map)} NBA market totals from CSV.")
+        return market_map
+    except Exception as e:
+        print(f"ERROR: Failed to parse NBA market CSV: {e}")
+        return {}
+
+def get_nba_daily_input_sheet(date_obj=None):
+    if date_obj is None:
+        date_obj = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
+
     stats = load_json(NBA_STATS_FILE)
     matchups = load_json(NBA_MATCHUPS_FILE)
     injuries = load_json(NBA_INJURY_FILE)
+    manual_market = load_nba_market_csv(date_obj)
     
-    # Fetch live odds
+    # Fetch live odds fallback
     odds_data = get_odds("basketball_nba")
     
     daily_sheet = []
     for m in matchups:
-        # Try to find a live total for this matchup
-        live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
-        # If no live total found, use the default from the matchup (if any)
-        market_total = live_total if live_total else m.get('total', 230.5)
+        # Priority 1: Manual CSV
+        # Priority 2: API
+        # Priority 3: Matchup Default
         
-        # Override the total in the matchup dict so get_nba_game_data picks it up
+        # Resolve names for lookup
+        res_away = find_team_in_dict(m['away'], stats, BASKETBALL_ALIASES)
+        res_home = find_team_in_dict(m['home'], stats, BASKETBALL_ALIASES)
+        
+        lookup_key = None
+        if res_away and res_home:
+            lookup_key = frozenset({res_away.lower(), res_home.lower()})
+
+        if lookup_key and lookup_key in manual_market:
+            market_total = manual_market[lookup_key]
+            source = "Manual CSV Injection"
+        else:
+            live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
+            market_total = live_total if live_total else m.get('total', 230.5)
+            source = "API/Matchup"
+        
         m['total'] = market_total
-        
         data = get_nba_game_data(m, stats, injuries)
         if data:
+            data['market_source'] = source
             daily_sheet.append(data)
             
     return daily_sheet

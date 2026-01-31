@@ -45,7 +45,6 @@ const RECENT_PICKS = [
 ];
 
 export default function Performance() {
-    const [activeTab, setActiveTab] = useState("performance");
     const [selectedPeriod, setSelectedPeriod] = useState("30d");
     const [metrics, setMetrics] = useState<PerformanceMetric[]>(MOCK_METRICS);
     const [recentPicks, setRecentPicks] = useState<any[]>(RECENT_PICKS);
@@ -348,7 +347,7 @@ export default function Performance() {
                 </main>
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }

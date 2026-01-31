@@ -124,7 +124,7 @@ export function Header() {
 
             {/* Mobile Navigation */}
             {mobileMenuOpen && (
-                <div className="md:hidden border-t border-border py-4 space-y-1">
+                <div className="lg:hidden border-t border-border py-4 space-y-1">
                     {NAV_LINKS.map((link) => (
                         <Link
                             key={link.href}
