@@ -1,6 +1,7 @@
 # Universal Basketball Engine v1.4
 import json
 import os
+from datetime import datetime
 
 class UniversalBasketballEngine:
     """
@@ -23,15 +24,16 @@ class UniversalBasketballEngine:
         self.trace.append(message)
 
     def calculate_total(self, game_data, injury_notes=None):
-        self.trace = []
+        self.trace = [f"Audit Session: {datetime.now().strftime('%H:%M:%S')}"]
         c = self.config
         sp = c.get('sharp_params', {})
-        
-        # 0. Context Extraction
         conf = game_data.get('conf', 'DEFAULT')
+        market = float(game_data.get('market_total', 145.5))
         
         # --- LEGACY MATH TRACK (Original Status Quo) ---
         pace_adj = game_data.get('pace_adjustment', c['pace_pivot'])
+        
+        # Step 0: Pace Multiplier
         pace_mult = c.get('conf_pace_multipliers', {}).get(conf, c.get('conf_pace_multipliers', {}).get('DEFAULT', 1.0))
         if pace_mult != 1.0:
             pace_adj *= pace_mult
@@ -39,69 +41,108 @@ class UniversalBasketballEngine:
 
         eff_adj = game_data.get('efficiency_adjustment', c['eff_pivot'])
         
-        # Baseline: ((Off + Def) / 2 * Pace) / 100 * 2
+        # Formula: ((Off + Def) / 2 * Pace) / 100 * 2
         legacy_baseline = ((eff_adj * pace_adj) / 100) * 2
-        self._log(f"Step 1 (Legacy): Baseline = {legacy_baseline:.2f}")
+        self._log(f"Step 1 (Legacy): Baseline ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {legacy_baseline:.2f}")
 
         # Impact & Regression
         legacy_total = legacy_baseline
         pace_delta = pace_adj - c['pace_pivot']
-        legacy_total += pace_delta * c['pace_delta_weight']
+        pace_impact = pace_delta * c['pace_delta_weight']
+        legacy_total += pace_impact
+        self._log(f"Step 2: Pace Impact ({pace_adj:.1f} vs {c['pace_pivot']}) -> {pace_impact:+.2f}")
         
-        # Situational
+        # Eff Modifiers
         eff_mod = 0
-        if game_data.get('is_elite_offense'): eff_mod += 2.0
-        if game_data.get('is_strong_defense'): eff_mod -= 3.0
+        if game_data.get('is_elite_offense'): 
+            eff_mod += 2.0
+            self._log("Step 2b: Elite Offense Bonus -> +2.0")
+        if game_data.get('is_strong_defense'): 
+            eff_mod -= 3.0
+            self._log("Step 2c: Strong Defense Drag -> -3.0")
         legacy_total += eff_mod
         
-        legacy_total *= c['regression_factor']
+        # Regression
+        reg_factor = c.get('regression_factor', 0.97)
+        old_val = legacy_total
+        legacy_total *= reg_factor
+        self._log(f"Step 3: Regression Applied ({reg_factor}) -> {legacy_total:.2f}")
         
-        # Final Legacy Result
+        # Situational
         if not game_data.get('is_neutral', False):
-            legacy_total += c.get('hca_total_bump', 0)
-        
+            hca = c.get('hca_total_bump', 0)
+            legacy_total += hca
+            self._log(f"Step 4: Home Court Advantage -> {hca:+.1f}")
+            
+        cb = c.get('conf_bias', {}).get(conf, c.get('conf_bias', {}).get('DEFAULT', 0))
+        if cb != 0:
+            legacy_total += cb
+            self._log(f"Step 5: Conference Bias ({conf}) -> {cb:+.1f}")
+
+        self._log(f"Step 6: Final Legacy Result -> {legacy_total:.2f}")
+
         # --- SHARP MATH TRACK (Experimental Improvements) ---
-        sharp_total = legacy_total # Start with legacy as base
+        sharp_total = legacy_total  # Start with legacy as base
         
-        # 1. Possession Multiplier (ORB% / TOV% Impact)
-        # Assuming game_data might have 'off_reb_pct' or 'tov_pct' in the future
-        # For now, we'll use a placeholder logic that looks for 'rebound_mismatch'
-        if game_data.get('is_rebound_mismatch'):
-            bonus = sp.get('possession_bonus_value', 2.0)
-            sharp_total += bonus
-            self._log(f"Sharp Step 1: Possession Bonus -> +{bonus:.1f}")
+        if self.mode == "full":
+            self._log("--- Applying Sharp Adjustments ---")
+            
+            # 1. Possession Multiplier (Sharp Adjustment)
+            if sp.get('possession_bonus_value'):
+                if game_data.get('is_rebound_mismatch') or game_data.get('is_turnover_mismatch'):
+                    sharp_total += sp['possession_bonus_value']
+                    self._log(f"Sharp 1: Possession Bonus -> +{sp['possession_bonus_value']}")
+            
+            # 2. High Pace Efficiency Bonus
+            if sp.get('high_pace_threshold'):
+                if pace_adj > sp['high_pace_threshold']:
+                    bonus = (pace_adj - sp['high_pace_threshold']) * sp.get('high_pace_efficiency_multiplier', 0.1)
+                    sharp_total += bonus
+                    self._log(f"Sharp 2: High Pace Bonus ({pace_adj:.1f} > {sp['high_pace_threshold']}) -> +{bonus:.2f}")
 
-        # 2. High Pace Efficiency Bonus (Non-linear collapsing defense)
-        high_pace_thresh = sp.get('high_pace_threshold', 1000) # Default high to disable
-        if pace_adj > high_pace_thresh:
-            excess_pace = pace_adj - high_pace_thresh
-            pace_bonus = excess_pace * sp.get('high_pace_efficiency_multiplier', 0.2)
-            sharp_total += pace_bonus
-            self._log(f"Sharp Step 2: High Pace Bonus -> +{pace_bonus:.2f}")
+            # 3. NBA 3PT Frequency Ratio
+            if c['name'] == "NBA" and sp.get('three_pa_threshold'):
+                three_pa = game_data.get('three_pa_total', 70)
+                if three_pa > sp['three_pa_threshold']:
+                    bonus = (three_pa - sp['three_pa_threshold']) * 0.05
+                    sharp_total += bonus
+                    self._log(f"Sharp 3: 3PT Volume Bonus ({three_pa} > {sp['three_pa_threshold']}) -> +{bonus:.2f}")
 
-        # 3. NBA 3PT Frequency Ratio
-        if c['name'] == "NBA":
-            three_pa_freq = game_data.get('three_pa_freq', 0)
-            if three_pa_freq > sp.get('three_pt_freq_threshold', 0.42):
-                boost = sp.get('three_pt_freq_regression_boost', 0.02)
-                # Reverse some of the regression
-                regression_recovery = legacy_total * boost
-                sharp_total += regression_recovery
-                self._log(f"Sharp Step 3: 3PT Freq Regression Recovery -> +{regression_recovery:.2f}")
+            # 4. NCAA Close Game Foul Correction
+            if c['name'] == "NCAA":
+                projected_spread = abs(game_data.get('projected_spread', 10.0))
+                if projected_spread < sp.get('close_game_threshold', 4.5):
+                    sharp_total += sp.get('close_game_foul_bonus', 1.5)
+                    self._log(f"Sharp 4: Close Game Foul Correction ({projected_spread:.1f} < {sp.get('close_game_threshold')}) -> +{sp.get('close_game_foul_bonus')}")
 
-        # 4. NCAA Close Game Foul Correction
-        if c['name'] == "NCAA":
-            projected_spread = abs(game_data.get('projected_spread', 10.0))
-            if projected_spread < sp.get('close_game_threshold', 4.5):
-                foul_bonus = sp.get('close_game_foul_bonus', 1.8)
-                sharp_total += foul_bonus
-                self._log(f"Sharp Step 4: Close Game Foul Bonus -> +{foul_bonus:.1f}")
+            if sharp_total == legacy_total:
+                self._log("No Sharp Adjustments triggered.")
+        else:
+            # We still need to calculate the sharp_total for the return dict even if not logging
+            # (Though in Safe mode the dashboard might not use it, the return dict expects it)
+            if sp.get('possession_bonus_value'):
+                if game_data.get('is_rebound_mismatch') or game_data.get('is_turnover_mismatch'):
+                    sharp_total += sp['possession_bonus_value']
+            
+            if sp.get('high_pace_threshold'):
+                if pace_adj > sp['high_pace_threshold']:
+                    sharp_total += (pace_adj - sp['high_pace_threshold']) * sp.get('high_pace_efficiency_multiplier', 0.1)
+
+            if c['name'] == "NBA" and sp.get('three_pa_threshold'):
+                three_pa = game_data.get('three_pa_total', 70)
+                if three_pa > sp['three_pa_threshold']:
+                    sharp_total += (three_pa - sp['three_pa_threshold']) * 0.05
+
+            if c['name'] == "NCAA":
+                projected_spread = abs(game_data.get('projected_spread', 10.0))
+                if projected_spread < sp.get('close_game_threshold', 4.5):
+                    sharp_total += sp.get('close_game_foul_bonus', 1.5)
 
         # Clamping & Context apply to both tracks in this engine version
         # but the USER specifically wants FULL mode to show the new logic.
         
         # Clamping
-        market = game_data.get('market_total', 0)
+        # market = game_data.get('market_total', 0) # Already defined at the top
         threshold = c.get('volatility_threshold', 15.0)
         
         def clamp_total(val, mkt):

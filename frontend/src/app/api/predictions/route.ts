@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Predictions API Route (Vercel/Production optimized)
  * 
@@ -14,11 +16,12 @@ export async function GET(req: Request) {
         const league = searchParams.get("league") || "nba";
         const mode = searchParams.get("mode") || "safe";
 
-        // Fetch from Supabase store
+        // Fetch from Supabase store using composite key
+        const storeKey = `${league}_${mode}`;
         const { data: storeData, error } = await supabase
             .from("predictions_store")
             .select("data, updated_at")
-            .eq("league", league)
+            .eq("league", storeKey)
             .single();
 
         if (error || !storeData) {

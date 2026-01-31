@@ -161,7 +161,12 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=145.5,
     ppgA = find_ppg(teamA)
     ppgH = find_ppg(teamH)
     
-    # 3. Formulate Input Dictionary
+    # 3. Calculate Projected Spread for foul correction logic
+    pace_adj = (sA['adj_t'] + sH['adj_t']) / 2
+    # Simple model spread: (Away Eff - Home Def) - (Home Eff - Away Def) * Pace / 100 - 3.5 HCA
+    raw_spread = ((sA['adj_off'] - sH['adj_def']) - (sH['adj_off'] - sA['adj_def'])) * (pace_adj / 100) - 3.5
+    
+    # 4. Formulate Input Dictionary
     input_data = {
         "team": teamA,
         "opponent": teamH,
@@ -170,13 +175,14 @@ def get_game_data(away_name, home_name, bt_data, score_data, market_total=145.5,
         "team_ppg": ppgA,
         "opp_ppg": ppgH,
         "market_total": market_total,
-        "pace_adjustment": (sA['adj_t'] + sH['adj_t']) / 2,
+        "pace_adjustment": pace_adj,
         "efficiency_adjustment": (sA['adj_off'] + sH['adj_def'] + sH['adj_off'] + sA['adj_def']) / 4,
+        "projected_spread": raw_spread,
         "is_elite_offense": sA['adj_off'] > 115 or sH['adj_off'] > 115,
         "is_strong_defense": sA['adj_def'] < 100 or sH['adj_def'] < 100,
-        "turnover_adjustment": (sA['to'] + sH['to']) / 2,
-        "foul_adjustment": (sA['ftr'] + sH['ftr']) / 2,
-        "conf": sA['conf'],
+        "turnover_adjustment": (sA.get('to', 18) + sH.get('to', 18)) / 2,
+        "foul_adjustment": (sA.get('ftr', 30) + sH.get('ftr', 30)) / 2,
+        "conf": sA.get('conf', 'IND'),
         "statsA": sA,
         "statsH": sH
     }
