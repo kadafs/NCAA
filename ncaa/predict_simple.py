@@ -11,7 +11,7 @@ from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
 # Logic: Proj Score = (Team A Offense + Team B Defense) / 2
 # Uses only basic Scoring Offense (PPG) and Scoring Defense (OPP PPG).
 
-BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api.henrygd.me"]
+BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api-w2ry.onrender.com"]
 # Base paths relative to Project Root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))

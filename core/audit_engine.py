@@ -133,7 +133,7 @@ def audit_ncaa(date_obj):
     print(f"Auditing NCAA for {date_str}...")
 
     # 1. Fetch scores from Henrygd NCAA API
-    url = f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{date_obj.year}/{date_obj.month:02d}/{date_obj.day:02d}"
+    url = f"https://ncaa-api-w2ry.onrender.com/scoreboard/basketball-men/d1/{date_obj.year}/{date_obj.month:02d}/{date_obj.day:02d}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json"

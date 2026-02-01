@@ -41,7 +41,7 @@ def fetch_matchups(date_obj=None):
     sources = [
         f"http://localhost:3005/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}",
         f"http://localhost:3000/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}",
-        f"https://ncaa-api.henrygd.me/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+        f"https://ncaa-api-w2ry.onrender.com/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
     ]
 
     headers = {
