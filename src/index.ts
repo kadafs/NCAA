@@ -132,6 +132,18 @@ function getETYear() {
 
 export const app = new Elysia()
   .use(openapiSpec)
+  // Add CORS support for frontend
+  .onRequest(({ set }) => {
+    set.headers['Access-Control-Allow-Origin'] = '*';
+    set.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+    set.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-ncaa-key';
+  })
+  .options('/*', ({ set }) => {
+    set.headers['Access-Control-Allow-Origin'] = '*';
+    set.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+    set.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-ncaa-key';
+    return '';
+  })
   .onError(({ error, code, request }) => {
     console.error(`[${new Date().toISOString()}] Error ${code} on ${request.method} ${request.url}:`, error);
     if (code === "VALIDATION") return error.detail(error.message);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy,
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { fetchScoreboard, fetchNBAScoreboard, type NCAAGame } from "@/lib/api";
 
 /**
  * Landing Page - Dark Theme Redesign
@@ -53,12 +54,12 @@ const LEAGUES = [
   },
 ];
 
-const PLATFORM_STATS = [
-  { value: "84.2%", label: "Win Rate", sublabel: "O/U Predictions" },
-  { value: "12.4%", label: "ROI", sublabel: "All Markets" },
-  { value: "2,400+", label: "Games", sublabel: "This Season" },
-  { value: "142-98", label: "Record", sublabel: "Season to Date" },
-];
+// Platform stats will be fetched from API
+interface PlatformStat {
+  value: string;
+  label: string;
+  sublabel: string;
+}
 
 const FEATURES = [
   {
@@ -78,13 +79,30 @@ const FEATURES = [
   },
 ];
 
-const LIVE_GAMES = [
-  { id: "1", away: "LAL", home: "BOS", awayScore: 102, homeScore: 108, quarter: "Q4", time: "2:34", league: "NBA", edge: "+3.2" },
-  { id: "2", away: "DUKE", home: "UNC", awayScore: 68, homeScore: 71, quarter: "2H", time: "8:45", league: "NCAA", edge: "+5.1" },
-];
+// Live games will be fetched from API
+interface LiveGame {
+  id: string;
+  away: string;
+  home: string;
+  awayScore?: number;
+  homeScore?: number;
+  quarter: string;
+  time: string;
+  league: string;
+  edge: string;
+}
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [platformStats, setPlatformStats] = useState<PlatformStat[]>([
+    { value: "--", label: "Win Rate", sublabel: "O/U Predictions" },
+    { value: "--", label: "ROI", sublabel: "All Markets" },
+    { value: "--", label: "Games", sublabel: "This Season" },
+    { value: "--", label: "Record", sublabel: "Season to Date" },
+  ]);
+  const [liveGames, setLiveGames] = useState<LiveGame[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingGames, setLoadingGames] = useState(true);
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard" },
@@ -92,6 +110,103 @@ export default function LandingPage() {
     { label: "Performance", href: "/performance" },
     { label: "History", href: "/history" },
   ];
+
+  // Fetch platform stats from audit API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/audit');
+        const data = await res.json();
+
+        if (data.metrics && data.metrics.length > 0) {
+          const totalMetric = data.metrics.find((m: any) => m.league === 'TOTAL');
+          if (totalMetric) {
+            const totalGames = totalMetric.wins + totalMetric.losses + totalMetric.pushes;
+            setPlatformStats([
+              { value: `${totalMetric.win_pct.toFixed(1)}%`, label: "Win Rate", sublabel: "O/U Predictions" },
+              { value: `${totalMetric.roi.toFixed(1)}%`, label: "ROI", sublabel: "All Markets" },
+              { value: `${totalGames.toLocaleString()}+`, label: "Games", sublabel: "This Season" },
+              { value: `${totalMetric.wins}-${totalMetric.losses}`, label: "Record", sublabel: "Season to Date" },
+            ]);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  // Fetch live games
+  useEffect(() => {
+    const fetchLiveGames = async () => {
+      try {
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+
+        // Fetch both NBA and NCAA games
+        const [ncaaData, nbaData] = await Promise.allSettled([
+          fetchScoreboard('basketball-men', 'd1', dateStr),
+          fetchNBAScoreboard(today)
+        ]);
+
+        const allGames: LiveGame[] = [];
+
+        // Process NCAA games
+        if (ncaaData.status === 'fulfilled') {
+          const liveNcaaGames = ncaaData.value.games
+            ?.filter((item: NCAAGame) => item.game.gameState === 'live')
+            .slice(0, 3) // Limit to 3 games
+            .map((item: NCAAGame) => ({
+              id: item.game.gameID,
+              away: item.game.away.names.short,
+              home: item.game.home.names.short,
+              awayScore: item.game.away.score,
+              homeScore: item.game.home.score,
+              quarter: item.game.currentPeriod || '2H',
+              time: item.game.currentPeriod || '',
+              league: 'NCAA',
+              edge: `+${(Math.random() * 5 + 1).toFixed(1)}` // Mock edge for now
+            })) || [];
+          allGames.push(...liveNcaaGames);
+        }
+
+        // Process NBA games
+        if (nbaData.status === 'fulfilled') {
+          const liveNbaGames = nbaData.value.games
+            ?.filter((item: NCAAGame) => item.game.gameState === 'live')
+            .slice(0, 3) // Limit to 3 games
+            .map((item: NCAAGame) => ({
+              id: item.game.gameID,
+              away: item.game.away.names.short,
+              home: item.game.home.names.short,
+              awayScore: item.game.away.score,
+              homeScore: item.game.home.score,
+              quarter: item.game.currentPeriod || 'Q4',
+              time: item.game.currentPeriod || '',
+              league: 'NBA',
+              edge: `+${(Math.random() * 5 + 1).toFixed(1)}` // Mock edge for now
+            })) || [];
+          allGames.push(...liveNbaGames);
+        }
+
+        setLiveGames(allGames);
+      } catch (err) {
+        console.error('Error fetching live games:', err);
+      } finally {
+        setLoadingGames(false);
+      }
+    };
+
+    fetchLiveGames();
+
+    // Refresh live games every 60 seconds
+    const interval = setInterval(fetchLiveGames, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="min-h-screen bg-dash-bg text-dash-text-primary text-dash-text-primary">
@@ -124,7 +239,7 @@ export default function LandingPage() {
           {/* CTA & Mobile Toggle */}
           <div className="flex items-center gap-4">
             <Link
-              href="/dashboard"
+              href="/app-coming-soon"
               className="hidden sm:block px-5 py-2.5 bg-gold text-dash-bg text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(251,191,36,0.2)]"
             >
               Launch App
@@ -161,7 +276,7 @@ export default function LandingPage() {
                   </Link>
                 ))}
                 <Link
-                  href="/dashboard"
+                  href="/app-coming-soon"
                   onClick={() => setMobileMenuOpen(false)}
                   className="block w-full py-4 bg-gold text-dash-bg text-center text-xs font-black uppercase tracking-widest rounded-xl"
                 >
@@ -228,7 +343,7 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="mt-16 md:mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6"
           >
-            {PLATFORM_STATS.map((stat, idx) => (
+            {platformStats.map((stat: PlatformStat, idx: number) => (
               <div
                 key={stat.label}
                 className="bg-dash-card border border-dash-border rounded-2xl p-4 md:p-6 text-center hover:border-gold/20 transition-colors"
@@ -259,7 +374,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-            {LIVE_GAMES.map((game) => (
+            {liveGames.length > 0 ? liveGames.map((game: LiveGame) => (
               <Link
                 key={game.id}
                 href={`/dashboard/${game.league.toLowerCase()}`}
@@ -284,7 +399,11 @@ export default function LandingPage() {
                   <span className="text-xs font-black text-dash-success">{game.edge}</span>
                 </div>
               </Link>
-            ))}
+            )) : (
+              <div className="flex-shrink-0 bg-dash-card border border-dash-border rounded-2xl p-6 min-w-[200px] text-center">
+                <p className="text-xs font-bold text-dash-text-muted">No live games at the moment</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
