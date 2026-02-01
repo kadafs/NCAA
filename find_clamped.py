@@ -3,7 +3,7 @@ import json
 import sys
 
 # Configuration
-API_URL = "http://localhost:3001/api/predictions?league=ncaa&mode=safe"
+API_URL = "https://ncaa-teal.vercel.app/api/predictions?league=ncaa&mode=safe"
 
 def find_clamped_games():
     print(f"Fetching predictions from {API_URL}...")
