@@ -35,7 +35,6 @@ export default function LeagueScoreboard() {
 
     const [games, setGames] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("live");
 
     const getETDate = (date: Date = new Date()) => {
         return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(date);
@@ -290,7 +289,7 @@ export default function LeagueScoreboard() {
                 </main>
             </div>
 
-            <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <BottomNav />
         </div>
     );
 }
