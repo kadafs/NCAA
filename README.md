@@ -8,7 +8,7 @@ Works with scores, stats, rankings, standings, schedules, history, logos, and ga
 
 Make a GET request using the same path as the URL on ncaa.com. You'll get a JSON response with the data.
 
-You can test using the [demo API](http://localhost:3000). [Host your own](#deployment) if you need it to be reliable long term.
+You can test using the [demo API](https://ncaa-api-w2ry.onrender.com). [Host your own](#deployment) if you need it to be reliable long term.
 
 > Note: The public API is limited to 5 requests per second per IP.
 
@@ -373,7 +373,7 @@ Use the included [docker-compose.yml](/docker-compose.yml) or run directly with 
 docker run --rm -p 3000:3000 kadafs/ncaa-api
 ```
 
-The app should be available at [http://localhost:3000](http://localhost:3000/history/bowling/nc).
+The app should be available at [https://ncaa-api-w2ry.onrender.com](https://ncaa-api-w2ry.onrender.com/history/bowling/nc).
 
 ## Limiting Access
 

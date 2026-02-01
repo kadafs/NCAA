@@ -24,13 +24,13 @@ export const openapiSpec = openapi({
   documentation: {
     // servers: [
     //   {
-    //     url: "https://ncaa-api.henrygd.me",
-    //     description: "Public API",
-    //   },
-    //   {
+    //     url: "https://ncaa-api-w2ry.onrender.com/",
+    //     description: "Production"
+    // },
+    // {
     //     url: "http://localhost:3000",
-    //     description: "Development",
-    //   },
+    //     description: "Local"
+    // }  },
     // ],
     info: {
       title: "NCAA API",

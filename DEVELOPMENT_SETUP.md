@@ -27,7 +27,7 @@ The backend handles data fetching, scraping, and serving the API routes.
   bun dev
   ```
 - **Default Port**: `3000`
-- **Verification**: Open [http://localhost:3000](http://localhost:3000) in your browser.
+- **Verification**: Open [https://ncaa-api-w2ry.onrender.com](https://ncaa-api-w2ry.onrender.com) in your browser.
 
 ### 2. Frontend (Next.js + Turbopack)
 The frontend provides the visual dashboard for predictions and analytics.

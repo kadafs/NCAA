@@ -3,7 +3,7 @@ import requests
 # This is a conceptual example of how to use the local NCAA API for predictions.
 # You can run this with Bun or Node.js (requires 'requests' or 'node-fetch').
 
-API_BASE = "http://localhost:3000"
+API_BASE = "https://ncaa-api-w2ry.onrender.com"
 
 def get_team_efficiency(sport, division, team_name):
     """

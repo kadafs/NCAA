@@ -3,7 +3,7 @@ import os
 import requests
 from datetime import datetime
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = "https://ncaa-api-w2ry.onrender.com"
 CONSOLIDATED_FILE = "data/consolidated_stats.json"
 
 def load_stats():
