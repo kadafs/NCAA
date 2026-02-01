@@ -11,7 +11,7 @@ from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
 # Features: Home-Court Advantage, Conference-based Strength of Schedule (SoS),
 # Weighted Efficiency and Four Factors.
 
-BASE_URLS = ["http://localhost:3005", "http://localhost:3000", "https://ncaa-api-w2ry.onrender.com"]
+BASE_URLS = ["https://ncaa-api-w2ry.onrender.com"]
 # Base paths relative to Project Root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
@@ -33,8 +33,10 @@ DEFAULT_QUALITY = 0.85
 HOME_ADVANTAGE = 3.5
 
 def fetch_scoreboard(year, month, day):
-    for base in BASE_URLS:
-        url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+    sources = [
+        f"https://ncaa-api-w2ry.onrender.com/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+    ]
+    for url in sources:
         try:
             response = requests.get(url, timeout=5)
             if response.status_code == 200:
