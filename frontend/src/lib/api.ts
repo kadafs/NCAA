@@ -4,8 +4,8 @@
  * Centralized API calls to the backend server
  */
 
-// Backend API base URL - uses public NCAA API for production deployment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ncaa-api.henrygd.me';
+// Backend API base URL - update if backend runs on different port
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ncaa-api-w2ry.onrender.com';
 
 export interface NCAAGame {
     game: {
