@@ -383,10 +383,18 @@ To do this, set the `NCAA_HEADER_KEY` environment variable to the desired value 
 
 ## Development
 
-This is an [ElysiaJS](https://elysiajs.com/) application. To start the development server run:
+This is an [ElysiaJS](https://elysiajs.com/) application. For a detailed guide on starting the full stack (Backend, Frontend, and Python), see **[DEVELOPMENT_SETUP.md](file:///c:/Users/markk/OneDrive/Desktop/CODE/ncaa-api/DEVELOPMENT_SETUP.md)**.
 
+### Quick Start
+To start the backend development server:
 ```bash
 bun run dev
+```
+
+To start the frontend dashboard:
+```bash
+cd frontend
+npm run dev
 ```
 
 To run tests:
