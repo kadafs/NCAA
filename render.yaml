@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ncaa-api
+    runtime: docker
+    repo: https://github.com/kadafs/NCAA
+    region: oregon
+    plan: free
+    branch: master
+    dockerfilePath: ./dockerfile
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: America/New_York
+      - key: PORT
+        value: 3000
+    healthCheckPath: /
