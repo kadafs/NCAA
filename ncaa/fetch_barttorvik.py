@@ -23,6 +23,23 @@ def fetch_barttorvik_stats():
         "Referer": "https://barttorvik.com/"
     }
 
+    print(f"Fetching centralized BartTorvik stats from https://ncaa-api-w2ry.onrender.com/stats/barttorvik...")
+    try:
+        render_resp = requests.get("https://ncaa-api-w2ry.onrender.com/stats/barttorvik", timeout=30)
+        if render_resp.status_code == 200:
+            processed_data = render_resp.json()
+            if processed_data and len(processed_data) > 300:
+                print(f"Successfully fetched {len(processed_data)} teams from centralized Render API.")
+                with open(OUTPUT_FILE, "w") as f:
+                    json.dump(processed_data, f, indent=2)
+                print(f"Successfully saved {len(processed_data)} teams to {OUTPUT_FILE}")
+                return True
+        else:
+            print(f"Centralized fetch returned status {render_resp.status_code}. Falling back to scraping...")
+    except Exception as e:
+        print(f"Centralized API fetch failed ({e}). Falling back to manual scraping...")
+
+    # --- LEGACY SCRAPING FALLBACK ---
     print(f"Fetching BartTorvik JSON (Conference) from {BARTTORVIK_JSON_URL}...")
     conf_lookup = {}
     try:

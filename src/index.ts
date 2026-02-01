@@ -627,6 +627,74 @@ export const app = new Elysia()
   },
     { detail: { hide: true } }
   )
+  .group("/stats", (app) =>
+    app.get("/barttorvik", async ({ cache, cacheKey, status, set }) => {
+      try {
+        log("Fetching centralized BartTorvik stats...");
+        const headers = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+          "Referer": "https://barttorvik.com/"
+        };
+
+        // 1. Fetch JSON for conference lookup
+        const confRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
+        if (!confRes.ok) throw new Error(`JSON fetch failed: ${confRes.status}`);
+        const confJson = await confRes.json() as any[][];
+        const confLookup: Record<string, string> = {};
+        for (const team of confJson) {
+          if (team[1] && team[2]) {
+            confLookup[team[1]] = team[2];
+          }
+        }
+
+        // 2. Fetch CSV for stats
+        const csvRes = await fetch("https://barttorvik.com/trank.php?year=2026&csv=1", { headers });
+        const csvText = await csvRes.text();
+
+        if (!csvRes.ok || csvText.includes("Verifying browser") || csvText.startsWith("<!DOCTYPE html>")) {
+          log("BartTorvik CSV blocked or failed. Returning 502.");
+          return status(502, "BartTorvik CSV blocked or failed");
+        }
+
+        const lines = csvText.split("\n");
+        const processedData: Record<string, any> = {};
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          // Split by comma, but handle quoted strings if any (basic implementation)
+          const row = line.split(",");
+          if (row.length < 16) continue;
+
+          const name = row[0];
+          processedData[name] = {
+            conf: confLookup[name] || "N/A",
+            adj_off: parseFloat(row[1]),
+            adj_def: parseFloat(row[2]),
+            adj_t: parseFloat(row[15]),
+            efg: parseFloat(row[7]),
+            efg_d: parseFloat(row[8]),
+            ftr: parseFloat(row[9]),
+            ftr_d: parseFloat(row[10]),
+            to: parseFloat(row[11]),
+            to_d: parseFloat(row[12]),
+            or: parseFloat(row[13]),
+            or_d: parseFloat(row[14])
+          };
+        }
+
+        const data = JSON.stringify(processedData);
+        cache.set(cacheKey, data);
+        log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams.`);
+        return data;
+      } catch (e) {
+        log(`Error fetching BartTorvik stats: ${e}`);
+        return status(500, "Error fetching BartTorvik stats");
+      }
+    },
+      { detail: { hide: true } }
+    )
+  )
   // all other routes fetch data by scraping ncaa.com
   .get("/*", async ({ query: { page }, path, cache, cacheKey }) => {
     if (cache.has(cacheKey)) {
