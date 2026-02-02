@@ -258,13 +258,14 @@ export const app = new Elysia()
     set.headers["Content-Type"] = "application/json";
     set.headers["Cache-Control"] = "public, max-age=1800";
     try {
-      const league = params.league === "ncaa" ? "ncaab" : params.league;
+      let league = params.league === "ncaa" ? "ncaab" : params.league;
       const cacheKey = `/stats/odds/${params.league}`;
       if (cache_45s.has(cacheKey)) return cache_45s.get(cacheKey);
 
       log(`Fetching centralized odds for ${league}...`);
 
-      const url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=15,30,76,75,123,69,68,972,71,247,79`;
+      const bookIds = "15,30,76,75,123,69,68,972,71,247,79";
+      let url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=${bookIds}`;
       const headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json",
@@ -272,11 +273,20 @@ export const app = new Elysia()
         "Referer": "https://www.actionnetwork.com/"
       };
 
-      const res = await fetch(url, { headers });
+      let res = await fetch(url, { headers });
+
+      // Fallback for NCAA if it's 404
+      if (res.status === 404 && league === "ncaab") {
+        log(`Primary ncaab slug failed (404), trying fallback ncaab-d1...`);
+        league = "ncaab-d1";
+        url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=${bookIds}`;
+        res = await fetch(url, { headers });
+      }
+
       if (!res.ok) {
         const errText = await res.text().catch(() => "N/A");
-        log(`Action Network failed: ${res.status} - ${errText}`);
-        throw new Error(`Odds fetch failed: ${res.status}`);
+        log(`Action Network failed for ${league}: ${res.status} - ${errText.slice(0, 100)}`);
+        throw new Error(`Odds fetch failed: ${res.status} for ${league}`);
       }
 
       const json = await res.json() as any;
