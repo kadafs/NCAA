@@ -29,15 +29,9 @@ def refresh_data():
         ["python", "ncaa/data_fetcher.py"]
     ]
     
-    # NBA Fetchers (for project-wide consistency)
-    nba_scripts = [
-        ["python", "nba/fetch_nba_schedule.py"],
-        ["python", "nba/fetch_nba_stats.py"],
-        ["python", "nba/fetch_nba_player_stats.py"],
-        ["python", "nba/fetch_nba_injuries.py"]
-    ]
+    # Note: NBA Fetchers are handled separately in the GitHub workflow to avoid redundancy
     
-    for cmd in ncaa_scripts + nba_scripts:
+    for cmd in ncaa_scripts:
         print(f"Executing: {' '.join(cmd)}")
         try:
             subprocess.run(cmd, check=True)

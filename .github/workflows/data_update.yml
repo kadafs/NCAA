@@ -24,35 +24,41 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Data Update and Push to Supabase
+      - name: Fetch NCAA Stats & BartTorvik
+        timeout-minutes: 5
+        run: |
+          python -m ncaa.fetch_barttorvik
+          python -m ncaa.data_fetcher
+
+      - name: Fetch NCAA Injuries
+        timeout-minutes: 5
+        run: |
+          python ncaa/fetch_injuries.py || echo "Warning: NCAA Injuries fetch failed"
+
+      - name: Fetch NBA Schedule & Injuries
+        timeout-minutes: 5
+        run: |
+          python -m nba.fetch_nba_schedule || echo "Warning: NBA Schedule fetch failed"
+          python -m nba.fetch_nba_injuries || echo "Warning: NBA Injuries fetch failed"
+
+      - name: Fetch NBA Stats
+        timeout-minutes: 5
+        run: |
+          (python -m nba.fetch_nba_stats || echo "Warning: NBA Team Stats failed")
+          (python -m nba.fetch_nba_player_stats || echo "Warning: NBA Player Stats failed")
+
+      - name: Generate Predictions & Push to Supabase
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        timeout-minutes: 10
         run: |
-          # 1. Fetch Reference Stats (Essential for engine to match teams)
-          echo "Fetching BartTorvik Rankings..."
-          python -m ncaa.fetch_barttorvik
-          
-          # 2. Generate NCAA Predictions (Refreshes NCAA stats/injuries/Vegas odds)
-          echo "Generating NCAA Results..."
-          python -m ncaa.v1_2.run --refresh 
-
-          # 2. Fetch NBA Core Data (Retry loop for flakiness, with fallback for advanced stats)
-          echo "Fetching NBA Schedule and Player Stats..."
-          for i in {1..2}; do 
-            python -m nba.fetch_nba_schedule && \
-            (python -m nba.fetch_nba_stats || echo "Warning: Advanced Stats API blocked, using cached data") && \
-            python -m nba.fetch_nba_player_stats && break || sleep 10
-            echo "NBA Data fetch failed, retrying ($i/2)..."
-          done
-          
-          # 3. Generate Predictions and Archive History
-          echo "Pushing Predictions to Supabase..."
+          echo "Running NCAA Engine (Safe Mode)..."
+          python -m ncaa.v1_2.run --mode safe 
+          echo "Pushing Universal Predictions to Supabase..."
           python core/supabase_pusher.py
-          
-          # 4. Run Performance Audit (Grades yesterday's games)
-          echo "Running Performance Audit Engine..."
+          echo "Running Performance Audit..."
           python core/audit_engine.py --days 1
 
       - name: Debug Fetched Data (On Failure or Success)
