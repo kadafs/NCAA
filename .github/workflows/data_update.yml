@@ -31,10 +31,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           # 1. Fetch Reference Stats (Essential for engine to match teams)
-          echo "Fetching NCAA Reference Data..."
+          echo "Fetching BartTorvik Rankings..."
           python -m ncaa.fetch_barttorvik
-          python -m ncaa.data_fetcher
-          python -m ncaa.v1_2.run --refresh # Ensure stats, injuries, and live Vegas odds are refreshed
+          
+          # 2. Generate NCAA Predictions (Refreshes NCAA stats/injuries/Vegas odds)
+          echo "Generating NCAA Results..."
+          python -m ncaa.v1_2.run --refresh 
 
           # 2. Fetch NBA Core Data (Retry loop for flakiness, with fallback for advanced stats)
           echo "Fetching NBA Schedule and Player Stats..."

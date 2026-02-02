@@ -99,7 +99,7 @@ def fetch_stat(stat_id, is_individual=False):
         except Exception as e:
             print(f"Exception: {e}")
             break
-        time.sleep(0.1) 
+        time.sleep(0.05) 
     return all_data
 
 def fetch_standings():
@@ -163,7 +163,9 @@ def main():
             json.dump(consolidated_team, f, indent=2)
         print(f"Saved consolidated team stats to {CONSOLIDATED_FILE}")
 
-    # 3. Fetch individual stats
+    # 3. Fetch individual stats (TEMPORARILY DISABLED TO PREVENT TIMEOUTS)
+    # Individual stats take ~7 minutes to fetch and aren't used in production totals yet.
+    """
     consolidated_ind = {}
     os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
     
@@ -189,6 +191,7 @@ def main():
         with open(INDIVIDUAL_CONSOLIDATED, "w") as f:
             json.dump(consolidated_ind, f, indent=2)
         print(f"Saved consolidated individual stats to {INDIVIDUAL_CONSOLIDATED}")
+    """
 
 if __name__ == "__main__":
     main()
