@@ -788,14 +788,14 @@ export const app = new Elysia()
             }
           }
 
+          log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${league} games.`);
           const data = JSON.stringify(processedOdds);
           cache.set(cacheKey, data);
-          log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${league} games.`);
           return data;
         } catch (e) {
           log(`Error in odds handler: ${e}`);
-          // Return empty object instead of 500 to prevent script crashes
-          return JSON.stringify({});
+          // Return error details in JSON so the client can log it
+          return JSON.stringify({ error: String(e), timestamp: new Date().toISOString() });
         }
       }, { detail: { hide: true } })
   )

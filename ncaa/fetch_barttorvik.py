@@ -4,7 +4,11 @@ import os
 import csv
 import io
 import time
+import sys
 from datetime import datetime
+
+# Path injection for root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 BARTTORVIK_JSON_URL = "https://barttorvik.com/2026_team_results.json"
 BARTTORVIK_CSV_URL = "https://barttorvik.com/trank.php?year=2026&csv=1"

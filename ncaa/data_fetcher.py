@@ -1,7 +1,11 @@
 import requests
 import json
 import os
+import sys
 import time
+
+# Path injection for root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 BASE_URL = "https://ncaa-api-w2ry.onrender.com"
 # Base paths relative to Project Root
@@ -92,62 +96,92 @@ def fetch_stat(stat_type, stat_id):
     return all_data
 
 def fetch_standings():
-    url = f"{BASE_URL}/standings/basketball-men/d1/current"
-    print(f"Fetching standings from {url}...")
+    url = f"{BASE_URL}/standings/basketball-men/d1"
+    print(f"Fetching {url}...")
     try:
         response = http.get(url, headers=HEADERS, timeout=30)
         if response.status_code == 200:
             return response.json()
-    except requests.exceptions.SSLError:
+        else:
+            print(f"Error fetching standings: {response.status_code}")
+            return None
+    except requests.exceptions.SSLError as ssl_err:
+        print(f"SSL Error: {ssl_err}")
+        print("Retrying with verify=False (Security Warning)...")
         try:
             response = http.get(url, headers=HEADERS, timeout=30, verify=False)
             if response.status_code == 200:
                 return response.json()
-        except: pass
+        except Exception as e2:
+            print(f"Fallback also failed: {e2}")
+            return None
     except Exception as e:
-        print(f"Error fetching standings: {e}")
-    return []
+        print(f"Exception: {e}")
+        return None
 
 def main():
-    # Team Stats
-    if not os.path.exists(STATS_DIR):
-        os.makedirs(STATS_DIR)
-
-    consolidated_team = {}
-    for name, stat_id in TEAM_STAT_IDS.items():
-        print(f"--- Fetching Team {name} (ID: {stat_id}) ---")
-        data = fetch_stat("team", stat_id)
-        consolidated_team[name] = data
-        with open(f"{STATS_DIR}/{name}.json", "w") as f:
-            json.dump(data, f, indent=2)
-            
-    with open(CONSOLIDATED_FILE, "w") as f:
-        json.dump(consolidated_team, f, indent=2)
-    
-    # Individual Stats
-    if not os.path.exists(INDIVIDUAL_DIR):
-        os.makedirs(INDIVIDUAL_DIR)
-
-    consolidated_indiv = {}
-    for name, stat_id in INDIVIDUAL_STAT_IDS.items():
-        print(f"--- Fetching Individual {name} (ID: {stat_id}) ---")
-        data = fetch_stat("individual", stat_id)
-        consolidated_indiv[name] = data
-        with open(f"{INDIVIDUAL_DIR}/{name}.json", "w") as f:
-            json.dump(data, f, indent=2)
-            
-    with open(INDIVIDUAL_CONSOLIDATED, "w") as f:
-        json.dump(consolidated_indiv, f, indent=2)
-        
-    # Standings (for Conference/SoS)
-    print("--- Fetching Standings ---")
+    # 1. Fetch standings
     standings = fetch_standings()
-    with open(STANDINGS_FILE, "w") as f:
-        json.dump(standings, f, indent=2)
+    if standings:
+        os.makedirs(os.path.dirname(STANDINGS_FILE), exist_ok=True)
+        with open(STANDINGS_FILE, "w") as f:
+            json.dump(standings, f, indent=2)
+        print(f"Saved standings to {STANDINGS_FILE}")
+
+    # 2. Fetch team stats
+    consolidated_team = {}
+    os.makedirs(STATS_DIR, exist_ok=True)
     
-    print(f"Finished! Consolidated team data saved to {CONSOLIDATED_FILE}")
-    print(f"Finished! Consolidated individual data saved to {INDIVIDUAL_CONSOLIDATED}")
-    print(f"Finished! Standings saved to {STANDINGS_FILE}")
+    for stat_name, stat_id in TEAM_STAT_IDS.items():
+        data = fetch_stat(stat_name, stat_id)
+        if data:
+            output_path = os.path.join(STATS_DIR, f"{stat_name}.json")
+            with open(output_path, "w") as f:
+                json.dump(data, f, indent=2)
+            print(f"Saved {stat_name} to {output_path}")
+            
+            # Basic consolidation
+            for entry in data:
+                team = entry.get("Team")
+                if team:
+                    if team not in consolidated_team:
+                        consolidated_team[team] = {}
+                    # Add stats
+                    for k, v in entry.items():
+                        if k not in ["Team", "Conference", "Rank"]:
+                            consolidated_team[team][k] = v
+                            
+    if consolidated_team:
+        with open(CONSOLIDATED_FILE, "w") as f:
+            json.dump(consolidated_team, f, indent=2)
+        print(f"Saved consolidated team stats to {CONSOLIDATED_FILE}")
+
+    # 3. Fetch individual stats
+    consolidated_ind = {}
+    os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
+    
+    for stat_name, stat_id in INDIVIDUAL_STAT_IDS.items():
+        data = fetch_stat(f"individual/{stat_name}", stat_id)
+        if data:
+            output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
+            with open(output_path, "w") as f:
+                json.dump(data, f, indent=2)
+            print(f"Saved individual {stat_name} to {output_path}")
+            
+            # Individual consolidation
+            for entry in data:
+                player = entry.get("Player")
+                if player:
+                    if player not in consolidated_ind:
+                        consolidated_ind[player] = {"Team": entry.get("Team")}
+                    for k, v in entry.items():
+                        if k not in ["Player", "Team", "Rank"]:
+                            consolidated_ind[player][f"{stat_name}_{k}"] = v
+
+    if consolidated_ind:
+        with open(INDIVIDUAL_CONSOLIDATED, "w") as f:
+            json.dump(consolidated_ind, f, indent=2)
+        print(f"Saved consolidated individual stats to {INDIVIDUAL_CONSOLIDATED}")
 
 if __name__ == "__main__":
     main()
