@@ -29,17 +29,22 @@ def get_odds(sport_key, regions='us', markets='totals', provider='render'):
         url = f"https://ncaa-api-w2ry.onrender.com/stats/odds/{league}"
         print(f"Fetching centralized odds from {url}...")
         try:
-            resp = requests.get(url, timeout=15)
+            from utils.ssl_adapter import get_robust_session
+            session = get_robust_session(retries=2)
+            
+            resp = session.get(url, timeout=15)
             if resp.status_code != 200:
-                # SSL Fallback for BAD_RECORD_MAC
                 print(f"Standard fetch failed ({resp.status_code}). Retrying with SSL bypass...")
-                resp = requests.get(url, timeout=15, verify=False)
+                resp = session.get(url, timeout=15, verify=False)
 
             if resp.status_code == 200:
                 data = resp.json()
                 if data and len(data) > 0:
                     return data
             print(f"Centralized odds check returned {resp.status_code}. Falling back...")
+            try:
+                print(f"Error Details: {resp.text[:200]}")
+            except: pass
         except Exception as e:
             print(f"Render Odds API failed ({e}). Falling back to Sportradar...")
 

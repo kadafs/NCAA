@@ -25,18 +25,14 @@ def fetch_barttorvik_stats():
 
     print(f"Fetching centralized BartTorvik stats from https://ncaa-api-w2ry.onrender.com/stats/barttorvik...")
     try:
-        session = requests.Session()
-        # Add basic retry strategy for Render
-        from requests.adapters import HTTPAdapter
-        from urllib3.util.retry import Retry
-        retries = Retry(total=2, backoff_factor=1, status_forcelist=[502, 503, 504])
-        session.mount('https://', HTTPAdapter(max_retries=retries))
+        from utils.ssl_adapter import get_robust_session
+        session = get_robust_session(retries=2)
 
         render_resp = session.get("https://ncaa-api-w2ry.onrender.com/stats/barttorvik", timeout=30)
         
-        # SSL Fallback for "BAD_RECORD_MAC" issues
+        # SSL Fallback logic
         if render_resp.status_code != 200:
-            print(f"Centralized fetch returned {render_resp.status_code}. Retrying without SSL verification...")
+            print(f"Centralized fetch returned {render_resp.status_code}. Retrying with SSL bypass...")
             render_resp = session.get("https://ncaa-api-w2ry.onrender.com/stats/barttorvik", timeout=30, verify=False)
 
         if render_resp.status_code == 200:
@@ -47,9 +43,12 @@ def fetch_barttorvik_stats():
                     json.dump(processed_data, f, indent=2)
                 return True
             else:
-                print(f"Centralized API returned empty or small dataset ({len(processed_data) if processed_data else 0} teams). Falling back...")
+                print(f"Centralized API returned empty dataset. Falling back...")
         else:
             print(f"Centralized API failed with status {render_resp.status_code}. Falling back...")
+            try:
+                print(f"Error Details: {render_resp.text[:200]}")
+            except: pass
     except Exception as e:
         print(f"Centralized API fetch failed ({e}). Falling back to manual scraping...")
 

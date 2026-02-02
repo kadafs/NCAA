@@ -41,20 +41,10 @@ INDIVIDUAL_STAT_IDS = {
     "minutes_pg": 628
 }
 
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from utils.ssl_adapter import get_robust_session
 
-# Configure retry strategy
-retry_strategy = Retry(
-    total=3,
-    backoff_factor=1,
-    status_forcelist=[429, 500, 502, 503, 504],
-    allowed_methods=["HEAD", "GET", "OPTIONS"]
-)
-adapter = HTTPAdapter(max_retries=retry_strategy)
-http = requests.Session()
-http.mount("https://", adapter)
-http.mount("http://", adapter)
+# Use centralized robust session
+http = get_robust_session(retries=3)
 
 # Generic headers to improve acceptance
 HEADERS = {

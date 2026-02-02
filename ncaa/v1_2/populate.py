@@ -47,10 +47,18 @@ def fetch_matchups(date_obj=None):
         "Accept": "application/json"
     }
 
+    from utils.ssl_adapter import get_robust_session
+    session = get_robust_session(retries=2)
+
     for url in sources:
         try:
             print(f"DEBUG: Fetching NCAA matchups from: {url}")
-            resp = requests.get(url, headers=headers, timeout=20)
+            resp = session.get(url, headers=headers, timeout=20)
+            
+            if resp.status_code != 200:
+                print(f"DEBUG: Standard fetch failed ({resp.status_code}). Retrying with SSL bypass...")
+                resp = session.get(url, headers=headers, timeout=20, verify=False)
+
             if resp.status_code == 200:
                 data = resp.json()
                 games = []
