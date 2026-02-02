@@ -316,7 +316,7 @@ export const app = new Elysia()
         }
       }
 
-      log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${league} games.`);
+      log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${params.league} games.`);
       const data = JSON.stringify(processedOdds);
       cache_45s.set(cacheKey, data);
       return data;
