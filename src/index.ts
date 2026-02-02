@@ -628,7 +628,7 @@ export const app = new Elysia()
     { detail: { hide: true } }
   )
   .group("/stats", (app) =>
-    app.get("/barttorvik", async ({ cache, cacheKey, status, set }) => {
+    app.get("/barttorvik", async ({ cache, cacheKey, status }) => {
       try {
         log("Fetching centralized BartTorvik stats (JSON path)...");
         const headers = {
@@ -637,69 +637,99 @@ export const app = new Elysia()
           "Referer": "https://barttorvik.com/"
         };
 
-        // 1. Fetch High-Quality JSON directly
+        // 1. Try trank.php?json=1 (High Quality)
         const jsonRes = await fetch("https://barttorvik.com/trank.php?year=2026&json=1", { headers });
+        const contentType = jsonRes.headers.get("content-type") || "";
 
-        if (!jsonRes.ok) {
-          log(`BT JSON fetch failed: ${jsonRes.status}. Trying team_results fallback.`);
-          // Fallback to basic results JSON if trank JSON fails
-          const backupRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
-          if (!backupRes.ok) throw new Error("Both BT JSON endpoints failed");
+        if (jsonRes.ok && contentType.includes("application/json")) {
+          try {
+            const rawJson = await jsonRes.json() as any[][];
+            const processedData: Record<string, any> = {};
 
-          const backupJson = await backupRes.json() as any[][];
-          const processedData: Record<string, any> = {};
-          for (const t of backupJson) {
-            const name = t[1];
-            if (!name) continue;
-            processedData[name] = {
-              conf: t[2], adj_off: parseFloat(t[4]), adj_def: parseFloat(t[6]), adj_t: parseFloat(t[44]),
-              efg: 50.0, efg_d: 50.0, ftr: 30.0, ftr_d: 30.0, to: 18.0, to_d: 18.0, or: 28.0, or_d: 28.0
-            };
+            for (const team of rawJson) {
+              const name = team[0];
+              if (!name) continue;
+
+              // Mapping for trank.php?json=1
+              // 0:Name, 1:AdjOE, 2:AdjDE, 7:eFG, 8:eFG_D, 9:FTR, 10:FTR_D, 11:TO, 12:TO_D, 13:OR, 14:OR_D, 15:AdjT
+              processedData[name] = {
+                conf: "N/A",
+                adj_off: parseFloat(team[1]),
+                adj_def: parseFloat(team[2]),
+                adj_t: parseFloat(team[15]),
+                efg: parseFloat(team[7]),
+                efg_d: parseFloat(team[8]),
+                ftr: parseFloat(team[9]),
+                ftr_d: parseFloat(team[10]),
+                to: parseFloat(team[11]),
+                to_d: parseFloat(team[12]),
+                or: parseFloat(team[13]),
+                or_d: parseFloat(team[14])
+              };
+            }
+
+            // Stitch in conferences from team_results.json
+            try {
+              const confRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
+              if (confRes.ok) {
+                const confJson = await confRes.json() as any[][];
+                for (const t of confJson) {
+                  if (processedData[t[1]]) processedData[t[1]].conf = t[2];
+                }
+              }
+            } catch (e) { log(`Non-critical conference stitch failed: ${e}`); }
+
+            const data = JSON.stringify(processedData);
+            cache.set(cacheKey, data);
+            log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams.`);
+            return data;
+          } catch (parseErr) {
+            log(`JSON parsing failed: ${parseErr}`);
           }
-          const data = JSON.stringify(processedData);
-          cache.set(cacheKey, data);
-          return data;
         }
 
-        const rawJson = await jsonRes.json() as any[][];
+        // Fallback: 2026_team_results.json (Highly Accessible)
+        log("Trank JSON blocked or failed. Trying team_results fallback...");
+        const backupRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
+        if (!backupRes.ok) throw new Error("Fallback BartTorvik JSON failed");
+
+        const backupJson = await backupRes.json() as any[][];
         const processedData: Record<string, any> = {};
-
-        for (const team of rawJson) {
-          const name = team[0];
+        for (const t of backupJson) {
+          const name = t[1];
           if (!name) continue;
-
+          // Index 1:Name, 2:Conf, 4:AdjOE, 6:AdjDE, 44:Adj Tempo
           processedData[name] = {
-            conf: team[2] || "N/A",
-            adj_off: parseFloat(team[1]),
-            adj_def: parseFloat(team[2]), // Wait, index 2 is also used for AdjDE in some versions? No, index 2 is usually Conf in trank.
-            adj_t: parseFloat(team[15]),
-            efg: parseFloat(team[7]),
-            efg_d: parseFloat(team[8]),
-            ftr: parseFloat(team[9]),
-            ftr_d: parseFloat(team[10]),
-            to: parseFloat(team[11]),
-            to_d: parseFloat(team[12]),
-            or: parseFloat(team[13]),
-            or_d: parseFloat(team[14])
+            conf: t[2],
+            adj_off: parseFloat(t[4]),
+            adj_def: parseFloat(t[6]),
+            adj_t: parseFloat(t[44]),
+            efg: 50.0, efg_d: 50.0, ftr: 30.0, ftr_d: 30.0, to: 18.0, to_d: 18.0, or: 28.0, or_d: 28.0
           };
-
-          // Fix AdjDE which is usually at index 2 if Conf is handled separately, 
-          // but if we use trank.php?json=1, index 2 is AdjDE.
-          // Let's verify mapping: 0:Name, 1:AdjOE, 2:AdjDE, 3:Barthag... 15:AdjT
-          processedData[name].adj_def = parseFloat(team[2]);
         }
 
         const data = JSON.stringify(processedData);
         cache.set(cacheKey, data);
-        log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams from JSON.`);
+        log(`Successfully fetched ${Object.keys(processedData).length} teams from fallback.`);
         return data;
       } catch (e) {
-        log(`Error fetching BartTorvik stats: ${e}`);
-        return status(500, "Error fetching BartTorvik stats");
+        log(`CRITICAL: BartTorvik fetcher failed: ${e}`);
+        return status(500, { error: "BT Fetcher Failed", details: String(e) });
       }
-    },
-      { detail: { hide: true } }
-    )
+    }, { detail: { hide: true } })
+      .post("/barttorvik", async ({ body, cache, cacheKey, status }) => {
+        try {
+          const stats = body as Record<string, any>;
+          if (!stats || Object.keys(stats).length < 300) {
+            return status(400, "Invalid stats data (too small)");
+          }
+          cache.set(cacheKey, JSON.stringify(stats));
+          log(`Manually updated BartTorvik cache with ${Object.keys(stats).length} teams.`);
+          return { success: true, count: Object.keys(stats).length };
+        } catch (e) {
+          return status(500, "Failed to update stats cache");
+        }
+      }, { detail: { hide: true } })
       .get("/odds/:league", async ({ params, cache, cacheKey, status }) => {
         try {
           const league = params.league === "ncaa" ? "ncaab" : params.league;
