@@ -627,178 +627,176 @@ export const app = new Elysia()
   },
     { detail: { hide: true } }
   )
-  .group("/stats", (app) =>
-    app.get("/barttorvik", async ({ cache, cacheKey, status }) => {
-      try {
-        log("Fetching centralized BartTorvik stats (JSON path)...");
-        const headers = {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "application/json",
-          "Referer": "https://barttorvik.com/"
-        };
+  .get("/stats/barttorvik", async ({ cache, cacheKey, status }) => {
+    try {
+      log("Fetching centralized BartTorvik stats (JSON path)...");
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Referer": "https://barttorvik.com/"
+      };
 
-        // 1. Try trank.php?json=1 (High Quality)
-        const jsonRes = await fetch("https://barttorvik.com/trank.php?year=2026&json=1", { headers });
-        const contentType = jsonRes.headers.get("content-type") || "";
+      // 1. Try trank.php?json=1 (High Quality)
+      const jsonRes = await fetch("https://barttorvik.com/trank.php?year=2026&json=1", { headers });
+      const contentType = jsonRes.headers.get("content-type") || "";
 
-        if (jsonRes.ok && contentType.includes("application/json")) {
+      if (jsonRes.ok && contentType.includes("application/json")) {
+        try {
+          const rawJson = await jsonRes.json() as any[][];
+          const processedData: Record<string, any> = {};
+
+          for (const team of rawJson) {
+            const name = team[0];
+            if (!name) continue;
+
+            // Mapping for trank.php?json=1
+            // 0:Name, 1:AdjOE, 2:AdjDE, 7:eFG, 8:eFG_D, 9:FTR, 10:FTR_D, 11:TO, 12:TO_D, 13:OR, 14:OR_D, 15:AdjT
+            processedData[name] = {
+              conf: "N/A",
+              adj_off: parseFloat(team[1]),
+              adj_def: parseFloat(team[2]),
+              adj_t: parseFloat(team[15]),
+              efg: parseFloat(team[7]),
+              efg_d: parseFloat(team[8]),
+              ftr: parseFloat(team[9]),
+              ftr_d: parseFloat(team[10]),
+              to: parseFloat(team[11]),
+              to_d: parseFloat(team[12]),
+              or: parseFloat(team[13]),
+              or_d: parseFloat(team[14])
+            };
+          }
+
+          // Stitch in conferences from team_results.json
           try {
-            const rawJson = await jsonRes.json() as any[][];
-            const processedData: Record<string, any> = {};
-
-            for (const team of rawJson) {
-              const name = team[0];
-              if (!name) continue;
-
-              // Mapping for trank.php?json=1
-              // 0:Name, 1:AdjOE, 2:AdjDE, 7:eFG, 8:eFG_D, 9:FTR, 10:FTR_D, 11:TO, 12:TO_D, 13:OR, 14:OR_D, 15:AdjT
-              processedData[name] = {
-                conf: "N/A",
-                adj_off: parseFloat(team[1]),
-                adj_def: parseFloat(team[2]),
-                adj_t: parseFloat(team[15]),
-                efg: parseFloat(team[7]),
-                efg_d: parseFloat(team[8]),
-                ftr: parseFloat(team[9]),
-                ftr_d: parseFloat(team[10]),
-                to: parseFloat(team[11]),
-                to_d: parseFloat(team[12]),
-                or: parseFloat(team[13]),
-                or_d: parseFloat(team[14])
-              };
-            }
-
-            // Stitch in conferences from team_results.json
-            try {
-              const confRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
-              if (confRes.ok) {
-                const confJson = await confRes.json() as any[][];
-                for (const t of confJson) {
-                  if (processedData[t[1]]) processedData[t[1]].conf = t[2];
-                }
-              }
-            } catch (e) { log(`Non-critical conference stitch failed: ${e}`); }
-
-            const data = JSON.stringify(processedData);
-            cache.set(cacheKey, data);
-            log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams.`);
-            return data;
-          } catch (parseErr) {
-            log(`JSON parsing failed: ${parseErr}`);
-          }
-        }
-
-        // Fallback: 2026_team_results.json (Highly Accessible)
-        log("Trank JSON blocked or failed. Trying team_results fallback...");
-        const backupRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
-        if (!backupRes.ok) throw new Error("Fallback BartTorvik JSON failed");
-
-        const backupJson = await backupRes.json() as any[][];
-        const processedData: Record<string, any> = {};
-        for (const t of backupJson) {
-          const name = t[1];
-          if (!name) continue;
-          // Index 1:Name, 2:Conf, 4:AdjOE, 6:AdjDE, 44:Adj Tempo
-          processedData[name] = {
-            conf: t[2],
-            adj_off: parseFloat(t[4]),
-            adj_def: parseFloat(t[6]),
-            adj_t: parseFloat(t[44]),
-            efg: 50.0, efg_d: 50.0, ftr: 30.0, ftr_d: 30.0, to: 18.0, to_d: 18.0, or: 28.0, or_d: 28.0
-          };
-        }
-
-        const data = JSON.stringify(processedData);
-        cache.set(cacheKey, data);
-        log(`Successfully fetched ${Object.keys(processedData).length} teams from fallback.`);
-        return data;
-      } catch (e) {
-        log(`CRITICAL: BartTorvik fetcher failed: ${e}`);
-        return status(500, { error: "BT Fetcher Failed", details: String(e) });
-      }
-    }, { detail: { hide: true } })
-      .post("/barttorvik", async ({ body, cache, cacheKey, status }) => {
-        try {
-          const stats = body as Record<string, any>;
-          if (!stats || Object.keys(stats).length < 300) {
-            return status(400, "Invalid stats data (too small)");
-          }
-          cache.set(cacheKey, JSON.stringify(stats));
-          log(`Manually updated BartTorvik cache with ${Object.keys(stats).length} teams.`);
-          return { success: true, count: Object.keys(stats).length };
-        } catch (e) {
-          return status(500, "Failed to update stats cache");
-        }
-      }, { detail: { hide: true } })
-      .get("/odds/:league", async ({ params, cache, cacheKey, status }) => {
-        try {
-          const league = params.league === "ncaa" ? "ncaab" : params.league;
-          log(`Fetching centralized odds for ${league}...`);
-
-          const url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=15,30,76,75,123,69,68,972,71,247,79`;
-          const headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "application/json",
-            "Origin": "https://www.actionnetwork.com",
-            "Referer": "https://www.actionnetwork.com/"
-          };
-
-          const res = await fetch(url, { headers });
-          if (!res.ok) {
-            const errText = await res.text().catch(() => "N/A");
-            log(`Action Network failed: ${res.status} - ${errText}`);
-            throw new Error(`Odds fetch failed: ${res.status}`);
-          }
-
-          const json = await res.json() as any;
-          if (!json || typeof json !== 'object') throw new Error("Invalid response from Action Network");
-
-          const processedOdds: Record<string, number> = {};
-
-          const games = json.games || [];
-          const odds = json.odds || [];
-          const teams = json.teams || [];
-
-          const teamLookup: Record<number, string> = {};
-          if (Array.isArray(teams)) {
-            for (const t of teams) {
-              if (t && t.id) teamLookup[t.id] = t.full_name || t.display_name || "Unknown";
-            }
-          }
-
-          if (Array.isArray(games)) {
-            for (const game of games) {
-              if (!game || !game.id) continue;
-
-              const gameOdds = odds.filter((o: any) => o.game_id === game.id);
-              if (gameOdds.length === 0) continue;
-
-              // Find consensus total (book_id null is consensus)
-              const consensus = gameOdds.find((o: any) => o.book_id === null) || gameOdds[0];
-              if (consensus && typeof consensus.total === 'number') {
-                const awayId = game.away_team_id;
-                const homeId = game.home_team_id;
-
-                const away = teamLookup[awayId] || "Away";
-                const home = teamLookup[homeId] || "Home";
-
-                const key = [away.toLowerCase(), home.toLowerCase()].sort().join(" vs ");
-                processedOdds[key] = consensus.total;
+            const confRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
+            if (confRes.ok) {
+              const confJson = await confRes.json() as any[][];
+              for (const t of confJson) {
+                if (processedData[t[1]]) processedData[t[1]].conf = t[2];
               }
             }
-          }
+          } catch (e) { log(`Non-critical conference stitch failed: ${e}`); }
 
-          log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${league} games.`);
-          const data = JSON.stringify(processedOdds);
+          const data = JSON.stringify(processedData);
           cache.set(cacheKey, data);
+          log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams.`);
           return data;
-        } catch (e) {
-          log(`Error in odds handler: ${e}`);
-          // Return error details in JSON so the client can log it
-          return JSON.stringify({ error: String(e), timestamp: new Date().toISOString() });
+        } catch (parseErr) {
+          log(`JSON parsing failed: ${parseErr}`);
         }
-      }, { detail: { hide: true } })
-  )
+      }
+
+      // Fallback: 2026_team_results.json (Highly Accessible)
+      log("Trank JSON blocked or failed. Trying team_results fallback...");
+      const backupRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
+      if (!backupRes.ok) throw new Error("Fallback BartTorvik JSON failed");
+
+      const backupJson = await backupRes.json() as any[][];
+      const processedData: Record<string, any> = {};
+      for (const t of backupJson) {
+        const name = t[1];
+        if (!name) continue;
+        // Index 1:Name, 2:Conf, 4:AdjOE, 6:AdjDE, 44:Adj Tempo
+        processedData[name] = {
+          conf: t[2],
+          adj_off: parseFloat(t[4]),
+          adj_def: parseFloat(t[6]),
+          adj_t: parseFloat(t[44]),
+          efg: 50.0, efg_d: 50.0, ftr: 30.0, ftr_d: 30.0, to: 18.0, to_d: 18.0, or: 28.0, or_d: 28.0
+        };
+      }
+
+      const data = JSON.stringify(processedData);
+      cache.set(cacheKey, data);
+      log(`Successfully fetched ${Object.keys(processedData).length} teams from fallback.`);
+      return data;
+    } catch (e) {
+      log(`CRITICAL: BartTorvik fetcher failed: ${e}`);
+      return status(500, { error: "BT Fetcher Failed", details: String(e) });
+    }
+  }, { detail: { hide: true } })
+  .post("/stats/barttorvik", async ({ body, cache, cacheKey, status }) => {
+    try {
+      const stats = body as Record<string, any>;
+      if (!stats || Object.keys(stats).length < 300) {
+        return status(400, "Invalid stats data (too small)");
+      }
+      cache.set(cacheKey, JSON.stringify(stats));
+      log(`Manually updated BartTorvik cache with ${Object.keys(stats).length} teams.`);
+      return { success: true, count: Object.keys(stats).length };
+    } catch (e) {
+      return status(500, "Failed to update stats cache");
+    }
+  }, { detail: { hide: true } })
+  .get("/stats/odds/:league", async ({ params, cache, cacheKey, status }) => {
+    try {
+      const league = params.league === "ncaa" ? "ncaab" : params.league;
+      log(`Fetching centralized odds for ${league}...`);
+
+      const url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=15,30,76,75,123,69,68,972,71,247,79`;
+      const headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Origin": "https://www.actionnetwork.com",
+        "Referer": "https://www.actionnetwork.com/"
+      };
+
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "N/A");
+        log(`Action Network failed: ${res.status} - ${errText}`);
+        throw new Error(`Odds fetch failed: ${res.status}`);
+      }
+
+      const json = await res.json() as any;
+      if (!json || typeof json !== 'object') throw new Error("Invalid response from Action Network");
+
+      const processedOdds: Record<string, number> = {};
+
+      const games = json.games || [];
+      const odds = json.odds || [];
+      const teams = json.teams || [];
+
+      const teamLookup: Record<number, string> = {};
+      if (Array.isArray(teams)) {
+        for (const t of teams) {
+          if (t && t.id) teamLookup[t.id] = t.full_name || t.display_name || "Unknown";
+        }
+      }
+
+      if (Array.isArray(games)) {
+        for (const game of games) {
+          if (!game || !game.id) continue;
+
+          const gameOdds = odds.filter((o: any) => o.game_id === game.id);
+          if (gameOdds.length === 0) continue;
+
+          // Find consensus total (book_id null is consensus)
+          const consensus = gameOdds.find((o: any) => o.book_id === null) || gameOdds[0];
+          if (consensus && typeof consensus.total === 'number') {
+            const awayId = game.away_team_id;
+            const homeId = game.home_team_id;
+
+            const away = teamLookup[awayId] || "Away";
+            const home = teamLookup[homeId] || "Home";
+
+            const key = [away.toLowerCase(), home.toLowerCase()].sort().join(" vs ");
+            processedOdds[key] = consensus.total;
+          }
+        }
+      }
+
+      log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${league} games.`);
+      const data = JSON.stringify(processedOdds);
+      cache.set(cacheKey, data);
+      return data;
+    } catch (e) {
+      log(`Error in odds handler: ${e}`);
+      // Return error details in JSON so the client can log it
+      return JSON.stringify({ error: String(e), timestamp: new Date().toISOString() });
+    }
+  }, { detail: { hide: true } })
   // all other routes fetch data by scraping ncaa.com
   .get("/*", async ({ query: { page }, path, cache, cacheKey }) => {
     if (cache.has(cacheKey)) {

@@ -31,7 +31,14 @@ def fetch_matchups(date_obj=None):
     import zoneinfo
     
     if date_obj is None:
+        from datetime import timedelta
+        # Default to ET zone as that's where NCAA games are centered
         date_obj = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
+        
+        # If it's late night in ET (after 10 PM), we probably want tomorrow's games
+        if date_obj.hour >= 22:
+            print(f"DEBUG: Late night detected ({date_obj.hour} ET). Looking ahead to tomorrow...")
+            date_obj = date_obj + timedelta(days=1)
         
     year = date_obj.year
     month = date_obj.month
