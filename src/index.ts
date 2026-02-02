@@ -284,7 +284,7 @@ export const app = new Elysia()
 
       const res = await fetch(url, { headers });
       if (!res.ok) {
-        log(`Action Network Scoreboard failed for ${league}: ${res.status}`);
+        log(`Action Network Scoreboard failed for ${params.league}: ${res.status}`);
         throw new Error(`Odds fetch failed: ${res.status}`);
       }
 
