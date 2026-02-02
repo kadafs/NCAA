@@ -35,6 +35,16 @@ def clean_team_name(name):
     n = n.replace("App.", "Appalachian").replace("Ark.", "Arkansas").replace("Atl.", "Atlantic")
     n = n.replace("Car.", "Carolina").replace("Cent.", "Central").replace("Geo.", "Georgia")
     n = n.replace("Mass.", "Massachusetts").replace("Md.", "Maryland")
+    n = n.replace("La.", "Louisiana").replace("N.C.", "North Carolina").replace("S.C.", "South Carolina")
+    n = n.replace("N.J.", "New Jersey").replace("W.Va.", "West Virginia").replace("R.I.", "Rhode Island")
+    n = n.replace("Ala.", "Alabama").replace("Calif.", "California").replace("Conn.", "Connecticut")
+    n = n.replace("Okla.", "Oklahoma").replace("Ore.", "Oregon").replace("Wis.", "Wisconsin")
+    n = n.replace("U.", "University").replace("Univ.", "University")
+    n = n.replace("N.Carolina", "North Carolina").replace("S.Carolina", "South Carolina")
+    n = n.replace("UT ", "Texas ").replace("UMES", "Maryland Eastern Shore")
+    n = n.replace("A&M CC", "Texas A&M Corpus Christi").replace("SIU-", "Southern Illinois ")
+    n = n.replace("A&M-CC", "Texas A&M Corpus Christi")
+    n = n.replace("UIW", "Incarnate Word")
     
     # 2. General cleaning (punctuation, case, spaces)
     n = n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "")
@@ -118,19 +128,27 @@ BASKETBALL_ALIASES = {
     "niu": "northernillinois",
     "northernky": "northernkentucky",
     "sfa": "stephenfaustin",
+    "stephenfaustin": "sfa",
     "southeastmostate": "southeastmissouristate",
     "southeasternla": "southeasternlouisiana",
     "uic": "illinoischicago",
     "uiw": "incarnateword",
+    "incarnateword": "uiw",
     "ulm": "louisianamonroe",
     "umes": "marylandeasternshore",
+    "marylandeasternshore": "umes",
     "utmartin": "tennesseemartin",
     "utrgv": "utriograndevalley",
+    "utriograndevalley": "texasriograndevalley",
+    "texasriograndevalley": "utriograndevalley",
     "westernky": "westernkentucky",
     "omaha": "nebraskaomaha",
     "little-rock": "arkansaslittlerock",
-    "thecitadel": "thecitadel",
-    "citadelbulldogs": "thecitadel",
+    "aandmcorpuschristi": "texasaandmcc",
+    "texasaandmcc": "aandmcorpuschristi",
+    "ncstate": "northcarolinastate",
+    "usc": "southerncalifornia",
+    "southerncal": "southerncalifornia",
     "scupstatespartans": "uscupstate",
     "uscupstatespartans": "uscupstate",
     "moreheadstateeagles": "moreheadstate",

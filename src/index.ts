@@ -258,17 +258,24 @@ export const app = new Elysia()
     set.headers["Content-Type"] = "application/json";
     set.headers["Cache-Control"] = "public, max-age=1800";
     try {
-      const league = params.league === "ncaa" ? "ncaab" : params.league;
-      const dateParam = date ? `?date=${date.replace(/-/g, "")}` : "";
+      const leagueSlug = params.league.toLowerCase() === "ncaa" ? "ncaab" : params.league.toLowerCase();
+      const dateStr = date ? (date as string).replace(/-/g, "") : "";
       const cacheKey = `/stats/odds/${params.league}${date || ""}`;
 
       if (cache_45s.has(cacheKey)) return cache_45s.get(cacheKey);
 
-      log(`Fetching centralized scoreboard odds for ${league} ${date || "today"}...`);
+      log(`Fetching centralized scoreboard odds for ${leagueSlug} ${date || "today"}...`);
 
-      const divisionParam = league === "ncaab" ? "&division=D1" : "";
-      const url = `https://api.actionnetwork.com/web/v1/scoreboard/${league}${dateParam}${dateParam ? "&" : "?"}${divisionParam}`.replace("?&", "?");
+      let url = `https://api.actionnetwork.com/web/v1/scoreboard/${leagueSlug}`;
+      const urlParams = [];
+      if (dateStr) urlParams.push(`date=${dateStr}`);
+      if (leagueSlug === "ncaab") urlParams.push("division=D1");
 
+      if (urlParams.length > 0) {
+        url += "?" + urlParams.join("&");
+      }
+
+      log(`Scoreboard URL: ${url}`);
       const headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json",

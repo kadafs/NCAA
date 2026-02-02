@@ -80,27 +80,27 @@ def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'
     Helper to find a specific game in the odds response.
     Supports Centralized Map, Sportradar, and The Odds API formats.
     """
-    def normalize(name):
-        import re
-        if not name: return ""
-        n = name.lower()
-        n = n.replace("st.", "state").replace("st ", "state ")
-        n = n.replace("univ.", "university").replace("univ ", "university ")
-        n = n.replace("n.c.", "north carolina").replace("n. carolina", "north carolina")
-        n = n.replace("-", " ").replace("&", " and ")
-        n = re.sub(r'[^a-z0-9\s]', '', n)
-        return " ".join(n.split())
-
+    from utils.mapping import clean_team_name, BASKETBALL_ALIASES
+    
     # 1. Centralized Render API format (Dict: { "team a vs team b": total })
     if isinstance(odds_data, dict) and "sport_events" not in odds_data:
-        norm_away = normalize(away_team)
-        norm_home = normalize(home_team)
+        c_away = clean_team_name(away_team)
+        c_home = clean_team_name(home_team)
         
-        # Try direct fuzzy containment
+        # Pass 1: Direct standardized substring match
         for key, val in odds_data.items():
-            k_norm = normalize(key)
-            # If both normalized team names are found in the normalized match string
-            if norm_away in k_norm and norm_home in k_norm:
+            k_low = clean_team_name(key)
+            if c_away in k_low and c_home in k_low:
+                return val
+        
+        # Pass 2: Alias-aware matching (check both versions to be safe)
+        a_away = BASKETBALL_ALIASES.get(c_away, c_away)
+        a_home = BASKETBALL_ALIASES.get(c_home, c_home)
+        
+        for key, val in odds_data.items():
+            k_low = clean_team_name(key)
+            if (c_away in k_low or a_away in k_low) and \
+               (c_home in k_low or a_home in k_low):
                 return val
         return None
 
