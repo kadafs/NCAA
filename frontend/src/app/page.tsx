@@ -103,6 +103,8 @@ export default function LandingPage() {
   const [liveGames, setLiveGames] = useState<LiveGame[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
   const [loadingGames, setLoadingGames] = useState(true);
+  const [nbaCount, setNbaCount] = useState<number>(0);
+  const [ncaaCount, setNcaaCount] = useState<number>(0);
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard" },
@@ -157,6 +159,7 @@ export default function LandingPage() {
 
         // Process NCAA games
         if (ncaaData.status === 'fulfilled') {
+          setNcaaCount(ncaaData.value.games?.length || 0);
           const liveNcaaGames = ncaaData.value.games
             ?.filter((item: NCAAGame) => item.game.gameState === 'live')
             .slice(0, 3) // Limit to 3 games
@@ -176,6 +179,7 @@ export default function LandingPage() {
 
         // Process NBA games
         if (nbaData.status === 'fulfilled') {
+          setNbaCount(nbaData.value.games?.length || 0);
           const liveNbaGames = nbaData.value.games
             ?.filter((item: NCAAGame) => item.game.gameState === 'live')
             .slice(0, 3) // Limit to 3 games
@@ -450,7 +454,7 @@ export default function LandingPage() {
                   </p>
                   <div className="flex items-center justify-between pt-4 border-t border-dash-border">
                     <span className="text-[10px] font-bold text-dash-text-muted">
-                      {league.gamesCount} games today
+                      {league.id === 'nba' ? nbaCount : (league.id === 'ncaa' ? ncaaCount : league.gamesCount)} games today
                     </span>
                     <ArrowUpRight className="w-4 h-4 text-dash-text-muted group-hover:text-gold transition-colors" />
                   </div>
