@@ -221,30 +221,31 @@ def get_daily_input_sheet(date_obj=None):
     
     daily_sheet = []
     for m in matchups:
-        # Priority 1: Manual CSV Injection
-        # Priority 2: Real-time Odds API
+        # Priority 1: Real-time Vegas Odds API (Centralized)
+        # Priority 2: Manual CSV Override (for corrections)
         # Priority 3: Scoreboard Data
         # Priority 4: Demo Fallback (145.5)
         
-        # Resolve scoreboard name to official key first
-        home_clean = m['home']
-        away_clean = m['away']
+        # 1. Try Live API first (Directly from centralized Action Network Scoreboard)
+        live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
         
-        resolved_home = find_team_in_dict(home_clean, bt, BASKETBALL_ALIASES)
-        resolved_away = find_team_in_dict(away_clean, bt, BASKETBALL_ALIASES)
-        
-        h_key = resolved_home.lower() if resolved_home else home_clean.lower()
-        a_key = resolved_away.lower() if resolved_away else away_clean.lower()
-        
+        # 2. Check Manual CSV Override
+        # Resolve scoreboard name to official key for CSV lookup
+        resolved_home = find_team_in_dict(m['home'], bt, BASKETBALL_ALIASES)
+        resolved_away = find_team_in_dict(m['away'], bt, BASKETBALL_ALIASES)
+        h_key = resolved_home.lower() if resolved_home else m['home'].lower()
+        a_key = resolved_away.lower() if resolved_away else m['away'].lower()
         lookup_key = frozenset({h_key, a_key})
 
         if lookup_key in manual_market:
             market_total = manual_market[lookup_key]
-            source = "Manual CSV Injection"
+            source = "Manual CSV Override"
+        elif live_total:
+            market_total = live_total
+            source = "Live Vegas API"
         else:
-            live_total = extract_total_for_matchup(odds_data, m['away'], m['home'])
-            market_total = live_total if live_total else m.get('total', 145.5)
-            source = "API/Scoreboard"
+            market_total = m.get('total', 145.5)
+            source = "NCAA Scoreboard/Fallback"
         
         data = get_game_data(m['away'], m['home'], bt, sh, market_total, m.get('away_seo'), m.get('home_seo'))
         if data:

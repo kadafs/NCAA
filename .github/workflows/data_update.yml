@@ -32,7 +32,7 @@ jobs:
           echo "Fetching NCAA Reference Data..."
           python -m ncaa.fetch_barttorvik
           python -m ncaa.data_fetcher
-          python -m ncaa.v1_2.populate # Ensure D1 matchups are refreshed
+          python -m ncaa.v1_2.run --refresh # Ensure stats, injuries, and live Vegas odds are refreshed
 
           # 2. Fetch NBA Core Data (Retry loop for flakiness, with fallback for advanced stats)
           echo "Fetching NBA Schedule and Player Stats..."
