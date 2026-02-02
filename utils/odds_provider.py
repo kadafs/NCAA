@@ -80,19 +80,27 @@ def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'
     Helper to find a specific game in the odds response.
     Supports Centralized Map, Sportradar, and The Odds API formats.
     """
+    def normalize(name):
+        import re
+        if not name: return ""
+        n = name.lower()
+        n = n.replace("st.", "state").replace("st ", "state ")
+        n = n.replace("univ.", "university").replace("univ ", "university ")
+        n = n.replace("n.c.", "north carolina").replace("n. carolina", "north carolina")
+        n = n.replace("-", " ").replace("&", " and ")
+        n = re.sub(r'[^a-z0-9\s]', '', n)
+        return " ".join(n.split())
+
     # 1. Centralized Render API format (Dict: { "team a vs team b": total })
     if isinstance(odds_data, dict) and "sport_events" not in odds_data:
-        search_key = [away_team.lower(), home_team.lower()]
-        search_key.sort()
-        key_str = " vs ".join(search_key)
+        norm_away = normalize(away_team)
+        norm_home = normalize(home_team)
         
-        if key_str in odds_data:
-            return odds_data[key_str]
-            
-        # Fuzzy match (Action Network names might differ slightly)
+        # Try direct fuzzy containment
         for key, val in odds_data.items():
-            k_lower = key.lower()
-            if away_team.lower() in k_lower and home_team.lower() in k_lower:
+            k_norm = normalize(key)
+            # If both normalized team names are found in the normalized match string
+            if norm_away in k_norm and norm_home in k_norm:
                 return val
         return None
 

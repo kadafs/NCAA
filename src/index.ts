@@ -266,7 +266,9 @@ export const app = new Elysia()
 
       log(`Fetching centralized scoreboard odds for ${league} ${date || "today"}...`);
 
-      const url = `https://api.actionnetwork.com/web/v1/scoreboard/${league}${dateParam}`;
+      const divisionParam = league === "ncaab" ? "&division=D1" : "";
+      const url = `https://api.actionnetwork.com/web/v1/scoreboard/${league}${dateParam}${dateParam ? "&" : "?"}${divisionParam}`.replace("?&", "?");
+
       const headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json",
