@@ -254,76 +254,56 @@ export const app = new Elysia()
       return status(500, "Failed to update stats cache");
     }
   }, { detail: { hide: true } })
-  .get("/stats/odds/:league", async ({ params, status, set }) => {
+  .get("/stats/odds/:league", async ({ params, query: { date }, status, set }) => {
     set.headers["Content-Type"] = "application/json";
     set.headers["Cache-Control"] = "public, max-age=1800";
     try {
-      let league = params.league === "ncaa" ? "ncaab" : params.league;
-      const cacheKey = `/stats/odds/${params.league}`;
+      const league = params.league === "ncaa" ? "ncaab" : params.league;
+      const dateParam = date ? `?date=${date.replace(/-/g, "")}` : "";
+      const cacheKey = `/stats/odds/${params.league}${date || ""}`;
+
       if (cache_45s.has(cacheKey)) return cache_45s.get(cacheKey);
 
-      log(`Fetching centralized odds for ${league}...`);
+      log(`Fetching centralized scoreboard odds for ${league} ${date || "today"}...`);
 
-      const bookIds = "15,30,76,75,123,69,68,972,71,247,79";
-      let url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=${bookIds}`;
+      const url = `https://api.actionnetwork.com/web/v1/scoreboard/${league}${dateParam}`;
       const headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json",
-        "Origin": "https://www.actionnetwork.com",
         "Referer": "https://www.actionnetwork.com/"
       };
 
-      let res = await fetch(url, { headers });
-
-      // Fallback for NCAA if it's 404
-      if (res.status === 404 && league === "ncaab") {
-        log(`Primary ncaab slug failed (404), trying fallback ncaab-d1...`);
-        league = "ncaab-d1";
-        url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=${bookIds}`;
-        res = await fetch(url, { headers });
-      }
-
+      const res = await fetch(url, { headers });
       if (!res.ok) {
-        const errText = await res.text().catch(() => "N/A");
-        log(`Action Network failed for ${league}: ${res.status} - ${errText.slice(0, 100)}`);
-        throw new Error(`Odds fetch failed: ${res.status} for ${league}`);
+        log(`Action Network Scoreboard failed for ${league}: ${res.status}`);
+        throw new Error(`Odds fetch failed: ${res.status}`);
       }
 
       const json = await res.json() as any;
-      if (!json || typeof json !== 'object') throw new Error("Invalid response from Action Network");
+      if (!json || !Array.isArray(json.games)) throw new Error("Invalid scoreboard response");
 
       const processedOdds: Record<string, number> = {};
 
-      const games = json.games || [];
-      const odds = json.odds || [];
-      const teams = json.teams || [];
+      for (const game of json.games) {
+        if (!game || !game.teams || !game.odds || game.odds.length === 0) continue;
 
-      const teamLookup: Record<number, string> = {};
-      if (Array.isArray(teams)) {
-        for (const t of teams) {
-          if (t && t.id) teamLookup[t.id] = t.full_name || t.display_name || "Unknown";
-        }
-      }
+        // 1. Find team names
+        const teams = game.teams || [];
+        const awayTeam = teams.find((t: any) => t.id === game.away_team_id);
+        const homeTeam = teams.find((t: any) => t.id === game.home_team_id);
 
-      if (Array.isArray(games)) {
-        for (const game of games) {
-          if (!game || !game.id) continue;
+        if (!awayTeam || !homeTeam) continue;
 
-          const gameOdds = odds.filter((o: any) => o.game_id === game.id);
-          if (gameOdds.length === 0) continue;
+        const awayName = awayTeam.full_name || awayTeam.display_name || "Away";
+        const homeName = homeTeam.full_name || homeTeam.display_name || "Home";
 
-          // Find consensus total (book_id null is consensus)
-          const consensus = gameOdds.find((o: any) => o.book_id === null) || gameOdds[0];
-          if (consensus && typeof consensus.total === 'number') {
-            const awayId = game.away_team_id;
-            const homeId = game.home_team_id;
+        // 2. Find total (Vegas Line)
+        // Prefer book_id 15 (often consensus/major), otherwise grab first
+        const majorBook = game.odds.find((o: any) => o.book_id === 15) || game.odds[0];
 
-            const away = teamLookup[awayId] || "Away";
-            const home = teamLookup[homeId] || "Home";
-
-            const key = [away.toLowerCase(), home.toLowerCase()].sort().join(" vs ");
-            processedOdds[key] = consensus.total;
-          }
+        if (majorBook && typeof majorBook.total === 'number') {
+          const key = [awayName.toLowerCase(), homeName.toLowerCase()].sort().join(" vs ");
+          processedOdds[key] = majorBook.total;
         }
       }
 
@@ -332,7 +312,7 @@ export const app = new Elysia()
       cache_45s.set(cacheKey, data);
       return data;
     } catch (e) {
-      log(`Error in odds handler: ${e}`);
+      log(`Error in odds scoreboard handler: ${e}`);
       return JSON.stringify({ error: String(e), timestamp: new Date().toISOString() });
     }
   }, { detail: { hide: true } })
