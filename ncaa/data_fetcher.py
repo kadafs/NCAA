@@ -56,16 +56,23 @@ HEADERS = {
     "Accept": "application/json"
 }
 
-def fetch_stat(stat_type, stat_id):
+def fetch_stat(stat_id, is_individual=False):
+    """
+    Fetches statistical data from the centralized API.
+    Correct URL construction for NCAA.com scraper:
+    Team: /stats/basketball-men/d1/current/team/{id}
+    Individual: /stats/basketball-men/d1/current/individual/{id}
+    """
     all_data = []
     page = 1
     total_pages = 1
     
+    type_segment = "individual" if is_individual else "team"
+    
     while page <= total_pages:
-        url = f"{BASE_URL}/stats/basketball-men/d1/current/{stat_type}/{stat_id}?page={page}"
+        url = f"{BASE_URL}/stats/basketball-men/d1/current/{type_segment}/{stat_id}?page={page}"
         print(f"Fetching {url}...")
         try:
-            # Using session (http) instead of direct requests
             response = http.get(url, headers=HEADERS, timeout=30)
             if response.status_code == 200:
                 data = response.json()
@@ -133,7 +140,7 @@ def main():
     os.makedirs(STATS_DIR, exist_ok=True)
     
     for stat_name, stat_id in TEAM_STAT_IDS.items():
-        data = fetch_stat(stat_name, stat_id)
+        data = fetch_stat(stat_id, is_individual=False)
         if data:
             output_path = os.path.join(STATS_DIR, f"{stat_name}.json")
             with open(output_path, "w") as f:
@@ -161,7 +168,7 @@ def main():
     os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
     
     for stat_name, stat_id in INDIVIDUAL_STAT_IDS.items():
-        data = fetch_stat(f"individual/{stat_name}", stat_id)
+        data = fetch_stat(stat_id, is_individual=True)
         if data:
             output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
             with open(output_path, "w") as f:

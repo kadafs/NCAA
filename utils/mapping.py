@@ -4,7 +4,7 @@ from datetime import datetime
 def get_target_date(date_str=None):
     """
     Returns a datetime object for the target date.
-    Accepts 'YYYY-MM-DD'. Defaults to current date in ET.
+    Accepts 'YYYY-MM-DD'. Defaults to current date in ET with 10PM lookahead.
     """
     et_tz = zoneinfo.ZoneInfo("America/New_York")
     if date_str:
@@ -12,7 +12,13 @@ def get_target_date(date_str=None):
             return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=et_tz)
         except ValueError:
             print(f"Invalid date format: {date_str}. Expected YYYY-MM-DD.")
-    return datetime.now(et_tz)
+    
+    now = datetime.now(et_tz)
+    # If it's late night in ET (after 10 PM), we probably want tomorrow's games
+    if now.hour >= 22:
+        from datetime import timedelta
+        return now + timedelta(days=1)
+    return now
 
 def clean_team_name(name):
     """
