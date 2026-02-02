@@ -19,12 +19,26 @@ BASE_URL = "https://api.the-odds-api.com/v4/sports"
 # Sportradar Configuration
 sr_provider = SportradarProvider()
 
-def get_odds(sport_key, regions='us', markets='totals', provider='sportradar'):
+def get_odds(sport_key, regions='us', markets='totals', provider='render'):
     """
     Fetches live totals for a given sport.
-    Defaulting to sportradar for new implementation.
+    Priority: Render API -> Sportradar -> The Odds API
     """
-    if provider == 'sportradar':
+    if provider == 'render':
+        league = "ncaa" if "ncaa" in sport_key.lower() else "nba"
+        url = f"https://ncaa-api-w2ry.onrender.com/stats/odds/{league}"
+        print(f"Fetching centralized odds from {url}...")
+        try:
+            resp = requests.get(url, timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data and len(data) > 0:
+                    return data
+            print(f"Centralized odds check returned {resp.status_code}. Falling back...")
+        except Exception as e:
+            print(f"Render Odds API failed ({e}). Falling back to Sportradar...")
+
+    if provider == 'sportradar' or provider == 'render':
         return sr_provider.get_totals(sport_key)
     
     # Fallback to The Odds API
@@ -51,41 +65,59 @@ def get_odds(sport_key, regions='us', markets='totals', provider='sportradar'):
         print(f"Request failed: {e}")
         return _get_mock_odds(sport_key)
 
-def extract_total_for_matchup(odds_data, away_team, home_team, provider='sportradar'):
+def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'):
     """
     Helper to find a specific game in the odds response.
+    Supports Centralized Map, Sportradar, and The Odds API formats.
     """
-    if provider == 'sportradar':
-        # odds_data is the full sportradar response
+    # 1. Centralized Render API format (Dict: { "team a vs team b": total })
+    if isinstance(odds_data, dict) and "sport_events" not in odds_data:
+        search_key = [away_team.lower(), home_team.lower()]
+        search_key.sort()
+        key_str = " vs ".join(search_key)
+        
+        if key_str in odds_data:
+            return odds_data[key_str]
+            
+        # Fuzzy match (Action Network names might differ slightly)
+        for key, val in odds_data.items():
+            k_lower = key.lower()
+            if away_team.lower() in k_lower and home_team.lower() in k_lower:
+                return val
+        return None
+
+    # 2. Sportradar format
+    if isinstance(odds_data, dict) and "sport_events" in odds_data:
         events = odds_data.get("sport_events", [])
         for event in events:
-            # Simple name match (Sportradar uses full names)
             names = [c.get("name", "").lower() for c in event.get("competitors", [])]
             if away_team.lower() in str(names) or home_team.lower() in str(names):
                 return sr_provider.extract_total(event)
         return None
 
-    # Original Odds API logic
-    for game in odds_data:
-        if (away_team in game['away_team'] or game['away_team'] in away_team) and \
-           (home_team in game['home_team'] or game['home_team'] in home_team):
-            
-            for bookmaker in game['bookmakers']:
-                for market in bookmaker['markets']:
-                    if market['key'] == 'totals':
-                        return market['outcomes'][0]['point']
+    # 3. Original The Odds API logic
+    if isinstance(odds_data, list):
+        for game in odds_data:
+            if (away_team in game['away_team'] or game['away_team'] in away_team) and \
+               (home_team in game['home_team'] or game['home_team'] in home_team):
+                
+                for bookmaker in game['bookmakers']:
+                    for market in bookmaker['markets']:
+                        if market['key'] == 'totals':
+                            return market['outcomes'][0]['point']
     return None
 
 def _get_mock_odds(sport_key):
-    # (Existing mock function remains same for backend compatibility)
     return []
 
 if __name__ == "__main__":
     import sys
     sport = "nba" if "nba" in sys.argv else "ncaa"
-    print(f"Testing Odds Provider (Sportradar Mock) for {sport}...")
-    data = get_odds(sport, provider='sportradar')
-    print(f"Received {len(data.get('sport_events', []))} events.")
-    if data.get('sport_events'):
-        total = extract_total_for_matchup(data, "Away", "Home")
-        print(f"Extracted Total: {total}")
+    print(f"Testing Odds Provider (Centralized Path) for {sport}...")
+    data = get_odds(sport, provider='render')
+    print(f"Received data keys: {list(data.keys())[:5] if isinstance(data, dict) else 'list'}")
+    
+    # Test extraction
+    test_away, test_home = "Lakers", "Celtics"
+    total = extract_total_for_matchup(data, test_away, test_home)
+    print(f"Extracted Total for {test_away}@{test_home}: {total}")

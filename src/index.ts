@@ -694,6 +694,57 @@ export const app = new Elysia()
     },
       { detail: { hide: true } }
     )
+      .get("/odds/:league", async ({ params, cache, cacheKey, status }) => {
+        try {
+          const league = params.league === "ncaa" ? "ncaab" : params.league;
+          log(`Fetching centralized odds for ${league}...`);
+
+          const url = `https://api.actionnetwork.com/v2/odds/board/${league}?bookIds=15,30,76,75,123,69,68,972,71,247,79`;
+          const headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+            "Origin": "https://www.actionnetwork.com",
+            "Referer": "https://www.actionnetwork.com/"
+          };
+
+          const res = await fetch(url, { headers });
+          if (!res.ok) throw new Error(`Odds fetch failed: ${res.status}`);
+
+          const json = await res.json() as any;
+          const processedOdds: Record<string, number> = {};
+
+          const games = json.games || [];
+          const odds = json.odds || [];
+          const teams = json.teams || [];
+
+          const teamLookup: Record<number, string> = {};
+          for (const t of teams) {
+            teamLookup[t.id] = t.full_name;
+          }
+
+          for (const game of games) {
+            const gameOdds = odds.filter((o: any) => o.game_id === game.id);
+            if (gameOdds.length === 0) continue;
+
+            // Find consensus total
+            const consensus = gameOdds.find((o: any) => o.book_id === null) || gameOdds[0];
+            if (consensus && consensus.total) {
+              const away = teamLookup[game.away_team_id] || "Unknown";
+              const home = teamLookup[game.home_team_id] || "Unknown";
+              const key = [away.toLowerCase(), home.toLowerCase()].sort().join(" vs ");
+              processedOdds[key] = consensus.total;
+            }
+          }
+
+          const data = JSON.stringify(processedOdds);
+          cache.set(cacheKey, data);
+          log(`Successfully fetched odds for ${Object.keys(processedOdds).length} ${league} games.`);
+          return data;
+        } catch (e) {
+          log(`Error fetching odds: ${e}`);
+          return status(500, "Error fetching odds");
+        }
+      }, { detail: { hide: true } })
   )
   // all other routes fetch data by scraping ncaa.com
   .get("/*", async ({ query: { page }, path, cache, cacheKey }) => {
