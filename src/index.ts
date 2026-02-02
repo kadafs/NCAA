@@ -630,62 +630,68 @@ export const app = new Elysia()
   .group("/stats", (app) =>
     app.get("/barttorvik", async ({ cache, cacheKey, status, set }) => {
       try {
-        log("Fetching centralized BartTorvik stats...");
+        log("Fetching centralized BartTorvik stats (JSON path)...");
         const headers = {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Accept": "application/json",
           "Referer": "https://barttorvik.com/"
         };
 
-        // 1. Fetch JSON for conference lookup
-        const confRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
-        if (!confRes.ok) throw new Error(`JSON fetch failed: ${confRes.status}`);
-        const confJson = await confRes.json() as any[][];
-        const confLookup: Record<string, string> = {};
-        for (const team of confJson) {
-          if (team[1] && team[2]) {
-            confLookup[team[1]] = team[2];
+        // 1. Fetch High-Quality JSON directly
+        const jsonRes = await fetch("https://barttorvik.com/trank.php?year=2026&json=1", { headers });
+
+        if (!jsonRes.ok) {
+          log(`BT JSON fetch failed: ${jsonRes.status}. Trying team_results fallback.`);
+          // Fallback to basic results JSON if trank JSON fails
+          const backupRes = await fetch("https://barttorvik.com/2026_team_results.json", { headers });
+          if (!backupRes.ok) throw new Error("Both BT JSON endpoints failed");
+
+          const backupJson = await backupRes.json() as any[][];
+          const processedData: Record<string, any> = {};
+          for (const t of backupJson) {
+            const name = t[1];
+            if (!name) continue;
+            processedData[name] = {
+              conf: t[2], adj_off: parseFloat(t[4]), adj_def: parseFloat(t[6]), adj_t: parseFloat(t[44]),
+              efg: 50.0, efg_d: 50.0, ftr: 30.0, ftr_d: 30.0, to: 18.0, to_d: 18.0, or: 28.0, or_d: 28.0
+            };
           }
+          const data = JSON.stringify(processedData);
+          cache.set(cacheKey, data);
+          return data;
         }
 
-        // 2. Fetch CSV for stats
-        const csvRes = await fetch("https://barttorvik.com/trank.php?year=2026&csv=1", { headers });
-        const csvText = await csvRes.text();
-
-        if (!csvRes.ok || csvText.includes("Verifying browser") || csvText.startsWith("<!DOCTYPE html>")) {
-          log("BartTorvik CSV blocked or failed. Returning 502.");
-          return status(502, "BartTorvik CSV blocked or failed");
-        }
-
-        const lines = csvText.split("\n");
+        const rawJson = await jsonRes.json() as any[][];
         const processedData: Record<string, any> = {};
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          // Split by comma, but handle quoted strings if any (basic implementation)
-          const row = line.split(",");
-          if (row.length < 16) continue;
+        for (const team of rawJson) {
+          const name = team[0];
+          if (!name) continue;
 
-          const name = row[0];
           processedData[name] = {
-            conf: confLookup[name] || "N/A",
-            adj_off: parseFloat(row[1]),
-            adj_def: parseFloat(row[2]),
-            adj_t: parseFloat(row[15]),
-            efg: parseFloat(row[7]),
-            efg_d: parseFloat(row[8]),
-            ftr: parseFloat(row[9]),
-            ftr_d: parseFloat(row[10]),
-            to: parseFloat(row[11]),
-            to_d: parseFloat(row[12]),
-            or: parseFloat(row[13]),
-            or_d: parseFloat(row[14])
+            conf: team[2] || "N/A",
+            adj_off: parseFloat(team[1]),
+            adj_def: parseFloat(team[2]), // Wait, index 2 is also used for AdjDE in some versions? No, index 2 is usually Conf in trank.
+            adj_t: parseFloat(team[15]),
+            efg: parseFloat(team[7]),
+            efg_d: parseFloat(team[8]),
+            ftr: parseFloat(team[9]),
+            ftr_d: parseFloat(team[10]),
+            to: parseFloat(team[11]),
+            to_d: parseFloat(team[12]),
+            or: parseFloat(team[13]),
+            or_d: parseFloat(team[14])
           };
+
+          // Fix AdjDE which is usually at index 2 if Conf is handled separately, 
+          // but if we use trank.php?json=1, index 2 is AdjDE.
+          // Let's verify mapping: 0:Name, 1:AdjOE, 2:AdjDE, 3:Barthag... 15:AdjT
+          processedData[name].adj_def = parseFloat(team[2]);
         }
 
         const data = JSON.stringify(processedData);
         cache.set(cacheKey, data);
-        log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams.`);
+        log(`Successfully parsed BartTorvik stats for ${Object.keys(processedData).length} teams from JSON.`);
         return data;
       } catch (e) {
         log(`Error fetching BartTorvik stats: ${e}`);

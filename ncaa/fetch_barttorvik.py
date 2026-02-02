@@ -25,17 +25,31 @@ def fetch_barttorvik_stats():
 
     print(f"Fetching centralized BartTorvik stats from https://ncaa-api-w2ry.onrender.com/stats/barttorvik...")
     try:
-        render_resp = requests.get("https://ncaa-api-w2ry.onrender.com/stats/barttorvik", timeout=30)
+        session = requests.Session()
+        # Add basic retry strategy for Render
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+        retries = Retry(total=2, backoff_factor=1, status_forcelist=[502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        render_resp = session.get("https://ncaa-api-w2ry.onrender.com/stats/barttorvik", timeout=30)
+        
+        # SSL Fallback for "BAD_RECORD_MAC" issues
+        if render_resp.status_code != 200:
+            print(f"Centralized fetch returned {render_resp.status_code}. Retrying without SSL verification...")
+            render_resp = session.get("https://ncaa-api-w2ry.onrender.com/stats/barttorvik", timeout=30, verify=False)
+
         if render_resp.status_code == 200:
             processed_data = render_resp.json()
             if processed_data and len(processed_data) > 300:
                 print(f"Successfully fetched {len(processed_data)} teams from centralized Render API.")
                 with open(OUTPUT_FILE, "w") as f:
                     json.dump(processed_data, f, indent=2)
-                print(f"Successfully saved {len(processed_data)} teams to {OUTPUT_FILE}")
                 return True
+            else:
+                print(f"Centralized API returned empty or small dataset ({len(processed_data) if processed_data else 0} teams). Falling back...")
         else:
-            print(f"Centralized fetch returned status {render_resp.status_code}. Falling back to scraping...")
+            print(f"Centralized API failed with status {render_resp.status_code}. Falling back...")
     except Exception as e:
         print(f"Centralized API fetch failed ({e}). Falling back to manual scraping...")
 

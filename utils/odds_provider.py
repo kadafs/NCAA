@@ -30,6 +30,11 @@ def get_odds(sport_key, regions='us', markets='totals', provider='render'):
         print(f"Fetching centralized odds from {url}...")
         try:
             resp = requests.get(url, timeout=15)
+            if resp.status_code != 200:
+                # SSL Fallback for BAD_RECORD_MAC
+                print(f"Standard fetch failed ({resp.status_code}). Retrying with SSL bypass...")
+                resp = requests.get(url, timeout=15, verify=False)
+
             if resp.status_code == 200:
                 data = resp.json()
                 if data and len(data) > 0:
