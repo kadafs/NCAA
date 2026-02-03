@@ -22,7 +22,7 @@ def fetch_nba_player_stats():
             data = RobustNBAClient.call_endpoint(
                 fantasywidget.FantasyWidget,
                 todays_players='Y',
-                timeout=45
+                timeout=15
             )
             rows = data['resultSets'][0]['rowSet']
         except Exception as e:
@@ -30,11 +30,17 @@ def fetch_nba_player_stats():
             rows = []
 
         if not rows:
+            # Circuit breaker: if we're on GitHub and the first one timed out, 
+            # maybe don't bother or reduce retries
+            if os.getenv("GITHUB_ACTIONS"):
+                print("GitHub environment detected: skipping second attempt to avoid step timeout.")
+                return False
+            
             print("Fetching all active player season averages...")
             data = RobustNBAClient.call_endpoint(
                 fantasywidget.FantasyWidget,
                 todays_players='N',
-                timeout=45
+                timeout=15
             )
             rows = data['resultSets'][0]['rowSet']
         

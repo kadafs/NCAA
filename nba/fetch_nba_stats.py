@@ -146,7 +146,7 @@ def fetch_nba_complete_stats():
             per_mode_detailed='PerGame',
             season='2025-26',
             season_type_all_star='Regular Season',
-            timeout=45
+            timeout=15
         )
 
         # 2. Fetch Advanced Stats
@@ -155,7 +155,7 @@ def fetch_nba_complete_stats():
             measure_type_detailed_defense='Advanced',
             season='2025-26',
             season_type_all_star='Regular Season',
-            timeout=45
+            timeout=15
         )
 
         # 3. Fetch Opponent Stats
@@ -165,7 +165,7 @@ def fetch_nba_complete_stats():
             per_mode_detailed='PerGame',
             season='2025-26',
             season_type_all_star='Regular Season',
-            timeout=45
+            timeout=15
         )
 
         # Extract data (Simplified for this snippet)

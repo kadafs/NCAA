@@ -38,7 +38,7 @@ jobs:
           python -m nba.fetch_nba_injuries || echo "Warning: NBA Injuries fetch failed"
 
       - name: Fetch NBA Data (Stats)
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           python -m nba.fetch_nba_stats || echo "Warning: NBA Team Stats failed"
           python -m nba.fetch_nba_player_stats || echo "Warning: NBA Player Stats failed"
