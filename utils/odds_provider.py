@@ -97,10 +97,16 @@ def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'
         a_away = BASKETBALL_ALIASES.get(c_away, c_away)
         a_home = BASKETBALL_ALIASES.get(c_home, c_home)
         
+        # Also check reverse aliases (if the cleaned name IS an alias value, get its key)
+        reverse_away = [k for k, v in BASKETBALL_ALIASES.items() if v == c_away]
+        reverse_home = [k for k, v in BASKETBALL_ALIASES.items() if v == c_home]
+        
         for key, val in odds_data.items():
             k_low = clean_team_name(key)
-            if (c_away in k_low or a_away in k_low) and \
-               (c_home in k_low or a_home in k_low):
+            # Check if any variation of away team AND any variation of home team are in the key
+            away_match = (c_away in k_low or a_away in k_low or any(r in k_low for r in reverse_away))
+            home_match = (c_home in k_low or a_home in k_low or any(r in k_low for r in reverse_home))
+            if away_match and home_match:
                 return val
         return None
 

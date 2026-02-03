@@ -140,12 +140,14 @@ BASKETBALL_ALIASES = {
     "umes": "marylandeasternshore",
     "marylandeasternshore": "umes",
     "utmartin": "tennesseemartin",
+    "tennesseemartin": "utmartin",
     "utrgv": "utriograndevalley",
     "utriograndevalley": "texasriograndevalley",
     "texasriograndevalley": "utriograndevalley",
     "westernky": "westernkentucky",
     "omaha": "nebraskaomaha",
-    "little-rock": "arkansaslittlerock",
+    "littlerock": "arkansaslittlerock",
+    "arkansaslittlerock": "littlerock",
     "aandmcorpuschristi": "texasaandmcc",
     "texasaandmcc": "aandmcorpuschristi",
     "ncstate": "northcarolinastate",
@@ -163,6 +165,8 @@ BASKETBALL_ALIASES = {
     "njithighlanders": "njit",
     "samfordbulldogs": "samford",
     "furmanpaladins": "furman",
+    "loyolachicago": "loyolail",
+    "loyolail": "loyolachicago",
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {
