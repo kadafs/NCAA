@@ -27,7 +27,7 @@ def fetch_barttorvik_stats():
         "Referer": "https://barttorvik.com/"
     }
 
-    print(f"Fetching centralized BartTorvik stats from https://ncaa-api-w2ry.onrender.com/stats/barttorvik...")
+    print(f"Fetching centralized BartTorvik stats from https://ncaa-api-w2ry.onrender.com/stats/barttorvik")
     try:
         from utils.ssl_adapter import get_robust_session
         session = get_robust_session(retries=2)
@@ -80,7 +80,7 @@ def fetch_barttorvik_stats():
         print(f"Centralized API fetch failed ({e}). Falling back to manual scraping...")
 
     # --- LEGACY SCRAPING FALLBACK ---
-    print(f"Fetching BartTorvik JSON (Conference) from {BARTTORVIK_JSON_URL}...")
+    print(f"Fetching BartTorvik JSON (Conference) from {BARTTORVIK_JSON_URL}")
     conf_lookup = {}
     try:
         resp_json = requests.get(BARTTORVIK_JSON_URL, headers=headers, timeout=15)
@@ -101,7 +101,7 @@ def fetch_barttorvik_stats():
         session = get_robust_session(retries=3)
         session.headers.update(headers)
         
-        print(f"Attempting robust CSV fetch from {BARTTORVIK_CSV_URL}...")
+        print(f"Attempting robust CSV fetch from {BARTTORVIK_CSV_URL}")
         resp_csv = session.get(BARTTORVIK_CSV_URL, timeout=20)
         
         if resp_csv.status_code == 200 and "Verifying browser" not in resp_csv.text and "<!DOCTYPE html>" not in resp_csv.text[:100]:

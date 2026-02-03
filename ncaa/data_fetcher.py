@@ -71,7 +71,7 @@ def fetch_stat(stat_id, is_individual=False):
     
     while page <= total_pages:
         url = f"{BASE_URL}/stats/basketball-men/d1/current/{type_segment}/{stat_id}?page={page}"
-        print(f"Fetching {url}...")
+        print(f"Fetching {url}")
         try:
             response = http.get(url, headers=HEADERS, timeout=30)
             if response.status_code == 200:
@@ -84,7 +84,7 @@ def fetch_stat(stat_id, is_individual=False):
                 break
         except requests.exceptions.SSLError as ssl_err:
             print(f"SSL Error: {ssl_err}")
-            print("Retrying with verify=False (Security Warning)...")
+            print("Retrying with verify=False (Security Warning)")
             try:
                 response = http.get(url, headers=HEADERS, timeout=30, verify=False)
                 if response.status_code == 200:
@@ -104,7 +104,7 @@ def fetch_stat(stat_id, is_individual=False):
 
 def fetch_standings():
     url = f"{BASE_URL}/standings/basketball-men/d1"
-    print(f"Fetching {url}...")
+    print(f"Fetching {url}")
     try:
         response = http.get(url, headers=HEADERS, timeout=30)
         if response.status_code == 200:
@@ -114,7 +114,7 @@ def fetch_standings():
             return None
     except requests.exceptions.SSLError as ssl_err:
         print(f"SSL Error: {ssl_err}")
-        print("Retrying with verify=False (Security Warning)...")
+        print("Retrying with verify=False (Security Warning)")
         try:
             response = http.get(url, headers=HEADERS, timeout=30, verify=False)
             if response.status_code == 200:

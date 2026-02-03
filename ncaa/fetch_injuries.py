@@ -7,7 +7,7 @@ INJURY_URL = "https://www.actionnetwork.com/ncaab/injury-report"
 OUTPUT_FILE = "data/injury_notes.json"
 
 def fetch_injuries():
-    print(f"Fetching injuries from {INJURY_URL}...")
+    print(f"Fetching injuries from {INJURY_URL}")
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
