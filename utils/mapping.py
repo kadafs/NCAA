@@ -41,6 +41,8 @@ def clean_team_name(name):
     n = n.replace("Okla.", "Oklahoma").replace("Ore.", "Oregon").replace("Wis.", "Wisconsin")
     n = n.replace("U.", "University").replace("Univ.", "University")
     n = n.replace("N.Carolina", "North Carolina").replace("S.Carolina", "South Carolina")
+    # Handle UT Martin specifically before general UT expansion
+    n = n.replace("UT Martin", "Tennessee Martin").replace("UT-Martin", "Tennessee Martin")
     n = n.replace("UT ", "Texas ").replace("UMES", "Maryland Eastern Shore")
     n = n.replace("A&M CC", "Texas A&M Corpus Christi").replace("SIU-", "Southern Illinois ")
     n = n.replace("A&M-CC", "Texas A&M Corpus Christi")
