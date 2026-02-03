@@ -42,10 +42,17 @@ def fetch_barttorvik_stats():
         if render_resp.status_code == 200:
             processed_data = render_resp.json()
             if processed_data and len(processed_data) > 300:
-                print(f"Successfully fetched {len(processed_data)} teams from centralized Render API.")
-                with open(OUTPUT_FILE, "w") as f:
-                    json.dump(processed_data, f, indent=2)
-                return True
+                # Validate that it's NOT just serving defaults (checking first few teams)
+                sample_teams = list(processed_data.values())[:5]
+                is_default = any(t.get('efg') == 50.0 and t.get('to') == 18.0 for t in sample_teams)
+                
+                if is_default:
+                    print("Centralized API is serving default metrics. Ignoring and scraping fresh...")
+                else:
+                    print(f"Successfully fetched {len(processed_data)} teams from centralized Render API.")
+                    with open(OUTPUT_FILE, "w") as f:
+                        json.dump(processed_data, f, indent=2)
+                    return True
             else:
                 print(f"Centralized API returned empty dataset. Falling back...")
         else:
@@ -73,18 +80,13 @@ def fetch_barttorvik_stats():
     except Exception as e:
         print(f"Error fetching JSON: {e}")
 
-    print(f"Fetching BartTorvik CSV (Stats) from {BARTTORVIK_CSV_URL}...")
-    processed_data = {}
-    
-    # Use session to handle potential cookie/referrer checks
-    session = requests.Session()
-    session.headers.update(headers)
-    
     try:
-        # Visit home page first to establish session
-        session.get("https://barttorvik.com/", timeout=10)
-        time.sleep(1)
-        resp_csv = session.get(BARTTORVIK_CSV_URL, timeout=15)
+        from utils.ssl_adapter import get_robust_session
+        session = get_robust_session(retries=3)
+        session.headers.update(headers)
+        
+        print(f"Attempting robust CSV fetch from {BARTTORVIK_CSV_URL}...")
+        resp_csv = session.get(BARTTORVIK_CSV_URL, timeout=20)
         
         if resp_csv.status_code == 200 and "Verifying browser" not in resp_csv.text and "<!DOCTYPE html>" not in resp_csv.text[:100]:
             print("Successfully fetched CSV data.")
@@ -164,9 +166,16 @@ def fetch_barttorvik_stats():
                                 "adj_off": float(team_data[4]),
                                 "adj_def": float(team_data[6]),
                                 "adj_t": float(team_data[44]),
-                                # Default Four Factors (approx D1 averages) since they aren't in this JSON
-                                "efg": 50.0, "efg_d": 50.0, "ftr": 30.0, "ftr_d": 30.0, 
-                                "to": 18.0, "to_d": 18.0, "or": 28.0, "or_d": 28.0
+                                # Optimized indices from raw JSON inspection (2026 Season):
+                                # Index 10: OR%, Index 12: TO%
+                                "efg": 50.0, # eFG still not confirmed in results.json
+                                "efg_d": 50.0, 
+                                "ftr": 30.0, 
+                                "ftr_d": 30.0, 
+                                "to": float(team_data[12]) if len(team_data) > 12 else 18.0,
+                                "to_d": 18.0,
+                                "or": float(team_data[10]) if len(team_data) > 10 else 28.0,
+                                "or_d": 28.0
                             }
                         except (IndexError, ValueError, TypeError):
                             continue

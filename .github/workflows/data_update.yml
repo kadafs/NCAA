@@ -24,40 +24,79 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Fetch NCAA Stats & BartTorvik
+      - name: Fetch NCAA Data
         timeout-minutes: 5
         run: |
-          python -m ncaa.fetch_barttorvik
-          python -m ncaa.data_fetcher
-
-      - name: Fetch NCAA Injuries
-        timeout-minutes: 5
-        run: |
+          python -m ncaa.fetch_barttorvik || echo "Warning: BartTorvik fetch failed"
+          python -m ncaa.data_fetcher || echo "Warning: NCAA Data fetcher failed"
           python ncaa/fetch_injuries.py || echo "Warning: NCAA Injuries fetch failed"
 
-      - name: Fetch NBA Schedule & Injuries
+      - name: Fetch NBA Data (Schedule & Injuries)
         timeout-minutes: 5
         run: |
           python -m nba.fetch_nba_schedule || echo "Warning: NBA Schedule fetch failed"
           python -m nba.fetch_nba_injuries || echo "Warning: NBA Injuries fetch failed"
 
-      - name: Fetch NBA Stats
+      - name: Fetch NBA Data (Stats)
         timeout-minutes: 5
         run: |
-          (python -m nba.fetch_nba_stats || echo "Warning: NBA Team Stats failed")
-          (python -m nba.fetch_nba_player_stats || echo "Warning: NBA Player Stats failed")
+          python -m nba.fetch_nba_stats || echo "Warning: NBA Team Stats failed"
+          python -m nba.fetch_nba_player_stats || echo "Warning: NBA Player Stats failed"
 
-      - name: Generate Predictions & Push to Supabase
+      - name: Fetch EuroLeague/EuroCup Data
+        timeout-minutes: 10
+        run: |
+          python euro/fetch_euro_schedule.py || echo "Warning: Euro Schedule failed"
+          python euro/fetch_euro_stats.py || echo "Warning: Euro Stats failed"
+          python euro/fetch_euro_player_stats.py || echo "Warning: Euro Player Stats failed"
+          python eurocup/fetch_eurocup_schedule.py || echo "Warning: EuroCup Schedule failed"
+          python eurocup/fetch_eurocup_stats.py || echo "Warning: EuroCup Stats failed"
+          python eurocup/fetch_eurocup_player_stats.py || echo "Warning: EuroCup Player Stats failed"
+
+      - name: Fetch NBL/ACB Data
+        timeout-minutes: 5
+        run: |
+          python nbl/fetch_nbl_schedule.py || echo "Warning: NBL Schedule failed"
+          python nbl/fetch_nbl_stats.py || echo "Warning: NBL Stats failed"
+          python acb/fetch_acb_schedule.py || echo "Warning: ACB Schedule failed"
+          python acb/fetch_acb_stats.py || echo "Warning: ACB Stats failed"
+
+      - name: Log Predictions (NCAA)
+        timeout-minutes: 5
+        run: |
+          echo "Generating NCAA Predictions (Safe & Full)..."
+          python run_universal.py --league ncaa --mode safe
+          python run_universal.py --league ncaa --mode full
+
+      - name: Log Predictions (NBA)
+        timeout-minutes: 5
+        run: |
+          echo "Generating NBA Predictions (Safe & Full)..."
+          python run_universal.py --league nba --mode safe
+          python run_universal.py --league nba --mode full
+
+      - name: Log Predictions (International)
+        timeout-minutes: 5
+        run: |
+          echo "Generating International Predictions..."
+          python run_universal.py --league euro --mode full
+          python run_universal.py --league eurocup --mode full
+          python run_universal.py --league nbl --mode full
+          python run_universal.py --league acb --mode full
+
+      - name: Sync to Supabase Store
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         timeout-minutes: 10
         run: |
-          echo "Running NCAA Engine (Safe Mode)..."
-          python -m ncaa.v1_2.run --mode safe 
-          echo "Pushing Universal Predictions to Supabase..."
+          echo "Pushing Multi-League Predictions to Supabase Store..."
           python core/supabase_pusher.py
+
+      - name: Performance Audit
+        timeout-minutes: 5
+        run: |
           echo "Running Performance Audit..."
           python core/audit_engine.py --days 1
 
@@ -67,8 +106,7 @@ jobs:
           echo "Listing data directory..."
           ls -R data/ || echo "No data directory found"
           echo "Matchup Files Content Summary:"
-          cat data/nba_matchups.json 2>/dev/null | head -n 20 || echo "No NBA matchups"
-          cat data/ncaa_matchups.json 2>/dev/null | head -n 20 || echo "No NCAA matchups"
-          cat data/euro_matchups.json 2>/dev/null | head -n 20 || echo "No EURO matchups"
-          cat data/acb_matchups.json 2>/dev/null | head -n 20 || echo "No ACB matchups"
-
+          for f in data/*_matchups.json; do
+            echo "--- $f ---"
+            head -n 20 "$f" || echo "Could not read $f"
+          done

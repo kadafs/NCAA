@@ -1,6 +1,11 @@
 import json
 import os
+import time
 from nba_api.stats.endpoints import fantasywidget
+import sys
+# Root addition for imports
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.nba_api_client import RobustNBAClient
 
 # Base paths (Absolute)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,29 +16,26 @@ OUTPUT_FILE = os.path.join(DATA_DIR, "nba_player_stats.json")
 def fetch_nba_player_stats():
     print("Fetching NBA Player Stats (for props) from official API...")
     
-    custom_headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Referer': 'https://www.nba.com/',
-        'Origin': 'https://www.nba.com',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-site',
-    }
-    
     try:
-        # Try today's players first
-        widget = fantasywidget.FantasyWidget(todays_players='Y', headers=custom_headers, timeout=30)
-        data = widget.get_dict()
-        rows = data['resultSets'][0]['rowSet']
-        
+        # Try today's players first (with retries via RobustNBAClient)
+        try:
+            data = RobustNBAClient.call_endpoint(
+                fantasywidget.FantasyWidget,
+                todays_players='Y',
+                timeout=45
+            )
+            rows = data['resultSets'][0]['rowSet']
+        except Exception as e:
+            print(f"Today's active roster fetch failed: {e}. Falling back to all player averages...")
+            rows = []
+
         if not rows:
-            print("Today's players not available yet. Fetching all active player averages instead...")
-            widget = fantasywidget.FantasyWidget(todays_players='N', headers=custom_headers, timeout=30)
-            data = widget.get_dict()
+            print("Fetching all active player season averages...")
+            data = RobustNBAClient.call_endpoint(
+                fantasywidget.FantasyWidget,
+                todays_players='N',
+                timeout=45
+            )
             rows = data['resultSets'][0]['rowSet']
         
         headers = data['resultSets'][0]['headers']
@@ -81,7 +83,7 @@ def fetch_nba_player_stats():
         return True
 
     except Exception as e:
-        print(f"Error fetching NBA player stats: {e}")
+        print(f"NBA Player API failed after retries: {e}")
         return False
 
 if __name__ == "__main__":
