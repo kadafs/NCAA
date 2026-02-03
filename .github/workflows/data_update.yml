@@ -31,31 +31,12 @@ jobs:
           python -m ncaa.data_fetcher || echo "Warning: NCAA Data fetcher failed"
           python ncaa/fetch_injuries.py || echo "Warning: NCAA Injuries fetch failed"
 
-      - name: Fetch NBA Data (Schedule & Injuries)
-        timeout-minutes: 5
-        run: |
-          python -m nba.fetch_nba_schedule || echo "Warning: NBA Schedule fetch failed"
-          python -m nba.fetch_nba_injuries || echo "Warning: NBA Injuries fetch failed"
-
-      - name: Fetch NBA Data (Stats)
-        timeout-minutes: 10
-        run: |
-          python -m nba.fetch_nba_stats || echo "Warning: NBA Team Stats failed"
-          python -m nba.fetch_nba_player_stats || echo "Warning: NBA Player Stats failed"
-
       - name: Log Predictions (NCAA)
         timeout-minutes: 5
         run: |
           echo "Generating NCAA Predictions (Safe & Full)..."
           python run_universal.py --league ncaa --mode safe
           python run_universal.py --league ncaa --mode full
-
-      - name: Log Predictions (NBA)
-        timeout-minutes: 5
-        run: |
-          echo "Generating NBA Predictions (Safe & Full)..."
-          python run_universal.py --league nba --mode safe
-          python run_universal.py --league nba --mode full
 
       - name: Sync to Supabase Store
         env:
@@ -68,6 +49,10 @@ jobs:
           python core/supabase_pusher.py
 
       - name: Performance Audit
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         timeout-minutes: 5
         run: |
           echo "Running Performance Audit..."
