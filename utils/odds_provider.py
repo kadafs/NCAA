@@ -27,7 +27,7 @@ def get_odds(sport_key, regions='us', markets='totals', provider='render'):
     if provider == 'render':
         league = "ncaa" if "ncaa" in sport_key.lower() else "nba"
         url = f"https://ncaa-api-w2ry.onrender.com/stats/odds/{league}"
-        print(f"Fetching centralized odds from {url}...")
+        print(f"Fetching centralized odds from {url}")
         try:
             from utils.ssl_adapter import get_robust_session
             session = get_robust_session(retries=2)
