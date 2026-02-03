@@ -49,8 +49,18 @@ def get_universal_predictions(league="nba", mode="safe"):
                         **p,
                         "id": p.get('id'),
                         "league": "nba",
-                        "seasonal": {"pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0)},
-                        "recent": {"pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0)}
+                        "seasonal": {
+                            "pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0),
+                            "stl": p.get('stl', 0), "blk": p.get('blk', 0), "tov": p.get('tov', 0),
+                            "3pm": p.get('3pm', 0), "fgm": p.get('fgm', 0), "fga": p.get('fga', 0),
+                            "ftm": p.get('ftm', 0), "fta": p.get('fta', 0)
+                        },
+                        "recent": {
+                            "pts": p.get('pts', 0), "reb": p.get('reb', 0), "ast": p.get('ast', 0),
+                            "stl": p.get('stl', 0), "blk": p.get('blk', 0), "tov": p.get('tov', 0),
+                            "3pm": p.get('3pm', 0), "fgm": p.get('fgm', 0), "fga": p.get('fga', 0),
+                            "ftm": p.get('ftm', 0), "fta": p.get('fta', 0)
+                        }
                     })
                 else:
                     p.update({"league": "nba"})
