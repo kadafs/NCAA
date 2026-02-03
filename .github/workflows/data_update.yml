@@ -43,24 +43,6 @@ jobs:
           python -m nba.fetch_nba_stats || echo "Warning: NBA Team Stats failed"
           python -m nba.fetch_nba_player_stats || echo "Warning: NBA Player Stats failed"
 
-      - name: Fetch EuroLeague/EuroCup Data
-        timeout-minutes: 10
-        run: |
-          python euro/fetch_euro_schedule.py || echo "Warning: Euro Schedule failed"
-          python euro/fetch_euro_stats.py || echo "Warning: Euro Stats failed"
-          python euro/fetch_euro_player_stats.py || echo "Warning: Euro Player Stats failed"
-          python eurocup/fetch_eurocup_schedule.py || echo "Warning: EuroCup Schedule failed"
-          python eurocup/fetch_eurocup_stats.py || echo "Warning: EuroCup Stats failed"
-          python eurocup/fetch_eurocup_player_stats.py || echo "Warning: EuroCup Player Stats failed"
-
-      - name: Fetch NBL/ACB Data
-        timeout-minutes: 5
-        run: |
-          python nbl/fetch_nbl_schedule.py || echo "Warning: NBL Schedule failed"
-          python nbl/fetch_nbl_stats.py || echo "Warning: NBL Stats failed"
-          python acb/fetch_acb_schedule.py || echo "Warning: ACB Schedule failed"
-          python acb/fetch_acb_stats.py || echo "Warning: ACB Stats failed"
-
       - name: Log Predictions (NCAA)
         timeout-minutes: 5
         run: |
@@ -74,15 +56,6 @@ jobs:
           echo "Generating NBA Predictions (Safe & Full)..."
           python run_universal.py --league nba --mode safe
           python run_universal.py --league nba --mode full
-
-      - name: Log Predictions (International)
-        timeout-minutes: 5
-        run: |
-          echo "Generating International Predictions..."
-          python run_universal.py --league euro --mode full
-          python run_universal.py --league eurocup --mode full
-          python run_universal.py --league nbl --mode full
-          python run_universal.py --league acb --mode full
 
       - name: Sync to Supabase Store
         env:

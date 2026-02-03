@@ -66,14 +66,14 @@ class UniversalDataBridge:
             market_total = m.get('total')
             source = m.get('odds_source', 'Stored')
             
-            if not market_total or market_total == 230.5:
+            if not market_total:
                 live_total = extract_total_for_matchup(live_odds, m['away'], m['home'])
                 if live_total:
                     market_total = live_total
                     source = "Live Vegas API (Bridge)"
                 else:
-                    market_total = 230.5
-                    source = "Safety Default"
+                    market_total = None
+                    source = "Odds Unavailable"
 
             daily_sheet.append({
                 "team": teamA_name,
@@ -99,12 +99,14 @@ class UniversalDataBridge:
                     "adj_off": sA['adj_off'],
                     "adj_def": sA['adj_def'],
                     "adj_t": sA['adj_t'],
+                    "net_rating": 50 + (sA['adj_off'] - sA['adj_def']),
                     "four_factors": sA.get('four_factors', {})
                 },
                 "statsH": {
                     "adj_off": sH['adj_off'],
                     "adj_def": sH['adj_def'],
                     "adj_t": sH['adj_t'],
+                    "net_rating": 50 + (sH['adj_off'] - sH['adj_def']),
                     "four_factors": sH.get('four_factors', {})
                 }
             })
@@ -149,12 +151,14 @@ class UniversalDataBridge:
                     "adj_off": sA.get('adj_off', 110.0),
                     "adj_def": sA.get('adj_def', 110.0),
                     "adj_t": sA.get('adj_t', 70.0),
+                    "net_rating": 50 + (sA.get('adj_off', 110.0) - sA.get('adj_def', 110.0)),
                     "four_factors": {"efg": sA.get('efg', 0), "tov": sA.get('to', 0), "orb": sA.get('or', 0), "ftr": sA.get('ftr', 0)}
                 },
                 "statsH": {
                     "adj_off": sH.get('adj_off', 110.0),
                     "adj_def": sH.get('adj_def', 110.0),
                     "adj_t": sH.get('adj_t', 70.0),
+                    "net_rating": 50 + (sH.get('adj_off', 110.0) - sH.get('adj_def', 110.0)),
                     "four_factors": {"efg": sH.get('efg', 0), "tov": sH.get('to', 0), "orb": sH.get('or', 0), "ftr": sH.get('ftr', 0)}
                 }
             })

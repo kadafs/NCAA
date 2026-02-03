@@ -24,7 +24,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-LEAGUES = ["nba", "ncaa", "euro", "eurocup", "nbl", "acb"]
+LEAGUES = ["nba", "ncaa"]
 
 async def push_league_predictions(league):
     for mode in ["safe", "full"]:

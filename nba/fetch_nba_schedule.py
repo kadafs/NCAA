@@ -111,17 +111,17 @@ def fetch_nba_daily_schedule(target_date=None):
                         m['total'] = total
                         m['odds_source'] = "Action Network (Vegas)"
                     else:
-                        m['total'] = 230.5
-                        m['odds_source'] = "Fallback (Fixed)"
+                        m['total'] = None
+                        m['odds_source'] = "Waiting for Lines"
             else:
                 for m in matchups: 
-                    m['total'] = 230.5
-                    m['odds_source'] = "Fallback (Fixed)"
+                    m['total'] = None
+                    m['odds_source'] = "Waiting for Lines"
         except Exception as e:
             print(f"Failed to inject NBA odds: {e}")
             for m in matchups: 
-                m['total'] = 230.5
-                m['odds_source'] = "Fallback"
+                m['total'] = None
+                m['odds_source'] = "N/A"
 
     # Save results
     with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
