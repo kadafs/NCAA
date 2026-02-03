@@ -393,11 +393,14 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--days", type=int, default=1, help="Grade games from last N days")
+    parser.add_argument("--league", choices=["nba", "ncaa", "all"], default="all", help="League to audit (default: all)")
     args = parser.parse_args()
 
     for i in range(1, args.days + 1):
         target_date = datetime.now(ET_TZ) - timedelta(days=i)
-        audit_nba(target_date)
-        audit_ncaa(target_date)
+        if args.league in ["nba", "all"]:
+            audit_nba(target_date)
+        if args.league in ["ncaa", "all"]:
+            audit_ncaa(target_date)
     
     update_summary()

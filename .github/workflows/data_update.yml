@@ -45,8 +45,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         timeout-minutes: 10
         run: |
-          echo "Pushing Multi-League Predictions to Supabase Store..."
-          python core/supabase_pusher.py
+          echo "Pushing NCAA Predictions to Supabase Store..."
+          python core/supabase_pusher.py --league ncaa
 
       - name: Performance Audit
         env:
@@ -55,8 +55,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         timeout-minutes: 5
         run: |
-          echo "Running Performance Audit..."
-          python core/audit_engine.py --days 1
+          echo "Running Performance Audit (NCAA Only)..."
+          python core/audit_engine.py --days 1 --league ncaa
 
       - name: Debug Fetched Data (On Failure or Success)
         if: always()
