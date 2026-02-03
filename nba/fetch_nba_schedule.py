@@ -9,6 +9,7 @@ import sys
 # Root addition for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import get_target_date
+from utils.odds_provider import get_odds, extract_total_for_matchup
 
 # Base paths (Absolute)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -98,6 +99,30 @@ def fetch_nba_daily_schedule(target_date=None):
     if not matchups:
         matchups = fetch_schedule_espn(date_str)
         
+    # 3. Inject Vegas Lines (NBA V1.3 Integration)
+    if matchups:
+        print("Injecting NBA Vegas Lines...")
+        try:
+            odds_data = get_odds("nba", provider='render')
+            if odds_data:
+                for m in matchups:
+                    total = extract_total_for_matchup(odds_data, m['away'], m['home'])
+                    if total:
+                        m['total'] = total
+                        m['odds_source'] = "Action Network (Vegas)"
+                    else:
+                        m['total'] = 230.5
+                        m['odds_source'] = "Fallback (Fixed)"
+            else:
+                for m in matchups: 
+                    m['total'] = 230.5
+                    m['odds_source'] = "Fallback (Fixed)"
+        except Exception as e:
+            print(f"Failed to inject NBA odds: {e}")
+            for m in matchups: 
+                m['total'] = 230.5
+                m['odds_source'] = "Fallback"
+
     # Save results
     with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
         json.dump(matchups, f, indent=2)

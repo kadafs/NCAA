@@ -23,15 +23,16 @@ def sync_stats():
     with open(LOCAL_STATS_FILE, 'r') as f:
         stats_data = json.load(f)
 
-    print(f"Pushing {len(stats_data)} teams to Render backend...")
+    print(f"Pushing {len(stats_data)} teams to Render backend at {BACKEND_URL}...")
     try:
         # Use verify=False if hitting SSL issues locally
         resp = requests.post(BACKEND_URL, json=stats_data, timeout=30)
         
         if resp.status_code == 200:
-            print(f"Successfully synchronized {len(stats_data)} teams to Render!")
+            print(f"✅ Successfully synchronized {len(stats_data)} teams to Render!")
+            print("Your GitHub workflow will now use these fresh metrics as its primary source.")
         else:
-            print(f"Sync failed with status {resp.status_code}: {resp.text}")
+            print(f"❌ Sync failed with status {resp.status_code}: {resp.text}")
     except Exception as e:
         print(f"Error during synchronization: {e}")
 

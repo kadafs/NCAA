@@ -6,6 +6,7 @@ import sys
 # Root addition for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES, NBA_TRICODES
+from utils.odds_provider import get_odds, extract_total_for_matchup
 
 class UniversalDataBridge:
     """
@@ -40,9 +41,12 @@ class UniversalDataBridge:
             return []
 
     def _pop_nba(self):
-        """NBA-specific population logic moved to core."""
+        """NBA-specific population logic with Odds Bridge."""
         matchups = self._load_json("nba_matchups.json")
         all_stats = self._load_json("nba_stats.json")
+        
+        # Live Odds Bridge Fallback (Parallel to NCAA implementation)
+        live_odds = get_odds("nba", provider='render')
         
         daily_sheet = []
         for m in matchups:
@@ -58,9 +62,23 @@ class UniversalDataBridge:
             triA = [k for k, v in NBA_TRICODES.items() if v == teamA_name][0] if teamA_name in NBA_TRICODES.values() else "NBA"
             triH = [k for k, v in NBA_TRICODES.items() if v == teamH_name][0] if teamH_name in NBA_TRICODES.values() else "NBA"
             
+            # Resolve Market Total (Priority: File -> Live -> Default)
+            market_total = m.get('total')
+            source = m.get('odds_source', 'Stored')
+            
+            if not market_total or market_total == 230.5:
+                live_total = extract_total_for_matchup(live_odds, m['away'], m['home'])
+                if live_total:
+                    market_total = live_total
+                    source = "Live Vegas API (Bridge)"
+                else:
+                    market_total = 230.5
+                    source = "Safety Default"
+
             daily_sheet.append({
                 "team": teamA_name,
                 "opponent": teamH_name,
+                "market_source": source,
                 "away_details": {
                     "name": teamA_name,
                     "code": triA,
@@ -73,7 +91,7 @@ class UniversalDataBridge:
                 },
                 "pace_adjustment": (sA['adj_t'] + sH['adj_t']) / 2,
                 "efficiency_adjustment": (sA['adj_off'] + sH['adj_def'] + sH['adj_off'] + sA['adj_def']) / 4,
-                "market_total": m.get('total', 230.5),
+                "market_total": market_total,
                 "is_elite_offense": sA['adj_off'] > 120 or sH['adj_off'] > 120,
                 "is_strong_defense": sA['adj_def'] < 110 or sH['adj_def'] < 110,
                 "three_pa_total": sA.get('fg3a', 35) + sH.get('fg3a', 35),
@@ -281,4 +299,3 @@ class UniversalDataBridge:
             d["away_details"] = {"name": d['team'], "code": triA, "logo": ""}  # ESPN CDN doesn't have ACB logos - frontend handles fallback
             d["home_details"] = {"name": d["opponent"], "code": triH, "logo": ""}  # ESPN CDN doesn't have ACB logos - frontend handles fallback
         return sheet
-

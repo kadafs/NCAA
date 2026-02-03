@@ -52,6 +52,22 @@ def fetch_barttorvik_stats():
                     print(f"Successfully fetched {len(processed_data)} teams from centralized Render API.")
                     with open(OUTPUT_FILE, "w") as f:
                         json.dump(processed_data, f, indent=2)
+                    
+                    # Update RAW_INPUT_FILE as well to keep the fallback fresh for GitHub
+                    print(f"Updating high-quality fallback {RAW_INPUT_FILE}...")
+                    raw_to_save = []
+                    for name, d in processed_data.items():
+                        # Reconstruct the expected format or just dump the dict
+                        # The RAW_INPUT_FILE is expected to be a list of lists by the loader
+                        # index 0: Name, 1: AdjOE, 2: AdjDE, 7: eFG, 8: eFG_D, 9: FTR, 10: FTR_D, 11: TO, 12: TO_D, 13: OR, 14: OR_D, 15: AdjT
+                        raw_to_save.append([
+                            name, d['adj_off'], d['adj_def'], 0, 0, 0, 0, 
+                            d['efg'], d.get('efg_d', 50.0), d['ftr'], d.get('ftr_d', 30.0), 
+                            d['to'], d.get('to_d', 18.0), d['or'], d.get('or_d', 28.0), d['adj_t']
+                        ])
+                    with open(RAW_INPUT_FILE, "w") as f_raw:
+                        json.dump(raw_to_save, f_raw, indent=2)
+                    
                     return True
             else:
                 print(f"Centralized API returned empty dataset. Falling back...")
@@ -94,6 +110,7 @@ def fetch_barttorvik_stats():
             # 0: Team, 1: AdjOE, 2: AdjDE, 7-14: Four Factors, 15: Adj Tempo
             f = io.StringIO(resp_csv.text)
             reader = csv.reader(f)
+            raw_to_save = []
             for row in reader:
                 if not row or len(row) < 16: continue
                 try:
@@ -112,8 +129,15 @@ def fetch_barttorvik_stats():
                         "or": float(row[13]),
                         "or_d": float(row[14])
                     }
+                    raw_to_save.append(row)
                 except (IndexError, ValueError):
                     continue
+            
+            # Auto-update high-quality fallback
+            if processed_data:
+                print(f"Updating high-quality fallback {RAW_INPUT_FILE}...")
+                with open(RAW_INPUT_FILE, "w") as f_raw:
+                    json.dump(raw_to_save, f_raw, indent=2)
         else:
             print(f"CSV fetch blocked or failed (Status: {resp_csv.status_code}). Trying Fallback sources...")
             
@@ -189,6 +213,11 @@ def fetch_barttorvik_stats():
         with open(OUTPUT_FILE, "w") as f:
             json.dump(processed_data, f, indent=2)
         print(f"Successfully saved {len(processed_data)} teams to {OUTPUT_FILE}")
+        
+        # Suggest syncing to cloud if running locally and fresh data was found
+        if not os.getenv("GITHUB_ACTIONS"):
+            print("\n[TIP] Running locally? Use 'python ncaa/sync_stats.py' to push these fresh metrics to your cloud backend.")
+        
         return True
     
     return False
