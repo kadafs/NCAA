@@ -125,6 +125,22 @@ function getETYear() {
   }).format(new Date()), 10);
 }
 
+/** Get current date in ET as YYYYMMDD string */
+function getETDate() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  
+  const year = parts.find(p => p.type === 'year')?.value;
+  const month = parts.find(p => p.type === 'month')?.value;
+  const day = parts.find(p => p.type === 'day')?.value;
+  
+  return `${year}${month}${day}`;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// ELYSIA //////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -259,21 +275,19 @@ export const app = new Elysia()
     set.headers["Cache-Control"] = "public, max-age=1800";
     try {
       const leagueSlug = params.league.toLowerCase() === "ncaa" ? "ncaab" : params.league.toLowerCase();
-      const dateStr = date ? (date as string).replace(/-/g, "") : "";
-      const cacheKey = `/stats/odds/${params.league}${date || ""}`;
+      // Default to today's ET date if no date provided
+      const dateStr = date ? (date as string).replace(/-/g, "") : getETDate();
+      const cacheKey = `/stats/odds/${params.league}${date || dateStr}`;
 
       if (cache_45s.has(cacheKey)) return cache_45s.get(cacheKey);
 
-      log(`Fetching centralized scoreboard odds for ${leagueSlug} ${date || "today"}...`);
+      log(`Fetching centralized scoreboard odds for ${leagueSlug} ${dateStr}...`);
 
       let url = `https://api.actionnetwork.com/web/v1/scoreboard/${leagueSlug}`;
-      const urlParams = [];
-      if (dateStr) urlParams.push(`date=${dateStr}`);
+      const urlParams = [`date=${dateStr}`];
       if (leagueSlug === "ncaab") urlParams.push("division=D1");
 
-      if (urlParams.length > 0) {
-        url += "?" + urlParams.join("&");
-      }
+      url += "?" + urlParams.join("&");
 
       log(`Scoreboard URL: ${url}`);
       const headers = {

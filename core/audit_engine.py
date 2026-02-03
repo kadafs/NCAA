@@ -11,7 +11,16 @@ from nba_api.stats.endpoints import scoreboardv3
 # Root path for utils mapping
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.mapping import NBA_TRICODES
+from utils.mapping import NBA_TRICODES, clean_team_name, BASKETBALL_ALIASES
+
+def get_canonical_key(away, home):
+    """Generates a standardized key for matching matchups across sources."""
+    a = clean_team_name(away)
+    h = clean_team_name(home)
+    # Apply aliases to resolve variations (e.g. westerncaro -> westerncarolina)
+    a = BASKETBALL_ALIASES.get(a, a)
+    h = BASKETBALL_ALIASES.get(h, h)
+    return f"{a}_{h}"
 
 load_dotenv()
 
@@ -34,9 +43,10 @@ def audit_nba(date_obj):
     date_str = date_obj.strftime("%Y-%m-%d")
     print(f"Auditing NBA for {date_str}...")
 
-    # 1. Fetch scores from NBA API
+def fetch_nba_scores_official(date_str):
+    """Primary: Fetch scores from official NBA API."""
     try:
-        sb = scoreboardv3.ScoreboardV3(game_date=date_str, timeout=30)
+        sb = scoreboardv3.ScoreboardV3(game_date=date_str, timeout=15)
         data = sb.get_dict()
         games = data.get('scoreboard', {}).get('games', [])
         
@@ -47,24 +57,75 @@ def audit_nba(date_obj):
                 home = g['homeTeam']
                 
                 # Use tricode to get full name which matches our database
-                away_full = NBA_TRICODES.get(away['teamTricode'], away['teamName']).lower()
-                home_full = NBA_TRICODES.get(home['teamTricode'], home['teamName']).lower()
+                # Use tricode to get full name which matches our database
+                away_full = NBA_TRICODES.get(away['teamTricode'], away['teamName'])
+                home_full = NBA_TRICODES.get(home['teamTricode'], home['teamName'])
                 
-                # Normalize for matching
-                norm_away = away_full.replace(" ", "").replace(".", "").replace("-", "")
-                norm_home = home_full.replace(" ", "").replace(".", "").replace("-", "")
-                
-                results_map[f"{norm_away}_{norm_home}"] = {
+                key = get_canonical_key(away_full, home_full)
+                status_desc = "Final" if g.get('gameStatus') == 3 else "Ongoing/Pre"
+                results_map[key] = {
                     "away_score": away['score'],
                     "home_score": home['score'],
-                    "total": away['score'] + home['score']
+                    "total": away['score'] + home['score'],
+                    "status_code": g.get('gameStatus'),
+                    "status_desc": status_desc
                 }
-        
-        if not results_map:
-            print(f"No completed NBA games found in API for {date_str}.")
-            return
+        return results_map
+    except Exception as e:
+        print(f"Stats.nba.com Audit Fetch failed: {e}")
+        return {}
 
-        # 2. Fetch 'pending' rows for this date from history
+def fetch_nba_scores_espn(date_str):
+    """Fallback: Fetch completed NBA scores from ESPN."""
+    try:
+        espn_date = date_str.replace("-", "")
+        url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates={espn_date}"
+        resp = requests.get(url, timeout=15)
+        data = resp.json()
+        
+        results = {}
+        for event in data.get('events', []):
+            comp = event['competitions'][0]
+            home_comp = next(c for c in comp['competitors'] if c['homeAway'] == 'home')
+            away_comp = next(c for c in comp['competitors'] if c['homeAway'] == 'away')
+            
+            # ESPN names are usually "Lakers", "Celtics"
+            # Use clean_team_name which handles substring/expansion
+            away_name = away_comp['team']['displayName']
+            home_name = home_comp['team']['displayName']
+            
+            key = get_canonical_key(away_name, home_name)
+            is_final = event['status']['type']['state'] == 'post'
+            results[key] = {
+                "away_score": int(away_comp['score']),
+                "home_score": int(home_comp['score']),
+                "total": int(away_comp['score']) + int(home_comp['score']),
+                "status_code": 3 if is_final else 1,
+                "status_desc": "Final" if is_final else "Not Final"
+            }
+        return results
+    except Exception as e:
+        print(f"NBA ESPN Audit Fallback failed: {e}")
+        return {}
+
+def audit_nba(date_obj):
+    date_str = date_obj.strftime("%Y-%m-%d")
+    print(f"Auditing NBA for {date_str}...")
+
+    # 1. Fetch scores (Primary: stats.nba.com, Fallback: ESPN)
+    results_map = fetch_nba_scores_official(date_str)
+    if not results_map:
+        print("Falling back to ESPN for NBA results...")
+        results_map = fetch_nba_scores_espn(date_str)
+        
+    if not results_map:
+        print(f"Failed to fetch any NBA results for {date_str}.")
+        return
+
+    print(f"DEBUG: NBA Results Map Keys: {list(results_map.keys())[:5]}... (Total: {len(results_map)})")
+
+    # 2. Fetch 'pending' rows for this date from history
+    try:
         pending = supabase.table("predictions_history") \
             .select("*") \
             .eq("league", "nba") \
@@ -79,15 +140,20 @@ def audit_nba(date_obj):
         print(f"Found {len(pending.data)} pending NBA games. Checking against results...")
         updates = []
         for row in pending.data:
-            # Matchup format in DB: "Lakers @ Celtics" or "Los Angeles Lakers @ Boston Celtics"
-            parts = [p.strip().lower() for p in row['matchup'].split('@')]
+            parts = [p.strip() for p in row['matchup'].split('@')]
             if len(parts) != 2: continue
             
-            # Normalize DB names same way for lookup
-            norm_db_away = parts[0].replace(" ", "").replace(".", "").replace("-", "")
-            norm_db_home = parts[1].replace(" ", "").replace(".", "").replace("-", "")
-            key = f"{norm_db_away}_{norm_db_home}"
+            key = get_canonical_key(parts[0], parts[1])
             
+            # Substring/Fuzzy check if direct key missing
+            if key not in results_map:
+                for r_key in results_map:
+                    ra, rh = r_key.split('_')
+                    da, dh = key.split('_')
+                    if (da in ra or ra in da) and (dh in rh or rh in dh):
+                        key = r_key
+                        break
+
             if key in results_map:
                 res = results_map[key]
                 actual_total = res['total']
@@ -156,16 +222,12 @@ def audit_ncaa(date_obj):
             if "final" in game_state:
                 away = g.get('away', {})
                 home = g.get('home', {})
-                # Use short names as they usually match what's in Supabase for NCAA
-                away_name = away.get('names', {}).get('short', '').lower().strip()
-                home_name = home.get('names', {}).get('short', '').lower().strip()
+                away_name = away.get('names', {}).get('short', '')
+                home_name = home.get('names', {}).get('short', '')
                 
                 if away_name and home_name:
-                    # Create normalized matching keys (spaceless) to match DB identity logic
-                    norm_away = away_name.replace(" ", "").replace(".", "").replace("-", "")
-                    norm_home = home_name.replace(" ", "").replace(".", "").replace("-", "")
-                    
-                    results_map[f"{norm_away}_{norm_home}"] = {
+                    key = get_canonical_key(away_name, home_name)
+                    results_map[key] = {
                         "away_score": int(away.get('score', 0)),
                         "home_score": int(home.get('score', 0)),
                         "total": int(away.get('score', 0)) + int(home.get('score', 0))
@@ -174,6 +236,8 @@ def audit_ncaa(date_obj):
         if not results_map:
             print(f"No completed NCAA games found in API for {date_str}.")
             return
+
+        print(f"DEBUG: NCAA Results Map Keys: {list(results_map.keys())[:5]}... (Total: {len(results_map)})")
 
         # 2. Fetch 'pending' rows for this date from history
         pending = supabase.table("predictions_history") \
@@ -190,15 +254,25 @@ def audit_ncaa(date_obj):
         print(f"Found {len(pending.data)} pending NCAA games. Checking against results...")
         updates = []
         for row in pending.data:
-            # Matchup format in DB: "Duke @ UNC"
-            parts = [p.strip().lower() for p in row['matchup'].split('@')]
+            parts = [p.strip() for p in row['matchup'].split('@')]
             if len(parts) != 2: continue
             
-            # Normalize DB names same way for lookup
-            norm_db_away = parts[0].replace(" ", "").replace(".", "").replace("-", "")
-            norm_db_home = parts[1].replace(" ", "").replace(".", "").replace("-", "")
-            key = f"{norm_db_away}_{norm_db_home}"
+            key = get_canonical_key(parts[0], parts[1])
             
+            # Hotfix for known Kansas City vs Kansas naming mismatch
+            if key == "kansas_stthomas":
+                key = "kansascity_stthomas"
+            
+            # Robust matching: try substring if direct key missing
+            if key not in results_map:
+                for r_key in results_map:
+                    ra, rh = r_key.split('_')
+                    da, dh = key.split('_')
+                    # Match if (Away in Result_Away or Result_Away in Away) AND (Home in Result_Home or Result_Home in Home)
+                    if (da in ra or ra in da) and (dh in rh or rh in dh):
+                        key = r_key
+                        break
+
             if key in results_map:
                 res = results_map[key]
                 actual_total = res['total']
@@ -229,7 +303,6 @@ def audit_ncaa(date_obj):
                 })
                 print(f"  - Matched and graded: {row['matchup']} ({res['away_score']}-{res['home_score']})")
             else:
-                # Debug print for missed matches
                 print(f"  - No result found for matchup: {row['matchup']} (Key: {key})")
 
         if updates:
