@@ -18,16 +18,19 @@ class RobustNBAClient:
     @staticmethod
     def get_headers():
         return {
+            'Host': 'stats.nba.com',
             'User-Agent': random.choice(RobustNBAClient.USER_AGENTS),
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://www.nba.com/',
+            'Referer': 'https://www.nba.com/stats/',
             'Origin': 'https://www.nba.com',
             'DNT': '1',
             'Connection': 'keep-alive',
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-site',
+            'x-nba-stats-origin': 'stats',
+            'x-nba-stats-token': 'true',
         }
 
     @staticmethod

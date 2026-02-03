@@ -30,17 +30,11 @@ def fetch_nba_player_stats():
             rows = []
 
         if not rows:
-            # Circuit breaker: if we're on GitHub and the first one timed out, 
-            # maybe don't bother or reduce retries
-            if os.getenv("GITHUB_ACTIONS"):
-                print("GitHub environment detected: skipping second attempt to avoid step timeout.")
-                return False
-            
-            print("Fetching all active player season averages...")
+            print("Primary active roster fetch returned 0 rows. Attempting fallback to all season averages...")
             data = RobustNBAClient.call_endpoint(
                 fantasywidget.FantasyWidget,
                 todays_players='N',
-                timeout=15
+                timeout=20
             )
             rows = data['resultSets'][0]['rowSet']
         

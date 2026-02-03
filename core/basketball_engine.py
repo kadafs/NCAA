@@ -28,7 +28,12 @@ class UniversalBasketballEngine:
         c = self.config
         sp = c.get('sharp_params', {})
         conf = game_data.get('conf', 'DEFAULT')
-        market = float(game_data.get('market_total', 145.5))
+        market_val = game_data.get('market_total')
+        if market_val is None:
+            # Safety defaults if market is missing
+            market = 230.0 if c.get('name') == 'NBA' else 145.5
+        else:
+            market = float(market_val)
         
         # --- LEGACY MATH TRACK (Original Status Quo) ---
         pace_adj = game_data.get('pace_adjustment', c['pace_pivot'])

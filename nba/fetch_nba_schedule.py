@@ -17,6 +17,55 @@ ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 MATCHUP_FILE = os.path.join(ROOT_DIR, "data", "nba_matchups.json")
 
 import requests
+import csv
+
+def load_market_csv(target_date_obj):
+    """
+    Looks for a file named data/nba_market_YYYY-MM-DD.csv.
+    Returns a dictionary of {(Away, Home): Market_Total}.
+    """
+    date_str = target_date_obj.strftime("%Y-%m-%d")
+    filename = os.path.join(ROOT_DIR, "data", f"nba_market_{date_str}.csv")
+    
+    market_map = {}
+    if not os.path.exists(filename):
+        print(f"DEBUG: No NBA market CSV found for {date_str}.")
+        return market_map
+
+    print(f"DEBUG: Found NBA Market CSV for {date_str}. Injecting...")
+    try:
+        with open(filename, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                matchup = row.get('Matchup', '')
+                # Handle different column naming conventions
+                total_raw = row.get('Market_Odds') or row.get('Market Total') or row.get('Total')
+                
+                if not matchup or not total_raw:
+                    continue
+                
+                import re
+                total_match = re.search(r"(\d+\.?\d*)", str(total_raw))
+                if not total_match:
+                    continue
+                total = float(total_match.group(1))
+
+                # Identify teams in the CSV string (e.g. "Lakers vs Celtics" or "Lakers @ Celtics")
+                away, home = None, None
+                if ' vs ' in matchup:
+                    parts = matchup.split(' vs ')
+                    away, home = parts[0].strip(), parts[1].strip()
+                elif '@' in matchup:
+                    parts = matchup.split('@')
+                    away, home = parts[0].strip(), parts[1].strip()
+                
+                if away and home:
+                    market_map[(away.lower(), home.lower())] = total
+        
+        return market_map
+    except Exception as e:
+        print(f"Error loading NBA market CSV: {e}")
+        return {}
 
 def fetch_schedule_espn(date_str):
     """
@@ -118,10 +167,20 @@ def fetch_nba_daily_schedule(target_date=None):
                     m['total'] = None
                     m['odds_source'] = "Waiting for Lines"
         except Exception as e:
-            print(f"Failed to inject NBA odds: {e}")
-            for m in matchups: 
-                m['total'] = None
-                m['odds_source'] = "N/A"
+            print(f"Failed to inject NBA odds from API: {e}")
+
+        # 4. CSV Fallback for missing/null lines
+        market_csv = load_market_csv(target_date)
+        if market_csv:
+            print(f"Checking {len(market_csv)} CSV lines for gaps...")
+            for m in matchups:
+                if m.get('total') is None:
+                    # Simple matching logic
+                    key = (m['away'].lower(), m['home'].lower())
+                    if key in market_csv:
+                        m['total'] = market_csv[key]
+                        m['odds_source'] = "Manual CSV (Fallback)"
+                        print(f"  - Injected {m['total']} for {m['away']} @ {m['home']} from CSV")
 
     # Save results
     with open(MATCHUP_FILE, "w", encoding="utf-8") as f:
