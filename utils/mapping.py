@@ -23,41 +23,50 @@ def get_target_date(date_str=None):
 def clean_team_name(name):
     """
     Standardizes team names by removing common punctuation and formatting.
+    v1.6.2: Pre-strips common matchup separators and uses robust St. expansion.
     """
     if not name: return ""
     import re
     
-    # 1. Expand common abbreviations (Context-Aware)
-    def expand(n):
+    # 1. Pre-strip common separators if cleaning a matchup string
+    # This prevents " vs St. Thomas" from triggering "State" expansion
+    n = re.sub(r'\b(vs\.?|at)\b', ' ', name, flags=re.I)
+    n = n.replace("@", " ")
+    
+    # 2. Expand common abbreviations (Context-Aware)
+    def expand(n_inner):
         # A. Expansion based on position/context
-        # "St." followed by a name is almost always "Saint" (Saint Thomas, Saint Mary's)
-        n = re.sub(r'\bSt\.?\s+', 'Saint ', n, flags=re.I)
-        # "St." preceded by a name is almost always "State" (Michigan State, Wichita State)
-        n = re.sub(r'\s+St\.?\b', ' State', n, flags=re.I)
+        # "St." followed by a name is almost always "Saint"
+        # We look for St/St. at start or after a space, followed by a name
+        n_inner = re.sub(r'(^|(?<=\s))St\.?\s+', 'Saint ', n_inner, flags=re.I)
+        
+        # "St." preceded by a name is almost always "State"
+        # Only expand to State if there is alphanumeric text BEFORE the St.
+        n_inner = re.sub(r'(?<=\w)St\.?\b', ' State', n_inner, flags=re.I)
         
         # B. General Abbreviations
-        n = re.sub(r'\bMiss\b', 'Mississippi', n, flags=re.I)
-        n = re.sub(r'\bFla\b', 'Florida', n, flags=re.I)
-        n = re.sub(r'\bPa\b', 'Pennsylvania', n, flags=re.I)
-        n = re.sub(r'\bMich\b', 'Michigan', n, flags=re.I)
-        n = re.sub(r'\bWash\b', 'Washington', n, flags=re.I)
-        n = re.sub(r'\bColo\b', 'Colorado', n, flags=re.I)
-        n = re.sub(r'\bAriz\b', 'Arizona', n, flags=re.I)
-        n = re.sub(r'\bTenn\b', 'Tennessee', n, flags=re.I)
-        n = re.sub(r'\bGa\b', 'Georgia', n, flags=re.I)
-        n = re.sub(r'\bKy\b', 'Kentucky', n, flags=re.I)
-        n = re.sub(r'\bIll\b', 'Illinois', n, flags=re.I)
-        n = re.sub(r'\bN\b\.', 'North', n, flags=re.I)
-        n = re.sub(r'\bS\b\.', 'South', n, flags=re.I)
-        n = re.sub(r'\bE\b\.', 'East', n, flags=re.I)
-        n = re.sub(r'\bW\b\.', 'West', n, flags=re.I)
-        n = re.sub(r'\bMd\b', 'Maryland', n, flags=re.I)
-        n = re.sub(r'\bLa\b', 'Louisiana', n, flags=re.I)
-        n = re.sub(r'\bU\b\.', 'University', n, flags=re.I)
-        n = re.sub(r'\bUniv\b', 'University', n, flags=re.I)
-        return n
+        n_inner = re.sub(r'\bMiss\b', 'Mississippi', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bFla\b', 'Florida', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bPa\b', 'Pennsylvania', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bMich\b', 'Michigan', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bWash\b', 'Washington', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bColo\b', 'Colorado', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bAriz\b', 'Arizona', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bTenn\b', 'Tennessee', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bGa\b', 'Georgia', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bKy\b', 'Kentucky', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bIll\b', 'Illinois', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bN\b\.', 'North', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bS\b\.', 'South', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bE\b\.', 'East', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bW\b\.', 'West', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bMd\b', 'Maryland', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bLa\b', 'Louisiana', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bU\b\.', 'University', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bUniv\b', 'University', n_inner, flags=re.I)
+        return n_inner
 
-    n = expand(name)
+    n = expand(n)
     
     # Handle specific complex expansions
     n = n.replace("UT Martin", "Tennessee Martin").replace("UT-Martin", "Tennessee Martin")
@@ -116,12 +125,19 @@ BASKETBALL_ALIASES = {
     "stthomasmn": "stthomas",
     "statethomas": "stthomas",
     "statethomasmn": "stthomas",
+    "saintthomas": "stthomas",
+    "saintthomasmn": "stthomas",
+    "stthomas": "stthomasmn", # Ensure cross-linkage
     "stmarys": "saintmarys",
     "stmarys-ca": "saintmarys",
     "saintmarysca": "saintmarys",
     "statemarys": "saintmarys",
     "statemarysca": "saintmarys",
     "stmarysca": "saintmarys",
+    "southdakotastate": "southdakotast",
+    "southdakotast": "southdakotastate",
+    "sdsu": "southdakotastate", # SDSU is often used for S.Dakota St in some contexts
+    "sandiegotoreros": "sandiego",
     "md": "maryland",
     "mtsu": "middletennessee",
     "middletenn": "middletennessee",
@@ -137,7 +153,7 @@ BASKETBALL_ALIASES = {
     "umass": "massachusetts",
     "umkc": "kansascity",
     "fdu": "fairleighdickinson",
-    "fgcu": "floridagulfcoast",
+    "fgcu": "florigulfcoast",
     "etsu": "easttennesseestate",
     "mtsu": "middletennessee",
     "vcu": "virginiacommonwealth",
@@ -156,7 +172,7 @@ BASKETBALL_ALIASES = {
     "stlouis": "saintlouis",
     "stpetes": "saintpeters",
     "stmarys": "saintmarys",
-    "statemary": "saintmary",
+    "statemary": "saintmarys",
     "statemarysca": "saintmarys",
     "loyolachicago": "loyolail",
     "loyolail": "loyolachicago",
