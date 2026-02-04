@@ -23,28 +23,17 @@ def get_target_date(date_str=None):
 def clean_team_name(name):
     """
     Standardizes team names by removing common punctuation and formatting.
-    v1.6.2: Pre-strips common matchup separators and uses robust St. expansion.
+    v1.6.3: Collapsed-form matching (no regex expansion).
     """
     if not name: return ""
     import re
     
-    # 1. Pre-strip common separators if cleaning a matchup string
-    # This prevents " vs St. Thomas" from triggering "State" expansion
-    n = re.sub(r'\b(vs\.?|at)\b', ' ', name, flags=re.I)
+    # 1. Strip separators and common filler words
+    n = re.sub(r'\b(vs\.?|at|gaels|toreros|tommies|jackrabbits|panthers|raiders|blue raiders|greyhounds|thundering herd|golden eagles|black knights)\b', ' ', name, flags=re.I)
     n = n.replace("@", " ")
     
-    # 2. Expand common abbreviations (Context-Aware)
-    def expand(n_inner):
-        # A. Expansion based on position/context
-        # "St." followed by a name is almost always "Saint"
-        # We look for St/St. at start or after a space, followed by a name
-        n_inner = re.sub(r'(^|(?<=\s))St\.?\s+', 'Saint ', n_inner, flags=re.I)
-        
-        # "St." preceded by a name is almost always "State"
-        # Only expand to State if there is alphanumeric text BEFORE the St.
-        n_inner = re.sub(r'(?<=\w)St\.?\b', ' State', n_inner, flags=re.I)
-        
-        # B. General Abbreviations
+    # 2. Expand ONLY state/direction abbreviations (Safe)
+    def expand_safe(n_inner):
         n_inner = re.sub(r'\bMiss\b', 'Mississippi', n_inner, flags=re.I)
         n_inner = re.sub(r'\bFla\b', 'Florida', n_inner, flags=re.I)
         n_inner = re.sub(r'\bPa\b', 'Pennsylvania', n_inner, flags=re.I)
@@ -66,7 +55,7 @@ def clean_team_name(name):
         n_inner = re.sub(r'\bUniv\b', 'University', n_inner, flags=re.I)
         return n_inner
 
-    n = expand(n)
+    n = expand_safe(n)
     
     # Handle specific complex expansions
     n = n.replace("UT Martin", "Tennessee Martin").replace("UT-Martin", "Tennessee Martin")
@@ -75,11 +64,11 @@ def clean_team_name(name):
     n = n.replace("A&M-CC", "Texas A&M Corpus Christi")
     n = n.replace("UIW", "Incarnate Word").replace("FIU", "Florida International")
     
-    # 2. General cleaning (punctuation, case, spaces)
+    # 3. Collapse Form (Remove all spaces/punctuation/St expansion)
     n = n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "")
     n = n.replace("-", "").replace("&", "and").lower()
     
-    # 3. Strip trailing 'u' or 'university' if it's there (often inconsistent)
+    # 4. Strip trailing 'u' or 'university'
     if n.endswith("u") and len(n) > 5:
         n = n[:-1]
     if n.endswith("university") and len(n) > 10:
@@ -116,29 +105,35 @@ def find_team_in_dict(name, target_dict, aliases=None):
             
     return None
 
-# Common Basketball Aliases (NBA and NCAA sharing some patterns)
+# Common Basketball Aliases (NBA and NCAA)
+# Map collapsed forms (no spaces/no expansion) to canonical BARTTORVIK keys or desired names
 BASKETBALL_ALIASES = {
+    # St. Thomas Collapsed Mapping
+    "stthomas": "stthomas",
+    "saintthomas": "stthomas",
+    "stthomasmn": "stthomas",
+    "saintthomasmn": "stthomas",
+    
+    # St. Mary's Collapsed Mapping
+    "stmarys": "saintmarys",
+    "saintmarys": "saintmarys",
+    "stmarys-ca": "saintmarys",
+    "stmarysca": "saintmarys",
+    "saintmary": "saintmarys",
+    
+    # South Dakota St Collapsed Mapping
+    "southdakotast": "southdakotastate",
+    "southdakotastate": "southdakotastate",
+    "sdsu": "southdakotastate",
+    
+    # Other Collapsed Aliases
     "uconn": "connecticut",
     "olemiss": "mississippi",
     "penn": "pennsylvania",
     "upenn": "pennsylvania",
-    "stthomasmn": "stthomas",
-    "statethomas": "stthomas",
-    "statethomasmn": "stthomas",
-    "saintthomas": "stthomas",
-    "saintthomasmn": "stthomas",
-    "stthomas": "stthomasmn", # Ensure cross-linkage
-    "stmarys": "saintmarys",
-    "stmarys-ca": "saintmarys",
-    "saintmarysca": "saintmarys",
-    "statemarys": "saintmarys",
-    "statemarysca": "saintmarys",
-    "stmarysca": "saintmarys",
-    "southdakotastate": "southdakotast",
-    "southdakotast": "southdakotastate",
-    "sdsu": "southdakotastate", # SDSU is often used for S.Dakota St in some contexts
-    "sandiegotoreros": "sandiego",
     "md": "maryland",
+    "fiu": "floridainternational",
+    "fgcu": "floridagulfcoast",
     "mtsu": "middletennessee",
     "middletenn": "middletennessee",
     "olemiss": "mississippi",
