@@ -113,12 +113,43 @@ class UniversalBasketballEngine:
                     sharp_total += bonus
                     self._log(f"Sharp 3: 3PT Volume Bonus ({three_pa} > {sp['three_pa_threshold']}) -> +{bonus:.2f}")
 
-            # 4. NCAA Close Game Foul Correction
+            # 4. NCAA Situational Modifiers (v1.4)
             if c['name'] == "NCAA":
+                # A. Elite Offense Modifier
+                off_threshold = sp.get('elite_offense_rating_threshold', 118.0)
+                if game_data.get('statsA', {}).get('adj_off', 0) > off_threshold and \
+                   game_data.get('statsH', {}).get('adj_off', 0) > off_threshold:
+                    bonus = sp.get('elite_offense_boost', 3.0)
+                    sharp_total += bonus
+                    self._log(f"Sharp 4a: Elite Offense Shootout Bonus -> +{bonus}")
+
+                # B. Late-Game Foul Correction (Improved v1.4)
                 projected_spread = abs(game_data.get('projected_spread', 10.0))
-                if projected_spread < sp.get('close_game_threshold', 4.5):
-                    sharp_total += sp.get('close_game_foul_bonus', 1.5)
-                    self._log(f"Sharp 4: Close Game Foul Correction ({projected_spread:.1f} < {sp.get('close_game_threshold')}) -> +{sp.get('close_game_foul_bonus')}")
+                market_total = market
+                if projected_spread <= sp.get('late_game_spread_threshold', 3.0) and \
+                   market_total < sp.get('late_game_total_threshold', 150.0):
+                    bonus = sp.get('late_foul_inflation', 3.0)
+                    sharp_total += bonus
+                    self._log(f"Sharp 4b: Late-Game Foul Inflation ({projected_spread:.1f} spread, {market_total:.1f} total) -> +{bonus}")
+                elif projected_spread < sp.get('close_game_threshold', 4.5):
+                    # Fallback to legacy Close Game Foul Correction if not in elite tier
+                    bonus = sp.get('close_game_foul_bonus', 1.5)
+                    sharp_total += bonus
+                    self._log(f"Sharp 4c: Close Game Foul Bonus -> +{bonus}")
+
+                # C. Blowout Volatility Modifier
+                spread_val = game_data.get('projected_spread', 10.0)
+                if abs(spread_val) >= sp.get('blowout_spread_threshold', 9.0):
+                    # Recalculate lean for blowout logic
+                    current_lean = "OVER" if sharp_total > market else "UNDER"
+                    if current_lean == "UNDER":
+                        penalty = sp.get('blowout_under_penalty', 3.5)
+                        sharp_total += penalty # Penalty means raising the total (reducing the under edge)
+                        self._log(f"Sharp 4d: Blowout Volatility Penalty (Under) -> +{penalty}")
+                    else:
+                        boost = sp.get('blowout_over_boost', 2.5)
+                        sharp_total += boost
+                        self._log(f"Sharp 4e: Blowout Volatility Boost (Over) -> +{boost}")
 
             if sharp_total == legacy_total:
                 self._log("No Sharp Adjustments triggered.")
@@ -175,16 +206,49 @@ class UniversalBasketballEngine:
 
         # Final decision logic uses Sharp if in Full mode or Legacy if in Safe
         # To maintain the Dashboard behavior: we return ALL and let bridge pick.
+        final_total = sharp_total
+        final_edge = abs(final_total - market)
+        
+        decision = "PLAY" if final_edge >= c['thresholds']['mode_b'] else "PASS"
+        
+        # NCAA FULL Mode Overrides (v1.4)
+        notes = []
+        confidence = "LOW"
+        if self.mode == "full" and c['name'] == "NCAA":
+            # 1. Small Edge Cutoff
+            cutoff = c['thresholds'].get('small_edge_cutoff', 0)
+            if final_edge < cutoff:
+                decision = "PASS"
+                notes.append(f"Auto-Pass: Edge ({final_edge:.1f}) below threshold ({cutoff})")
+                confidence = "NO PLAY"
+            else:
+                # 2. Confidence Tiers
+                if final_edge >= 8.0:
+                    confidence = "HIGH"
+                elif final_edge >= 5.0:
+                    confidence = "MEDIUM"
+                else:
+                    confidence = "LOW"
+                
+                # Check play threshold (mode_b)
+                if final_edge < c['thresholds']['mode_b']:
+                    decision = "PASS"
+        else:
+            # Legacy/Generic confidence logic
+            confidence = "HIGH" if final_edge >= c['thresholds']['mode_a'] else "MEDIUM" if final_edge >= c['thresholds']['mode_b'] else "LOW"
+
         return {
-            "final_model_total": round(sharp_total, 2), # Default sharp for full
+            "final_model_total": round(final_total, 2), # Default sharp for full
             "legacy_total": round(legacy_total, 2),
             "sharp_total": round(sharp_total, 2),
             "market_total": market,
-            "edge": round(sharp_total - market, 2),
+            "edge": round(final_total - market, 2),
             "legacy_edge": round(legacy_total - market, 2),
-            "mode": "A" if abs(sharp_total - market) >= c['thresholds']['mode_a'] else "B" if abs(sharp_total - market) >= c['thresholds']['mode_b'] else "NONE",
-            "decision": "PLAY" if abs(sharp_total - market) >= c['thresholds']['mode_b'] else "PASS",
-            "lean": "OVER" if (sharp_total - market) > 0 else "UNDER",
+            "mode": "A" if final_edge >= c['thresholds']['mode_a'] else "B" if final_edge >= c['thresholds']['mode_b'] else "NONE",
+            "decision": decision,
+            "lean": "OVER" if (final_total - market) > 0 else "UNDER",
+            "confidence": confidence,
+            "notes": notes,
             "trace": self.trace
         }
 
