@@ -163,35 +163,30 @@ def main():
             json.dump(consolidated_team, f, indent=2)
         print(f"Saved consolidated team stats to {CONSOLIDATED_FILE}")
 
-    # 3. Fetch individual stats (TEMPORARILY DISABLED TO PREVENT TIMEOUTS)
-    # Individual stats take ~7 minutes to fetch and aren't used in production totals yet.
-    """
+    # 3. Fetch individual stats (Re-enabled for Injury Filtering Accuracy)
+    # We prioritize 'pts_pg' as it's the primary filter for our smart injury logic.
     consolidated_ind = {}
     os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
     
-    for stat_name, stat_id in INDIVIDUAL_STAT_IDS.items():
-        data = fetch_stat(stat_id, is_individual=True)
-        if data:
-            output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
-            with open(output_path, "w") as f:
-                json.dump(data, f, indent=2)
-            print(f"Saved individual {stat_name} to {output_path}")
-            
-            # Individual consolidation
-            for entry in data:
-                player = entry.get("Player")
-                if player:
-                    if player not in consolidated_ind:
-                        consolidated_ind[player] = {"Team": entry.get("Team")}
-                    for k, v in entry.items():
-                        if k not in ["Player", "Team", "Rank"]:
-                            consolidated_ind[player][f"{stat_name}_{k}"] = v
+    # We only fetch pts_pg to keep it fast (~1-2 minutes instead of 7)
+    stat_name = "pts_pg"
+    stat_id = INDIVIDUAL_STAT_IDS[stat_name]
+    
+    data = fetch_stat(stat_id, is_individual=True)
+    if data:
+        output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
+        with open(output_path, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"Saved individual {stat_name} to {output_path}")
+        
+        # Individual consolidation for Engine (PPG Filtering)
+        # universal_bridge.py expects: {"pts_pg": [{"Name": "...", "PPG": "..."}]}
+        consolidated_ind = {"pts_pg": data}
 
     if consolidated_ind:
         with open(INDIVIDUAL_CONSOLIDATED, "w") as f:
             json.dump(consolidated_ind, f, indent=2)
         print(f"Saved consolidated individual stats to {INDIVIDUAL_CONSOLIDATED}")
-    """
 
 if __name__ == "__main__":
     main()
