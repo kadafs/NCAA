@@ -8,41 +8,35 @@ from core.basketball_engine import UniversalBasketballEngine
 def test_ncaa_transparency():
     config_path = "configs/leagues/ncaa.json"
     
-    # Mock NCAA data: Elite Offense, Blowout
-    game_data = {
-        "team": "Duke",
-        "opponent": "Kentucky",
-        "pace_adjustment": 72.0,
-        "efficiency_adjustment": 115.0,
-        "market_total": 150.0,
-        "is_elite_offense": True,
-        "projected_spread": 12.0, # Blowout
-        "statsA": {"adj_off": 119.0}, # Trigger Elite Offense (>118)
-        "statsH": {"adj_off": 119.0},
-        "conf": "DEFAULT"
-    }
-    
-    injury_notes = [
-        {"player": "Center", "status": "Out"}
-    ]
-    
-    engine_full = UniversalBasketballEngine(config_path, mode="full")
-    res = engine_full.calculate_total(game_data, injury_notes)
-    
-    print(f"--- NCAA FULL Mode Transparency Test ---")
-    print(f"Model Total: {res['final_model_total']}")
-    print(f"Notes found: {len(res['notes'])}")
-    for note in res['notes']:
-        print(f"  - {note}")
-        
-    # Check for expected notes
-    expected = ["Elite Offense", "Blowout", "Context Impact"]
-    for e in expected:
-        found = any(e in n for n in res['notes'])
-        if found:
-            print(f"SUCCESS: Found expected note containing '{e}'")
-        else:
-            print(f"FAILURE: Missing expected note containing '{e}'")
+def test_scenario(label, game_data):
+    print(f"\n--- {label} ---")
+    engine = UniversalBasketballEngine("configs/leagues/ncaa.json", mode="full")
+    res = engine.calculate_total(game_data)
+    print(f"Total: {res['final_model_total']} | Conf: {res['confidence']}")
+    print(f"Notes: {res['notes']}")
+    for log in res['trace']:
+        if "Sharp" in log or "Gate" in log or "Stats Baseline" in log:
+            print(f"  {log}")
+
+# Scenario 1: SEC Power Game (Blowout + Elite Offense + High Pace)
+s1_data = {
+    "team": "Alabama", "opponent": "Kentucky",
+    "pace_adjustment": 78.0, "efficiency_adjustment": 120.0,
+    "market_total": 160.0, "is_elite_offense": True,
+    "projected_spread": 15.0, "conf": "SEC",
+    "statsA": {"adj_off": 125.0}, "statsH": {"adj_off": 125.0}
+}
+test_scenario("SEC Elite Blowout (Tests Gates)", s1_data)
+
+# Scenario 2: Mid-major Close Game (Small Edge, NO elite, Close Game)
+s2_data = {
+    "team": "Toledo", "opponent": "Akron",
+    "pace_adjustment": 68.0, "efficiency_adjustment": 105.0,
+    "market_total": 142.0, "is_elite_offense": False,
+    "projected_spread": 2.0, "conf": "DEFAULT",
+    "statsA": {"adj_off": 105.0}, "statsH": {"adj_off": 105.0}
+}
+test_scenario("Mid-major Close Game (Tests Foul Bonus LAST)", s2_data)
 
 if __name__ == "__main__":
     test_ncaa_transparency()

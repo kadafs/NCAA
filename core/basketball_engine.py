@@ -30,12 +30,11 @@ class UniversalBasketballEngine:
         conf = game_data.get('conf', 'DEFAULT')
         market_val = game_data.get('market_total')
         if market_val is None:
-            # Safety defaults if market is missing
             market = 230.0 if c.get('name') == 'NBA' else 145.5
         else:
             market = float(market_val)
         
-        # --- PHASE 1: SHARED STATISTICAL BASELINE ---
+        # --- PHASE 1: STATISTICAL FOUNDATION ---
         pace_adj = game_data.get('pace_adjustment', c['pace_pivot'])
         
         # Step 0: Pace Multiplier
@@ -46,153 +45,133 @@ class UniversalBasketballEngine:
 
         eff_adj = game_data.get('efficiency_adjustment', c['eff_pivot'])
         
-        # Formula: ((Off + Def) / 2 * Pace) / 100 * 2
-        legacy_baseline = ((eff_adj * pace_adj) / 100) * 2
-        self._log(f"Step 1: Raw Baseline ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {legacy_baseline:.2f}")
+        # Step 1: Base Total
+        stats_total = ((eff_adj * pace_adj) / 100) * 2
+        self._log(f"Step 1: Raw Base ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {stats_total:.2f}")
 
-        # Impact & Regression
-        stats_total = legacy_baseline
+        # Step 2: Pace Impact
         pace_delta = pace_adj - c['pace_pivot']
         pace_impact = pace_delta * c['pace_delta_weight']
         stats_total += pace_impact
         self._log(f"Step 2: Pace Impact ({pace_adj:.1f} vs {c['pace_pivot']}) -> {pace_impact:+.2f}")
         
-        # Eff Modifiers (Basic/Conservative)
-        eff_mod = 0
-        if game_data.get('is_elite_offense'): 
-            eff_mod += 2.0
-            self._log("Step 2b: Elite Offense Factor -> +2.0")
-        if game_data.get('is_strong_defense'): 
-            eff_mod -= 3.0
-            self._log("Step 2c: Strong Defense Drag -> -3.0")
-        stats_total += eff_mod
-        
-        # Regression
-        reg_factor = c.get('regression_factor', 0.97)
-        stats_total *= reg_factor
-        self._log(f"Step 3: Regression Applied ({reg_factor}) -> {stats_total:.2f}")
-        
-        # Situational (Standard)
+        # Step 3: Alignment (Conf & HCA) -> BEFORE Regression
+        # HCA Gate: Disable if neutral
         if not game_data.get('is_neutral', False):
             hca = c.get('hca_total_bump', 0)
             stats_total += hca
-            self._log(f"Step 4: Home Court Advantage -> {hca:+.1f}")
+            self._log(f"Step 3: Home Court Advantage -> +{hca:.1f}")
             
+        # Conference Sync Gate: Reduce bias if pace multiplier used
         cb = c.get('conf_bias', {}).get(conf, c.get('conf_bias', {}).get('DEFAULT', 0))
+        if pace_mult != 1.0 and cb != 0:
+            reduction = 0.5
+            cb = cb - reduction if cb > 0 else cb + reduction
+            self._log(f"Step 3b: Conf Bias Sync Gate (Pace Mult used) -> Bias reduced to {cb:+.1f}")
+        
         if cb != 0:
             stats_total += cb
-            self._log(f"Step 5: Conference Bias ({conf}) -> {cb:+.1f}")
+            self._log(f"Step 3c: Conference Bias ({conf}) -> {cb:+.1f}")
 
-        # Basic Sharp additions allowed in SAFE (Pace/Possession)
-        if sp.get('possession_bonus_value'):
-            if game_data.get('is_rebound_mismatch') or game_data.get('is_turnover_mismatch'):
-                stats_total += sp['possession_bonus_value']
-                self._log(f"Step 6: Possession Bonus -> +{sp['possession_bonus_value']}")
+        # Step 4: REGRESSION (0.97) -> MULTIPLICATIVE
+        reg_factor = c.get('regression_factor', 0.97)
+        stats_total *= reg_factor
+        self._log(f"Step 4: Regression Applied ({reg_factor}) -> {stats_total:.2f} (Stats Baseline)")
         
-        if sp.get('high_pace_threshold'):
-            if pace_adj > sp['high_pace_threshold']:
-                bonus = (pace_adj - sp['high_pace_threshold']) * sp.get('high_pace_efficiency_multiplier', 0.1)
-                stats_total += bonus
-                self._log(f"Step 7: High Pace Bonus -> +{bonus:.2f}")
-
-        self._log(f"--- Shared Stats Baseline: {stats_total:.2f} ---")
-        
-        # FINAL SAFE TOTAL
-        legacy_total = stats_total 
-
-        # --- PHASE 2: FULL MODE LAYER (BOOSTERS & INJURIES) ---
+        # --- PHASE 2: SHARP LAYER (BOOSTERS & INJURIES) ---
         sharp_total = stats_total
         notes = []
         
-        if self.mode == "full":
-            self._log("--- Applying Sharp Situational Boosters (FULL MODE) ---")
+        # A. Possession/Pace Boosters (Shared Baseline in v2.0 logic)
+        pos_bonus = 0
+        if sp.get('possession_bonus_value'):
+            if game_data.get('is_rebound_mismatch') or game_data.get('is_turnover_mismatch'):
+                pos_bonus = sp['possession_bonus_value']
+                sharp_total += pos_bonus
+                self._log(f"Sharp 1: Possession Bonus -> +{pos_bonus}")
+
+        # B. High Pace Efficiency Gate
+        pace_eff_bonus = 0
+        if sp.get('high_pace_threshold') and pace_adj > sp['high_pace_threshold']:
+            pace_eff_bonus = (pace_adj - sp['high_pace_threshold']) * sp.get('high_pace_efficiency_multiplier', 0.1)
+        
+        # Elite Offense Gate
+        elite_off_bonus = 0
+        off_threshold = sp.get('elite_offense_rating_threshold', 118.0)
+        sA_off = game_data.get('statsA', {}).get('adj_off', 110)
+        sH_off = game_data.get('statsH', {}).get('adj_off', 110)
+        if sA_off + sH_off > off_threshold * 2:
+            elite_off_bonus = sp.get('elite_offense_boost', 2.0)
             
-            # 1. 3PT Volume (NBA Specific)
+        if self.mode == "full":
+            # Sharp 2: Elite Offense
+            if elite_off_bonus > 0:
+                sharp_total += elite_off_bonus
+                notes.append(f"Sharp Adjustment: Elite Offense Booster (+{elite_off_bonus:.1f} pts)")
+                self._log(f"Sharp 2: Elite Offense Boost -> +{elite_off_bonus:.1f}")
+                # Pace Conflict Gate: Cap Pace Eff at 50%
+                if pace_eff_bonus > 0:
+                    pace_eff_bonus *= 0.5
+                    self._log(f"Sharp 2b: High Pace Gate (Elite Offense active) -> Pace Efficiency capped at 50%")
+            
+            # Sharp 3: High Pace Eff
+            if pace_eff_bonus > 0:
+                sharp_total += pace_eff_bonus
+                self._log(f"Sharp 3: High Pace Efficiency Bonus -> +{pace_eff_bonus:.2f}")
+
+            # Sharp 4: NBA 3PT Volume
             if c['name'] == "NBA" and sp.get('three_pa_threshold'):
                 three_pa = game_data.get('three_pa_total', 70)
                 if three_pa > sp['three_pa_threshold']:
                     bonus = (three_pa - sp['three_pa_threshold']) * 0.05
                     sharp_total += bonus
-                    self._log(f"Sharp 3: 3PT Volume Bonus -> +{bonus:.2f}")
+                    self._log(f"Sharp 4: 3PT Volume Bonus -> +{bonus:.2f}")
 
-            # 2. Situational Modifiers (Elite Offense, Blowout, Close Game)
+            # Sharp 5: Blowout Volatility
             projected_spread = abs(game_data.get('projected_spread', 10.0))
             current_lean = "OVER" if sharp_total > market else "UNDER"
-
-            if c['name'] == "NCAA":
-                # A. Elite Offense
-                off_threshold = sp.get('elite_offense_rating_threshold', 118.0)
-                if game_data.get('statsA', {}).get('adj_off', 110) + game_data.get('statsH', {}).get('adj_off', 110) > off_threshold * 2:
-                    bonus = sp.get('elite_offense_boost', 3.0)
-                    sharp_total += bonus
-                    self._log(f"Sharp 4A: Elite Offense Boost -> +{bonus:.2f}")
-                    notes.append(f"Sharp Adjustment: Elite Offense Booster (+{bonus:.1f} pts)")
-                # B. Blowout Volatility
-                spread_threshold = sp.get('blowout_spread_threshold', 9.0)
-                if projected_spread > spread_threshold:
-                    penalty = sp.get('blowout_under_penalty', 3.5) if current_lean == "UNDER" else sp.get('blowout_over_boost', 2.5)
-                    sharp_total += penalty
-                    self._log(f"Sharp 4B: Blowout Adjustment -> +{penalty}")
-                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
-                # C. Close Game
-                if projected_spread < sp.get('close_game_threshold', 4.5):
-                    bonus = sp.get('close_game_foul_bonus', 1.8)
-                    sharp_total += bonus
-                    self._log(f"Sharp 4C: Close Game Foul Correction -> +{bonus}")
-                    notes.append(f"Sharp Adjustment: Close Game Foul Bonus (+{bonus:.1f} pts)")
-
+            
             if c['name'] == "NBA":
-                # A. Elite Offense
-                off_threshold = sp.get('elite_offense_rating_threshold', 121.0)
-                sA_off = game_data.get('statsA', {}).get('adj_off', 115)
-                sH_off = game_data.get('statsH', {}).get('adj_off', 115)
-                if sA_off + sH_off > off_threshold * 2:
-                    bonus = sp.get('elite_offense_boost', 4.5)
-                    sharp_total += bonus
-                    self._log(f"Sharp NBA 5A: Elite Offense Boost -> +{bonus:.2f}")
-                    notes.append(f"Sharp Adjustment: Elite Offense Booster (+{bonus:.1f} pts)")
-                # B. Blowout Volatility
                 spread_threshold = sp.get('blowout_spread_threshold', 12.0)
                 if projected_spread > spread_threshold:
                     penalty = sp.get('blowout_under_penalty', 5.0) if current_lean == "UNDER" else sp.get('blowout_over_boost', 3.5)
                     sharp_total += penalty
-                    self._log(f"Sharp NBA 5B: Blowout Adjustment -> +{penalty}")
+                    self._log(f"Sharp 5: Blowout Adjustment (NBA) -> {penalty:+.1f}")
                     notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
-                # C. Close Game
-                if projected_spread < sp.get('close_game_threshold', 4.5):
-                    bonus = sp.get('close_game_foul_bonus', 2.5)
-                    sharp_total += bonus
-                    self._log(f"Sharp NBA 5C: Close Game Foul Correction -> +{bonus}")
-                    notes.append(f"Sharp Adjustment: Close Game Foul Bonus (+{bonus:.1f} pts)")
+            elif c['name'] == "NCAA":
+                spread_threshold = sp.get('blowout_spread_threshold', 9.0)
+                if projected_spread > spread_threshold:
+                    penalty = sp.get('blowout_under_penalty', 3.5) if current_lean == "UNDER" else sp.get('blowout_over_boost', 2.5)
+                    sharp_total += penalty
+                    self._log(f"Sharp 5: Blowout Adjustment (NCAA) -> {penalty:+.1f}")
+                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
 
-            # 3. Injury Impact (FULL MODE ONLY)
+            # Sharp 6: Injury Impact (Before Foul Bonus)
             star_impact = 0
             if injury_notes:
-                self._log("--- Calculating Context Impact (Injuries) ---")
                 for note in injury_notes:
                     st = note.get('status', '').lower()
                     if "out" in st or "doubtful" in st:
                         star_impact += c.get('star_leverage', {}).get('star_out', -2.5)
-                
-                # Apply Cap
                 impact_cap = sp.get('injury_impact_cap')
                 if impact_cap and abs(star_impact) > impact_cap:
-                    self._log(f"Injury Impact capped: {star_impact:.2f} -> -{impact_cap:.2f}")
                     star_impact = -impact_cap
-
                 sharp_total += star_impact
-                self._log(f"Context Impact Applied: {star_impact:+.2f}")
+                self._log(f"Sharp 6: Context Impact (Injuries) -> {star_impact:+.1f}")
                 if star_impact != 0:
                     notes.append(f"Context Impact: {star_impact:+.1f} pts (Injury Related)")
 
-            # 4. Compare tracks and add explanatory notes if Full < Safe
-            if sharp_total < stats_total:
-                diff = round(stats_total - sharp_total, 1)
-                notes.append(f"Full Mode correction: Injury drag ({abs(star_impact)}) outweighing situational boosters. Total lowered by {diff} pts relative to baseline.")
+            # Sharp 7: CLOSE GAME FOUL BONUS (LAST) -> POST-REGRESSION/POST-INJURY
+            if projected_spread < sp.get('close_game_threshold', 4.5):
+                bonus = sp.get('close_game_foul_bonus', 2.5)
+                sharp_total += bonus
+                self._log(f"Sharp 7: Close Game Foul Bonus (LAST) -> +{bonus:.1f}")
+                notes.append(f"Sharp Adjustment: Close Game Foul Bonus (LAST) (+{bonus:.1f} pts)")
 
         # --- PHASE 3: FINALIZATION & CLAMPING ---
-        threshold = c.get('volatility_threshold', 15.0)
+        legacy_total = stats_total # SAFE Result (Baseline only)
         
+        threshold = c.get('volatility_threshold', 15.0)
         def clamp_total(val, mkt):
             edge = val - mkt
             if abs(edge) > threshold:
@@ -202,40 +181,40 @@ class UniversalBasketballEngine:
                 return mkt + (multiplier * (threshold + clamped_excess))
             return val
 
-        legacy_total = clamp_total(legacy_total, market)
-        sharp_total = clamp_total(sharp_total, market)
+        clamped_legacy = clamp_total(legacy_total, market)
+        clamped_sharp = clamp_total(sharp_total, market)
 
-        final_total = sharp_total
-        final_edge = abs(final_total - market)
+        final_total = clamped_sharp
+        final_edge = final_total - market
+        abs_edge = abs(final_edge)
         
-        decision = "PLAY" if final_edge >= c['thresholds']['mode_b'] else "PASS"
+        # Decision Logic (mode_b is play threshold)
+        decision = "PLAY" if abs_edge >= c['thresholds']['mode_b'] else "PASS"
         
-        # NCAA FULL Mode Overrides (v1.4)
+        # Professional Confidence Tiers
         confidence = "LOW"
+        if abs_edge >= 9.0: confidence = "HIGH"
+        elif abs_edge >= 7.0: confidence = "MEDIUM"
+        elif abs_edge >= 5.0: confidence = "LOW"
+        else: confidence = "LOW" # Below play threshold
+        
+        # NCAA Auto-Pass Override
         if self.mode == "full" and c['name'] == "NCAA":
-            cutoff = c['thresholds'].get('small_edge_cutoff', 0)
-            if final_edge < cutoff:
+            cutoff = c['thresholds'].get('small_edge_cutoff', 4.0)
+            if abs_edge < cutoff:
                 decision = "PASS"
-                notes.append(f"Auto-Pass: Edge ({final_edge:.1f}) below threshold ({cutoff})")
+                notes.append(f"Auto-Pass: Edge ({abs_edge:.1f}) below threshold ({cutoff})")
                 confidence = "NO PLAY"
-            else:
-                if final_edge >= 8.0: confidence = "HIGH"
-                elif final_edge >= 5.0: confidence = "MEDIUM"
-                else: confidence = "LOW"
-                if final_edge < c['thresholds']['mode_b']: decision = "PASS"
-        else:
-            confidence = "HIGH" if final_edge >= c['thresholds']['mode_a'] else "MEDIUM" if final_edge >= c['thresholds']['mode_b'] else "LOW"
 
         return {
             "final_model_total": round(final_total, 2),
-            "legacy_total": round(legacy_total, 2), # SAFE Result
-            "sharp_total": round(sharp_total, 2),   # FULL Result
+            "legacy_total": round(clamped_legacy, 2),
+            "sharp_total": round(clamped_sharp, 2),
             "market_total": market,
-            "edge": round(final_total - market, 2),
-            "legacy_edge": round(legacy_total - market, 2),
-            "mode": "A" if final_edge >= c['thresholds']['mode_a'] else "B" if final_edge >= c['thresholds']['mode_b'] else "NONE",
+            "edge": round(final_edge, 2),
+            "mode": "A" if abs_edge >= c['thresholds']['mode_a'] else "B" if abs_edge >= c['thresholds']['mode_b'] else "NONE",
             "decision": decision,
-            "lean": "OVER" if (final_total - market) > 0 else "UNDER",
+            "lean": "OVER" if final_edge > 0 else "UNDER",
             "confidence": confidence,
             "notes": notes,
             "trace": self.trace
