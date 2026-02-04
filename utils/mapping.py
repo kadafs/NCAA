@@ -23,52 +23,51 @@ def get_target_date(date_str=None):
 def clean_team_name(name):
     """
     Standardizes team names by removing common punctuation and formatting.
-    v1.6.3: Collapsed-form matching (no regex expansion).
+    v1.6.4: Ultimate Normalization (Folding Saint/State -> St).
     """
     if not name: return ""
     import re
     
-    # 1. Strip separators and common filler words
-    n = re.sub(r'\b(vs\.?|at|gaels|toreros|tommies|jackrabbits|panthers|raiders|blue raiders|greyhounds|thundering herd|golden eagles|black knights)\b', ' ', name, flags=re.I)
+    # 1. Lowercase and remove punctuation first
+    n = name.lower().strip()
+    n = n.replace(".", "").replace("(", "").replace(")", "").replace("'", "").replace("-", "").replace("&", "and")
     n = n.replace("@", " ")
     
-    # 2. Expand ONLY state/direction abbreviations (Safe)
+    # 2. Normalize common separators
+    n = re.sub(r'\b(vs\.?|at)\b', ' ', n)
+    
+    # 3. FOLDING: Normalize all variants of Saint/State to 'st'
+    # This works because no D1 team name (other than the word Saint/State) contains these markers correctly as standalone words.
+    # We turn "saint marys" -> "st marys" and "iowa state" -> "iowa st"
+    n = re.sub(r'\b(saint|state)\b', 'st', n)
+    
+    # 4. Expand directional/university markers (Safe)
     def expand_safe(n_inner):
-        n_inner = re.sub(r'\bMiss\b', 'Mississippi', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bFla\b', 'Florida', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bPa\b', 'Pennsylvania', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bMich\b', 'Michigan', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bWash\b', 'Washington', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bColo\b', 'Colorado', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bAriz\b', 'Arizona', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bTenn\b', 'Tennessee', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bGa\b', 'Georgia', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bKy\b', 'Kentucky', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bIll\b', 'Illinois', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bN\b\.', 'North', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bS\b\.', 'South', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bE\b\.', 'East', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bW\b\.', 'West', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bMd\b', 'Maryland', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bLa\b', 'Louisiana', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bU\b\.', 'University', n_inner, flags=re.I)
-        n_inner = re.sub(r'\bUniv\b', 'University', n_inner, flags=re.I)
+        n_inner = re.sub(r'\bmiss\b', 'mississippi', n_inner)
+        n_inner = re.sub(r'\bfla\b', 'florida', n_inner)
+        n_inner = re.sub(r'\bpa\b', 'pennsylvania', n_inner)
+        n_inner = re.sub(r'\bmich\b', 'michigan', n_inner)
+        n_inner = re.sub(r'\bwash\b', 'washington', n_inner)
+        n_inner = re.sub(r'\bcolo\b', 'colorado', n_inner)
+        n_inner = re.sub(r'\bariz\b', 'arizona', n_inner)
+        n_inner = re.sub(r'\btenn\b', 'tennessee', n_inner)
+        n_inner = re.sub(r'\bga\b', 'georgia', n_inner)
+        n_inner = re.sub(r'\bky\b', 'kentucky', n_inner)
+        n_inner = re.sub(r'\bill\b', 'illinois', n_inner)
+        n_inner = re.sub(r'\bn\b\.', 'north', n_inner)
+        n_inner = re.sub(r'\bs\b\.', 'south', n_inner)
+        n_inner = re.sub(r'\bmd\b', 'maryland', n_inner)
+        n_inner = re.sub(r'\bla\b', 'louisiana', n_inner)
+        n_inner = re.sub(r'\bu\b\.', 'university', n_inner)
+        n_inner = re.sub(r'\buniv\b', 'university', n_inner)
         return n_inner
 
     n = expand_safe(n)
     
-    # Handle specific complex expansions
-    n = n.replace("UT Martin", "Tennessee Martin").replace("UT-Martin", "Tennessee Martin")
-    n = n.replace("UT ", "Texas ").replace("UMES", "Maryland Eastern Shore")
-    n = n.replace("A&M CC", "Texas A&M Corpus Christi").replace("SIU-", "Southern Illinois ")
-    n = n.replace("A&M-CC", "Texas A&M Corpus Christi")
-    n = n.replace("UIW", "Incarnate Word").replace("FIU", "Florida International")
+    # 5. Collapse all characters (Remove all spaces)
+    n = n.replace(" ", "")
     
-    # 3. Collapse Form (Remove all spaces/punctuation/St expansion)
-    n = n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "")
-    n = n.replace("-", "").replace("&", "and").lower()
-    
-    # 4. Strip trailing 'u' or 'university'
+    # 6. Final University logic
     if n.endswith("u") and len(n) > 5:
         n = n[:-1]
     if n.endswith("university") and len(n) > 10:
@@ -106,27 +105,21 @@ def find_team_in_dict(name, target_dict, aliases=None):
     return None
 
 # Common Basketball Aliases (NBA and NCAA)
-# Map collapsed forms (no spaces/no expansion) to canonical BARTTORVIK keys or desired names
+# Normalized form (Saint/State -> st) to canonical BARTTORVIK keys
 BASKETBALL_ALIASES = {
-    # St. Thomas Collapsed Mapping
+    # St. Thomas Folded Mapping
     "stthomas": "stthomas",
-    "saintthomas": "stthomas",
     "stthomasmn": "stthomas",
-    "saintthomasmn": "stthomas",
     
-    # St. Mary's Collapsed Mapping
+    # St. Mary's Folded Mapping
     "stmarys": "saintmarys",
-    "saintmarys": "saintmarys",
-    "stmarys-ca": "saintmarys",
     "stmarysca": "saintmarys",
-    "saintmary": "saintmarys",
     
-    # South Dakota St Collapsed Mapping
+    # South Dakota St Folded Mapping
     "southdakotast": "southdakotastate",
-    "southdakotastate": "southdakotastate",
     "sdsu": "southdakotastate",
     
-    # Other Collapsed Aliases
+    # Other Folded Aliases
     "uconn": "connecticut",
     "olemiss": "mississippi",
     "penn": "pennsylvania",
