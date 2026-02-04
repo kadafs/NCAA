@@ -100,6 +100,13 @@ BASKETBALL_ALIASES = {
     "statethomasmn": "stthomas",
     "stmarys": "saintmarys",
     "stmarys-ca": "saintmarys",
+    "statemarys": "saintmarys",
+    "statemarysca": "saintmarys",
+    "stmarysca": "saintmarys",
+    "md": "maryland",
+    "mtsu": "middletennessee",
+    "middletenn": "middletennessee",
+    "middletennessee": "middletenn",
     "umkc": "kansascity",
     "fullerton": "calstfullerton",
     "longbeachstate": "calstlongbeach",
@@ -169,6 +176,8 @@ BASKETBALL_ALIASES = {
     "furmanpaladins": "furman",
     "loyolachicago": "loyolail",
     "loyolail": "loyolachicago",
+    "stlouis": "saintlouis",
+    "statelouis": "saintlouis",
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {
