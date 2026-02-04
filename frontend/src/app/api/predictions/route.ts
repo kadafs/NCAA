@@ -71,11 +71,32 @@ export async function GET(req: Request) {
 
         const predictions = storeData.data;
 
-        // Load audit data from Supabase settings or separate audit table (v2)
-        // For now, we assume bridge output includes audit or we return just games
+        // 1. Fetch real audit data for this league
+        let audit = null;
+        try {
+            const { data: summary } = await supabase
+                .from("audit_summary")
+                .select("*")
+                .eq("league", league.toLowerCase())
+                .single();
+
+            if (summary) {
+                audit = {
+                    last_48h: {
+                        pct: summary.win_pct || 0,
+                        wins: summary.wins || 0,
+                        losses: summary.losses || 0,
+                        pushes: summary.pushes || 0
+                    }
+                };
+            }
+        } catch (e) {
+            console.warn("Could not fetch audit summary for league:", league);
+        }
 
         return NextResponse.json({
             ...predictions,
+            audit,
             lastUpdated: storeData.updated_at
         });
 

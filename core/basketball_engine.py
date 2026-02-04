@@ -113,49 +113,71 @@ class UniversalBasketballEngine:
                     sharp_total += bonus
                     self._log(f"Sharp 3: 3PT Volume Bonus ({three_pa} > {sp['three_pa_threshold']}) -> +{bonus:.2f}")
 
+            # Determine current lean for situational logic
+            current_lean = "OVER" if sharp_total > market else "UNDER"
+
             # 4. NCAA Situational Modifiers (v1.4)
             if c['name'] == "NCAA":
                 # A. Elite Offense Modifier
                 off_threshold = sp.get('elite_offense_rating_threshold', 118.0)
-                if game_data.get('statsA', {}).get('adj_off', 0) > off_threshold and \
-                   game_data.get('statsH', {}).get('adj_off', 0) > off_threshold:
+                if game_data.get('statsA', {}).get('adj_off', 110) + game_data.get('statsH', {}).get('adj_off', 110) > off_threshold * 2:
                     bonus = sp.get('elite_offense_boost', 3.0)
                     sharp_total += bonus
-                    self._log(f"Sharp 4a: Elite Offense Shootout Bonus -> +{bonus}")
+                    self._log(f"Sharp 4A: Elite Offense Boost -> +{bonus:.2f}")
 
-                # B. Late-Game Foul Correction (Improved v1.4)
+                # B. Blowout Volatility Correction
                 projected_spread = abs(game_data.get('projected_spread', 10.0))
-                market_total = market
-                if projected_spread <= sp.get('late_game_spread_threshold', 3.0) and \
-                   market_total < sp.get('late_game_total_threshold', 150.0):
-                    bonus = sp.get('late_foul_inflation', 3.0)
-                    sharp_total += bonus
-                    self._log(f"Sharp 4b: Late-Game Foul Inflation ({projected_spread:.1f} spread, {market_total:.1f} total) -> +{bonus}")
-                elif projected_spread < sp.get('close_game_threshold', 4.5):
-                    # Fallback to legacy Close Game Foul Correction if not in elite tier
-                    bonus = sp.get('close_game_foul_bonus', 1.5)
-                    sharp_total += bonus
-                    self._log(f"Sharp 4c: Close Game Foul Bonus -> +{bonus}")
-
-                # C. Blowout Volatility Modifier
-                spread_val = game_data.get('projected_spread', 10.0)
-                if abs(spread_val) >= sp.get('blowout_spread_threshold', 9.0):
-                    # Recalculate lean for blowout logic
-                    current_lean = "OVER" if sharp_total > market else "UNDER"
+                spread_threshold = sp.get('blowout_spread_threshold', 9.0)
+                if projected_spread > spread_threshold:
                     if current_lean == "UNDER":
                         penalty = sp.get('blowout_under_penalty', 3.5)
-                        sharp_total += penalty # Penalty means raising the total (reducing the under edge)
-                        self._log(f"Sharp 4d: Blowout Volatility Penalty (Under) -> +{penalty}")
+                        sharp_total += penalty
+                        self._log(f"Sharp 4B: Blowout Volatility Penalty (Under) -> +{penalty}")
                     else:
                         boost = sp.get('blowout_over_boost', 2.5)
                         sharp_total += boost
-                        self._log(f"Sharp 4e: Blowout Volatility Boost (Over) -> +{boost}")
+                        self._log(f"Sharp 4B: Blowout Volatility Boost (Over) -> +{boost}")
+
+                # C. Close Game Foul Correction
+                if projected_spread < sp.get('close_game_threshold', 4.5):
+                    bonus = sp.get('close_game_foul_bonus', 1.8)
+                    sharp_total += bonus
+                    self._log(f"Sharp 4C: Close Game Foul Correction ({projected_spread:.1f} < {sp.get('close_game_threshold')}) -> +{bonus}")
+
+            # 5. NBA Situational Modifiers (v1.5) - FULL MODE ONLY
+            if c['name'] == "NBA":
+                # A. Elite Offense Modifier
+                off_threshold = sp.get('elite_offense_rating_threshold', 121.0)
+                sA_off = game_data.get('statsA', {}).get('adj_off', 115)
+                sH_off = game_data.get('statsH', {}).get('adj_off', 115)
+                if sA_off + sH_off > off_threshold * 2:
+                    bonus = sp.get('elite_offense_boost', 4.5)
+                    sharp_total += bonus
+                    self._log(f"Sharp NBA 5A: Elite Offense Boost ({sA_off:.1f}+{sH_off:.1f} > {off_threshold*2}) -> +{bonus:.2f}")
+
+                # B. Blowout Volatility Correction
+                projected_spread = abs(game_data.get('projected_spread', 5.0))
+                spread_threshold = sp.get('blowout_spread_threshold', 12.0)
+                if projected_spread > spread_threshold:
+                    if current_lean == "UNDER":
+                        penalty = sp.get('blowout_under_penalty', 5.0)
+                        sharp_total += penalty
+                        self._log(f"Sharp NBA 5B: Blowout Penalty (Under) -> +{penalty}")
+                    else:
+                        boost = sp.get('blowout_over_boost', 3.5)
+                        sharp_total += boost
+                        self._log(f"Sharp NBA 5B: Blowout Boost (Over) -> +{boost}")
+
+                # C. Close Game Foul Correction
+                if projected_spread < sp.get('close_game_threshold', 4.5):
+                    bonus = sp.get('close_game_foul_bonus', 2.5)
+                    sharp_total += bonus
+                    self._log(f"Sharp NBA 5C: Close Game Foul Correction ({projected_spread:.1f} < {sp.get('close_game_threshold')}) -> +{bonus}")
 
             if sharp_total == legacy_total:
                 self._log("No Sharp Adjustments triggered.")
         else:
-            # We still need to calculate the sharp_total for the return dict even if not logging
-            # (Though in Safe mode the dashboard might not use it, the return dict expects it)
+            # Safe Mode logic (keeping it lean)
             if sp.get('possession_bonus_value'):
                 if game_data.get('is_rebound_mismatch') or game_data.get('is_turnover_mismatch'):
                     sharp_total += sp['possession_bonus_value']

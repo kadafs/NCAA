@@ -100,9 +100,17 @@ async def push_league_predictions(league):
             print(f"Failed to push {league} ({mode}) predictions: {e}")
 
 async def main():
-    print("Starting Universal Supabase Push (Dual Mode)...")
+    import argparse
+    parser = argparse.ArgumentParser(description="Universal Supabase Pusher v1.1")
+    parser.add_argument("--league", choices=["nba", "ncaa", "all"], default="all", help="League to push (default: all)")
+    args = parser.parse_args()
+
+    print(f"Starting Universal Supabase Push (Target: {args.league.upper()})...")
+    
+    target_leagues = LEAGUES if args.league == "all" else [args.league]
+
     # Execute sequentially for stability
-    for league in LEAGUES:
+    for league in target_leagues:
         await push_league_predictions(league)
     print("Push Complete.")
 
