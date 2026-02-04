@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--date", help="Target date in YYYY-MM-DD format")
     parser.add_argument("--trace", action="store_true", help="Show logic trace")
     parser.add_argument("--refresh", action="store_true", help="Refresh data before running")
+    parser.add_argument("--push", action="store_true", help="Push results to Supabase dashboard")
     args = parser.parse_args()
 
     # 1. Config paths & Target Date
@@ -42,12 +43,23 @@ def main():
         "acb": "configs/leagues/acb.json"
     }
     
-    # 2. Refresh if needed (Porting logic for multi-day)
+    # 2. Refresh if needed
     if args.refresh:
         print(f"Refreshing {args.league.upper()} data for {target_date.strftime('%Y-%m-%d')}...")
         if args.league == "nba":
             from nba.fetch_nba_schedule import fetch_nba_daily_schedule
+            from nba.fetch_nba_stats import fetch_nba_stats
+            from nba.fetch_nba_player_stats import fetch_nba_player_stats
+            from nba.fetch_nba_injuries import fetch_nba_injuries
             fetch_nba_daily_schedule(target_date)
+            fetch_nba_stats()
+            fetch_nba_player_stats()
+            fetch_nba_injuries()
+        elif args.league == "ncaa":
+            from ncaa.fetch_injuries import fetch_injuries
+            from ncaa.data_fetcher import main as ncaa_fetch_main
+            fetch_injuries()
+            ncaa_fetch_main()
         elif args.league == "euro":
             from euro.fetch_euro_schedule import fetch_euro_daily_schedule
             fetch_euro_daily_schedule(target_date)
@@ -64,7 +76,6 @@ def main():
             from acb.fetch_acb_stats import fetch_acb_stats
             fetch_acb_schedule(target_date)
             fetch_acb_stats()
-        # NCAA fetching is handled inside the bridge's population call for v1.2
 
     # 3. Initialize Engines
     engine = UniversalBasketballEngine(config_map[args.league], mode=args.mode)
@@ -184,6 +195,17 @@ def main():
             
     print("\n" + "█"*80)
     print("Execution Finished.")
+
+    # 7. Optional Push to Supabase Dashboard
+    if args.push:
+        print(f"\nPushing {args.league.upper()} predictions to Dashboard...")
+        import asyncio
+        from core.supabase_pusher import push_league_predictions
+        try:
+            asyncio.run(push_league_predictions(args.league))
+            print("Dashboard update triggered successfully.")
+        except Exception as e:
+            print(f"Failed to push to dashboard: {e}")
 
 if __name__ == "__main__":
     main()
