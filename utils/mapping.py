@@ -26,27 +26,41 @@ def clean_team_name(name):
     """
     if not name: return ""
     import re
-    # 1. Expand common abbreviations
-    n = name.replace("St.", "State").replace("Fla.", "Florida").replace("Pa.", "Pennsylvania")
-    n = n.replace("Mich.", "Michigan").replace("Wash.", "Washington").replace("Colo.", "Colorado")
-    n = n.replace("Ariz.", "Arizona").replace("Tenn.", "Tennessee").replace("Ga.", "Georgia")
-    n = n.replace("Ky.", "Kentucky").replace("Ill.", "Illinois").replace("Miss.", "Mississippi")
-    n = n.replace("N.", "North").replace("S.", "South").replace("E.", "East").replace("W.", "West")
-    n = n.replace("App.", "Appalachian").replace("Ark.", "Arkansas").replace("Atl.", "Atlantic")
-    n = n.replace("Car.", "Carolina").replace("Cent.", "Central").replace("Geo.", "Georgia")
-    n = n.replace("Mass.", "Massachusetts").replace("Md.", "Maryland")
-    n = n.replace("La.", "Louisiana").replace("N.C.", "North Carolina").replace("S.C.", "South Carolina")
-    n = n.replace("N.J.", "New Jersey").replace("W.Va.", "West Virginia").replace("R.I.", "Rhode Island")
-    n = n.replace("Ala.", "Alabama").replace("Calif.", "California").replace("Conn.", "Connecticut")
-    n = n.replace("Okla.", "Oklahoma").replace("Ore.", "Oregon").replace("Wis.", "Wisconsin")
-    n = n.replace("U.", "University").replace("Univ.", "University")
-    n = n.replace("N.Carolina", "North Carolina").replace("S.Carolina", "South Carolina")
-    # Handle UT Martin specifically before general UT expansion
+    
+    # 1. Expand common abbreviations (Case-Insensitive)
+    def expand(n):
+        # Handle specific cases first
+        n = re.sub(r'\bMiss\b', 'Mississippi', n, flags=re.I)
+        n = re.sub(r'\bSt\b', 'State', n, flags=re.I)
+        n = re.sub(r'\bst\b\.?\s+', 'saint ', n, flags=re.I) # "st. marys" -> "saint marys"
+        n = re.sub(r'\bFla\b', 'Florida', n, flags=re.I)
+        n = re.sub(r'\bPa\b', 'Pennsylvania', n, flags=re.I)
+        n = re.sub(r'\bMich\b', 'Michigan', n, flags=re.I)
+        n = re.sub(r'\bWash\b', 'Washington', n, flags=re.I)
+        n = re.sub(r'\bColo\b', 'Colorado', n, flags=re.I)
+        n = re.sub(r'\bAriz\b', 'Arizona', n, flags=re.I)
+        n = re.sub(r'\bTenn\b', 'Tennessee', n, flags=re.I)
+        n = re.sub(r'\bGa\b', 'Georgia', n, flags=re.I)
+        n = re.sub(r'\bKy\b', 'Kentucky', n, flags=re.I)
+        n = re.sub(r'\bIll\b', 'Illinois', n, flags=re.I)
+        n = re.sub(r'\bN\b\.', 'North', n, flags=re.I)
+        n = re.sub(r'\bS\b\.', 'South', n, flags=re.I)
+        n = re.sub(r'\bE\b\.', 'East', n, flags=re.I)
+        n = re.sub(r'\bW\b\.', 'West', n, flags=re.I)
+        n = re.sub(r'\bMd\b', 'Maryland', n, flags=re.I)
+        n = re.sub(r'\bLa\b', 'Louisiana', n, flags=re.I)
+        n = re.sub(r'\bU\b\.', 'University', n, flags=re.I)
+        n = re.sub(r'\bUniv\b', 'University', n, flags=re.I)
+        return n
+
+    n = expand(name)
+    
+    # Handle specific complex expansions
     n = n.replace("UT Martin", "Tennessee Martin").replace("UT-Martin", "Tennessee Martin")
     n = n.replace("UT ", "Texas ").replace("UMES", "Maryland Eastern Shore")
     n = n.replace("A&M CC", "Texas A&M Corpus Christi").replace("SIU-", "Southern Illinois ")
     n = n.replace("A&M-CC", "Texas A&M Corpus Christi")
-    n = n.replace("UIW", "Incarnate Word")
+    n = n.replace("UIW", "Incarnate Word").replace("FIU", "Florida International")
     
     # 2. General cleaning (punctuation, case, spaces)
     n = n.replace(".", "").replace("(", "").replace(")", "").replace(" ", "").replace("'", "")
@@ -106,48 +120,61 @@ BASKETBALL_ALIASES = {
     "md": "maryland",
     "mtsu": "middletennessee",
     "middletenn": "middletennessee",
-    "middletennessee": "middletenn",
+    "olemiss": "mississippi",
+    "fiu": "floridainternational",
+    "uncg": "uncgreensboro",
+    "uncw": "uncwilmington",
+    "unca": "uncasheville",
+    "uncc": "charlotte",
+    "upenn": "pennsylvania",
+    "penn": "pennsylvania",
+    "uconn": "connecticut",
+    "umass": "massachusetts",
     "umkc": "kansascity",
+    "fdu": "fairleighdickinson",
+    "fgcu": "floridagulfcoast",
+    "etsu": "easttennesseestate",
+    "mtsu": "middletennessee",
+    "vcu": "virginiacommonwealth",
+    "smu": "southernmethodist",
+    "tcu": "texaschristian",
+    "byu": "brighamyoung",
+    "lsu": "louisianastate",
+    "olemississippi": "mississippi",
+    "southernmiss": "southernmississippi",
+    "usf": "southflorida",
+    "ucf": "centralflorida",
+    "fau": "floridaatlantic",
+    "fiu": "floridainternational",
+    "stjohns": "saintjohns",
+    "stjosephs": "saintjosephs",
+    "stlouis": "saintlouis",
+    "stpetes": "saintpeters",
+    "stmarys": "saintmarys",
+    "statemary": "saintmary",
+    "statemarysca": "saintmarys",
+    "loyolachicago": "loyolail",
+    "loyolail": "loyolachicago",
+    "uic": "illinoischicago",
+    "niagara": "niagarauniversity",
     "fullerton": "calstfullerton",
     "longbeachstate": "calstlongbeach",
     "northridge": "calstnorthridge",
     "bakersfield": "calstbakersfield",
-    "stthomasmn": "stthomas",
-    "ulmonroe": "louisianamonroe",
+    "uapb": "arkansaspinebluff",
+    "uncg": "uncgreensboro",
+    "unca": "uncasheville",
+    "uncw": "uncwilmington",
+    "uncc": "charlotte",
     "louisiana": "louisianalafayette",
-    "appstate": "appalachianstate",
-    "westerncaro": "westerncarolina",
-    "southerncaro": "southcarolina",
-    "eastcaro": "eastcarolina",
-    "coastalcaro": "coastalcarolina",
-    "ncstate": "northcarolinastate",
-    "armypowers": "army",
-    "armywestpoint": "army",
-    "ark-pinebluff": "arkansaspinebluff",
-    "bethune-cookman": "bethunecookman",
-    "csubakersfield": "calstatebakersfield",
-    "csun": "calstatenorthridge",
-    "centralconnstate": "centralconnecticut",
-    "etsu": "easttennesseestate",
-    "easternky": "easternkentucky",
-    "fdu": "fairleighdickinson",
-    "fgcu": "floridagulfcoast",
-    "gardner-webb": "gardnerwebb",
-    "lmuca": "loyolamarymount",
-    "nca&t": "northcarolinaa&t",
-    "nccentral": "northcarolinacentral",
-    "niu": "northernillinois",
-    "northernky": "northernkentucky",
-    "sfa": "stephenfaustin",
-    "stephenfaustin": "sfa",
-    "southeastmostate": "southeastmissouristate",
-    "southeasternla": "southeasternlouisiana",
-    "uic": "illinoischicago",
-    "uiw": "incarnateword",
-    "incarnateword": "uiw",
     "ulm": "louisianamonroe",
-    "umes": "marylandeasternshore",
-    "marylandeasternshore": "umes",
+    "stjosephs": "saintjosephs",
+    "stlouis": "saintlouis",
+    "stmarys": "saintmarys",
+    "olemiss": "mississippi",
+    "fiu": "floridainternational",
+    "mtsu": "middletennessee",
+    "md": "maryland",
     "utmartin": "tennesseemartin",
     "tennesseemartin": "utmartin",
     "utrgv": "utriograndevalley",
