@@ -27,16 +27,16 @@ def clean_team_name(name):
     if not name: return ""
     import re
     
-    # 1. Expand common abbreviations (Case-Insensitive)
+    # 1. Expand common abbreviations (Context-Aware)
     def expand(n):
-        # Handle "St." specifically: most NCAA starting "St." are "Saint", ending are "State"
-        # However, it's safer to expand based on the actual likely usage.
-        # We'll map "st." to a neutral "st" first then expand to both if needed, 
-        # but the safest is to map "St." at start to "saint" and others to "state"
-        n = re.sub(r'^St\.?\b', 'Saint', n, flags=re.I)
+        # A. Expansion based on position/context
+        # "St." followed by a name is almost always "Saint" (Saint Thomas, Saint Mary's)
+        n = re.sub(r'\bSt\.?\s+', 'Saint ', n, flags=re.I)
+        # "St." preceded by a name is almost always "State" (Michigan State, Wichita State)
+        n = re.sub(r'\s+St\.?\b', ' State', n, flags=re.I)
+        
+        # B. General Abbreviations
         n = re.sub(r'\bMiss\b', 'Mississippi', n, flags=re.I)
-        n = re.sub(r'\bSt\b', 'State', n, flags=re.I) # Catch remaining "St" as "State"
-        n = re.sub(r'\bst\b\.?\s+', 'saint ', n, flags=re.I)
         n = re.sub(r'\bFla\b', 'Florida', n, flags=re.I)
         n = re.sub(r'\bPa\b', 'Pennsylvania', n, flags=re.I)
         n = re.sub(r'\bMich\b', 'Michigan', n, flags=re.I)
@@ -118,6 +118,7 @@ BASKETBALL_ALIASES = {
     "statethomasmn": "stthomas",
     "stmarys": "saintmarys",
     "stmarys-ca": "saintmarys",
+    "saintmarysca": "saintmarys",
     "statemarys": "saintmarys",
     "statemarysca": "saintmarys",
     "stmarysca": "saintmarys",
