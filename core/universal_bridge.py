@@ -140,7 +140,7 @@ def get_universal_predictions(league="nba", mode="safe"):
             raw_injuries = injuries.get(away, []) + injuries.get(home, [])
             game_injuries.extend(raw_injuries)
             
-            # Filter for Engine Impact (PPG > 10.0 or explicitly marked Star)
+            # Filter for Engine Impact (PPG > Threshold)
             if league == "nba" and p_stats:
                 player_pts_map = {p['name']: p['seasonal'].get('pts', 0) for p in p_stats}
                 for inj in raw_injuries:
@@ -148,6 +148,22 @@ def get_universal_predictions(league="nba", mode="safe"):
                     pts = player_pts_map.get(player_name, 0)
                     if pts >= 10.0:
                         filtered_injuries.append(inj)
+            elif league == "ncaa":
+                try:
+                    # Load NCAA individual stats for filtering
+                    ncaa_stats = bridge._load_json("individual_stats.json")
+                    pts_list = ncaa_stats.get("pts_pg", [])
+                    # Build map (case-insensitive name match)
+                    ncaa_pts_map = {p.get('Name', '').lower(): float(p.get('PPG', 0)) for p in pts_list}
+                    
+                    for inj in raw_injuries:
+                        player_name = inj.get('player', '').lower()
+                        pts = ncaa_pts_map.get(player_name, 0)
+                        if pts >= 8.0:
+                            filtered_injuries.append(inj)
+                except Exception as e:
+                    print(f"NCAA Injury Filter Error: {e}")
+                    filtered_injuries = raw_injuries
             else:
                 filtered_injuries = raw_injuries
             
