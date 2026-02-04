@@ -126,17 +126,20 @@ class UniversalBasketballEngine:
                     bonus = sp.get('elite_offense_boost', 3.0)
                     sharp_total += bonus
                     self._log(f"Sharp 4A: Elite Offense Boost -> +{bonus:.2f}")
+                    notes.append(f"Sharp Adjustment: Elite Offense Booster (+{bonus:.1f} pts)")
                 # B. Blowout Volatility
                 spread_threshold = sp.get('blowout_spread_threshold', 9.0)
                 if projected_spread > spread_threshold:
                     penalty = sp.get('blowout_under_penalty', 3.5) if current_lean == "UNDER" else sp.get('blowout_over_boost', 2.5)
                     sharp_total += penalty
                     self._log(f"Sharp 4B: Blowout Adjustment -> +{penalty}")
+                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
                 # C. Close Game
                 if projected_spread < sp.get('close_game_threshold', 4.5):
                     bonus = sp.get('close_game_foul_bonus', 1.8)
                     sharp_total += bonus
                     self._log(f"Sharp 4C: Close Game Foul Correction -> +{bonus}")
+                    notes.append(f"Sharp Adjustment: Close Game Foul Bonus (+{bonus:.1f} pts)")
 
             if c['name'] == "NBA":
                 # A. Elite Offense
@@ -147,17 +150,20 @@ class UniversalBasketballEngine:
                     bonus = sp.get('elite_offense_boost', 4.5)
                     sharp_total += bonus
                     self._log(f"Sharp NBA 5A: Elite Offense Boost -> +{bonus:.2f}")
+                    notes.append(f"Sharp Adjustment: Elite Offense Booster (+{bonus:.1f} pts)")
                 # B. Blowout Volatility
                 spread_threshold = sp.get('blowout_spread_threshold', 12.0)
                 if projected_spread > spread_threshold:
                     penalty = sp.get('blowout_under_penalty', 5.0) if current_lean == "UNDER" else sp.get('blowout_over_boost', 3.5)
                     sharp_total += penalty
                     self._log(f"Sharp NBA 5B: Blowout Adjustment -> +{penalty}")
+                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
                 # C. Close Game
                 if projected_spread < sp.get('close_game_threshold', 4.5):
                     bonus = sp.get('close_game_foul_bonus', 2.5)
                     sharp_total += bonus
                     self._log(f"Sharp NBA 5C: Close Game Foul Correction -> +{bonus}")
+                    notes.append(f"Sharp Adjustment: Close Game Foul Bonus (+{bonus:.1f} pts)")
 
             # 3. Injury Impact (FULL MODE ONLY)
             star_impact = 0
@@ -176,6 +182,8 @@ class UniversalBasketballEngine:
 
                 sharp_total += star_impact
                 self._log(f"Context Impact Applied: {star_impact:+.2f}")
+                if star_impact != 0:
+                    notes.append(f"Context Impact: {star_impact:+.1f} pts (Injury Related)")
 
             # 4. Compare tracks and add explanatory notes if Full < Safe
             if sharp_total < stats_total:
