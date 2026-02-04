@@ -22,25 +22,37 @@ RENDER_KEYS = [
     "marshall thundering herd vs southern miss golden eagles",
     "lehigh mountain hawks vs loyola (md) greyhounds",
     "florida international golden panthers vs middle tennessee blue raiders",
-    "saint mary's gaels vs san diego toreros"
+    "saint mary's gaels vs san diego toreros",
+    "army black knights vs colgate raiders",
+    "south dakota state jackrabbits vs st. thomas tommies"
 ]
 
 # Cases mentioned by user
 print("--- Testing User Reported Cases ---")
 
-# 1. Mississippi vs Marshall (Southern Miss context)
-test_match("Mississippi", "Marshall", RENDER_KEYS)
+cases = [
+    ("Mississippi", "Marshall"),
+    ("Lehigh", "Maryland"),
+    ("FIU", "Middle Tennessee"),
+    ("San Diego", "Saint Mary's"),
+    ("Army", "Colgate"),
+    ("St. Thomas", "South Dakota St.")
+]
 
-# 2. Lehigh vs Maryland (Loyola MD context)
-test_match("Lehigh", "Maryland", RENDER_KEYS)
+for away, home in cases:
+    test_match(away, home, RENDER_KEYS)
 
-# 3. FIU vs Middle Tennessee
-test_match("FIU", "Middle Tennessee", RENDER_KEYS)
+# Detailed analysis of failures
+print("\n--- Detailed String Analysis ---")
+def analyze(name):
+    print(f"Original: '{name}' -> Clean: '{clean_team_name(name)}'")
 
-# 4. San Diego vs Saint Mary's
-test_match("San Diego", "Saint Mary's", RENDER_KEYS)
-
-# Additional checks
-print("\n--- Additional Consistency Checks ---")
-print(f"Clean 'Maryland': '{clean_team_name('Maryland')}'")
-print(f"Clean 'loyola (md) greyhounds': '{clean_team_name('loyola (md) greyhounds')}'")
+analyze("Army")
+analyze("Colgate")
+analyze("St. Thomas")
+analyze("South Dakota St.")
+analyze("Saint Mary's")
+analyze("San Diego")
+analyze("army black knights vs colgate raiders")
+analyze("south dakota state jackrabbits vs st. thomas tommies")
+analyze("saint mary's gaels vs san diego toreros")

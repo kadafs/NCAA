@@ -82,31 +82,34 @@ def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'
     """
     from utils.mapping import clean_team_name, BASKETBALL_ALIASES
     
+    c_away = clean_team_name(away_team)
+    c_home = clean_team_name(home_team)
+    
+    # Canonical mapping candidates
+    def get_all_variants(name):
+        c = clean_team_name(name)
+        v = BASKETBALL_ALIASES.get(c, c)
+        variants = {c, v}
+        # Add all keys that map to the same canonical value
+        for k, val in BASKETBALL_ALIASES.items():
+            if val == v:
+                variants.add(k)
+        return variants
+
+    variants_away = get_all_variants(away_team)
+    variants_home = get_all_variants(home_team)
+
+    def is_match(target_str):
+        if not target_str: return False
+        t_low = clean_team_name(target_str)
+        away_match = any(v in t_low for v in variants_away)
+        home_match = any(v in t_low for v in variants_home)
+        return away_match and home_match
+
     # 1. Centralized Render API format (Dict: { "team a vs team b": total })
     if isinstance(odds_data, dict) and "sport_events" not in odds_data:
-        c_away = clean_team_name(away_team)
-        c_home = clean_team_name(home_team)
-        
-        # Pass 1: Direct standardized substring match
         for key, val in odds_data.items():
-            k_low = clean_team_name(key)
-            if c_away in k_low and c_home in k_low:
-                return val
-        
-        # Pass 2: Alias-aware matching (check both versions to be safe)
-        a_away = BASKETBALL_ALIASES.get(c_away, c_away)
-        a_home = BASKETBALL_ALIASES.get(c_home, c_home)
-        
-        # Also check reverse aliases (if the cleaned name IS an alias value, get its key)
-        reverse_away = [k for k, v in BASKETBALL_ALIASES.items() if v == c_away]
-        reverse_home = [k for k, v in BASKETBALL_ALIASES.items() if v == c_home]
-        
-        for key, val in odds_data.items():
-            k_low = clean_team_name(key)
-            # Check if any variation of away team AND any variation of home team are in the key
-            away_match = (c_away in k_low or a_away in k_low or any(r in k_low for r in reverse_away))
-            home_match = (c_home in k_low or a_home in k_low or any(r in k_low for r in reverse_home))
-            if away_match and home_match:
+            if is_match(key):
                 return val
         return None
 
@@ -114,19 +117,19 @@ def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'
     if isinstance(odds_data, dict) and "sport_events" in odds_data:
         events = odds_data.get("sport_events", [])
         for event in events:
-            names = [c.get("name", "").lower() for c in event.get("competitors", [])]
-            if away_team.lower() in str(names) or home_team.lower() in str(names):
+            # Check competitor names
+            comp_names = " ".join([c.get("name", "").lower() for c in event.get("competitors", [])])
+            if is_match(comp_names):
                 return sr_provider.extract_total(event)
         return None
 
     # 3. Original The Odds API logic
     if isinstance(odds_data, list):
         for game in odds_data:
-            if (away_team in game['away_team'] or game['away_team'] in away_team) and \
-               (home_team in game['home_team'] or game['home_team'] in home_team):
-                
-                for bookmaker in game['bookmakers']:
-                    for market in bookmaker['markets']:
+            matchup_str = f"{game.get('away_team', '')} vs {game.get('home_team', '')}"
+            if is_match(matchup_str):
+                for bookmaker in game.get('bookmakers', []):
+                    for market in bookmaker.get('markets', []):
                         if market['key'] == 'totals':
                             return market['outcomes'][0]['point']
     return None

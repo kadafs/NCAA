@@ -29,10 +29,14 @@ def clean_team_name(name):
     
     # 1. Expand common abbreviations (Case-Insensitive)
     def expand(n):
-        # Handle specific cases first
+        # Handle "St." specifically: most NCAA starting "St." are "Saint", ending are "State"
+        # However, it's safer to expand based on the actual likely usage.
+        # We'll map "st." to a neutral "st" first then expand to both if needed, 
+        # but the safest is to map "St." at start to "saint" and others to "state"
+        n = re.sub(r'^St\.?\b', 'Saint', n, flags=re.I)
         n = re.sub(r'\bMiss\b', 'Mississippi', n, flags=re.I)
-        n = re.sub(r'\bSt\b', 'State', n, flags=re.I)
-        n = re.sub(r'\bst\b\.?\s+', 'saint ', n, flags=re.I) # "st. marys" -> "saint marys"
+        n = re.sub(r'\bSt\b', 'State', n, flags=re.I) # Catch remaining "St" as "State"
+        n = re.sub(r'\bst\b\.?\s+', 'saint ', n, flags=re.I)
         n = re.sub(r'\bFla\b', 'Florida', n, flags=re.I)
         n = re.sub(r'\bPa\b', 'Pennsylvania', n, flags=re.I)
         n = re.sub(r'\bMich\b', 'Michigan', n, flags=re.I)
@@ -67,9 +71,9 @@ def clean_team_name(name):
     n = n.replace("-", "").replace("&", "and").lower()
     
     # 3. Strip trailing 'u' or 'university' if it's there (often inconsistent)
-    if n.endswith("u") and len(n) > 4:
+    if n.endswith("u") and len(n) > 5:
         n = n[:-1]
-    if n.endswith("university"):
+    if n.endswith("university") and len(n) > 10:
         n = n[:-10]
         
     return n
@@ -168,13 +172,25 @@ BASKETBALL_ALIASES = {
     "uncc": "charlotte",
     "louisiana": "louisianalafayette",
     "ulm": "louisianamonroe",
-    "stjosephs": "saintjosephs",
-    "stlouis": "saintlouis",
     "stmarys": "saintmarys",
-    "olemiss": "mississippi",
+    "statemarys": "saintmarys",
+    "stthomas": "stthomasmn",
+    "statethomas": "stthomasmn",
+    "saintthomas": "stthomasmn",
+    "armywestpoint": "army",
+    "armyblackknights": "army",
     "fiu": "floridainternational",
-    "mtsu": "middletennessee",
+    "fau": "floridaatlantic",
+    "ucf": "centralflorida",
+    "usf": "southflorida",
+    "olemiss": "mississippi",
+    "olemississippi": "mississippi",
+    "southernmiss": "southernmississippi",
     "md": "maryland",
+    "mtsu": "middletennessee",
+    "middletenn": "middletennessee",
+    "loyolamd": "loyolamaryland",
+    "loyolamaryland": "loyolamd",
     "utmartin": "tennesseemartin",
     "tennesseemartin": "utmartin",
     "utrgv": "utriograndevalley",
