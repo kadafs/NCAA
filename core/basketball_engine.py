@@ -222,6 +222,15 @@ class UniversalBasketballEngine:
                 st = note.get('status', '').lower()
                 if "out" in st or "doubtful" in st:
                     star_impact += c.get('star_leverage', {}).get('star_out', -2.5)
+            
+            # Apply Cap
+            impact_cap = c.get('sharp_params', {}).get('injury_impact_cap')
+            if impact_cap:
+                # impact_cap is a positive magnitude (e.g. 7.5), star_impact is negative
+                if abs(star_impact) > impact_cap:
+                    self._log(f"Injury Impact capped: {star_impact:.2f} -> -{impact_cap:.2f}")
+                    star_impact = -impact_cap
+
             legacy_total += star_impact
             sharp_total += star_impact
             self._log(f"Context Impact: {star_impact:+.2f}")

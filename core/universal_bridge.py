@@ -135,12 +135,24 @@ def get_universal_predictions(league="nba", mode="safe"):
         
         # Injuries
         game_injuries = []
+        filtered_injuries = []
         if mode == "full":
-            game_injuries.extend(injuries.get(away, []))
-            game_injuries.extend(injuries.get(home, []))
+            raw_injuries = injuries.get(away, []) + injuries.get(home, [])
+            game_injuries.extend(raw_injuries)
+            
+            # Filter for Engine Impact (PPG > 10.0 or explicitly marked Star)
+            if league == "nba" and p_stats:
+                player_pts_map = {p['name']: p['seasonal'].get('pts', 0) for p in p_stats}
+                for inj in raw_injuries:
+                    player_name = inj.get('player')
+                    pts = player_pts_map.get(player_name, 0)
+                    if pts >= 10.0:
+                        filtered_injuries.append(inj)
+            else:
+                filtered_injuries = raw_injuries
             
         # Calculation
-        res = engine.calculate_total(game, game_injuries)
+        res = engine.calculate_total(game, filtered_injuries)
         
         # Route based on Mode (Safe = Legacy, Full = Sharp)
         final_total = res['sharp_total'] if mode == "full" else res['legacy_total']
