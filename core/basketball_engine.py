@@ -218,7 +218,7 @@ class UniversalBasketballEngine:
         clamped_legacy = clamp_total(legacy_total, market)
         clamped_sharp = clamp_total(sharp_total, market)
 
-        final_total = clamped_sharp
+        final_total = clamped_sharp if self.mode == "full" else clamped_legacy
         # Absolute Edge Principle
         raw_edge = final_total - market
         abs_edge = abs(raw_edge)

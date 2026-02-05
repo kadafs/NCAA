@@ -170,9 +170,9 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
         # Calculation
         res = engine.calculate_total(game, filtered_injuries)
         
-        # Route based on Mode (Safe = Legacy, Full = Sharp)
-        final_total = res['sharp_total'] if mode == "full" else res['legacy_total']
-        final_edge = res['edge'] if mode == "full" else res['legacy_edge']
+        # Use engine-calculated mode-aware results
+        final_total = res['final_model_total']
+        final_edge = res['edge']
         
         # Props scaling factor
         factor = final_total / (230.0 if league == "nba" else 150.0)
