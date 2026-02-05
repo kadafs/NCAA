@@ -295,6 +295,8 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
             "market_total": round(res['market_total'], 1),
             "model_total": round(final_total, 1),
             "edge": round(final_edge, 2),
+            "abs_edge": res.get('abs_edge', abs(final_edge)),
+            "side": res.get('side', "OVER" if final_edge > 0 else "UNDER"),
             "decision": res['decision'],
             "confidence": res['confidence'],
             "mode": res['mode'],

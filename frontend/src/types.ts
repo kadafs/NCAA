@@ -42,6 +42,8 @@ export interface Prediction {
     modelTotal: number;
     rawModelTotal?: number;
     edge: number;
+    absEdge?: number;
+    side?: "OVER" | "UNDER";
     confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean';
     time: string;
     date: string;

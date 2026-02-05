@@ -219,35 +219,43 @@ class UniversalBasketballEngine:
         clamped_sharp = clamp_total(sharp_total, market)
 
         final_total = clamped_sharp
-        final_edge = final_total - market
-        abs_edge = abs(final_edge)
+        # Absolute Edge Principle
+        raw_edge = final_total - market
+        abs_edge = abs(raw_edge)
+        side = "OVER" if raw_edge > 0 else "UNDER"
         
-        # Decision Logic (mode_b is play threshold)
-        decision = "PLAY" if abs_edge >= c['thresholds']['mode_b'] else "PASS"
-        
+        # Decision Logic (Pass/Lean/Play)
+        if abs_edge < 4.0:
+            decision = "PASS"
+        elif abs_edge < 6.0:
+            decision = "LEAN"
+        else:
+            decision = "PLAY"
+            
         # Professional Confidence Tiers
         if abs_edge >= 9.0: confidence = "HIGH"
-        elif abs_edge >= 7.5: confidence = "MEDIUM"
-        elif abs_edge >= 6.0: confidence = "LOW"
+        elif abs_edge >= 7.0: confidence = "MEDIUM"
+        elif abs_edge >= 5.0: confidence = "LOW"
         else: confidence = "NO PLAY"
         
-        # NCAA Auto-Pass Override
+        # NCAA Auto-Pass Override (Force PASS for very small edges)
         if self.mode == "full" and c['name'] == "NCAA":
             cutoff = c['thresholds'].get('small_edge_cutoff', 4.0)
             if abs_edge < cutoff:
                 decision = "PASS"
-                notes.append(f"Auto-Pass: Edge ({abs_edge:.1f}) below threshold ({cutoff})")
                 confidence = "NO PLAY"
+                notes.append(f"Auto-Pass: Edge ({abs_edge:.1f}) below threshold ({cutoff})")
 
         return {
             "final_model_total": round(final_total, 2),
             "legacy_total": round(clamped_legacy, 2),
             "sharp_total": round(clamped_sharp, 2),
             "market_total": market,
-            "edge": round(final_edge, 2),
+            "edge": round(raw_edge, 2),
+            "abs_edge": round(abs_edge, 2),
+            "side": side,
             "mode": "A" if abs_edge >= c['thresholds']['mode_a'] else "B" if abs_edge >= c['thresholds']['mode_b'] else "NONE",
             "decision": decision,
-            "lean": "OVER" if final_edge > 0 else "UNDER",
             "confidence": confidence,
             "notes": notes,
             "trace": self.trace

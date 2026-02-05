@@ -159,24 +159,34 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                     "mt-8 flex items-center justify-between p-4 rounded-xl border transition-all",
                     prediction.confidence === 'NO PLAY'
                         ? "bg-white/5 border-white/10 opacity-60"
-                        : "bg-gold/5 border-gold/10"
+                        : prediction.decision === 'LEAN'
+                            ? "bg-gold/5 border-gold/10"
+                            : "bg-gold/10 border-gold/20 shadow-lg shadow-gold/5"
                 )}>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                         <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
-                            prediction.confidence === 'NO PLAY' ? "bg-white/10 text-dash-text-muted" : "bg-gold text-dash-bg"
+                            "w-12 h-12 rounded-full flex items-center justify-center",
+                            prediction.confidence === 'NO PLAY' ? "bg-white/10" : "bg-gold/20"
                         )}>
-                            <Zap className={cn("w-6 h-6", prediction.confidence !== 'NO PLAY' && "fill-current")} />
+                            <TrendingUp className={cn(
+                                "w-6 h-6",
+                                prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-gold"
+                            )} />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black text-gold uppercase tracking-widest block">
-                                {prediction.confidence === 'NO PLAY' ? "Minimal Edge" : "Model Edge Detected"}
-                            </span>
-                            <span className="text-sm font-bold text-white uppercase tracking-tighter">
-                                {prediction.confidence === 'NO PLAY'
-                                    ? "No Play Recommended"
-                                    : `${prediction.edge > 0 ? "Potential OVER" : "Potential UNDER"} Play Recommended`}
-                            </span>
+                            <p className={cn(
+                                "text-xs font-bold uppercase tracking-wider",
+                                prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-gold/60"
+                            )}>
+                                Model Edge Detected
+                            </p>
+                            <p className={cn(
+                                "text-lg font-black leading-tight truncate",
+                                prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-white"
+                            )}>
+                                {prediction.side ? `POTENTIAL ${prediction.side}` : prediction.edge > 0 ? "POTENTIAL OVER" : "POTENTIAL UNDER"}
+                                {prediction.decision === 'LEAN' ? " LEAN" : " PLAY"} RECOMMENDED
+                            </p>
                         </div>
                     </div>
                     <div className="text-right">
@@ -186,7 +196,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         )}>
                             {prediction.edge > 0 ? `+${prediction.edge}` : prediction.edge}
                         </span>
-                        <span className="text-[8px] font-bold text-dash-text-muted uppercase block">Point Value</span>
+                        <p className="text-[10px] text-dash-text-muted font-bold uppercase">Point Value</p>
                     </div>
                 </div>
 
