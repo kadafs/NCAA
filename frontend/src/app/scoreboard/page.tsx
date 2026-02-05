@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
 import { ConfidenceBadge } from "@/components/dashboard/ConfidenceBadge";
 import { fetchScoreboard, fetchNBAScoreboard, formatDateForAPI, getCurrentETDate, type NCAAGame } from "@/lib/api";
+import { NCAA_LOGO_MAP } from "@/lib/ncaa-mappings";
 
 /**
  * Scoreboard Page - All games across leagues
@@ -48,35 +49,62 @@ const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function ScoreboardPage() {
     const [selectedDate, setSelectedDate] = useState(getCurrentETDate());
-    const [selectedLeague, setSelectedLeague] = useState("All");
-    const [games, setGames] = useState<Game[]>([]);
+    const [predictions, setPredictions] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch games when date changes
+    // Fetch games and predictions when date changes
     useEffect(() => {
-        fetchGames();
+        fetchData();
     }, [selectedDate]);
 
-    const fetchGames = async () => {
+    const fetchData = async () => {
         setLoading(true);
         setError(null);
 
         try {
             const dateStr = formatDateForAPI(selectedDate);
 
-            // Fetch both NBA and NCAA games in parallel
-            const [ncaaData, nbaData] = await Promise.allSettled([
+            // Fetch scoreboard data and predictions in parallel
+            const [ncaaData, nbaData, ncaaPreds, nbaPreds] = await Promise.allSettled([
                 fetchScoreboard('basketball-men', 'd1', dateStr),
-                fetchNBAScoreboard(selectedDate)
+                fetchNBAScoreboard(selectedDate),
+                fetch('/api/predictions?league=ncaa&mode=safe').then(r => r.json()),
+                fetch('/api/predictions?league=nba&mode=safe').then(r => r.json())
             ]);
 
+            // Build prediction lookup map
+            const predMap: Record<string, any> = {};
+
+            const processPreds = (data: any) => {
+                if (data.status === 'fulfilled' && data.value.games) {
+                    data.value.games.forEach((g: any) => {
+                        const away = (g.away_details?.code || g.away || "").toLowerCase().trim();
+                        const home = (g.home_details?.code || g.home || "").toLowerCase().trim();
+                        if (away && home) {
+                            predMap[`${away}_vs_${home}`] = g;
+                        }
+
+                        // Also map by full names as fallback
+                        const awayFull = (g.away_details?.name || g.away || "").toLowerCase().trim().replace(/[^a-z]/g, '');
+                        const homeFull = (g.home_details?.name || g.home || "").toLowerCase().trim().replace(/[^a-z]/g, '');
+                        if (awayFull && homeFull) {
+                            predMap[`${awayFull}_vs_${homeFull}`] = g;
+                        }
+                    });
+                }
+            };
+
+            processPreds(ncaaPreds);
+            processPreds(nbaPreds);
+            setPredictions(predMap);
+
             const ncaaGames = ncaaData.status === 'fulfilled'
-                ? transformNCAAGames(ncaaData.value.games || [], 'NCAA')
+                ? transformNCAAGames(ncaaData.value.games || [], 'NCAA', predMap)
                 : [];
 
             const nbaGames = nbaData.status === 'fulfilled'
-                ? transformNCAAGames(nbaData.value.games || [], 'NBA')
+                ? transformNCAAGames(nbaData.value.games || [], 'NBA', predMap)
                 : [];
 
             setGames([...nbaGames, ...ncaaGames]);
@@ -88,7 +116,7 @@ export default function ScoreboardPage() {
         }
     };
 
-    const transformNCAAGames = (ncaaGames: NCAAGame[], league: string = 'NCAA'): Game[] => {
+    const transformNCAAGames = (ncaaGames: NCAAGame[], league: string = 'NCAA', predMap: Record<string, any>): Game[] => {
         return ncaaGames.map((item) => {
             const game = item.game;
             const isLive = game.gameState === 'live';
@@ -107,11 +135,18 @@ export default function ScoreboardPage() {
                 timeDisplay = 'Final';
             }
 
-            // Mock prediction data (TODO: integrate with prediction API)
-            const mockTotal = 150;
-            const mockEdge = Math.random() * 5 + 1;
-            const mockConfidence: 'lock' | 'strong' | 'lean' =
-                mockEdge > 4 ? 'lock' : mockEdge > 2.5 ? 'strong' : 'lean';
+            // Match prediction from map
+            const awayCode = (game.away.names.short || "").toLowerCase().trim();
+            const homeCode = (game.home.names.short || "").toLowerCase().trim();
+            const awayFull = (game.away.names.full || "").toLowerCase().trim().replace(/[^a-z]/g, '');
+            const homeFull = (game.home.names.full || "").toLowerCase().trim().replace(/[^a-z]/g, '');
+
+            const match = predMap[`${awayCode}_vs_${homeCode}`] || predMap[`${awayFull}_vs_${homeFull}`];
+
+            const total = match?.market_total || 150; // Fallback to 150 if truly not found
+            const edge = match?.edge || 0;
+            const side = match?.side || (edge > 0 ? 'OVER' : 'UNDER');
+            const confidence = match?.confidence || "lean";
 
             return {
                 id: game.gameID,
@@ -121,19 +156,33 @@ export default function ScoreboardPage() {
                 away: {
                     code: game.away.names.short,
                     name: game.away.names.full,
-                    score: game.away.score
+                    score: game.away.score,
+                    logo: league === 'NBA'
+                        ? `https://a.espncdn.com/i/teamlogos/nba/500/${game.away.names.short.toLowerCase()}.png`
+                        : (() => {
+                            const rawTeamName = (game.away.names.full || "").toLowerCase().trim();
+                            const slug = NCAA_LOGO_MAP[rawTeamName] || rawTeamName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                            return `/api/logo/${slug}`;
+                        })()
                 },
                 home: {
                     code: game.home.names.short,
                     name: game.home.names.full,
-                    score: game.home.score
+                    score: game.home.score,
+                    logo: league === 'NBA'
+                        ? `https://a.espncdn.com/i/teamlogos/nba/500/${game.home.names.short.toLowerCase()}.png`
+                        : (() => {
+                            const rawTeamName = (game.home.names.full || "").toLowerCase().trim();
+                            const slug = NCAA_LOGO_MAP[rawTeamName] || rawTeamName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                            return `/api/logo/${slug}`;
+                        })()
                 },
                 prediction: {
-                    type: Math.random() > 0.5 ? 'OVER' : 'UNDER',
-                    line: mockTotal,
-                    pick: `${Math.random() > 0.5 ? 'OVER' : 'UNDER'} ${mockTotal}`,
-                    edge: mockEdge,
-                    confidence: mockConfidence
+                    type: side as any,
+                    line: total,
+                    pick: `${side} ${total}`,
+                    edge: Math.abs(edge),
+                    confidence: (confidence.toLowerCase() as any) || "lean"
                 }
             };
         });
@@ -367,8 +416,12 @@ function GameCard({ game, index }: GameCardProps) {
             <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-dash-bg-secondary rounded-lg flex items-center justify-center text-[10px] font-black text-white">
-                            {game.away.code[0]}
+                        <div className="w-8 h-8 bg-dash-bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
+                            {game.away.logo ? (
+                                <img src={game.away.logo} alt={game.away.code} className="w-6 h-6 object-contain" />
+                            ) : (
+                                <span className="text-[10px] font-black text-white">{game.away.code[0]}</span>
+                            )}
                         </div>
                         <span className="text-sm font-black text-white">{game.away.code}</span>
                     </div>
@@ -378,8 +431,12 @@ function GameCard({ game, index }: GameCardProps) {
                 </div>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-dash-bg-secondary rounded-lg flex items-center justify-center text-[10px] font-black text-white">
-                            {game.home.code[0]}
+                        <div className="w-8 h-8 bg-dash-bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
+                            {game.home.logo ? (
+                                <img src={game.home.logo} alt={game.home.code} className="w-6 h-6 object-contain" />
+                            ) : (
+                                <span className="text-[10px] font-black text-white">{game.home.code[0]}</span>
+                            )}
                         </div>
                         <span className="text-sm font-black text-white">{game.home.code}</span>
                     </div>
