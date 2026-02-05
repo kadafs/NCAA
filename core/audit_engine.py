@@ -133,7 +133,7 @@ def audit_nba(date_obj):
     try:
         pending = supabase.table("predictions_history") \
             .select("*") \
-            .eq("league", "nba") \
+            .ilike("league", "nba") \
             .eq("game_date", date_str) \
             .eq("status", "pending") \
             .execute()
@@ -304,7 +304,7 @@ def audit_ncaa(date_obj):
         # 2. Fetch 'pending' rows for this date from history
         pending = supabase.table("predictions_history") \
             .select("*") \
-            .eq("league", "ncaa") \
+            .ilike("league", "ncaa") \
             .eq("game_date", date_str) \
             .eq("status", "pending") \
             .execute()

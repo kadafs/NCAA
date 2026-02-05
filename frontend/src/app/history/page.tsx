@@ -16,6 +16,7 @@ import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
 export default function PerformanceHistory() {
     const [audit, setAudit] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedFilter, setSelectedFilter] = useState<string>("TOTAL");
 
     useEffect(() => {
         fetchAudit();
@@ -105,7 +106,13 @@ export default function PerformanceHistory() {
                                     key={m.league}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-dash-card border border-dash-border rounded-3xl p-6"
+                                    onClick={() => setSelectedFilter(selectedFilter === m.league ? "TOTAL" : m.league)}
+                                    className={cn(
+                                        "bg-dash-card border rounded-3xl p-6 cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]",
+                                        selectedFilter === m.league
+                                            ? "border-gold shadow-[0_0_20px_rgba(251,191,36,0.1)]"
+                                            : "border-dash-border hover:border-gold/30"
+                                    )}
                                 >
                                     <div className="flex items-center justify-between mb-6">
                                         <div className="flex items-center gap-3">
@@ -152,9 +159,21 @@ export default function PerformanceHistory() {
                             <div className="p-6 md:p-8 border-b border-dash-border flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Calendar className="w-5 h-5 text-gold" />
-                                    <h4 className="text-lg font-black text-white uppercase">Historical Result Log</h4>
+                                    <h4 className="text-lg font-black text-white uppercase">
+                                        {selectedFilter === "TOTAL" ? "Full History Log" : `${selectedFilter} Results`}
+                                    </h4>
                                 </div>
-                                <span className="text-[10px] font-bold text-dash-text-muted uppercase">Verified Results Only</span>
+                                <div className="flex items-center gap-4">
+                                    {selectedFilter !== "TOTAL" && (
+                                        <button
+                                            onClick={() => setSelectedFilter("TOTAL")}
+                                            className="text-[9px] font-black text-gold uppercase tracking-widest border border-gold/20 px-2 py-1 rounded-lg hover:bg-gold/10 transition-colors"
+                                        >
+                                            Clear Filter
+                                        </button>
+                                    )}
+                                    <span className="text-[10px] font-bold text-dash-text-muted uppercase">Verified Results Only</span>
+                                </div>
                             </div>
 
                             <div className="overflow-x-auto">
@@ -171,7 +190,22 @@ export default function PerformanceHistory() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-dash-border">
-                                        {audit?.recent?.map((p: any) => (
+                                        {audit?.recent?.filter((p: any) => {
+                                            if (selectedFilter === "TOTAL") return true;
+
+                                            // Handle special mode cases like ncaa_full
+                                            const l = p.league.toLowerCase();
+                                            const m = (p.mode || 'safe').toLowerCase();
+
+                                            if (selectedFilter.toLowerCase().includes('_full')) {
+                                                const baseLeague = selectedFilter.toLowerCase().replace('_full', '');
+                                                return l === baseLeague && m === 'full';
+                                            } else {
+                                                // Handle 'ncaa' which should match league=ncaa AND mode=safe
+                                                // or 'nba' which should match league=nba AND mode=safe
+                                                return l === selectedFilter.toLowerCase() && m === 'safe';
+                                            }
+                                        }).map((p: any) => (
                                             <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
                                                 <td className="px-6 py-4 text-xs font-bold text-dash-text-muted uppercase">{p.game_date}</td>
                                                 <td className="px-6 py-4">

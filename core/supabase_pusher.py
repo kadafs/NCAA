@@ -26,12 +26,17 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 LEAGUES = ["nba", "ncaa"]
 
-async def push_league_predictions(league):
+async def push_league_predictions(league, date_override=None):
     for mode in ["safe", "full"]:
         print(f"Generating predictions for {league.upper()} ({mode})...")
         try:
             # Get standardized JSON from bridge
-            data = get_universal_predictions(league, mode)
+            data = get_universal_predictions(league, mode, date_obj=date_override)
+            
+            # Override timestamp if provided
+            if date_override:
+                data['timestamp'] = date_override.replace(microsecond=0).isoformat()
+
             
             if "error" in data:
                 print(f"Error generating predictions for {league} ({mode}): {data['error']}")
@@ -113,7 +118,7 @@ async def main():
 
     # Execute sequentially for stability
     for league in target_leagues:
-        await push_league_predictions(league)
+        await push_league_predictions(league) # Default date for CLI run without override mechanism here yet
     print("Push Complete.")
 
 if __name__ == "__main__":

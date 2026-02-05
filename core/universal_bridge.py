@@ -15,7 +15,7 @@ from core.data_bridge import UniversalDataBridge
 
 ET_TZ = zoneinfo.ZoneInfo("America/New_York")
 
-def get_universal_predictions(league="nba", mode="safe"):
+def get_universal_predictions(league="nba", mode="safe", date_obj=None):
     config_map = {
         "nba": "configs/leagues/nba.json",
         "ncaa": "configs/leagues/ncaa.json",
@@ -119,7 +119,7 @@ def get_universal_predictions(league="nba", mode="safe"):
         pass
             
     # 3. Fetch Data
-    daily_sheet = bridge.get_standardized_sheet()
+    daily_sheet = bridge.get_standardized_sheet(date_obj=date_obj)
     if not daily_sheet:
         return {
             "league": league,
