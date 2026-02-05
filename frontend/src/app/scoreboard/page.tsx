@@ -49,6 +49,8 @@ const LEAGUES = ["All", "NBA", "NCAA"];
 
 export default function ScoreboardPage() {
     const [selectedDate, setSelectedDate] = useState(getCurrentETDate());
+    const [selectedLeague, setSelectedLeague] = useState("All");
+    const [games, setGames] = useState<Game[]>([]);
     const [predictions, setPredictions] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
