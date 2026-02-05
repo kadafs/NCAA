@@ -196,7 +196,7 @@ export default function LeagueDashboard() {
                     modelTotal: g.model_total || g.modelTotal || 225,
                     rawModelTotal: g.raw_model_total || g.rawModelTotal,
                     edge: g.edge || 2.5,
-                    confidence: g.confidence || "lean",
+                    confidence: g.confidence || "NO PLAY",
                     trace: g.trace || [],
                     factors: g.factors || [],
                     forecastData: g.forecastData || []

@@ -296,6 +296,7 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
             "model_total": round(final_total, 1),
             "edge": round(final_edge, 2),
             "decision": res['decision'],
+            "confidence": res['confidence'],
             "mode": res['mode'],
             "trace": res['trace'],
             "props": player_props,
