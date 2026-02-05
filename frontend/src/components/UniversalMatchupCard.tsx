@@ -70,8 +70,8 @@ export function UniversalMatchupCard({ game, leagueColor, leagueBg, leagueBorder
     const [selectedPlayer, setSelectedPlayer] = useState<PlayerProp | null>(null);
 
     // Logic to determine badge type
-    const isModeA = Math.abs(game.edge) > 10;
-    const isModeB = Math.abs(game.edge) > 6 && !isModeA;
+    const isModeA = Math.abs(game.edge) >= 8.0;
+    const isModeB = Math.abs(game.edge) >= 6.0 && !isModeA;
     const isPositiveEdge = game.edge > 0;
 
     return (

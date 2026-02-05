@@ -104,46 +104,80 @@ class UniversalBasketballEngine:
             elite_off_bonus = sp.get('elite_offense_boost', 2.0)
             
         if self.mode == "full":
-            # Sharp 2: Elite Offense
-            if elite_off_bonus > 0:
-                sharp_total += elite_off_bonus
-                notes.append(f"Sharp Adjustment: Elite Offense Booster (+{elite_off_bonus:.1f} pts)")
-                self._log(f"Sharp 2: Elite Offense Boost -> +{elite_off_bonus:.1f}")
-                # Pace Conflict Gate: Cap Pace Eff at 50%
-                if pace_eff_bonus > 0:
-                    pace_eff_bonus *= 0.5
-                    self._log(f"Sharp 2b: High Pace Gate (Elite Offense active) -> Pace Efficiency capped at 50%")
-            
-            # Sharp 3: High Pace Eff
-            if pace_eff_bonus > 0:
-                sharp_total += pace_eff_bonus
-                self._log(f"Sharp 3: High Pace Efficiency Bonus -> +{pace_eff_bonus:.2f}")
-
-            # Sharp 4: NBA 3PT Volume
-            if c['name'] == "NBA" and sp.get('three_pa_threshold'):
-                three_pa = game_data.get('three_pa_total', 70)
-                if three_pa > sp['three_pa_threshold']:
-                    bonus = (three_pa - sp['three_pa_threshold']) * 0.05
-                    sharp_total += bonus
-                    self._log(f"Sharp 4: 3PT Volume Bonus -> +{bonus:.2f}")
-
-            # Sharp 5: Blowout Volatility
             projected_spread = abs(game_data.get('projected_spread', 10.0))
             current_lean = "OVER" if sharp_total > market else "UNDER"
-            
+
+            if c['name'] == "NCAA":
+                # Sharp 2: Elite Offense
+                if elite_off_bonus > 0:
+                    sharp_total += elite_off_bonus
+                    notes.append(f"Sharp Adjustment: Elite Offense Booster (+{elite_off_bonus:.1f} pts)")
+                    self._log(f"Sharp 2: Elite Offense Boost -> +{elite_off_bonus:.1f}")
+                    # Pace Conflict Gate: Cap Pace Eff at 50%
+                    if pace_eff_bonus > 0:
+                        pace_eff_bonus *= 0.5
+                        self._log(f"Sharp 2b: High Pace Gate (Elite Offense active) -> Pace Efficiency capped at 50%")
+                
+                # Sharp 3: High Pace Eff
+                if pace_eff_bonus > 0:
+                    sharp_total += pace_eff_bonus
+                    self._log(f"Sharp 3: High Pace Efficiency Bonus -> +{pace_eff_bonus:.2f}")
+
+                # Sharp 4: Blowout Volatility
+                spread_threshold = sp.get('blowout_spread_threshold', 9.0)
+                if projected_spread > spread_threshold:
+                    penalty = sp.get('blowout_under_penalty', 3.5) if current_lean == "UNDER" else sp.get('blowout_over_boost', 2.5)
+                    sharp_total += penalty
+                    self._log(f"Sharp 4: Blowout Adjustment (NCAA) -> {penalty:+.1f}")
+                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
+
+                # Sharp v2.1 Change #1: Soft Foul Layer
+                # Trigger: competitive (Spread <= 7), mid-tempo range (138-155), non-static pace (>= 67)
+                if projected_spread <= 7.0 and 138.0 <= sharp_total <= 155.0 and pace_adj >= 67.0:
+                    soft_foul_bonus = 1.2
+                    sharp_total += soft_foul_bonus
+                    self._log(f"Sharp v2.1: Soft Foul Layer Applied -> +{soft_foul_bonus}")
+                    notes.append(f"Sharp Adjustment: Soft Foul Probability Correction (+{soft_foul_bonus} pts)")
+
+                # Sharp v2.1 Change #2: Mid-range Volatility Boost
+                # Trigger: high-chaos band (145-155), high volatility context (NRE >= 50)
+                nre_val = game_data.get('nre', 50) # Fallback to mid
+                if 145.0 <= sharp_total <= 155.0 and nre_val >= 50:
+                    mid_vol_boost = 1.0
+                    sharp_total += mid_vol_boost
+                    self._log(f"Sharp v2.1: Mid-range Volatility Boost -> +{mid_vol_boost}")
+                    notes.append(f"Sharp Adjustment: Mid-range Volatility Correction (+{mid_vol_boost} pts)")
+
             if c['name'] == "NBA":
+                # Sharp 2: Elite Offense
+                if elite_off_bonus > 0:
+                    sharp_total += elite_off_bonus
+                    notes.append(f"Sharp Adjustment: Elite Offense Booster (+{elite_off_bonus:.1f} pts)")
+                    self._log(f"Sharp 2: Elite Offense Boost -> +{elite_off_bonus:.1f}")
+                    # Pace Conflict Gate: Cap Pace Eff at 50%
+                    if pace_eff_bonus > 0:
+                        pace_eff_bonus *= 0.5
+                        self._log(f"Sharp 2b: High Pace Gate (Elite Offense active) -> Pace Efficiency capped at 50%")
+                
+                # Sharp 3: High Pace Eff
+                if pace_eff_bonus > 0:
+                    sharp_total += pace_eff_bonus
+                    self._log(f"Sharp 3: High Pace Efficiency Bonus -> +{pace_eff_bonus:.2f}")
+
+                # Sharp 4: NBA 3PT Volume
+                if sp.get('three_pa_threshold'):
+                    three_pa = game_data.get('three_pa_total', 70)
+                    if three_pa > sp['three_pa_threshold']:
+                        bonus = (three_pa - sp['three_pa_threshold']) * 0.05
+                        sharp_total += bonus
+                        self._log(f"Sharp 4: 3PT Volume Bonus -> +{bonus:.2f}")
+
+                # Sharp 5: Blowout Volatility
                 spread_threshold = sp.get('blowout_spread_threshold', 12.0)
                 if projected_spread > spread_threshold:
                     penalty = sp.get('blowout_under_penalty', 5.0) if current_lean == "UNDER" else sp.get('blowout_over_boost', 3.5)
                     sharp_total += penalty
                     self._log(f"Sharp 5: Blowout Adjustment (NBA) -> {penalty:+.1f}")
-                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
-            elif c['name'] == "NCAA":
-                spread_threshold = sp.get('blowout_spread_threshold', 9.0)
-                if projected_spread > spread_threshold:
-                    penalty = sp.get('blowout_under_penalty', 3.5) if current_lean == "UNDER" else sp.get('blowout_over_boost', 2.5)
-                    sharp_total += penalty
-                    self._log(f"Sharp 5: Blowout Adjustment (NCAA) -> {penalty:+.1f}")
                     notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
 
             # Sharp 6: Injury Impact (Before Foul Bonus)
@@ -194,8 +228,8 @@ class UniversalBasketballEngine:
         # Professional Confidence Tiers
         confidence = "LOW"
         if abs_edge >= 9.0: confidence = "HIGH"
-        elif abs_edge >= 7.0: confidence = "MEDIUM"
-        elif abs_edge >= 5.0: confidence = "LOW"
+        elif abs_edge >= 7.5: confidence = "MEDIUM"
+        elif abs_edge >= 6.0: confidence = "LOW"
         else: confidence = "LOW" # Below play threshold
         
         # NCAA Auto-Pass Override

@@ -42,7 +42,7 @@ export interface Prediction {
     modelTotal: number;
     rawModelTotal?: number;
     edge: number;
-    confidence: 'lock' | 'strong' | 'lean';
+    confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean';
     time: string;
     date: string;
     trace: string[];

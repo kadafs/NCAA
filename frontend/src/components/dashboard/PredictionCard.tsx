@@ -155,20 +155,37 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                 </div>
 
                 {/* The "Big Edge" Highlight */}
-                <div className="mt-8 flex items-center justify-between p-4 bg-gold/5 rounded-xl border border-gold/10">
+                <div className={cn(
+                    "mt-8 flex items-center justify-between p-4 rounded-xl border transition-all",
+                    prediction.confidence === 'NO PLAY'
+                        ? "bg-white/5 border-white/10 opacity-60"
+                        : "bg-gold/5 border-gold/10"
+                )}>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gold rounded-full flex items-center justify-center text-dash-bg">
-                            <Zap className="w-6 h-6 fill-current" />
+                        <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                            prediction.confidence === 'NO PLAY' ? "bg-white/10 text-dash-text-muted" : "bg-gold text-dash-bg"
+                        )}>
+                            <Zap className={cn("w-6 h-6", prediction.confidence !== 'NO PLAY' && "fill-current")} />
                         </div>
                         <div>
-                            <span className="text-[10px] font-black text-gold uppercase tracking-widest block">Model Edge Detected</span>
+                            <span className="text-[10px] font-black text-gold uppercase tracking-widest block">
+                                {prediction.confidence === 'NO PLAY' ? "Minimal Edge" : "Model Edge Detected"}
+                            </span>
                             <span className="text-sm font-bold text-white uppercase tracking-tighter">
-                                {prediction.edge > 0 ? "Potential OVER" : "Potential UNDER"} Play Recommended
+                                {prediction.confidence === 'NO PLAY'
+                                    ? "No Play Recommended"
+                                    : `${prediction.edge > 0 ? "Potential OVER" : "Potential UNDER"} Play Recommended`}
                             </span>
                         </div>
                     </div>
                     <div className="text-right">
-                        <span className="text-2xl font-black text-gold">+{prediction.edge}</span>
+                        <span className={cn(
+                            "text-2xl font-black",
+                            prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-gold"
+                        )}>
+                            {prediction.edge > 0 ? `+${prediction.edge}` : prediction.edge}
+                        </span>
                         <span className="text-[8px] font-bold text-dash-text-muted uppercase block">Point Value</span>
                     </div>
                 </div>
