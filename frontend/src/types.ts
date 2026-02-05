@@ -44,6 +44,7 @@ export interface Prediction {
     edge: number;
     absEdge?: number;
     side?: "OVER" | "UNDER";
+    decision?: "PLAY" | "LEAN" | "PASS";
     confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean';
     time: string;
     date: string;
