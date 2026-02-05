@@ -294,7 +294,7 @@ export default function ScoreboardPage() {
                                     <p className="text-sm font-bold text-white mb-2">Error Loading Games</p>
                                     <p className="text-xs text-dash-text-muted mb-4">{error}</p>
                                     <button
-                                        onClick={fetchGames}
+                                        onClick={fetchData}
                                         className="px-6 py-2 bg-gold text-dash-bg text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform"
                                     >
                                         Try Again
