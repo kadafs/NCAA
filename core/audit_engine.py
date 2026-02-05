@@ -63,6 +63,11 @@ def fetch_nba_scores_official(date_str):
                 
                 key = get_canonical_key(away_full, home_full)
                 status_desc = "Final" if g.get('gameStatus') == 3 else "Ongoing/Pre"
+                
+                # Validation: Skip if total is 0 (data error)
+                if (away['score'] + home['score']) == 0:
+                    continue
+
                 results_map[key] = {
                     "away_score": away['score'],
                     "home_score": home['score'],
@@ -194,6 +199,46 @@ def audit_nba(date_obj):
     except Exception as e:
         print(f"NBA Audit Error: {e}")
 
+def fetch_ncaa_scores_espn(date_str):
+    """Fallback: Fetch completed NCAA scores from ESPN."""
+    try:
+        espn_date = date_str.replace("-", "")
+        # NCAA Men's Basketball ESPN API
+        url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates={espn_date}&limit=500&groups=50" # groups=50 is D1
+        resp = requests.get(url, timeout=15)
+        data = resp.json()
+        
+        results = {}
+        for event in data.get('events', []):
+            comp = event['competitions'][0]
+            home_comp = next(c for c in comp['competitors'] if c['homeAway'] == 'home')
+            away_comp = next(c for c in comp['competitors'] if c['homeAway'] == 'away')
+            
+            # Use clean_team_name which handles substring/expansion
+            away_name = away_comp['team']['displayName']
+            home_name = home_comp['team']['displayName']
+            
+            key = get_canonical_key(away_name, home_name)
+            is_final = event['status']['type']['state'] == 'post'
+            
+            # Skip invalid scores
+            total_score = int(away_comp['score']) + int(home_comp['score'])
+            if total_score == 0:
+                continue
+
+            results[key] = {
+                "away_score": int(away_comp['score']),
+                "home_score": int(home_comp['score']),
+                "total": total_score,
+                "status_code": 3 if is_final else 1,
+                "status_desc": "Final" if is_final else "Not Final"
+            }
+        return results
+    except Exception as e:
+        print(f"NCAA ESPN Audit Fallback failed: {e}")
+        return {}
+
+
 def audit_ncaa(date_obj):
     date_str = date_obj.strftime("%Y-%m-%d")
     print(f"Auditing NCAA for {date_str}...")
@@ -225,16 +270,33 @@ def audit_ncaa(date_obj):
                 away_name = away.get('names', {}).get('short', '')
                 home_name = home.get('names', {}).get('short', '')
                 
+                
+                total_score = int(away.get('score', 0)) + int(home.get('score', 0))
+                if total_score == 0:
+                    continue
+
                 if away_name and home_name:
                     key = get_canonical_key(away_name, home_name)
                     results_map[key] = {
                         "away_score": int(away.get('score', 0)),
                         "home_score": int(home.get('score', 0)),
-                        "total": int(away.get('score', 0)) + int(home.get('score', 0))
+                        "total": total_score
                     }
 
         if not results_map:
-            print(f"No completed NCAA games found in API for {date_str}.")
+            print(f"No completed NCAA games found in primary API for {date_str}. Trying fallback...")
+        
+        # Merge/Fallback to ESPN
+        if not results_map or True: # Always try fallback to fill gaps for now
+            print("Fetching NCAA Fallback (ESPN)...")
+            fallback_map = fetch_ncaa_scores_espn(date_str)
+            for k, v in fallback_map.items():
+                if k not in results_map:
+                    results_map[k] = v
+                    # print(f"  - Added from fallback: {k}")
+        
+        if not results_map:
+            print(f"No completed NCAA games found in any API for {date_str}.")
             return
 
         print(f"DEBUG: NCAA Results Map Keys: {list(results_map.keys())[:5]}... (Total: {len(results_map)})")
@@ -317,7 +379,7 @@ def update_summary():
     print("Recalculating Audit Summary...")
     try:
         all_graded = supabase.table("predictions_history") \
-            .select("league, is_win, profit") \
+            .select("league, is_win, profit, mode") \
             .eq("status", "graded") \
             .execute()
 
@@ -327,27 +389,52 @@ def update_summary():
         stats = {}
         total_stats = {"wins": 0, "losses": 0, "pushes": 0, "profit": 0, "total_games": 0}
 
+
         for row in all_graded.data:
             l = row['league'].lower()
-            if l not in stats:
-                stats[l] = {"wins": 0, "losses": 0, "pushes": 0, "profit": 0, "total_games": 0}
+            # Default to safe if mode is missing (legacy rows)
+            m = row.get('mode', 'safe') or 'safe'
             
-            p = row['profit'] if row['profit'] is not None else 0
-            stats[l]['profit'] += p
-            total_stats['profit'] += p
+            # Create a composite key for the summary league name: e.g. "nba" (default/safe) or "nba_full"
+            # Actually, to make it cleaner on UI, maybe store as:
+            # league="nba" for safe (legacy compat) AND league="nba_full" for full?
+            # OR league="nba_safe" and "nba_full"?
+            # Let's verify how UI reads it. The UI iterates metrics.
+            # If we change "nba" to "nba_safe", current UI might break if it expects specific keys?
+            # The UI loops through `audit?.metrics?.map`, so new keys are fine.
+            # However, for backward compatibility, maybe keep "nba" as the aggregate or the safe one?
+            # Let's separate them distinctively: "nba (safe)" and "nba (full)"? 
+            # Or just use the mode suffix in the key.
             
-            if row['is_win'] is True:
-                stats[l]['wins'] += 1
-                total_stats['wins'] += 1
-            elif row['is_win'] is False:
-                stats[l]['losses'] += 1
-                total_stats['losses'] += 1
+            # Key strategy:
+            # 1. "nba" -> SAFE mode (Legacy compatibility)
+            # 2. "nba_full" -> FULL mode
+            
+            if m == 'safe':
+                keys = [l] # Main league key is safe mode
             else:
-                stats[l]['pushes'] += 1
-                total_stats['pushes'] += 1
-            
-            stats[l]['total_games'] += 1
-            total_stats['total_games'] += 1
+                keys = [f"{l}_{m}"] # e.g. nba_full
+
+            for key in keys:
+                if key not in stats:
+                    stats[key] = {"wins": 0, "losses": 0, "pushes": 0, "profit": 0, "total_games": 0}
+                
+                p = row['profit'] if row['profit'] is not None else 0
+                stats[key]['profit'] += p
+                total_stats['profit'] += p
+                
+                if row['is_win'] is True:
+                    stats[key]['wins'] += 1
+                    total_stats['wins'] += 1
+                elif row['is_win'] is False:
+                    stats[key]['losses'] += 1
+                    total_stats['losses'] += 1
+                else:
+                    stats[key]['pushes'] += 1
+                    total_stats['pushes'] += 1
+                
+                stats[key]['total_games'] += 1
+                total_stats['total_games'] += 1
 
         summary_rows = []
         

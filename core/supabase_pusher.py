@@ -68,34 +68,36 @@ async def push_league_predictions(league):
                 }, on_conflict="league").execute()
                 print(f"Updated base {league} key for backward compatibility.")
 
-            # 2. Update History Archive (Only for safe mode to prevent duplicate history rows)
-            if mode == "safe":
-                history_rows = []
-                for g in data.get("games", []):
-                    away = g.get('away_details', {}).get('name') or g.get('away', {}).get('name') or g.get('away_team')
-                    home = g.get('home_details', {}).get('name') or g.get('home', {}).get('name') or g.get('home_team')
-                    
-                    if not away or not home: continue
-                    
-                    # Unique ID prevents duplicates: nba_2026-01-27_lakers_celtics
-                    game_date = data.get('timestamp', datetime.now().isoformat())[:10]
-                    row_id = f"{league}_{game_date}_{away}_{home}".replace(" ", "_").lower()
-                    
-                    history_rows.append({
-                        "id": row_id,
-                        "league": league,
-                        "game_date": game_date,
-                        "matchup": f"{away} @ {home}",
-                        "market_total": float(g.get('market_total', 0)),
-                        "model_total": float(g.get('model_total', 0)),
-                        "edge": float(g.get('edge', 0)),
-                        "status": "pending",
-                        "updated_at": datetime.now().isoformat()
-                    })
+            # 2. Update History Archive (Push BOTH modes with unique IDs)
+            history_rows = []
+            for g in data.get("games", []):
+                away = g.get('away_details', {}).get('name') or g.get('away', {}).get('name') or g.get('away_team')
+                home = g.get('home_details', {}).get('name') or g.get('home', {}).get('name') or g.get('home_team')
+                
+                if not away or not home: continue
+                
+                # Unique ID: nba_2026-01-27_lakers_celtics_full
+                game_date = data.get('timestamp', datetime.now().isoformat())[:10]
+                base_id = f"{league}_{game_date}_{away}_{home}".replace(" ", "_").lower()
+                row_id = f"{base_id}_{mode}" # e.g. ..._safe or ..._full
+                
+                history_rows.append({
+                    "id": row_id,
+                    "league": league,
+                    "game_date": game_date,
+                    "matchup": f"{away} @ {home}",
+                    "market_total": float(g.get('market_total', 0)),
+                    "model_total": float(g.get('model_total', 0)),
+                    "edge": float(g.get('edge', 0)),
+                    "status": "pending",
+                    "mode": mode,
+                    "updated_at": datetime.now().isoformat()
+                })
 
-                if history_rows:
-                    supabase.table("predictions_history").upsert(history_rows, on_conflict="id").execute()
-                    print(f"Archived {len(history_rows)} games into history.")
+            if history_rows:
+                # Use upsert to update existing rows or insert new ones
+                supabase.table("predictions_history").upsert(history_rows, on_conflict="id").execute()
+                print(f"Archived {len(history_rows)} games into history ({mode}).")
         except Exception as e:
             print(f"Failed to push {league} ({mode}) predictions: {e}")
 

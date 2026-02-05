@@ -163,6 +163,7 @@ export default function PerformanceHistory() {
                                         <tr className="bg-white/5 border-b border-dash-border">
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Date</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">League</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Mode</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Matchup</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Line</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Outcome</th>
@@ -176,6 +177,16 @@ export default function PerformanceHistory() {
                                                 <td className="px-6 py-4">
                                                     <span className="text-[10px] font-black px-2 py-0.5 bg-dash-bg border border-dash-border rounded text-gold uppercase">
                                                         {p.league}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={cn(
+                                                        "text-[10px] font-black px-2 py-0.5 rounded uppercase border",
+                                                        (p.mode || 'safe') === 'full'
+                                                            ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                                                            : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
+                                                    )}>
+                                                        {p.mode || 'SAFE'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs font-black text-white uppercase">{p.matchup}</td>

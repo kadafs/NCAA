@@ -5,8 +5,7 @@ import zoneinfo
 
 def inspect_matchups():
     et_tz = zoneinfo.ZoneInfo("America/New_York")
-    now = datetime.now(et_tz)
-    year, month, day = now.year, now.month, now.day
+    year, month, day = 2026, 2, 4
     url = f"https://ncaa-api-w2ry.onrender.com/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
     
     print(f"Fetching from: {url}")
@@ -17,10 +16,12 @@ def inspect_matchups():
             g = g_wrapper.get('game')
             away = g.get('away', {}).get('names', {}).get('short', '')
             home = g.get('home', {}).get('names', {}).get('short', '')
-            if "St. Thomas" in away or "St. Thomas" in home or "South Dakota" in away or "South Dakota" in home:
+            if "Iowa" in away or "Iowa" in home or "Washington" in away or "Washington" in home:
                 print(f"MATCH: {away} vs {home}")
                 print(f"  Away Names: {json.dumps(g.get('away', {}).get('names', {}))}")
                 print(f"  Home Names: {json.dumps(g.get('home', {}).get('names', {}))}")
+                print(f"  Scores: Away={g.get('away', {}).get('score')} | Home={g.get('home', {}).get('score')}")
+                print(f"  Game State: {g.get('header', {}).get('state', {}).get('state')}")
     else:
         print(f"Failed: {r.status_code}")
 
