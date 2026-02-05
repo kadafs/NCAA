@@ -24,7 +24,7 @@ export function ConfidenceBadge({ confidence, className }: ConfidenceBadgeProps)
             border: "border-gold/20"
         },
         LOW: {
-            label: "MODEL LEAN",
+            label: "LOW CONFIDENCE",
             icon: Shield,
             bg: "bg-cyan/10",
             text: "text-cyan",
@@ -33,9 +33,9 @@ export function ConfidenceBadge({ confidence, className }: ConfidenceBadgeProps)
         "NO PLAY": {
             label: "NO PLAY",
             icon: X,
-            bg: "bg-white/5",
-            text: "text-white/40",
-            border: "border-white/10"
+            bg: "bg-dash-bg-secondary",
+            text: "text-dash-text-muted",
+            border: "border-dash-border"
         },
         lock: {
             label: "Lock Plays",

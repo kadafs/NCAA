@@ -226,11 +226,10 @@ class UniversalBasketballEngine:
         decision = "PLAY" if abs_edge >= c['thresholds']['mode_b'] else "PASS"
         
         # Professional Confidence Tiers
-        confidence = "LOW"
         if abs_edge >= 9.0: confidence = "HIGH"
         elif abs_edge >= 7.5: confidence = "MEDIUM"
         elif abs_edge >= 6.0: confidence = "LOW"
-        else: confidence = "LOW" # Below play threshold
+        else: confidence = "NO PLAY"
         
         # NCAA Auto-Pass Override
         if self.mode == "full" and c['name'] == "NCAA":
