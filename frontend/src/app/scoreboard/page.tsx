@@ -47,6 +47,46 @@ interface Game {
 
 const LEAGUES = ["All", "NBA", "NCAA"];
 
+/**
+ * Normalized string helper: removes all non-alphanumeric, lowercases, and trims.
+ */
+const normalize = (str: string) => {
+    return (str || "").toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+};
+
+/**
+ * NBA Abbreviation Mapping: ESPN Scoreboard vs Prediction Engine
+ */
+const NBA_ABBR_MAP: Record<string, string> = {
+    "gs": "gsw",
+    "gsw": "gsw",
+    "phx": "pho",
+    "pho": "pho",
+    "bkn": "bk",
+    "bk": "bk",
+    "no": "nop",
+    "nop": "nop",
+    "sa": "sas",
+    "sas": "sas",
+    "ny": "nyk",
+    "nyk": "nyk"
+};
+
+/**
+ * NCAA Name Aliases: Scoreboard vs Engine
+ */
+const NCAA_ALIASES: Record<string, string[]> = {
+    "albany": ["ua albany", "u albany", "albany ny"],
+    "penn state": ["penn st.", "penn st"],
+    "umass lowell": ["umas low", "umas lowell"],
+    "fairleigh dickinson": ["fairleigh dickinson", "fdu"],
+    "saint mary's": ["st. mary's (ca)", "st marys ca", "st marys"],
+    "st. thomas": ["st thomas mn", "st thomas"],
+    "unc wilmington": ["uncw"],
+    "unc greensboro": ["uncg"],
+    "unc asheville": ["unca"]
+};
+
 export default function ScoreboardPage() {
     const [selectedDate, setSelectedDate] = useState(getCurrentETDate());
     const [selectedLeague, setSelectedLeague] = useState("All");
@@ -81,17 +121,44 @@ export default function ScoreboardPage() {
             const processPreds = (data: any) => {
                 if (data.status === 'fulfilled' && data.value.games) {
                     data.value.games.forEach((g: any) => {
-                        const away = (g.away_details?.code || g.away || "").toLowerCase().trim();
-                        const home = (g.home_details?.code || g.home || "").toLowerCase().trim();
-                        if (away && home) {
-                            predMap[`${away}_vs_${home}`] = g;
+                        const awayCodeRaw = (g.away_details?.code || g.away || "");
+                        const homeCodeRaw = (g.home_details?.code || g.home || "");
+                        const awayNameRaw = (g.away_details?.name || g.away || "");
+                        const homeNameRaw = (g.home_details?.name || g.home || "");
+
+                        const aCode = normalize(awayCodeRaw);
+                        const hCode = normalize(homeCodeRaw);
+                        const aName = normalize(awayNameRaw);
+                        const hName = normalize(homeNameRaw);
+
+                        // Index by normalized code combination
+                        if (aCode && hCode) {
+                            predMap[`${aCode}_vs_${hCode}`] = g;
+
+                            // NBA Abbreviation Expansion (e.g. gsw vs pho -> gs vs phx)
+                            const aAlias = NBA_ABBR_MAP[aCode];
+                            const hAlias = NBA_ABBR_MAP[hCode];
+                            if (aAlias || hAlias) {
+                                const finalA = aAlias || aCode;
+                                const finalH = hAlias || hCode;
+                                predMap[`${finalA}_vs_${finalH}`] = g;
+                            }
                         }
 
-                        // Also map by full names as fallback
-                        const awayFull = (g.away_details?.name || g.away || "").toLowerCase().trim().replace(/[^a-z]/g, '');
-                        const homeFull = (g.home_details?.name || g.home || "").toLowerCase().trim().replace(/[^a-z]/g, '');
-                        if (awayFull && homeFull) {
-                            predMap[`${awayFull}_vs_${homeFull}`] = g;
+                        // Index by normalized name combination
+                        if (aName && hName) {
+                            predMap[`${aName}_vs_${hName}`] = g;
+
+                            // NCAA Name Alias Expansion
+                            Object.entries(NCAA_ALIASES).forEach(([engineName, scoreboardNames]) => {
+                                const normEngine = normalize(engineName);
+                                scoreboardNames.forEach(sName => {
+                                    const normScore = normalize(sName);
+                                    if (aName === normEngine) predMap[`${normScore}_vs_${hName}`] = g;
+                                    if (hName === normEngine) predMap[`${aName}_vs_${normScore}`] = g;
+                                    if (aName === normEngine && hName === normEngine) predMap[`${normScore}_vs_${normScore}`] = g; // unlikely but safe
+                                });
+                            });
                         }
                     });
                 }
@@ -138,12 +205,30 @@ export default function ScoreboardPage() {
             }
 
             // Match prediction from map
-            const awayCode = (game.away.names.short || "").toLowerCase().trim();
-            const homeCode = (game.home.names.short || "").toLowerCase().trim();
-            const awayFull = (game.away.names.full || "").toLowerCase().trim().replace(/[^a-z]/g, '');
-            const homeFull = (game.home.names.full || "").toLowerCase().trim().replace(/[^a-z]/g, '');
+            const aCode = normalize(game.away.names.short);
+            const hCode = normalize(game.home.names.short);
+            const aFull = normalize(game.away.names.full);
+            const hFull = normalize(game.home.names.full);
 
-            const match = predMap[`${awayCode}_vs_${homeCode}`] || predMap[`${awayFull}_vs_${homeFull}`];
+            // 1. Direct Code Match
+            let match = predMap[`${aCode}_vs_${hCode}`];
+
+            // 2. Direct Name Match
+            if (!match) {
+                match = predMap[`${aFull}_vs_${hFull}`];
+            }
+
+            // 3. Fuzzy/Substring Match (Lower confidence, but better than 150)
+            if (!match) {
+                const candidates = Object.keys(predMap);
+                const fuzzyMatchKey = candidates.find(key => {
+                    const [pAway, pHome] = key.split('_vs_');
+                    // Check if scoreboard names contain prediction names or vice versa
+                    return (aFull.includes(pAway) || pAway.includes(aFull)) &&
+                        (hFull.includes(pHome) || pHome.includes(hFull));
+                });
+                if (fuzzyMatchKey) match = predMap[fuzzyMatchKey];
+            }
 
             const total = match?.market_total || 150; // Fallback to 150 if truly not found
             const edge = match?.edge || 0;
@@ -162,8 +247,10 @@ export default function ScoreboardPage() {
                     logo: league === 'NBA'
                         ? `https://a.espncdn.com/i/teamlogos/nba/500/${game.away.names.short.toLowerCase()}.png`
                         : (() => {
-                            const rawTeamName = (game.away.names.full || "").toLowerCase().trim();
-                            const slug = NCAA_LOGO_MAP[rawTeamName] || rawTeamName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                            const rawName = game.away.names.full || "";
+                            const normName = normalize(rawName);
+                            // Some logos need the "Slugified" version (dashes), some are in our special map
+                            const slug = NCAA_LOGO_MAP[normName] || rawName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
                             return `/api/logo/${slug}`;
                         })()
                 },
@@ -174,8 +261,9 @@ export default function ScoreboardPage() {
                     logo: league === 'NBA'
                         ? `https://a.espncdn.com/i/teamlogos/nba/500/${game.home.names.short.toLowerCase()}.png`
                         : (() => {
-                            const rawTeamName = (game.home.names.full || "").toLowerCase().trim();
-                            const slug = NCAA_LOGO_MAP[rawTeamName] || rawTeamName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                            const rawName = game.home.names.full || "";
+                            const normName = normalize(rawName);
+                            const slug = NCAA_LOGO_MAP[normName] || rawName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
                             return `/api/logo/${slug}`;
                         })()
                 },
@@ -390,6 +478,9 @@ interface GameCardProps {
 }
 
 function GameCard({ game, index }: GameCardProps) {
+    const [awayLogoError, setAwayLogoError] = useState(false);
+    const [homeLogoError, setHomeLogoError] = useState(false);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -419,8 +510,13 @@ function GameCard({ game, index }: GameCardProps) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-dash-bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
-                            {game.away.logo ? (
-                                <img src={game.away.logo} alt={game.away.code} className="w-6 h-6 object-contain" />
+                            {game.away.logo && !awayLogoError ? (
+                                <img
+                                    src={game.away.logo}
+                                    alt={game.away.code}
+                                    className="w-6 h-6 object-contain"
+                                    onError={() => setAwayLogoError(true)}
+                                />
                             ) : (
                                 <span className="text-[10px] font-black text-white">{game.away.code[0]}</span>
                             )}
@@ -434,8 +530,13 @@ function GameCard({ game, index }: GameCardProps) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-dash-bg-secondary rounded-lg flex items-center justify-center overflow-hidden">
-                            {game.home.logo ? (
-                                <img src={game.home.logo} alt={game.home.code} className="w-6 h-6 object-contain" />
+                            {game.home.logo && !homeLogoError ? (
+                                <img
+                                    src={game.home.logo}
+                                    alt={game.home.code}
+                                    className="w-6 h-6 object-contain"
+                                    onError={() => setHomeLogoError(true)}
+                                />
                             ) : (
                                 <span className="text-[10px] font-black text-white">{game.home.code[0]}</span>
                             )}
