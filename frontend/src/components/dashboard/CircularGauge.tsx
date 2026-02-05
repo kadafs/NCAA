@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface CircularGaugeProps {
     value: number;
@@ -57,14 +58,23 @@ export function CircularGauge({
             </svg>
 
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-black text-white leading-none">
+                <span className={cn(
+                    "font-black text-white leading-none",
+                    size <= 64 ? "text-lg" : size <= 80 ? "text-xl" : "text-2xl"
+                )}>
                     {value.toFixed(1)}%
                 </span>
-                <span className="text-[10px] font-bold text-dash-text-secondary uppercase tracking-widest mt-1">
+                <span className={cn(
+                    "font-bold text-dash-text-secondary uppercase tracking-widest mt-0.5",
+                    size <= 64 ? "text-[8px]" : "text-[10px]"
+                )}>
                     {label}
                 </span>
                 {subLabel && (
-                    <span className="text-[8px] font-medium text-dash-text-muted uppercase">
+                    <span className={cn(
+                        "font-medium text-dash-text-muted uppercase",
+                        size <= 64 ? "text-[6px]" : "text-[8px]"
+                    )}>
                         {subLabel}
                     </span>
                 )}

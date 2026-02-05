@@ -43,13 +43,13 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
             </div>
 
             {/* Content: VS Layout */}
-            <div className="p-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="p-4 sm:p-6">
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6 lg:gap-8">
                     {/* Teams Row */}
-                    <div className="flex items-center gap-6 w-full md:w-auto">
+                    <div className="flex items-center gap-3 sm:gap-6 w-full lg:w-auto">
                         {/* Away */}
-                        <div className="flex-1 flex flex-col items-center md:items-end text-center md:text-right gap-2">
-                            <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
+                        <div className="flex-1 flex flex-col items-center lg:items-end text-center lg:text-right gap-1 sm:gap-2 min-w-0">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-dash-bg-secondary rounded-xl sm:rounded-2xl flex items-center justify-center p-1.5 sm:p-2 border border-dash-border flex-shrink-0">
                                 <img
                                     src={prediction.awayTeam.logo || LEAGUE_FALLBACKS[prediction.league?.toLowerCase()] || LEAGUE_FALLBACKS.ncaa}
                                     alt={prediction.awayTeam.name}
@@ -81,21 +81,21 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                     className="max-w-full max-h-full object-contain"
                                 />
                             </div>
-                            <div>
-                                <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.awayTeam.name}</h3>
-                                <p className="text-[10px] font-bold text-dash-text-muted mt-0.5">{prediction.awayTeam.record}</p>
+                            <div className="min-w-0">
+                                <h3 className="text-[11px] sm:text-xs font-black text-white uppercase leading-none truncate max-w-[100px] sm:max-w-[140px]">{prediction.awayTeam.name}</h3>
+                                <p className="text-[9px] sm:text-[10px] font-bold text-dash-text-muted mt-0.5">{prediction.awayTeam.record}</p>
                             </div>
                         </div>
 
                         {/* VS Divider */}
-                        <div className="flex flex-col items-center gap-1">
-                            <span className="text-xl font-black italic text-dash-text-muted group-hover:text-white transition-colors">VS</span>
-                            <div className="h-12 w-[1px] bg-gradient-to-b from-transparent via-dash-border to-transparent" />
+                        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                            <span className="text-base sm:text-xl font-black italic text-dash-text-muted group-hover:text-white transition-colors">VS</span>
+                            <div className="h-8 sm:h-12 w-[1px] bg-gradient-to-b from-transparent via-dash-border to-transparent" />
                         </div>
 
                         {/* Home */}
-                        <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left gap-2">
-                            <div className="w-16 h-16 bg-dash-bg-secondary rounded-2xl flex items-center justify-center p-2 border border-dash-border">
+                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-1 sm:gap-2 min-w-0">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-dash-bg-secondary rounded-xl sm:rounded-2xl flex items-center justify-center p-1.5 sm:p-2 border border-dash-border flex-shrink-0">
                                 <img
                                     src={prediction.homeTeam.logo || LEAGUE_FALLBACKS[prediction.league?.toLowerCase()] || LEAGUE_FALLBACKS.ncaa}
                                     alt={prediction.homeTeam.name}
@@ -123,32 +123,44 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                     className="max-w-full max-h-full object-contain"
                                 />
                             </div>
-                            <div>
-                                <h3 className="text-xs font-black text-white uppercase leading-none">{prediction.homeTeam.name}</h3>
-                                <p className="text-[10px] font-bold text-dash-text-muted mt-0.5">{prediction.homeTeam.record}</p>
+                            <div className="min-w-0">
+                                <h3 className="text-[11px] sm:text-xs font-black text-white uppercase leading-none truncate max-w-[100px] sm:max-w-[140px]">{prediction.homeTeam.name}</h3>
+                                <p className="text-[9px] sm:text-[10px] font-bold text-dash-text-muted mt-0.5">{prediction.homeTeam.record}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Stats/Gauges Section (Dynamic for Mobile/Desktop) */}
-                    <div className="flex flex-wrap items-center justify-center gap-6">
-                        <CircularGauge
-                            value={prediction.homeTeam.stats.netRating}
-                            label="Net Rating"
-                            subLabel="Efficiency"
-                            size={100}
-                            strokeWidth={8}
-                            color="#3B82F6"
-                        />
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 w-full lg:w-auto mt-4 lg:mt-0">
+                        <div className="hidden sm:block">
+                            <CircularGauge
+                                value={prediction.homeTeam.stats.netRating}
+                                label="Net Rating"
+                                subLabel="Efficiency"
+                                size={80}
+                                strokeWidth={6}
+                                color="#3B82F6"
+                            />
+                        </div>
+                        {/* Mobile-only compact gauge */}
+                        <div className="sm:hidden">
+                            <CircularGauge
+                                value={prediction.homeTeam.stats.netRating}
+                                label="Rating"
+                                size={64}
+                                strokeWidth={5}
+                                color="#3B82F6"
+                            />
+                        </div>
 
-                        <div className="flex flex-col items-center justify-center bg-dash-bg-secondary p-4 rounded-2xl border border-dash-border min-w-[140px]">
-                            <span className="text-[9px] font-bold text-dash-text-muted uppercase mb-1">Market Line</span>
-                            <span className="text-xl font-black text-white italic">{prediction.marketTotal}</span>
-                            <div className="w-full h-px bg-dash-border my-2" />
-                            <span className="text-[9px] font-bold text-dash-text-muted uppercase mb-1">Model Predict</span>
-                            <span className="text-xl font-black text-gold italic">{prediction.modelTotal}</span>
+                        <div className="flex flex-col items-center justify-center bg-dash-bg-secondary p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-dash-border w-[120px] sm:w-[140px]">
+                            <span className="text-[8px] sm:text-[9px] font-bold text-dash-text-muted uppercase mb-0.5 sm:mb-1">Market Line</span>
+                            <span className="text-lg sm:text-xl font-black text-white italic">{prediction.marketTotal}</span>
+                            <div className="w-full h-px bg-dash-border my-1.5 sm:my-2" />
+                            <span className="text-[8px] sm:text-[9px] font-bold text-dash-text-muted uppercase mb-0.5 sm:mb-1">Model Predict</span>
+                            <span className="text-lg sm:text-xl font-black text-gold italic">{prediction.modelTotal}</span>
                             {prediction.rawModelTotal && Math.abs(prediction.rawModelTotal - prediction.modelTotal) > 0.5 && (
-                                <span className="text-[8px] font-bold text-dash-text-muted mt-1">Raw: {prediction.rawModelTotal}</span>
+                                <span className="text-[7px] sm:text-[8px] font-bold text-dash-text-muted mt-1">Raw: {prediction.rawModelTotal}</span>
                             )}
                         </div>
                     </div>
@@ -156,47 +168,53 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
 
                 {/* The "Big Edge" Highlight */}
                 <div className={cn(
-                    "mt-8 flex items-center justify-between p-4 rounded-xl border transition-all",
+                    "mt-4 sm:mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl border transition-silky gap-3 sm:gap-4",
                     prediction.confidence === 'NO PLAY'
                         ? "bg-white/5 border-white/10 opacity-60"
                         : prediction.decision === 'LEAN'
                             ? "bg-gold/5 border-gold/10"
                             : "bg-gold/10 border-gold/20 shadow-lg shadow-gold/5"
                 )}>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                         <div className={cn(
-                            "w-12 h-12 rounded-full flex items-center justify-center",
+                            "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0",
                             prediction.confidence === 'NO PLAY' ? "bg-white/10" : "bg-gold/20"
                         )}>
                             <TrendingUp className={cn(
-                                "w-6 h-6",
+                                "w-5 h-5 sm:w-6 sm:h-6",
                                 prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-gold"
                             )} />
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <p className={cn(
-                                "text-xs font-bold uppercase tracking-wider",
+                                "text-[10px] sm:text-xs font-bold uppercase tracking-wider",
                                 prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-gold/60"
                             )}>
                                 Model Edge Detected
                             </p>
                             <p className={cn(
-                                "text-lg font-black leading-tight truncate",
+                                "text-sm sm:text-lg font-black leading-tight",
                                 prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-white"
                             )}>
-                                {prediction.side ? `POTENTIAL ${prediction.side}` : prediction.edge > 0 ? "POTENTIAL OVER" : "POTENTIAL UNDER"}
-                                {prediction.decision === 'LEAN' ? " LEAN" : " PLAY"} RECOMMENDED
+                                <span className="hidden sm:inline">
+                                    {prediction.side ? `POTENTIAL ${prediction.side}` : prediction.edge > 0 ? "POTENTIAL OVER" : "POTENTIAL UNDER"}
+                                    {prediction.decision === 'LEAN' ? " LEAN" : " PLAY"} RECOMMENDED
+                                </span>
+                                <span className="sm:hidden">
+                                    {prediction.side || (prediction.edge > 0 ? "OVER" : "UNDER")}
+                                    {prediction.decision === 'LEAN' ? " LEAN" : " PLAY"}
+                                </span>
                             </p>
                         </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 flex-shrink-0">
                         <span className={cn(
-                            "text-2xl font-black",
+                            "text-xl sm:text-2xl font-black",
                             prediction.confidence === 'NO PLAY' ? "text-dash-text-muted" : "text-gold"
                         )}>
                             {prediction.edge > 0 ? `+${prediction.edge}` : prediction.edge}
                         </span>
-                        <p className="text-[10px] text-dash-text-muted font-bold uppercase">Point Value</p>
+                        <p className="text-[9px] sm:text-[10px] text-dash-text-muted font-bold uppercase">Point Value</p>
                     </div>
                 </div>
 

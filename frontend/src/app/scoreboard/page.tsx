@@ -550,13 +550,13 @@ function GameCard({ game, index }: GameCardProps) {
             </div>
 
             {/* Prediction Footer */}
-            <div className="px-4 py-3 bg-dash-bg-secondary border-t border-dash-border flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 bg-dash-bg-secondary border-t border-dash-border flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
                     <ConfidenceBadge confidence={game.prediction.confidence} />
-                    <span className="text-xs font-bold text-white">{game.prediction.pick}</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-white truncate">{game.prediction.pick}</span>
                 </div>
                 <div className={cn(
-                    "text-[10px] font-black px-2 py-1 rounded",
+                    "text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex-shrink-0",
                     game.prediction.edge > 4 ? "bg-gold/10 text-gold" : "bg-cyan/10 text-cyan"
                 )}>
                     +{game.prediction.edge.toFixed(1)}

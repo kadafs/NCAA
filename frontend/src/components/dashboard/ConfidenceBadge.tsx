@@ -65,11 +65,12 @@ export function ConfidenceBadge({ confidence, className }: ConfidenceBadgeProps)
 
     return (
         <div className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all",
+            "inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-smooth whitespace-nowrap",
             bg, text, border, className
         )}>
-            <Icon className="w-3 h-3" />
-            {label}
+            <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sm:hidden">{label.split(' ')[0]}</span>
         </div>
     );
 }

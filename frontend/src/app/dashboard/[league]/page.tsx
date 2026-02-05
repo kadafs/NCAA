@@ -229,14 +229,14 @@ export default function LeagueDashboard() {
             <div className="lg:ml-16 xl:ml-20">
                 {/* Header */}
                 <header className="sticky top-0 z-30 bg-dash-bg/80 backdrop-blur-xl border-b border-dash-border">
-                    <div className="px-4 py-4 md:px-6 lg:px-8">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gold/10 border border-gold/20 rounded-2xl flex items-center justify-center">
-                                    <Trophy className="w-6 h-6 text-gold" />
+                    <div className="px-3 py-3 sm:px-4 sm:py-4 md:px-6 lg:px-8">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gold/10 border border-gold/20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                                    <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-gold" />
                                 </div>
-                                <div>
-                                    <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">
+                                <div className="min-w-0">
+                                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">
                                         {currentLeague.name} <span className="text-gold italic">Dashboard</span>
                                     </h1>
                                     <div className="flex items-center gap-2 mt-1">
@@ -251,13 +251,13 @@ export default function LeagueDashboard() {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 {/* Mode Toggle */}
-                                <div className="flex items-center gap-2 bg-dash-card border border-dash-border rounded-xl p-1">
+                                <div className="flex items-center gap-1 sm:gap-2 bg-dash-card border border-dash-border rounded-lg sm:rounded-xl p-0.5 sm:p-1">
                                     <button
                                         onClick={() => setMode("safe")}
                                         className={cn(
-                                            "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
+                                            "px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase transition-smooth",
                                             mode === "safe"
                                                 ? "bg-gold text-dash-bg"
                                                 : "text-dash-text-muted hover:text-white"
@@ -268,7 +268,7 @@ export default function LeagueDashboard() {
                                     <button
                                         onClick={() => setMode("full")}
                                         className={cn(
-                                            "px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all",
+                                            "px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg text-[10px] sm:text-xs font-bold uppercase transition-smooth",
                                             mode === "full"
                                                 ? "bg-cyan text-dash-bg"
                                                 : "text-dash-text-muted hover:text-white"
@@ -281,21 +281,21 @@ export default function LeagueDashboard() {
                                 {/* Refresh */}
                                 <button
                                     onClick={fetchData}
-                                    className="p-3 bg-dash-card border border-dash-border rounded-xl hover:border-gold/30 transition-colors"
+                                    className="p-2 sm:p-3 bg-dash-card border border-dash-border rounded-lg sm:rounded-xl hover:border-gold/30 transition-smooth"
                                 >
-                                    <RefreshCw className={cn("w-4 h-4 text-dash-text-muted", loading && "animate-spin")} />
+                                    <RefreshCw className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4 text-dash-text-muted", loading && "animate-spin")} />
                                 </button>
                             </div>
                         </div>
 
                         {/* League Tabs */}
-                        <div className="flex items-center gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mt-3 sm:mt-4 overflow-x-auto no-scrollbar pb-1">
                             {LEAGUES.map((league) => (
                                 <Link
                                     key={league.id}
                                     href={`/dashboard/${league.id}`}
                                     className={cn(
-                                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                                        "px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-smooth whitespace-nowrap",
                                         league.id === leagueId
                                             ? "bg-gold text-dash-bg"
                                             : "bg-dash-card border border-dash-border text-dash-text-muted hover:text-white"
