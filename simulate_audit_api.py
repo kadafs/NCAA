@@ -18,7 +18,7 @@ def simulate_api():
         .select("*") \
         .eq("status", "graded") \
         .order("game_date", desc=True) \
-        .limit(10) \
+        .limit(200) \
         .execute()
     
     data = {

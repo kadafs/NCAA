@@ -28,7 +28,7 @@ RENDER_KEYS = [
 ]
 
 # Cases mentioned by user
-print("--- Testing User Reported Cases ---")
+print("--- Testing User Reported Cases (v1.6.4) ---")
 
 cases = [
     ("Mississippi", "Marshall"),
@@ -36,14 +36,15 @@ cases = [
     ("FIU", "Middle Tennessee"),
     ("San Diego", "Saint Mary's"),
     ("Army", "Colgate"),
-    ("St. Thomas", "South Dakota St.")
+    ("St. Thomas", "South Dakota St."),
+    ("South Dakota State", "St Thomas") # Mixed forms
 ]
 
 for away, home in cases:
     test_match(away, home, RENDER_KEYS)
 
 # Detailed analysis of failures
-print("\n--- Detailed String Analysis ---")
+print("\n--- Detailed String Analysis (Ultimate Normalization) ---")
 def analyze(name):
     print(f"Original: '{name}' -> Clean: '{clean_team_name(name)}'")
 
@@ -53,6 +54,6 @@ analyze("St. Thomas")
 analyze("South Dakota St.")
 analyze("Saint Mary's")
 analyze("San Diego")
-analyze("army black knights vs colgate raiders")
-analyze("south dakota state jackrabbits vs st. thomas tommies")
+analyze("St. Mary's Gaels")
 analyze("saint mary's gaels vs san diego toreros")
+analyze("south dakota state jackrabbits vs st. thomas tommies")

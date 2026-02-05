@@ -1,5 +1,8 @@
+
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Audit API Route
@@ -22,7 +25,7 @@ export async function GET(req: Request) {
             .select("*")
             .eq("status", "graded")
             .order("game_date", { ascending: false })
-            .limit(10);
+            .limit(200);
 
         if (picksError) throw picksError;
 
