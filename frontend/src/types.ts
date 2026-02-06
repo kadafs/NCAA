@@ -38,6 +38,14 @@ export interface Prediction {
         record: string;
         stats: TeamStats;
     };
+    polymarket?: {
+        id: string;
+        title: string;
+        outcomes: string[];
+        prices: string[];
+        volume: number;
+        url: string;
+    };
     marketTotal: number;
     modelTotal: number;
     rawModelTotal?: number;

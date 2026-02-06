@@ -7,6 +7,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES, NBA_TRICODES
 from utils.odds_provider import get_odds, extract_total_for_matchup
+from utils.polymarket_provider import PolymarketProvider
 
 class UniversalDataBridge:
     """
@@ -48,6 +49,14 @@ class UniversalDataBridge:
         # Live Odds Bridge Fallback (Parallel to NCAA implementation)
         live_odds = get_odds("nba", provider='render')
         
+        # Initialize Polymarket Provider
+        try:
+            poly = PolymarketProvider()
+            self.poly_markets = poly.get_markets("nba")
+        except Exception as e:
+            print(f"Polymarket Init Failed: {e}")
+            self.poly_markets = {}
+        
         daily_sheet = []
         for m in matchups:
             teamA_name = find_team_in_dict(m['away'], all_stats, BASKETBALL_ALIASES)
@@ -75,10 +84,26 @@ class UniversalDataBridge:
                     market_total = None
                     source = "Odds Unavailable"
 
+            # Polymarket Integration (v1.6)
+            # Try to find a matching event for this game (Normal vs Reverse match)
+            # Keys in poly_markets are "TeamA-TeamB"
+            poly_data = None
+            if hasattr(self, 'poly_markets'):
+                # Try Forward Match
+                match_key = f"{teamA_name}-{teamH_name}"
+                if match_key in self.poly_markets:
+                    poly_data = self.poly_markets[match_key]
+                else:
+                    # Try Reverse Match
+                    match_key_rev = f"{teamH_name}-{teamA_name}"
+                    if match_key_rev in self.poly_markets:
+                        poly_data = self.poly_markets[match_key_rev]
+
             daily_sheet.append({
                 "team": teamA_name,
                 "opponent": teamH_name,
                 "market_source": source,
+                "polymarket": poly_data,
                 "away_details": {
                     "name": teamA_name,
                     "code": triA,

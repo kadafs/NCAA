@@ -39,7 +39,36 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         {prediction.date} | {prediction.time}
                     </span>
                 </div>
-                <ConfidenceBadge confidence={prediction.confidence} />
+                <div className="flex items-center gap-2">
+                    <ConfidenceBadge confidence={prediction.confidence} />
+
+                    {/* Polymarket Signal badge */}
+                    {prediction.polymarket && (() => {
+                        const prices = prediction.polymarket.prices.map(Number);
+                        const outcomes = prediction.polymarket.outcomes;
+                        // Find "Yes" or team matching side logic is complex, for now assume simple outcomes
+                        // Usually [Yes, No] or [TeamA, TeamB]
+                        // Let's just show the max probability outcome
+                        const maxPrice = Math.max(...prices);
+                        const maxIdx = prices.indexOf(maxPrice);
+                        const outcome = outcomes[maxIdx];
+                        const prob = Math.round(maxPrice * 100);
+
+                        return (
+                            <a
+                                href={prediction.polymarket.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-2 py-0.5 bg-[#2B3040] hover:bg-[#343A4B] border border-white/5 rounded transition-colors group/poly"
+                            >
+                                <img src="https://polymarket.com/favicon.ico" alt="Poly" className="w-3 h-3 grayscale group-hover/poly:grayscale-0" />
+                                <span className="text-[9px] font-bold text-gray-400 group-hover/poly:text-white uppercase transition-colors">
+                                    {outcome}: {prob}%
+                                </span>
+                            </a>
+                        );
+                    })()}
+                </div>
             </div>
 
             {/* Content: VS Layout */}
