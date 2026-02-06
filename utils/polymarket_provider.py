@@ -1,6 +1,5 @@
-import requests
 from datetime import datetime
-from utils.mapping import BASKETBALL_ALIASES, NBA_TRICODES, normalize_name
+from utils.mapping import BASKETBALL_ALIASES, NBA_TRICODES, clean_team_name
 
 class PolymarketProvider:
     """
@@ -118,4 +117,4 @@ class PolymarketProvider:
                 if full == clean or tri == clean:
                     return full
                     
-        return normalize_name(clean)
+        return clean_team_name(clean)
