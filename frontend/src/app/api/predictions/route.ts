@@ -98,6 +98,10 @@ export async function GET(req: Request) {
             ...predictions,
             audit,
             lastUpdated: storeData.updated_at
+        }, {
+            headers: {
+                'Cache-Control': 's-maxage=60, stale-while-revalidate=30'
+            }
         });
 
     } catch (error) {

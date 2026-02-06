@@ -33,6 +33,10 @@ export async function GET(req: Request) {
             metrics: summaryData || [],
             recent: recentPicks || [],
             timestamp: new Date().toISOString()
+        }, {
+            headers: {
+                'Cache-Control': 's-maxage=60, stale-while-revalidate=30'
+            }
         });
 
     } catch (error) {
