@@ -21,7 +21,9 @@ def test_safe_vs_full():
         "projected_spread": 15.0, # Blowout scenario > 12
         "statsA": {"adj_off": 125.0, "adj_def": 110.0},
         "statsH": {"adj_off": 125.0, "adj_def": 110.0},
-        "conf": "DEFAULT"
+        "conf": "DEFAULT",
+        "is_b2b_home": True,      # -1.0
+        "is_3in4_away": True      # -2.0 -> Total -3.0
     }
     
     # Tiered Injury Test: 1 MVP out

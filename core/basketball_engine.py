@@ -282,6 +282,38 @@ class UniversalBasketballEngine:
                 if star_impact != 0:
                     notes.append(f"Context Impact: {star_impact:+.1f} pts (Injury Related)")
 
+            # Sharp 6.5: v3.2 Fatigue Logic (B2B & 3-in-4)
+            # Situational penalties for schedule density
+            situational = c.get('situational', {})
+            fatigue_adj = 0.0
+            
+            # 1. B2B Check
+            b2b_h = game_data.get('is_b2b_home', False)
+            b2b_a = game_data.get('is_b2b_away', False)
+            if b2b_h and b2b_a:
+                fatigue_adj += situational.get('b2b_penalty_double', -2.0)
+            elif b2b_h or b2b_a:
+                fatigue_adj += situational.get('b2b_penalty_single', -1.0)
+                
+            # 2. 3-in-4 Check
+            tr4_h = game_data.get('is_3in4_home', False)
+            tr4_a = game_data.get('is_3in4_away', False)
+            if tr4_h and tr4_a:
+                fatigue_adj += situational.get('3in4_penalty_double', -3.5)
+            elif tr4_h or tr4_a:
+                fatigue_adj += situational.get('3in4_penalty_single', -2.0)
+                
+            # 3. Cap Impact
+            fatigue_cap = situational.get('fatigue_impact_cap', -4.0)
+            if fatigue_adj < fatigue_cap:
+                fatigue_adj = fatigue_cap
+                
+            if fatigue_adj != 0:
+                sharp_total += fatigue_adj
+                self._log(f"Sharp 6.5: Fatigue Adjustment (B2B/3in4) -> {fatigue_adj:.1f}")
+                notes.append(f"Situational: Schedule Fatigue Penalty ({fatigue_adj:.1f} pts)")
+
+
             # Sharp 7: CLOSE GAME FOUL BONUS (LAST) -> POST-REGRESSION/POST-INJURY
             if projected_spread < sp.get('close_game_threshold', 4.5):
                 bonus = sp.get('close_game_foul_bonus', 2.5)
