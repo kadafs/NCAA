@@ -250,6 +250,15 @@ class UniversalBasketballEngine:
                 confidence = "NO PLAY"
                 notes.append(f"Auto-Pass: Edge ({abs_edge:.1f}) below threshold ({cutoff})")
 
+        # v2.5 Light Selection Filter: Downgrade confidence by one tier for low-total markets
+        if self.mode == "full" and c['name'] == "NCAA" and market < 138.0:
+            tier_map = {"HIGH": "MEDIUM", "MEDIUM": "LOW", "LOW": "NO PLAY", "NO PLAY": "NO PLAY"}
+            old_conf = confidence
+            confidence = tier_map.get(confidence, confidence)
+            if old_conf != confidence:
+                self._log(f"v2.5 Light Selection Filter: Market total ({market}) < 138 -> Confidence downgraded {old_conf} -> {confidence}")
+                notes.append(f"Light Selection Filter: Confidence downgraded ({old_conf} -> {confidence})")
+
         return {
             "final_model_total": round(final_total, 2),
             "legacy_total": round(clamped_legacy, 2),
