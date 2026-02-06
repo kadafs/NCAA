@@ -133,16 +133,20 @@ class UniversalBasketballEngine:
 
                 # Sharp v2.1 Change #1: Soft Foul Layer
                 # Trigger: competitive (Spread <= 7), mid-tempo range (138-155), non-static pace (>= 67)
-                if projected_spread <= 7.0 and 138.0 <= sharp_total <= 155.0 and pace_adj >= 67.0:
+                # v2.5 Low-Total Protection Gate: Disable for model_total < 138
+                if sharp_total >= 138.0 and projected_spread <= 7.0 and 138.0 <= sharp_total <= 155.0 and pace_adj >= 67.0:
                     soft_foul_bonus = 1.2
                     sharp_total += soft_foul_bonus
                     self._log(f"Sharp v2.1: Soft Foul Layer Applied -> +{soft_foul_bonus}")
                     notes.append(f"Sharp Adjustment: Soft Foul Probability Correction (+{soft_foul_bonus} pts)")
+                elif sharp_total < 138.0 and projected_spread <= 7.0:
+                    self._log(f"Sharp v2.5: Low-Total Protection Gate -> Soft Foul Layer DISABLED (model_total {sharp_total:.1f} < 138)")
 
                 # Sharp v2.1 Change #2: Mid-range Volatility Boost
                 # Trigger: high-chaos band (145-155), high volatility context (NRE >= 50)
+                # v2.5 Low-Total Protection Gate: Disable for model_total < 138
                 nre_val = game_data.get('nre', 50) # Fallback to mid
-                if 145.0 <= sharp_total <= 155.0 and nre_val >= 50:
+                if sharp_total >= 138.0 and 145.0 <= sharp_total <= 155.0 and nre_val >= 50:
                     mid_vol_boost = 1.0
                     sharp_total += mid_vol_boost
                     self._log(f"Sharp v2.1: Mid-range Volatility Boost -> +{mid_vol_boost}")
