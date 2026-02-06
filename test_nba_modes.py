@@ -50,9 +50,21 @@ def test_safe_vs_full():
     
     # Logic Checks
     gate_pass = any("High Pace Gate" in log for log in res_full['trace'])
-    order_pass = res_full['trace'][-1].startswith("Sharp 9") or "Foul Bonus (LAST)" in res_full['trace'][-1]
     print(f"\nGATE CHECK - High Pace Conflict: {'PASS' if gate_pass else 'FAIL'}")
-    print(f"ORDER CHECK - Foul Bonus LAST: {'PASS' if order_pass else 'FAIL'}")
+
+    # 2. Order Check: Foul Bonus should be LAST sharp adjustment before Anchoring/Clamping
+    foul_bonus_idx = -1
+    anchor_idx = -1
+    for i, line in enumerate(res_full['trace']):
+        if "Close Game Foul Bonus (LAST)" in line:
+            foul_bonus_idx = i
+        if "Market Anchoring" in line:
+            anchor_idx = i
+
+    if foul_bonus_idx > -1 and (anchor_idx > foul_bonus_idx or anchor_idx == -1):
+        print("ORDER CHECK - Foul Bonus LAST: PASS")
+    else:
+        print("ORDER CHECK - Foul Bonus LAST: FAIL")
 
 if __name__ == "__main__":
     test_safe_vs_full()

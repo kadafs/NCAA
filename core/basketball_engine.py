@@ -49,11 +49,14 @@ class UniversalBasketballEngine:
         stats_total = ((eff_adj * pace_adj) / 100) * 2
         self._log(f"Step 1: Raw Base ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {stats_total:.2f}")
 
-        # Step 2: Pace Impact
-        pace_delta = pace_adj - c['pace_pivot']
-        pace_impact = pace_delta * c['pace_delta_weight']
-        stats_total += pace_impact
-        self._log(f"Step 2: Pace Impact ({pace_adj:.1f} vs {c['pace_pivot']}) -> {pace_impact:+.2f}")
+        # Step 2: Pace Impact (v3.0: DISABLED for NBA to avoid double-counting)
+        if c['name'] != "NBA":
+            pace_delta = pace_adj - c['pace_pivot']
+            pace_impact = pace_delta * c['pace_delta_weight']
+            stats_total += pace_impact
+            self._log(f"Step 2: Pace Impact ({pace_adj:.1f} vs {c['pace_pivot']}) -> {pace_impact:+.2f}")
+        else:
+            self._log(f"Step 2: Pace Impact SKIPPED (v3.0 NBA: pace already in base formula)")
         
         # Step 3: Alignment (Conf & HCA) -> BEFORE Regression
         # HCA Gate: Disable if neutral
@@ -73,8 +76,20 @@ class UniversalBasketballEngine:
             stats_total += cb
             self._log(f"Step 3c: Conference Bias ({conf}) -> {cb:+.1f}")
 
-        # Step 4: REGRESSION (0.97) -> MULTIPLICATIVE
-        reg_factor = c.get('regression_factor', 0.97)
+        # Step 4: REGRESSION -> v3.0 DYNAMIC for NBA, static for NCAA
+        if c['name'] == "NBA":
+            # Dynamic regression: stronger for extreme totals
+            if stats_total < 215:
+                reg_factor = 0.98
+            elif stats_total <= 235:
+                reg_factor = 0.96
+            elif stats_total <= 250:
+                reg_factor = 0.94
+            else:
+                reg_factor = 0.92
+            self._log(f"Step 4: Dynamic Regression (NBA v3.0, total={stats_total:.1f}) -> factor={reg_factor}")
+        else:
+            reg_factor = c.get('regression_factor', 0.97)
         stats_total *= reg_factor
         self._log(f"Step 4: Regression Applied ({reg_factor}) -> {stats_total:.2f} (Stats Baseline)")
         
@@ -223,18 +238,36 @@ class UniversalBasketballEngine:
         clamped_sharp = clamp_total(sharp_total, market)
 
         final_total = clamped_sharp if self.mode == "full" else clamped_legacy
+
+        # v3.0 Market Anchoring (NBA FULL mode only): 75% model, 25% market
+        if self.mode == "full" and c['name'] == "NBA":
+            anchor_weight = 0.25
+            anchored_total = (final_total * (1 - anchor_weight)) + (market * anchor_weight)
+            self._log(f"v3.0 Market Anchoring: {final_total:.2f} -> {anchored_total:.2f} (75% model, 25% market)")
+            notes.append(f"Market Anchoring: Blended with market ({anchor_weight*100:.0f}%)")
+            final_total = anchored_total
         # Absolute Edge Principle
         raw_edge = final_total - market
         abs_edge = abs(raw_edge)
         side = "OVER" if raw_edge > 0 else "UNDER"
         
         # Decision Logic (Pass/Lean/Play)
-        if abs_edge < 4.0:
-            decision = "PASS"
-        elif abs_edge < 6.0:
-            decision = "LEAN"
+        if c['name'] == "NBA":
+            # v3.0 Professional Thresholds
+            if abs_edge < 5.0:
+                decision = "PASS"
+            elif abs_edge < 7.0:
+                decision = "LEAN"
+            else:
+                decision = "PLAY"
         else:
-            decision = "PLAY"
+            # v2.2 Standard Thresholds
+            if abs_edge < 4.0:
+                decision = "PASS"
+            elif abs_edge < 6.0:
+                decision = "LEAN"
+            else:
+                decision = "PLAY"
             
         # Professional Confidence Tiers
         if abs_edge >= 9.0: confidence = "HIGH"
