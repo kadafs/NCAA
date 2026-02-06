@@ -46,8 +46,31 @@ class UniversalBasketballEngine:
         eff_adj = game_data.get('efficiency_adjustment', c['eff_pivot'])
         
         # Step 1: Base Total
-        stats_total = ((eff_adj * pace_adj) / 100) * 2
-        self._log(f"Step 1: Raw Base ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {stats_total:.2f}")
+        if c['name'] == "NBA":
+            # v3.1 Matchup-Adjusted Efficiency (Professional Upgrade)
+            # Expects adj_off and adj_def in game_data stats
+            league_avg_eff = c.get('eff_pivot', 115.0)
+            
+            sA = game_data.get('statsA', {})
+            sB = game_data.get('statsH', {})
+            
+            a_off = sA.get('adj_off', league_avg_eff)
+            a_def = sA.get('adj_def', league_avg_eff)
+            b_off = sB.get('adj_off', league_avg_eff)
+            b_def = sB.get('adj_def', league_avg_eff)
+            
+            # KenPom-style Expected Efficiency per possession
+            exp_a_eff = (a_off * b_def) / league_avg_eff
+            exp_b_eff = (b_off * a_def) / league_avg_eff
+            
+            combined_eff = (exp_a_eff + exp_b_eff) / 2
+            stats_total = (combined_eff * pace_adj / 100) * 2
+            
+            self._log(f"Step 1: Matchup Efficiency Base (A:{exp_a_eff:.1f} + B:{exp_b_eff:.1f}) @ {pace_adj:.1f} Pace = {stats_total:.2f}")
+        else:
+            # Legacy/NCAA Simple Average
+            stats_total = ((eff_adj * pace_adj) / 100) * 2
+            self._log(f"Step 1: Raw Base ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {stats_total:.2f}")
 
         # Step 2: Pace Impact (v3.0: DISABLED for NBA to avoid double-counting)
         if c['name'] != "NBA":
@@ -183,34 +206,79 @@ class UniversalBasketballEngine:
                     sharp_total += pace_eff_bonus
                     self._log(f"Sharp 3: High Pace Efficiency Bonus -> +{pace_eff_bonus:.2f}")
 
-                # Sharp 4: NBA 3PT Volume
-                if sp.get('three_pa_threshold'):
+                # Sharp 4: v3.1 3PT Scaling (Volume per 100 Possessions)
+                # Formula: (3PA/100 - LeagueAvg) * ScaleFactor (Capped)
+                if sp.get('three_pt_scale_factor'):
                     three_pa = game_data.get('three_pa_total', 70)
-                    if three_pa > sp['three_pa_threshold']:
-                        bonus = (three_pa - sp['three_pa_threshold']) * 0.05
+                    pace = pace_adj
+                    three_pa_100 = (three_pa / pace) * 100
+                    league_avg_3pa_100 = 35.0 * 2 # Approx 70 total -> 35 per team -> 35 per 100
+                    
+                    diff = three_pa_100 - league_avg_3pa_100
+                    if diff > 0:
+                        bonus = diff * sp.get('three_pt_scale_factor', 0.08)
+                        cap = sp.get('three_pt_cap', 2.0)
+                        if bonus > cap: bonus = cap
                         sharp_total += bonus
-                        self._log(f"Sharp 4: 3PT Volume Bonus -> +{bonus:.2f}")
+                        self._log(f"Sharp 4: 3PT Efficiency (v3.1) -> +{bonus:.2f} ({three_pa_100:.1f} 3PA/100)")
 
-                # Sharp 5: Blowout Volatility
+                # Sharp 5: v3.1 Pace-Conditioned Blowout Logic
                 spread_threshold = sp.get('blowout_spread_threshold', 12.0)
                 if projected_spread > spread_threshold:
-                    penalty = sp.get('blowout_under_penalty', 5.0) if current_lean == "UNDER" else sp.get('blowout_over_boost', 3.5)
-                    sharp_total += penalty
-                    self._log(f"Sharp 5: Blowout Adjustment (NBA) -> {penalty:+.1f}")
-                    notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
+                    fast_pace_mark = sp.get('blowout_fast_pace', 100.0)
+                    slow_pace_mark = sp.get('blowout_slow_pace', 98.0)
+                    
+                    # Logic: Fast teams usually score in garbage time -> OVER boost
+                    # Logic: Slow teams usually grind clock -> No boost or small penalty
+                    if current_lean == "UNDER":
+                         # Defensive/Slow check: if pace is slow, don't penalize under too much
+                         penalty = sp.get('blowout_under_penalty', 5.0)
+                         if pace_adj < slow_pace_mark:
+                             penalty *= 0.5 # Halve penalty for slow teams
+                         sharp_total += penalty
+                         self._log(f"Sharp 5: Blowout Adjustment (NBA Under) -> {penalty:+.1f}")
+                         notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
+                    else:
+                        # Over boost only if pace is decent
+                        if pace_adj >= fast_pace_mark:
+                            boost = sp.get('blowout_boost_fast', 4.0)
+                            sharp_total += boost
+                            self._log(f"Sharp 5: Blowout Adjustment (NBA Fast Over) -> +{boost:.1f}")
+                            notes.append(f"Sharp Adjustment: Fast-Pace Blowout Boost (+{boost:.1f} pts)")
+                        elif pace_adj >= slow_pace_mark:
+                            boost = sp.get('blowout_boost_avg', 2.0)
+                            sharp_total += boost
+                            self._log(f"Sharp 5: Blowout Adjustment (NBA Avg Over) -> +{boost:.1f}")
+                            notes.append(f"Sharp Adjustment: Blowout Correction (+{boost:.1f} pts)")
+                        else:
+                            self._log(f"Sharp 5: Blowout Adjustment SKIPPED (Slow Pace {pace_adj:.1f})")
 
-            # Sharp 6: Injury Impact (Before Foul Bonus)
+            # Sharp 6: v3.1 Tiered Injury Impact
             star_impact = 0
             if injury_notes:
+                leverage = c.get('star_leverage', {})
                 for note in injury_notes:
+                    txt = note.get('note', '').lower()
                     st = note.get('status', '').lower()
+                    
                     if "out" in st or "doubtful" in st:
-                        star_impact += c.get('star_leverage', {}).get('star_out', -2.5)
+                        # Attempt to detect tier from text (requires bridge to populate this or future expansion)
+                        # For now, simplistic keyword matching if available, else standard fallback
+                        val = leverage.get('star_out', -2.5) # Default
+                        
+                        if "mvp" in txt or "superstar" in txt: val = leverage.get('mvp_out', -4.0)
+                        elif "all-star" in txt: val = leverage.get('all_star_out', -2.5)
+                        elif "starter" in txt: val = leverage.get('starter_out', -1.5)
+                        elif "bench" in txt or "rotation" in txt: val = leverage.get('bench_out', -0.5)
+                        
+                        star_impact += val
+                        
                 impact_cap = sp.get('injury_impact_cap')
                 if impact_cap and abs(star_impact) > impact_cap:
                     star_impact = -impact_cap
+                
                 sharp_total += star_impact
-                self._log(f"Sharp 6: Context Impact (Injuries) -> {star_impact:+.1f}")
+                self._log(f"Sharp 6: Context Impact (Injuries v3.1) -> {star_impact:+.1f}")
                 if star_impact != 0:
                     notes.append(f"Context Impact: {star_impact:+.1f} pts (Injury Related)")
 
@@ -224,14 +292,18 @@ class UniversalBasketballEngine:
         # --- PHASE 3: FINALIZATION & CLAMPING ---
         legacy_total = stats_total # SAFE Result (Baseline only)
         
-        threshold = c.get('volatility_threshold', 15.0)
+        # v3.1 Stricter Volatility Clamp
+        # Use new config params if available (NBA), else fallback (NCAA)
+        clamp_thr = sp.get('volatility_clamp_threshold', c.get('volatility_threshold', 15.0))
+        dampener = sp.get('volatility_dampener_factor', c.get('volatility_dampener', 0.7))
+
         def clamp_total(val, mkt):
             edge = val - mkt
-            if abs(edge) > threshold:
-                excess = abs(edge) - threshold
-                clamped_excess = excess * c.get('volatility_dampener', 0.7)
+            if abs(edge) > clamp_thr:
+                excess = abs(edge) - clamp_thr
+                clamped_excess = excess * dampener
                 multiplier = 1 if edge > 0 else -1
-                return mkt + (multiplier * (threshold + clamped_excess))
+                return mkt + (multiplier * (clamp_thr + clamped_excess))
             return val
 
         clamped_legacy = clamp_total(legacy_total, market)

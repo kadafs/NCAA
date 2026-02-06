@@ -14,9 +14,10 @@
         "double_b2b_penalty": -4.0
     },
     "star_leverage": {
-        "superstar_out": -4.5,
-        "star_out": -2.5,
-        "rotation_out": -1.0
+        "mvp_out": -4.0,
+        "all_star_out": -2.5,
+        "starter_out": -1.5,
+        "bench_out": -0.5
     },
     "thresholds": {
         "mode_a": 7.5,
@@ -28,15 +29,19 @@
         "possession_bonus_value": 2.0,
         "high_pace_threshold": 105.0,
         "high_pace_efficiency_multiplier": 0.2,
-        "three_pt_freq_threshold": 0.42,
-        "three_pt_freq_regression_boost": 0.02,
+        "three_pt_scale_factor": 0.08,
+        "three_pt_cap": 2.0,
         "blowout_spread_threshold": 12.0,
-        "blowout_under_penalty": 5.0,
-        "blowout_over_boost": 3.5,
+        "blowout_fast_pace": 100.0,
+        "blowout_slow_pace": 98.0,
+        "blowout_boost_fast": 4.0,
+        "blowout_boost_avg": 2.0,
         "elite_offense_rating_threshold": 118.0,
         "elite_offense_boost": 2.0,
         "close_game_threshold": 4.5,
         "close_game_foul_bonus": 3.5,
-        "injury_impact_cap": 7.5
+        "injury_impact_cap": 7.5,
+        "volatility_clamp_threshold": 10.0,
+        "volatility_dampener_factor": 0.6
     }
 }

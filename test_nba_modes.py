@@ -13,21 +13,20 @@ def test_safe_vs_full():
         "team": "Lakers",
         "opponent": "Celtics",
         "pace_adjustment": 106.0, # Triggers High Pace (>105)
-        "efficiency_adjustment": 125.0, # Elite Offense
-        "market_total": 210.0, # Create a large edge for HIGH confidence
+        # efficiency_adjustment ignored for NBA in v3.1 (uses matchup stats)
+        "market_total": 210.0, 
         "is_elite_offense": True,
         "is_strong_defense": False,
         "three_pa_total": 85,
-        "projected_spread": 2.0, # Close game
-        "statsA": {"adj_off": 125.0},
-        "statsH": {"adj_off": 125.0},
+        "projected_spread": 15.0, # Blowout scenario > 12
+        "statsA": {"adj_off": 125.0, "adj_def": 110.0},
+        "statsH": {"adj_off": 125.0, "adj_def": 110.0},
         "conf": "DEFAULT"
     }
     
-    # 3 major starters out
+    # Tiered Injury Test: 1 MVP out
     injury_notes = [
-        {"player": "A", "status": "Out"},
-        {"player": "B", "status": "Out"}
+        {"player": "LeBron", "status": "Out", "note": "MVP candidate out"},
     ]
     
     engine_safe = UniversalBasketballEngine(config_path, mode="safe")
