@@ -89,8 +89,8 @@ export default function DashboardIndex() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch for both leagues to get the "Best" props overall
-            const leagues = ['nba', 'ncaa'];
+            // Fetch for NBA only as requested for "Top Props"
+            const leagues = ['nba'];
             let allProps: PlayerProp[] = [];
             let latestAudit = null;
 
