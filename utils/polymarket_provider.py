@@ -1,3 +1,5 @@
+import requests
+import json
 from datetime import datetime
 from utils.mapping import BASKETBALL_ALIASES, NBA_TRICODES, clean_team_name
 
