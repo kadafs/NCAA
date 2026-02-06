@@ -128,7 +128,7 @@ export default function LeagueDashboard() {
                                 team: p.team_label === 'A' ? (g.away_details?.name || g.away) : (g.home_details?.name || g.home),
                                 teamCode: p.team_label === 'A' ? (g.away_details?.code || g.away) : (g.home_details?.code || g.home),
                                 position: p.position || "G/F",
-                                image: leagueId === 'nba' ? `https://a.espncdn.com/i/headshots/nba/players/full/${p.id}.png` : "",
+                                image: leagueId === 'nba' ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
                                 propType: "PTS",
                                 line: Number(line.toFixed(1)),
                                 projection: Number(projection.toFixed(1)),

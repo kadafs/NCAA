@@ -118,7 +118,7 @@ export default function DashboardIndex() {
                                         team: p.team_label === 'A' ? game.away : game.home,
                                         teamCode: p.team_label === 'A' ? game.away : game.home,
                                         position: p.position || "G/F",
-                                        image: leagueId === 'nba' ? `https://a.espncdn.com/i/headshots/nba/players/full/${p.id}.png` : "",
+                                        image: leagueId === 'nba' ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
                                         propType: "PTS",
                                         line: Number(line.toFixed(1)),
                                         projection: Number(projection.toFixed(1)),
