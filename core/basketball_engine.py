@@ -132,6 +132,10 @@ class UniversalBasketballEngine:
         pace_eff_bonus = 0
         if sp.get('high_pace_threshold') and pace_adj > sp['high_pace_threshold']:
             pace_eff_bonus = (pace_adj - sp['high_pace_threshold']) * sp.get('high_pace_efficiency_multiplier', 0.1)
+            # v3.3 Cap High Pace Efficiency
+            pace_cap = sp.get('high_pace_efficiency_cap')
+            if pace_cap and pace_eff_bonus > pace_cap:
+                pace_eff_bonus = pace_cap
         
         # Elite Offense Gate
         elite_off_bonus = 0
@@ -314,11 +318,35 @@ class UniversalBasketballEngine:
                 notes.append(f"Situational: Schedule Fatigue Penalty ({fatigue_adj:.1f} pts)")
 
 
-            # Sharp 7: CLOSE GAME FOUL BONUS (LAST) -> POST-REGRESSION/POST-INJURY
+            # Sharp 7: v3.3 Home/Away Pace Split
+            # Condition: Both teams faster in current venue (Home/Away) -> Over Boost
+            # Condition: Both teams slower in current venue (Home/Away) -> Under Drag
+            split_bonus = sp.get('pace_home_advantage_bonus', 1.5)
+            if split_bonus > 0:
+                sH = game_data.get('statsH', {})
+                sA = game_data.get('statsA', {})
+                
+                # Check for granular keys (defensive check)
+                if 'pace_home' in sH and 'pace_away' in sA:
+                   h_pace_home = sH.get('pace_home', 0)
+                   h_pace_avg = sH.get('pace', 100)
+                   a_pace_road = sA.get('pace_away', 0)
+                   a_pace_avg = sA.get('pace', 100)
+                   
+                   if h_pace_home > h_pace_avg and a_pace_road > a_pace_avg:
+                       sharp_total += split_bonus
+                       self._log(f"Sharp 7: Pace Split Bonus (Both Fast @ Venue) -> +{split_bonus}")
+                       notes.append(f"Sharp Adjustment: Venue Pace Split Boost (+{split_bonus} pts)")
+                   elif h_pace_home < h_pace_avg and a_pace_road < a_pace_avg:
+                       sharp_total -= split_bonus
+                       self._log(f"Sharp 7: Pace Split Drag (Both Slow @ Venue) -> -{split_bonus}")
+                       notes.append(f"Sharp Adjustment: Venue Pace Split Drag (-{split_bonus} pts)")
+
+            # Sharp 8: CLOSE GAME FOUL BONUS (LAST) -> POST-REGRESSION/POST-INJURY
             if projected_spread < sp.get('close_game_threshold', 4.5):
                 bonus = sp.get('close_game_foul_bonus', 2.5)
                 sharp_total += bonus
-                self._log(f"Sharp 7: Close Game Foul Bonus (LAST) -> +{bonus:.1f}")
+                self._log(f"Sharp 8: Close Game Foul Bonus (LAST) -> +{bonus:.1f}")
                 notes.append(f"Sharp Adjustment: Close Game Foul Bonus (LAST) (+{bonus:.1f} pts)")
 
         # --- PHASE 3: FINALIZATION & CLAMPING ---

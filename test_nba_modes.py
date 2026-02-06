@@ -12,15 +12,16 @@ def test_safe_vs_full():
     game_data = {
         "team": "Lakers",
         "opponent": "Celtics",
-        "pace_adjustment": 106.0, # Triggers High Pace (>105)
+        "pace_adjustment": 112.0, # Very High Pace to test Cap (112-105)*0.2 = 1.4 -> Capped at 1.0?
         # efficiency_adjustment ignored for NBA in v3.1 (uses matchup stats)
         "market_total": 210.0, 
         "is_elite_offense": True,
         "is_strong_defense": False,
         "three_pa_total": 85,
         "projected_spread": 15.0, # Blowout scenario > 12
-        "statsA": {"adj_off": 125.0, "adj_def": 110.0},
-        "statsH": {"adj_off": 125.0, "adj_def": 110.0},
+        # Mock Pace Split logic: Both fast at current venue
+        "statsA": {"adj_off": 125.0, "adj_def": 110.0, "pace_away": 105.0, "pace": 100.0},
+        "statsH": {"adj_off": 125.0, "adj_def": 110.0, "pace_home": 105.0, "pace": 100.0},
         "conf": "DEFAULT",
         "is_b2b_home": True,      # -1.0
         "is_3in4_away": True      # -2.0 -> Total -3.0
