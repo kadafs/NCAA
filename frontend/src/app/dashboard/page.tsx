@@ -89,11 +89,58 @@ export default function DashboardIndex() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/predictions?league=nba&mode=safe`);
-            const data = await res.json();
+            // Fetch for both leagues to get the "Best" props overall
+            const leagues = ['nba', 'ncaa'];
+            let allProps: PlayerProp[] = [];
+            let latestAudit = null;
 
-            setProps(MOCK_PROPS);
-            if (data.audit) setAudit(data.audit);
+            for (const leagueId of leagues) {
+                try {
+                    const res = await fetch(`/api/predictions?league=${leagueId}&mode=safe`);
+                    const data = await res.json();
+
+                    if (data.audit && !latestAudit) latestAudit = data.audit;
+
+                    if (data.games) {
+                        data.games.forEach((game: any) => {
+                            if (game.props && game.props.length > 0) {
+                                game.props.forEach((p: any) => {
+                                    // Calculate a pseudo-edge based on seasonal average
+                                    const seasonalAvg = p.pts || 0; // Using projected as baseline if seasonal not available
+                                    const projection = p.pts || 0;
+                                    const line = p.seasonal?.pts || projection;
+                                    const edge = projection - line;
+                                    const edgePct = line > 0 ? (edge / line) * 100 : 0;
+
+                                    allProps.push({
+                                        id: p.id || `${leagueId}-${p.name}`,
+                                        name: p.name,
+                                        team: p.team_label === 'A' ? game.away : game.home,
+                                        teamCode: p.team_label === 'A' ? game.away : game.home,
+                                        position: p.position || "G/F",
+                                        image: leagueId === 'nba' ? `https://a.espncdn.com/i/headshots/nba/players/full/${p.id}.png` : "",
+                                        propType: "PTS",
+                                        line: Number(line.toFixed(1)),
+                                        projection: Number(projection.toFixed(1)),
+                                        edge: Number(edge.toFixed(1)),
+                                        edgePct: Number(edgePct.toFixed(1)),
+                                        usageBoost: p.trace?.some((t: string) => t.includes("Usage")),
+                                        recentTrend: [1, 1, 0, 1, 1] // Mock trend
+                                    });
+                                });
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error(`Error fetching ${leagueId} props:`, e);
+                }
+            }
+
+            // Sort by edge percentage to find the "Top" props
+            allProps.sort((a, b) => b.edgePct - a.edgePct);
+
+            setProps(allProps.length > 0 ? allProps : MOCK_PROPS);
+            if (latestAudit) setAudit(latestAudit);
         } catch (err) {
             console.error("Fetch error:", err);
             setProps(MOCK_PROPS);

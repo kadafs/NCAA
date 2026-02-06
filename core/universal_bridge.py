@@ -75,6 +75,54 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
             from ncaa.v1_2.populate import load_json, INJURY_FILE
             if mode == "full":
                 injuries = load_json(INJURY_FILE)
+            
+            # Aggregate NCAA stats from individual files
+            player_map = {}
+            stat_files = [
+                ("pts", "pts_pg.json"),
+                ("ast", "ast_pg.json"),
+                ("reb", "reb_pg.json"),
+                ("stl", "stl_pg.json"),
+                ("blk", "blk_pg.json"),
+                ("fga", "fga_pg.json"),
+                ("3pm", "three_pt_made.json")
+            ]
+            
+            for key, filename in stat_files:
+                data = bridge._load_json(f"individual/{filename}")
+                if data:
+                    for item in data:
+                        p_key = f"{item['Name']}-{item['Team']}"
+                        if p_key not in player_map:
+                            player_map[p_key] = {
+                                "name": item['Name'],
+                                "team": item['Team'],
+                                "seasonal": {},
+                                "recent": {} 
+                            }
+                        
+                        s = player_map[p_key]["seasonal"]
+                        
+                        if key == "pts":
+                            s["pts"] = float(item.get('PPG', 0))
+                            s["fgm"] = float(item.get('FGM', 0))
+                        elif key == "ast":
+                            s["ast"] = float(item.get('APG', 0))
+                        elif key == "reb":
+                            s["reb"] = float(item.get('RPG', 0))
+                        elif key == "stl":
+                            s["stl"] = float(item.get('STPG', 0))
+                        elif key == "blk":
+                            s["blk"] = float(item.get('BKPG', 0))
+                        elif key == "fga":
+                            s["fga"] = float(item.get('FGA', 0))
+                        elif key == "3pm":
+                            s["3pm"] = float(item.get('3FG', 0))
+                            
+                        # Baseline mirror
+                        player_map[p_key]["recent"] = player_map[p_key]["seasonal"].copy()
+            
+            p_stats = list(player_map.values())
         except Exception as e:
             print(f"Error loading NCAA metadata: {e}")
     elif league == "euro":
@@ -200,6 +248,40 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
                         "name": p['name'],
                         "team_label": label,
                         "league": "nba",
+                        "pts": round(p_proj['proj_pts'], 1),
+                        "reb": round(p_proj['proj_reb'], 1),
+                        "ast": round(p_proj['proj_ast'], 1),
+                        "stl": round(p_proj.get('proj_stl', 0), 1),
+                        "blk": round(p_proj.get('proj_blk', 0), 1),
+                        "tov": round(p_proj.get('proj_tov', 0), 1),
+                        "threes": round(p_proj.get('proj_3pm', 0), 1),
+                        "fgm": round(p_proj.get('proj_fgm', 0), 1),
+                        "fga": round(p_proj.get('proj_fga', 0), 1),
+                        "ftm": round(p_proj.get('proj_ftm', 0), 1),
+                        "fta": round(p_proj.get('proj_fta', 0), 1),
+                        "trace": p_proj['trace']
+                    })
+        elif league == "ncaa" and p_stats:
+            context = {"factor": factor, "vol_factor": 1.0}
+            
+            from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
+            teams_in_stats = {p['team']: True for p in p_stats}
+            
+            for team_name, label in [(away, 'A'), (home, 'H')]:
+                matched_team = find_team_in_dict(team_name, teams_in_stats, BASKETBALL_ALIASES)
+                
+                if matched_team:
+                    players = [p for p in p_stats if p['team'] == matched_team]
+                    players.sort(key=lambda x: x.get('seasonal', {}).get('pts', 0), reverse=True)
+                
+                for p in players[:10]:
+                    team_injs = injuries.get(away if label == 'A' else home, [])
+                    p_proj = prop_engine.project_player(p, context, team_injs)
+                    player_props.append({
+                        "id": f"ncaa-{p['name']}-{p['team']}".replace(" ", "-"),
+                        "name": p['name'],
+                        "team_label": label,
+                        "league": "ncaa",
                         "pts": round(p_proj['proj_pts'], 1),
                         "reb": round(p_proj['proj_reb'], 1),
                         "ast": round(p_proj['proj_ast'], 1),

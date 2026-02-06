@@ -109,101 +109,90 @@ export default function LeagueDashboard() {
             const res = await fetch(`/api/predictions?league=${leagueId}&mode=${mode}`);
             const data = await res.json();
 
+            const leagueProps: PlayerProp[] = [];
+
             if (data.games && data.games.length > 0) {
                 // Transform API data to match our types
-                const transformedGames: Prediction[] = data.games.map((g: any, idx: number) => ({
-                    id: `${leagueId}-${idx}`,
-                    league: leagueId,
-                    time: g.time || "TBD",
-                    date: g.date || "TODAY",
-                    awayTeam: {
-                        name: g.away_details?.name || g.away?.name || g.away_team || g.away || "Away",
-                        code: g.away_details?.code || g.away?.code || g.away_tri || "AWY",
-                        logo: g.away_details?.logo || g.away?.logo || (() => {
-                            const league = leagueId.toLowerCase();
-                            const rawCode = (g.away_details?.code || g.away?.code || "").toLowerCase();
-                            const name = (g.away_details?.name || g.away?.name || g.away_team || g.away || "")
-                                .toLowerCase()
-                                .trim()
-                                .replace(/\s+/g, '-')
-                                .replace(/[^a-z0-9-]/g, '');
+                const transformedGames: Prediction[] = data.games.map((g: any, idx: number) => {
+                    // Extract props while we iterate games
+                    if (g.props && g.props.length > 0) {
+                        g.props.forEach((p: any) => {
+                            const projection = p.pts || 0;
+                            const line = p.seasonal?.pts || projection;
+                            const edge = projection - line;
+                            const edgePct = line > 0 ? (edge / line) * 100 : 0;
 
-                            if (league === 'nba') {
-                                const codeMap: Record<string, string> = { 'nop': 'no', 'nyk': 'ny', 'gsw': 'gs', 'sas': 'sa' };
-                                const code = codeMap[rawCode] || rawCode;
-                                return code ? `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png` : "";
+                            leagueProps.push({
+                                id: p.id || `${leagueId}-${p.name}`,
+                                name: p.name,
+                                team: p.team_label === 'A' ? (g.away_details?.name || g.away) : (g.home_details?.name || g.home),
+                                teamCode: p.team_label === 'A' ? (g.away_details?.code || g.away) : (g.home_details?.code || g.home),
+                                position: p.position || "G/F",
+                                image: leagueId === 'nba' ? `https://a.espncdn.com/i/headshots/nba/players/full/${p.id}.png` : "",
+                                propType: "PTS",
+                                line: Number(line.toFixed(1)),
+                                projection: Number(projection.toFixed(1)),
+                                edge: Number(edge.toFixed(1)),
+                                edgePct: Number(edgePct.toFixed(1)),
+                                usageBoost: p.trace?.some((t: string) => t.includes("Usage")),
+                                recentTrend: [1, 1, 0, 1, 1]
+                            });
+                        });
+                    }
+
+                    return {
+                        id: `${leagueId}-${idx}`,
+                        league: leagueId as any,
+                        time: g.time || "TBD",
+                        date: g.date || "TODAY",
+                        awayTeam: {
+                            name: g.away_details?.name || g.away?.name || g.away_team || g.away || "Away",
+                            code: g.away_details?.code || g.away?.code || g.away_tri || "AWY",
+                            logo: g.away_details?.logo || g.away?.logo || "",
+                            record: g.away?.record || "",
+                            stats: {
+                                pointsPerGame: g.away?.stats?.ppg || 100,
+                                reboundsPerGame: g.away?.stats?.rpg || 40,
+                                assistsPerGame: g.away?.stats?.apg || 25,
+                                fieldGoalPct: 45,
+                                threePointPct: 35,
+                                freeThrowPct: 75,
+                                netRating: g.statsA?.net_rating || 50
                             }
-
-                            if (league === 'ncaa') {
-                                // Use backend proxy with mapping
-                                const rawTeamName = (g.away_details?.name || g.away?.name || g.away_team || g.away || "").toLowerCase().trim();
-                                const slug = NCAA_LOGO_MAP[rawTeamName] || name;
-                                return slug ? `/api/logo/${slug}` : "";
+                        },
+                        homeTeam: {
+                            name: g.home_details?.name || g.home?.name || g.home_team || g.home || "Home",
+                            code: g.home_details?.code || g.home?.code || g.home_tri || "HME",
+                            logo: g.home_details?.logo || g.home?.logo || "",
+                            record: g.home?.record || "",
+                            stats: {
+                                pointsPerGame: g.home?.stats?.ppg || 100,
+                                reboundsPerGame: g.home?.stats?.rpg || 40,
+                                assistsPerGame: g.home?.stats?.apg || 25,
+                                fieldGoalPct: 45,
+                                threePointPct: 35,
+                                freeThrowPct: 75,
+                                netRating: g.statsH?.net_rating || 50
                             }
+                        },
+                        marketTotal: g.market_total || g.marketTotal || 220,
+                        modelTotal: g.model_total || g.modelTotal || 225,
+                        rawModelTotal: g.raw_model_total || g.rawModelTotal,
+                        edge: g.edge || 2.5,
+                        absEdge: g.abs_edge || Math.abs(g.edge || 0),
+                        side: g.side,
+                        confidence: g.confidence || "NO PLAY",
+                        trace: g.trace || [],
+                        factors: g.factors || [],
+                        forecastData: g.forecastData || []
+                    };
+                });
 
-                            return "";
-                        })(),
-                        record: g.away?.record || "",
-                        stats: {
-                            pointsPerGame: g.away?.stats?.ppg || 100,
-                            reboundsPerGame: g.away?.stats?.rpg || 40,
-                            assistsPerGame: g.away?.stats?.apg || 25,
-                            fieldGoalPct: 45,
-                            threePointPct: 35,
-                            freeThrowPct: 75,
-                            netRating: g.statsA?.net_rating || 50
-                        }
-                    },
-                    homeTeam: {
-                        name: g.home_details?.name || g.home?.name || g.home_team || g.home || "Home",
-                        code: g.home_details?.code || g.home?.code || g.home_tri || "HME",
-                        logo: g.home_details?.logo || g.home?.logo || (() => {
-                            const league = leagueId.toLowerCase();
-                            const rawCode = (g.home_details?.code || g.home?.code || "").toLowerCase();
-                            const name = (g.home_details?.name || g.home?.name || g.home_team || g.home || "")
-                                .toLowerCase()
-                                .trim()
-                                .replace(/\s+/g, '-')
-                                .replace(/[^a-z0-9-]/g, '');
+                // Sort props by edgePct
+                leagueProps.sort((a, b) => b.edgePct - a.edgePct);
 
-                            if (league === 'nba') {
-                                const codeMap: Record<string, string> = { 'nop': 'no', 'nyk': 'ny', 'gsw': 'gs', 'sas': 'sa' };
-                                const code = codeMap[rawCode] || rawCode;
-                                return code ? `https://a.espncdn.com/i/teamlogos/nba/500/${code}.png` : "";
-                            }
-
-                            if (league === 'ncaa') {
-                                // Use backend proxy with mapping
-                                const rawTeamName = (g.home_details?.name || g.home?.name || g.home_team || g.home || "").toLowerCase().trim();
-                                const slug = NCAA_LOGO_MAP[rawTeamName] || name;
-                                return slug ? `/api/logo/${slug}` : "";
-                            }
-
-                            return "";
-                        })(),
-                        record: g.home?.record || "",
-                        stats: {
-                            pointsPerGame: g.home?.stats?.ppg || 100,
-                            reboundsPerGame: g.home?.stats?.rpg || 40,
-                            assistsPerGame: g.home?.stats?.apg || 25,
-                            fieldGoalPct: 45,
-                            threePointPct: 35,
-                            freeThrowPct: 75,
-                            netRating: g.statsH?.net_rating || 50
-                        }
-                    },
-                    marketTotal: g.market_total || g.marketTotal || 220,
-                    modelTotal: g.model_total || g.modelTotal || 225,
-                    rawModelTotal: g.raw_model_total || g.rawModelTotal,
-                    edge: g.edge || 2.5,
-                    absEdge: g.abs_edge || Math.abs(g.edge || 0),
-                    side: g.side,
-                    confidence: g.confidence || "NO PLAY",
-                    trace: g.trace || [],
-                    factors: g.factors || [],
-                    forecastData: g.forecastData || []
-                }));
                 setGames(transformedGames);
+                setProps(leagueProps.length > 0 ? leagueProps : GET_MOCK_DATA(leagueId).props);
             } else {
                 // Use dynamic mock data if no API data
                 const mock = GET_MOCK_DATA(leagueId);
