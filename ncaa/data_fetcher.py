@@ -83,9 +83,13 @@ def fetch_stat(stat_id, is_individual=False):
                 print(f"Error fetching page {page}: {response.status_code}")
                 break
         except requests.exceptions.SSLError as ssl_err:
-            print(f"SSL Error: {ssl_err}")
-            print("Retrying with verify=False (Security Warning)")
+            print(f"SSL Error on {url}: {ssl_err}")
+            print("Retrying with verify=False and brief delay...")
+            time.sleep(1) # Delay can help with record MAC errors
             try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                # verify=False should now work because we fixed ssl_adapter.py's check_hostname conflict
                 response = http.get(url, headers=HEADERS, timeout=30, verify=False)
                 if response.status_code == 200:
                     data = response.json()
@@ -93,13 +97,16 @@ def fetch_stat(stat_id, is_individual=False):
                     total_pages = data.get("pages", 1)
                     page += 1
                     continue
+                else:
+                    print(f"Fallback fetch failed with status {response.status_code}")
+                    break
             except Exception as e2:
                 print(f"Fallback also failed: {e2}")
                 break
         except Exception as e:
             print(f"Exception: {e}")
             break
-        time.sleep(0.05) 
+        time.sleep(0.1) 
     return all_data
 
 def fetch_standings():
@@ -113,9 +120,12 @@ def fetch_standings():
             print(f"Error fetching standings: {response.status_code}")
             return None
     except requests.exceptions.SSLError as ssl_err:
-        print(f"SSL Error: {ssl_err}")
-        print("Retrying with verify=False (Security Warning)")
+        print(f"SSL Error on {url}: {ssl_err}")
+        print("Retrying with verify=False and brief delay...")
+        time.sleep(1)
         try:
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             response = http.get(url, headers=HEADERS, timeout=30, verify=False)
             if response.status_code == 200:
                 return response.json()
