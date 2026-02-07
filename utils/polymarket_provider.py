@@ -84,28 +84,33 @@ class PolymarketProvider:
                         if len(outcomes) != 2 or len(prices) != 2:
                             continue
                             
-                        # Identify Market Type
-                        # Strict Filter: Exclude Quarter/Half markets
+                        # Identify Market Type - Focus on Game Totals (O/U)
+                        # Strict Filter: Exclude Quarter/Half markets and player props
                         is_period = any(x in q for x in ["1H", "2H", "Q1", "Q2", "Q3", "Q4", "First Half", "Second Half", "Quarter"])
+                        is_player_prop = any(x in q for x in ["Points O/U", "Rebounds O/U", "Assists O/U", "Steals O/U", "Blocks O/U"])
                         
-                        # Market is Winner if:
-                        # 1. Contains "Winner" or "Moneyline" (AND not period)
-                        # 2. OR Matches the Event Title (e.g. "Warriors vs. Lakers")
-                        is_explicit_winner = "Winner" in q or "Moneyline" in q
-                        is_title_match = (q == title) or (q == title_clean) or (q == f"{teamA_raw} vs {teamB_raw}")
+                        # Market is a Game Total if:
+                        # 1. Contains "O/U" in the question
+                        # 2. Has exactly 2 outcomes: ["Over", "Under"]
+                        # 3. NOT a period market (1H, Q1, etc.)
+                        # 4. NOT a player prop
+                        is_game_total = (
+                            "O/U" in q and 
+                            outcomes == ["Over", "Under"] and 
+                            not is_period and 
+                            not is_player_prop
+                        )
                         
-                        m_type = "winner" if (is_explicit_winner or is_title_match) and not is_period else None
-                        
-                        if m_type == "winner":
+                        if is_game_total:
+                            # Extract the total from the question (e.g., "Warriors vs. Lakers: O/U 221.5" -> 221.5)
+                            try:
+                                total_str = q.split("O/U")[-1].strip()
+                                total_value = float(total_str)
+                            except:
+                                continue  # Skip if we can't parse the total
                             # Outcomes are usually ["Team A", "Team B"] or ["Yes", "No"] (rare for games)
                             # Polymarket usually does ["Team A", "Team B"] for sports? 
                             # Checking inspection: Outcomes: ["Yes", "No"] for "Will X win?"
-                            # Let's handle "Yes/No" logic if the question is "Will Team A win?"
-                            
-                            # Inspection showed: "Will the Knicks win?" -> ["Yes", "No"]
-                            # But we need "Knicks vs Pistons".
-                            # Let's look at the structure from previous logs if possible or code defensively.
-                            # Assuming "Team A vs Team B" event structure often has "Winner" market.
                             
                             # Simply map the event ID
                             matchup_id = f"{teamA}-{teamB}"
@@ -114,8 +119,9 @@ class PolymarketProvider:
                             market_data = {
                                 "id": m.get('id'),
                                 "title": m.get('question'),
-                                "outcomes": outcomes,
-                                "prices": prices,
+                                "total": total_value,  # The O/U line (e.g., 221.5)
+                                "outcomes": outcomes,  # ["Over", "Under"]
+                                "prices": prices,  # [over_prob, under_prob]
                                 "volume": m.get('volume24hr', 0),
                                 "url": f"https://polymarket.com/event/{event.get('slug')}"
                             }

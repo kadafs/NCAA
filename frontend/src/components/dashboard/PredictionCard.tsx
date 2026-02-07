@@ -46,13 +46,16 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                     {prediction.polymarket && (() => {
                         const prices = prediction.polymarket.prices.map(Number);
                         const outcomes = prediction.polymarket.outcomes;
-                        // Find "Yes" or team matching side logic is complex, for now assume simple outcomes
-                        // Usually [Yes, No] or [TeamA, TeamB]
-                        // Let's just show the max probability outcome
-                        const maxPrice = Math.max(...prices);
-                        const maxIdx = prices.indexOf(maxPrice);
-                        const outcome = outcomes[maxIdx];
-                        const prob = Math.round(maxPrice * 100);
+                        const total = prediction.polymarket.total;
+
+                        // For O/U markets: outcomes = ["Over", "Under"], prices = [over_prob, under_prob]
+                        const overProb = outcomes[0] === "Over" ? prices[0] : prices[1];
+                        const underProb = outcomes[1] === "Under" ? prices[1] : prices[0];
+
+                        // Determine which side has higher probability
+                        const favored = overProb > underProb ? "Over" : "Under";
+                        const favoredProb = Math.max(overProb, underProb);
+                        const prob = Math.round(favoredProb * 100);
 
                         return (
                             <a
@@ -60,10 +63,11 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-1.5 px-2 py-0.5 bg-[#2B3040] hover:bg-[#343A4B] border border-white/5 rounded transition-colors group/poly"
+                                title={`Polymarket: ${favored} ${total} (${prob}% probability)`}
                             >
                                 <img src="https://polymarket.com/favicon.ico" alt="Poly" className="w-3 h-3 grayscale group-hover/poly:grayscale-0" />
                                 <span className="text-[9px] font-bold text-gray-400 group-hover/poly:text-white uppercase transition-colors">
-                                    {outcome}: {prob}%
+                                    {favored} {total}: {prob}%
                                 </span>
                             </a>
                         );

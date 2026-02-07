@@ -41,6 +41,7 @@ export interface Prediction {
     polymarket?: {
         id: string;
         title: string;
+        total?: number;  // O/U line (e.g., 221.5)
         outcomes: string[];
         prices: string[];
         volume: number;
