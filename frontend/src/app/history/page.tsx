@@ -185,6 +185,7 @@ export default function PerformanceHistory() {
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Mode</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Matchup</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Line</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest text-gold">Model Predict</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Outcome</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-dash-text-muted uppercase tracking-widest">Result</th>
                                         </tr>
@@ -225,6 +226,7 @@ export default function PerformanceHistory() {
                                                 </td>
                                                 <td className="px-6 py-4 text-xs font-black text-white uppercase">{p.matchup}</td>
                                                 <td className="px-6 py-4 text-xs font-bold text-dash-text-muted uppercase">{p.market_total}</td>
+                                                <td className="px-6 py-4 text-xs font-black text-gold italic">{p.model_total}</td>
                                                 <td className="px-6 py-4 text-xs font-black text-white">{p.actual_total}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={cn(
