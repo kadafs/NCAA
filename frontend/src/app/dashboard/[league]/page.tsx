@@ -184,7 +184,8 @@ export default function LeagueDashboard() {
                         confidence: g.confidence || "NO PLAY",
                         trace: g.trace || [],
                         factors: g.factors || [],
-                        forecastData: g.forecastData || []
+                        forecastData: g.forecastData || [],
+                        polymarket: g.polymarket  // Polymarket Integration
                     };
                 });
 
