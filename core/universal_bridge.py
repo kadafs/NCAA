@@ -386,7 +386,8 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
             "props": player_props,
             "statsA": game.get('statsA', {}),
             "statsH": game.get('statsH', {}),
-            "injuries": game_injuries
+            "injuries": game_injuries,
+            "polymarket": game.get('polymarket')  # Polymarket Integration (v1.6)
         })
 
     return {
