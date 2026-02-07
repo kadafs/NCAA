@@ -54,13 +54,16 @@ class PolymarketProvider:
             for event in events:
                 title = event.get('title', '')
                 
+                # Normalize " vs. " to " vs "
+                title_clean = title.replace(" vs. ", " vs ")
+                
                 # Filter for Game Matchups (Must contain 'vs')
-                if " vs " not in title:
+                if " vs " not in title_clean:
                     continue
                     
                 # Parse Teams from Title "Team A vs Team B"
                 try:
-                    parts = title.split(" vs ")
+                    parts = title_clean.split(" vs ")
                     teamA_raw = parts[0].strip()
                     # Remove potential extra text from Team B (e.g., "Team B - Feb 6")
                     teamB_raw = parts[1].split(" - ")[0].strip() 
@@ -82,7 +85,16 @@ class PolymarketProvider:
                             continue
                             
                         # Identify Market Type
-                        m_type = "winner" if "Winner" in q or "Moneyline" in q else None
+                        # Strict Filter: Exclude Quarter/Half markets
+                        is_period = any(x in q for x in ["1H", "2H", "Q1", "Q2", "Q3", "Q4", "First Half", "Second Half", "Quarter"])
+                        
+                        # Market is Winner if:
+                        # 1. Contains "Winner" or "Moneyline" (AND not period)
+                        # 2. OR Matches the Event Title (e.g. "Warriors vs. Lakers")
+                        is_explicit_winner = "Winner" in q or "Moneyline" in q
+                        is_title_match = (q == title) or (q == title_clean) or (q == f"{teamA_raw} vs {teamB_raw}")
+                        
+                        m_type = "winner" if (is_explicit_winner or is_title_match) and not is_period else None
                         
                         if m_type == "winner":
                             # Outcomes are usually ["Team A", "Team B"] or ["Yes", "No"] (rare for games)
@@ -123,7 +135,7 @@ class PolymarketProvider:
     def _normalize_team(self, name, league):
         """Uses existing mapping utilities."""
         # Clean common Polymarket prefixes/suffixes
-        clean = name.replace("The ", "")
+        clean = name.replace("The ", "").strip().lower()
         
         # Try direct alias match
         if clean in BASKETBALL_ALIASES:
