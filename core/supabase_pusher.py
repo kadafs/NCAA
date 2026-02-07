@@ -2,9 +2,11 @@
 import os
 import json
 import asyncio
+import time
 from datetime import datetime
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 from dotenv import load_dotenv
+import postgrest
 
 # Add parent directory for core imports
 import sys
@@ -18,11 +20,37 @@ load_dotenv()
 SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    print("Error: SUPABASE_URL and SUPABASE_KEY must be set.")
-    sys.exit(1)
+# Increase timeout for large blobs
+opts = ClientOptions(postgrest_client_timeout=120)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY, options=opts)
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+def chunk_list(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+async def push_with_retry(table_name, data, league_mode, is_upsert=True, max_retries=3):
+    """Generic push with retry logic for Supabase"""
+    for attempt in range(max_retries):
+        try:
+            if is_upsert:
+                # Handle both list (history) and dict (store)
+                if isinstance(data, list):
+                    # For history, we already chunk it before calling this if it's large
+                    supabase.table(table_name).upsert(data, on_conflict="id").execute()
+                else:
+                    supabase.table(table_name).upsert(data, on_conflict="league").execute()
+            return True
+        except Exception as e:
+            wait_time = (attempt + 1) * 2
+            print(f"[{league_mode}] Push attempt {attempt+1} failed for {table_name}: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {wait_time}s...")
+                await asyncio.sleep(wait_time)
+            else:
+                print(f"Final failure for {table_name} after {max_retries} attempts.")
+                raise e
+    return False
 
 LEAGUES = ["nba", "ncaa"]
 
@@ -57,20 +85,22 @@ async def push_league_predictions(league, date_override=None):
                 if len(first_g['trace']) > 0:
                     print(f"DEBUG [{store_key}]: first trace line='{first_g['trace'][0]}'")
 
-            supabase.table("predictions_store").upsert({
+            store_payload = {
                 "league": store_key,
                 "data": data,
                 "updated_at": datetime.now().isoformat()
-            }, on_conflict="league").execute()
+            }
+            await push_with_retry("predictions_store", store_payload, store_key)
             print(f"Pushed {league} ({mode}) to live store.")
 
             # Backward compatibility: Push 'safe' to the base key as well
             if mode == "safe":
-                supabase.table("predictions_store").upsert({
+                base_payload = {
                     "league": league,
                     "data": data,
                     "updated_at": datetime.now().isoformat()
-                }, on_conflict="league").execute()
+                }
+                await push_with_retry("predictions_store", base_payload, league)
                 print(f"Updated base {league} key for backward compatibility.")
 
             # 2. Update History Archive (Push BOTH modes with unique IDs)
@@ -100,9 +130,14 @@ async def push_league_predictions(league, date_override=None):
                 })
 
             if history_rows:
-                # Use upsert to update existing rows or insert new ones
-                supabase.table("predictions_history").upsert(history_rows, on_conflict="id").execute()
-                print(f"Archived {len(history_rows)} games into history ({mode}).")
+                # Use chunking to avoid timeouts on large history sets
+                chunks = list(chunk_list(history_rows, 50))
+                print(f"Archiving {len(history_rows)} games into history ({mode}) in {len(chunks)} chunks...")
+                for i, chunk in enumerate(chunks):
+                    await push_with_retry("predictions_history", chunk, f"{store_key}_hist_{i}")
+                    if len(chunks) > 1:
+                        await asyncio.sleep(0.5) # Small cooldown between chunks
+                print(f"Completed history archive for {league} ({mode}).")
         except Exception as e:
             print(f"Failed to push {league} ({mode}) predictions: {e}")
 

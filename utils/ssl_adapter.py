@@ -11,12 +11,21 @@ class RobustSSLAdapter(HTTPAdapter):
     2. Attempting to disable TLS Session Tickets (OP_NO_TICKET)
     """
     def init_poolmanager(self, *args, **kwargs):
-        ctx = ssl.create_default_context()
+        # Create a more robust default context
+        ctx = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+        
         # Force modern TLS
         ctx.options |= ssl.OP_NO_SSLv2
         ctx.options |= ssl.OP_NO_SSLv3
         ctx.options |= ssl.OP_NO_TLSv1
         ctx.options |= ssl.OP_NO_TLSv1_1
+        
+        # Add basic robustness options
+        ctx.options |= getattr(ssl, "OP_NO_COMPRESSION", 0)
+        
+        # CRITICAL: Disable check_hostname here so that even if verify=False is passed to requests,
+        # it won't conflict with our custom context.
+        ctx.check_hostname = False
         
         # Disable Session Tickets - can resolve MAC errors in some network environments
         try:
