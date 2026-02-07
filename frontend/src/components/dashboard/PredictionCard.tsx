@@ -77,11 +77,11 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
 
             {/* Content: VS Layout */}
             <div className="p-4 sm:p-6">
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-6 lg:gap-8">
+                <div className="flex flex-col xl:flex-row items-center justify-between gap-4 sm:gap-6 xl:gap-8">
                     {/* Teams Row */}
-                    <div className="flex items-center gap-3 sm:gap-6 w-full lg:w-auto">
+                    <div className="flex items-center justify-center gap-3 sm:gap-6 w-full xl:w-auto">
                         {/* Away */}
-                        <div className="flex-1 flex flex-col items-center lg:items-end text-center lg:text-right gap-1 sm:gap-2 min-w-0">
+                        <div className="flex-1 flex flex-col items-center xl:items-end text-center xl:text-right gap-1 sm:gap-2 min-w-0">
                             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-dash-bg-secondary rounded-xl sm:rounded-2xl flex items-center justify-center p-1.5 sm:p-2 border border-dash-border flex-shrink-0">
                                 <img
                                     src={prediction.awayTeam.logo || LEAGUE_FALLBACKS[prediction.league?.toLowerCase()] || LEAGUE_FALLBACKS.ncaa}
@@ -114,8 +114,8 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                     className="max-w-full max-h-full object-contain"
                                 />
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="text-[11px] sm:text-xs font-black text-white uppercase leading-none truncate max-w-[100px] sm:max-w-[140px]">{prediction.awayTeam.name}</h3>
+                            <div className="min-w-0 w-full">
+                                <h3 className="text-[11px] sm:text-xs font-black text-white uppercase leading-tight truncate max-w-full xl:max-w-[160px]">{prediction.awayTeam.name}</h3>
                                 <p className="text-[9px] sm:text-[10px] font-bold text-dash-text-muted mt-0.5">{prediction.awayTeam.record}</p>
                             </div>
                         </div>
@@ -127,7 +127,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                         </div>
 
                         {/* Home */}
-                        <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left gap-1 sm:gap-2 min-w-0">
+                        <div className="flex-1 flex flex-col items-center xl:items-start text-center xl:text-left gap-1 sm:gap-2 min-w-0">
                             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-dash-bg-secondary rounded-xl sm:rounded-2xl flex items-center justify-center p-1.5 sm:p-2 border border-dash-border flex-shrink-0">
                                 <img
                                     src={prediction.homeTeam.logo || LEAGUE_FALLBACKS[prediction.league?.toLowerCase()] || LEAGUE_FALLBACKS.ncaa}
@@ -156,15 +156,15 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                                     className="max-w-full max-h-full object-contain"
                                 />
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="text-[11px] sm:text-xs font-black text-white uppercase leading-none truncate max-w-[100px] sm:max-w-[140px]">{prediction.homeTeam.name}</h3>
+                            <div className="min-w-0 w-full">
+                                <h3 className="text-[11px] sm:text-xs font-black text-white uppercase leading-tight truncate max-w-full xl:max-w-[160px]">{prediction.homeTeam.name}</h3>
                                 <p className="text-[9px] sm:text-[10px] font-bold text-dash-text-muted mt-0.5">{prediction.homeTeam.record}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Stats/Gauges Section (Dynamic for Mobile/Desktop) */}
-                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 w-full lg:w-auto mt-4 lg:mt-0">
+                    <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 w-full xl:w-auto mt-4 xl:mt-0">
                         <div className="hidden sm:block">
                             <CircularGauge
                                 value={prediction.homeTeam.stats.netRating}
