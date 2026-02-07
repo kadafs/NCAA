@@ -328,6 +328,20 @@ BASKETBALL_ALIASES = {
     "utahvalley": "utahvalley",
     "southern": "southern",
     "utmartin": "utmartin",
+    
+    # NBA Short Names (Polymarket Uses These Often)
+    "hawks": "atlantahawks", "celtics": "bostonceltics", "nets": "brooklynnets",
+    "hornets": "charlottehornets", "bulls": "chicagobulls", "cavaliers": "clevelandcavaliers",
+    "cavs": "clevelandcavaliers", "mavericks": "dallasmavericks", "mavs": "dallasmavericks",
+    "nuggets": "denvernuggets", "pistons": "detroitpistons", "warriors": "goldenstatewarriors",
+    "rockets": "houstonrockets", "pacers": "indianapacers", "clippers": "laclippers",
+    "lakers": "losangeleslakers", "grizzlies": "memphisgrizzlies", "heat": "miamiheat",
+    "bucks": "milwaukeebucks", "timberwolves": "minnesotatimberwolves", "wolves": "minnesotatimberwolves",
+    "pelicans": "neworleanspelicans", "knicks": "newyorkknicks", "thunder": "oklahomacitythunder",
+    "magic": "orlandomagic", "76ers": "philadelphia76ers", "sixers": "philadelphia76ers",
+    "suns": "phoenixsuns", "blazers": "portlandtrailblazers", "trailblazers": "portlandtrailblazers",
+    "kings": "sacramentokings", "spurs": "sanantoniospurs", "raptors": "torontoraptors",
+    "jazz": "utahjazz", "wizards": "washingtonwizards"
 }
 # NBA Tricode Mapping
 NBA_TRICODES = {

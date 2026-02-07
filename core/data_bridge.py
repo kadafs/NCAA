@@ -5,7 +5,7 @@ import sys
 
 # Root addition for imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES, NBA_TRICODES
+from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES, NBA_TRICODES, clean_team_name
 from utils.odds_provider import get_odds, extract_total_for_matchup
 from utils.polymarket_provider import PolymarketProvider
 
@@ -89,13 +89,16 @@ class UniversalDataBridge:
             # Keys in poly_markets are "TeamA-TeamB"
             poly_data = None
             if hasattr(self, 'poly_markets'):
+                c_home = clean_team_name(teamH_name)
+                c_away = clean_team_name(teamA_name)
+                
                 # Try Forward Match
-                match_key = f"{teamA_name}-{teamH_name}"
+                match_key = f"{c_away}-{c_home}"
                 if match_key in self.poly_markets:
                     poly_data = self.poly_markets[match_key]
                 else:
                     # Try Reverse Match
-                    match_key_rev = f"{teamH_name}-{teamA_name}"
+                    match_key_rev = f"{c_home}-{c_away}"
                     if match_key_rev in self.poly_markets:
                         poly_data = self.poly_markets[match_key_rev]
 
