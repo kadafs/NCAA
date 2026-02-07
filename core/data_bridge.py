@@ -147,6 +147,15 @@ class UniversalDataBridge:
         from ncaa.v1_2.populate import get_daily_input_sheet
         daily_sheet = get_daily_input_sheet(date_obj=date_obj)
         
+        # Polymarket Integration (v1.6) - NCAA
+        poly_markets = {}
+        try:
+            from utils.polymarket_provider import PolymarketProvider
+            poly_provider = PolymarketProvider()
+            poly_markets = poly_provider.get_markets("ncaa")
+        except Exception as e:
+            print(f"Polymarket fetch failed (NCAA): {e}")
+        
         processed_sheet = []
         for d in daily_sheet:
             teamA_bt = find_team_in_dict(d['team'], bt_data, BASKETBALL_ALIASES)
@@ -162,6 +171,22 @@ class UniversalDataBridge:
                     seo = slug
                 # Use NCAA.com primary SVG
                 return f"https://www.ncaa.com/sites/default/files/images/logos/schools/{seo[0].lower()}/{seo.lower()}.svg"
+            
+            # Polymarket Integration - Match NCAA games
+            poly_data = None
+            if poly_markets:
+                c_home = clean_team_name(teamH_bt or d['opponent'])
+                c_away = clean_team_name(teamA_bt or d['team'])
+                
+                # Try Forward Match
+                match_key = f"{c_away}-{c_home}"
+                if match_key in poly_markets:
+                    poly_data = poly_markets[match_key]
+                else:
+                    # Try Reverse Match
+                    match_key_rev = f"{c_home}-{c_away}"
+                    if match_key_rev in poly_markets:
+                        poly_data = poly_markets[match_key_rev]
             
             processed_sheet.append({
                 **d,
@@ -188,7 +213,8 @@ class UniversalDataBridge:
                     "adj_t": sH.get('adj_t', 70.0),
                     "net_rating": 50 + (sH.get('adj_off', 110.0) - sH.get('adj_def', 110.0)),
                     "four_factors": {"efg": sH.get('efg', 0), "tov": sH.get('to', 0), "orb": sH.get('or', 0), "ftr": sH.get('ftr', 0)}
-                }
+                },
+                "polymarket": poly_data  # Polymarket Integration (v1.6)
             })
         return processed_sheet
 
