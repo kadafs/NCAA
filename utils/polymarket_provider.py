@@ -1,5 +1,7 @@
 import requests
 import json
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from datetime import datetime
 from utils.mapping import BASKETBALL_ALIASES, NBA_TRICODES, clean_team_name
 
@@ -11,8 +13,19 @@ class PolymarketProvider:
     
     def __init__(self):
         self.session = requests.Session()
+        
+        # Robust Retry Strategy (v1.6.5)
+        retries = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[500, 502, 503, 504],
+            allowed_methods=["GET"]
+        )
+        self.session.mount('https://', HTTPAdapter(max_retries=retries))
+        
         self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "application/json"
         })
     
     def get_markets(self, league="nba"):
