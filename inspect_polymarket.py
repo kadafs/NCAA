@@ -10,7 +10,7 @@ def inspect_markets(slug="nba"):
     url = "https://gamma-api.polymarket.com/events"
     params = {
         "closed": "false",
-        "tag_slug": slug, # Trying specific param for slug
+        "tag_slug": slug,
         "limit": 50,
         "offset": 0,
         "order": "volume24hr", # standard gamma sort
@@ -18,7 +18,10 @@ def inspect_markets(slug="nba"):
     }
     
     try:
-        response = requests.get(url, params=params)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         response.raise_for_status()
         data = response.json()
         
