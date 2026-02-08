@@ -75,33 +75,34 @@ async def push_league_predictions(league, date_override=None):
                 continue
 
             # 1. Update Live Store (The blob used by the dashboard)
-            # Use composite key for unique storage
-            store_key = f"{league}_{mode}"
-            
-            # DEBUG: Sample first game
-            if data.get("games"):
-                first_g = data["games"][0]
-                print(f"DEBUG [{store_key}]: first game total={first_g['model_total']}, trace_len={len(first_g['trace'])}")
-                if len(first_g['trace']) > 0:
-                    print(f"DEBUG [{store_key}]: first trace line='{first_g['trace'][0]}'")
-
-            store_payload = {
-                "league": store_key,
-                "data": data,
-                "updated_at": datetime.now().isoformat()
-            }
-            await push_with_retry("predictions_store", store_payload, store_key)
-            print(f"Pushed {league} ({mode}) to live store.")
-
-            # Backward compatibility: Push 'safe' to the base key as well
-            if mode == "safe":
-                base_payload = {
-                    "league": league,
+            # PROTECTIVE GATE: Only update live store if this is a real-time run (no date_override)
+            if not date_override:
+                store_key = f"{league}_{mode}"
+                
+                # DEBUG: Sample first game
+                if data.get("games"):
+                    first_g = data["games"][0]
+                    print(f"DEBUG [{store_key}]: first game total={first_g['model_total']}, trace_len={len(first_g['trace'])}")
+    
+                store_payload = {
+                    "league": store_key,
                     "data": data,
                     "updated_at": datetime.now().isoformat()
                 }
-                await push_with_retry("predictions_store", base_payload, league)
-                print(f"Updated base {league} key for backward compatibility.")
+                await push_with_retry("predictions_store", store_payload, store_key)
+                print(f"Pushed {league} ({mode}) to live store.")
+    
+                # Backward compatibility: Push 'safe' to the base key as well
+                if mode == "safe":
+                    base_payload = {
+                        "league": league,
+                        "data": data,
+                        "updated_at": datetime.now().isoformat()
+                    }
+                    await push_with_retry("predictions_store", base_payload, league)
+                    print(f"Updated base {league} key for backward compatibility.")
+            else:
+                print(f"Skipping live store update for {league} ({mode}) due to date_override.")
 
             # 2. Update History Archive (Push BOTH modes with unique IDs)
             history_rows = []

@@ -19,15 +19,33 @@ export async function GET(req: Request) {
 
         if (summaryError) throw summaryError;
 
-        // 2. Fetch Recent Graded Picks
-        const { data: recentPicks, error: picksError } = await supabase
-            .from("predictions_history")
-            .select("*")
-            .eq("status", "graded")
-            .order("game_date", { ascending: false })
-            .limit(200);
+        // 2. Fetch Recent Graded Picks (200 per category)
+        const categories = [
+            { league: 'nba', mode: 'safe' },
+            { league: 'nba', mode: 'full' },
+            { league: 'ncaa', mode: 'safe' },
+            { league: 'ncaa', mode: 'full' }
+        ];
 
-        if (picksError) throw picksError;
+        const picksPromises = categories.map(cat =>
+            supabase
+                .from("predictions_history")
+                .select("*")
+                .eq("status", "graded")
+                .ilike("league", cat.league)
+                .eq("mode", cat.mode)
+                .order("game_date", { ascending: false })
+                .limit(200)
+        );
+
+        const results = await Promise.all(picksPromises);
+
+        // Check for errors in any of the parallel requests
+        for (const res of results) {
+            if (res.error) throw res.error;
+        }
+
+        const recentPicks = results.flatMap(res => res.data || []);
 
         return NextResponse.json({
             metrics: summaryData || [],

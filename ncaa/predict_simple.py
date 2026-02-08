@@ -6,6 +6,7 @@ from datetime import datetime
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
+from utils.ssl_adapter import get_robust_session
 
 # Script 5: Simple Scoring Model
 # Logic: Proj Score = (Team A Offense + Team B Defense) / 2
@@ -21,15 +22,20 @@ BARTTORVIK_STATS_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
 INJURY_NOTES_FILE = os.path.join(ROOT_DIR, "data", "injury_notes.json")
 
 def fetch_scoreboard(year, month, day):
-    # Try local first, then external
+    session = get_robust_session(retries=2)
     for base in BASE_URLS:
         url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
         try:
             # Increased timeout to 15s to handle cold starts or slow networks
-            response = requests.get(url, timeout=15)
+            response = session.get(url, timeout=15)
+            if response.status_code != 200:
+                print(f"DEBUG: Standard fetch failed ({response.status_code}). Retrying with SSL bypass...")
+                response = session.get(url, timeout=15, verify=False)
+
             if response.status_code == 200:
                 return response.json()
-        except Exception:
+        except Exception as e:
+            print(f"DEBUG: Error fetching from {base}: {e}")
             continue
     return None
 

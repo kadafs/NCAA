@@ -12,6 +12,7 @@ from nba_api.stats.endpoints import scoreboardv3
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.mapping import NBA_TRICODES, clean_team_name, BASKETBALL_ALIASES
+from utils.ssl_adapter import get_robust_session
 
 def get_canonical_key(away, home):
     """Generates a standardized key for matching matchups across sources."""
@@ -250,39 +251,47 @@ def audit_ncaa(date_obj):
         "Accept": "application/json"
     }
 
+    results_map = {}
+    
     try:
-        resp = requests.get(url, headers=headers, timeout=20)
-        if resp.status_code != 200:
-            print(f"NCAA Scoreboard error: {resp.status_code}")
-            return
+        session = get_robust_session(retries=2)
+        resp = session.get(url, headers=headers, timeout=20)
         
-        data = resp.json()
-        results_map = {}
-        for g_wrapper in data.get('games', []):
-            g = g_wrapper.get('game')
-            if not g: continue
-            
-            # Status "final" or "final-ot" - check gameState field
-            game_state = g.get('gameState', '').lower()
-            if "final" in game_state:
-                away = g.get('away', {})
-                home = g.get('home', {})
-                away_name = away.get('names', {}).get('short', '')
-                home_name = home.get('names', {}).get('short', '')
-                
-                
-                total_score = int(away.get('score', 0)) + int(home.get('score', 0))
-                if total_score == 0:
-                    continue
+        if resp.status_code != 200:
+            print(f"DEBUG: Standard NCAA fetch failed ({resp.status_code}). Retrying with SSL bypass...")
+            resp = session.get(url, headers=headers, timeout=20, verify=False)
 
-                if away_name and home_name:
-                    key = get_canonical_key(away_name, home_name)
-                    results_map[key] = {
-                        "away_score": int(away.get('score', 0)),
-                        "home_score": int(home.get('score', 0)),
-                        "total": total_score
-                    }
+        if resp.status_code == 200:
+            data = resp.json()
+            for g_wrapper in data.get('games', []):
+                g = g_wrapper.get('game')
+                if not g: continue
+                
+                # Status "final" or "final-ot" - check gameState field
+                game_state = g.get('gameState', '').lower()
+                if "final" in game_state:
+                    away = g.get('away', {})
+                    home = g.get('home', {})
+                    away_name = away.get('names', {}).get('short', '')
+                    home_name = home.get('names', {}).get('short', '')
+                    
+                    total_score = int(away.get('score', 0)) + int(home.get('score', 0))
+                    if total_score == 0:
+                        continue
 
+                    if away_name and home_name:
+                        key = get_canonical_key(away_name, home_name)
+                        results_map[key] = {
+                            "away_score": int(away.get('score', 0)),
+                            "home_score": int(home.get('score', 0)),
+                            "total": total_score
+                        }
+        else:
+            print(f"NCAA Scoreboard error: {resp.status_code}")
+    except Exception as e:
+        print(f"NCAA Primary Audit Fetch failed: {e}")
+
+    try:
         if not results_map:
             print(f"No completed NCAA games found in primary API for {date_str}. Trying fallback...")
         
@@ -293,6 +302,7 @@ def audit_ncaa(date_obj):
             for k, v in fallback_map.items():
                 if k not in results_map:
                     results_map[k] = v
+
                     # print(f"  - Added from fallback: {k}")
         
         if not results_map:
