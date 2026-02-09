@@ -51,7 +51,16 @@ const LEAGUES = ["All", "NBA", "NCAA"];
  * Normalized string helper: removes all non-alphanumeric, lowercases, and trims.
  */
 const normalize = (str: string) => {
-    return (str || "").toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    return (str || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\./g, '')
+        .replace(/\(/g, '')
+        .replace(/\)/g, '')
+        .replace(/'/g, '')
+        .replace(/-/g, '')
+        .replace(/&/g, 'and')
+        .replace(/\s+/g, '');
 };
 
 /**
@@ -84,7 +93,19 @@ const NCAA_ALIASES: Record<string, string[]> = {
     "st. thomas": ["st thomas mn", "st thomas"],
     "unc wilmington": ["uncw"],
     "unc greensboro": ["uncg"],
-    "unc asheville": ["unca"]
+    "unc asheville": ["unca"],
+    "grambling state": ["grambling"],
+    "southeastern louisiana": ["southeastern la.", "southeastern la", "sela"],
+    "stephen f austin": ["sfa"],
+    "ut rio grande valley": ["utrgv", "texas rio grande valley"],
+    "nicholls state": ["nicholls"],
+    "arkansas pine bluff": ["ark.-pine bluff", "ark pine bluff", "uapb"],
+    "saint francis": ["st. francis (pa)", "st francis pa"],
+    "chicago state": ["chicago st", "chicago st."],
+    "prairie view am": ["prairie view"],
+    "incarnate word": ["uiw"],
+    "mcneese state": ["mcneese"],
+    "mid-atlantic christian": ["mid-atlantic christ"]
 };
 
 export default function ScoreboardPage() {
