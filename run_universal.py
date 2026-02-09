@@ -202,7 +202,7 @@ def main():
         import asyncio
         from core.supabase_pusher import push_league_predictions
         try:
-            asyncio.run(push_league_predictions(args.league, date_override=target_date))
+            asyncio.run(push_league_predictions(args.league, date_override=target_date if args.date else None))
             print("Dashboard update triggered successfully.")
         except Exception as e:
             print(f"Failed to push to dashboard: {e}")

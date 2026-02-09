@@ -27,7 +27,7 @@ def inspect():
             print(f"Total Rows: {count}")
             
             # Get samples
-            samples = supabase.table(table).select("*").order("updated_at", descending=True).limit(3).execute()
+            samples = supabase.table(table).select("*").order("updated_at", desc=True).limit(3).execute()
             if samples.data:
                 for i, row in enumerate(samples.data):
                     # Truncate some fields for readability

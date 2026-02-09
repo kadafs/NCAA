@@ -75,9 +75,10 @@ async def push_league_predictions(league, date_override=None):
                 continue
 
             # 1. Update Live Store (The blob used by the dashboard)
+            store_key = f"{league}_{mode}"
+            
             # PROTECTIVE GATE: Only update live store if this is a real-time run (no date_override)
             if not date_override:
-                store_key = f"{league}_{mode}"
                 
                 # DEBUG: Sample first game
                 if data.get("games"):

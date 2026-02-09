@@ -183,6 +183,8 @@ BASKETBALL_ALIASES = {
     "ulm": "louisianamonroe",
     "stmarys": "saintmarys",
     "statemarys": "saintmarys",
+    "centralark": "centralarkansas",
+    "northala": "northalabama",
     "stthomas": "stthomasmn",
     "statethomas": "stthomasmn",
     "saintthomas": "stthomasmn",
