@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { ShieldAlert, ShieldCheck, Shield, X } from "lucide-react";
 
 interface ConfidenceBadgeProps {
-    confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean';
+    confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean' | 'TIER A' | 'TIER B' | 'LEAN' | 'PASS';
     className?: string;
 }
 
@@ -57,6 +57,34 @@ export function ConfidenceBadge({ confidence, className }: ConfidenceBadgeProps)
             bg: "bg-cyan/10",
             text: "text-cyan",
             border: "border-cyan/20"
+        },
+        "TIER A": {
+            label: "TIER A (HIGH)",
+            icon: ShieldAlert,
+            bg: "bg-red-500/10",
+            text: "text-red-500",
+            border: "border-red-500/20"
+        },
+        "TIER B": {
+            label: "TIER B (MID)",
+            icon: ShieldCheck,
+            bg: "bg-gold/10",
+            text: "text-gold",
+            border: "border-gold/20"
+        },
+        "LEAN": {
+            label: "LEAN (LOW)",
+            icon: Shield,
+            bg: "bg-cyan/10",
+            text: "text-cyan",
+            border: "border-cyan/20"
+        },
+        "PASS": {
+            label: "PASS",
+            icon: X,
+            bg: "bg-dash-bg-secondary",
+            text: "text-dash-text-muted",
+            border: "border-dash-border"
         }
     };
 

@@ -53,8 +53,8 @@ export interface Prediction {
     edge: number;
     absEdge?: number;
     side?: "OVER" | "UNDER";
-    decision?: "PLAY" | "LEAN" | "PASS";
-    confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean';
+    decision?: "PLAY" | "LEAN" | "PASS" | "TIER A" | "TIER B";
+    confidence: 'HIGH' | 'MEDIUM' | 'LOW' | 'NO PLAY' | 'lock' | 'strong' | 'lean' | 'TIER A' | 'TIER B' | 'LEAN' | 'PASS';
     time: string;
     date: string;
     trace: string[];

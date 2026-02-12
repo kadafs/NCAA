@@ -104,7 +104,9 @@ def fetch_stat(stat_id, is_individual=False):
                 print(f"Fallback also failed: {e2}")
                 break
         except Exception as e:
-            print(f"Exception: {e}")
+            print(f"Exception fetching {url}: {e}")
+            # If we already have some data, we can return it. 
+            # If we have nothing, we return an empty list but the caller should decide what to do.
             break
         time.sleep(0.1) 
     return all_data
@@ -182,21 +184,28 @@ def main():
     stat_name = "pts_pg"
     stat_id = INDIVIDUAL_STAT_IDS[stat_name]
     
-    data = fetch_stat(stat_id, is_individual=True)
-    if data:
-        output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
-        with open(output_path, "w") as f:
-            json.dump(data, f, indent=2)
-        print(f"Saved individual {stat_name} to {output_path}")
-        
-        # Individual consolidation for Engine (PPG Filtering)
-        # universal_bridge.py expects: {"pts_pg": [{"Name": "...", "PPG": "..."}]}
-        consolidated_ind = {"pts_pg": data}
+    try:
+        data = fetch_stat(stat_id, is_individual=True)
+        if data:
+            output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
+            with open(output_path, "w") as f:
+                json.dump(data, f, indent=2)
+            print(f"Saved individual {stat_name} to {output_path}")
+            
+            # Individual consolidation for Engine (PPG Filtering)
+            # universal_bridge.py expects: {"pts_pg": [{"Name": "...", "PPG": "..."}]}
+            consolidated_ind = {"pts_pg": data}
+        else:
+            print(f"Warning: No data fetched for individual stat {stat_name}. Skipping...")
+    except Exception as e:
+        print(f"Error fetching individual stats: {e}. Skipping section...")
 
     if consolidated_ind:
         with open(INDIVIDUAL_CONSOLIDATED, "w") as f:
             json.dump(consolidated_ind, f, indent=2)
         print(f"Saved consolidated individual stats to {INDIVIDUAL_CONSOLIDATED}")
+    else:
+        print("Warning: Skipping individual_stats.json update due to missing data.")
 
 if __name__ == "__main__":
     main()

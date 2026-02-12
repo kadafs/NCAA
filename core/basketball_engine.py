@@ -393,31 +393,40 @@ class UniversalBasketballEngine:
             else:
                 decision = "PLAY"
         else:
-            # v2.2 Standard Thresholds
+            # v2.5 New Recommended Structure (NCAA) -> Mapped to Legacy Keys for Frontend Compatibility
             if abs_edge < 4.0:
                 decision = "PASS"
-            elif abs_edge < 6.0:
+            elif (4.0 <= abs_edge < 5.0) or (7.0 <= abs_edge < 9.0):
                 decision = "LEAN"
-            else:
-                decision = "PLAY"
+            elif 5.0 <= abs_edge < 7.0:
+                decision = "PLAY" # TIER B -> PLAY
+            else: # >= 9.0
+                decision = "PLAY" # TIER A -> PLAY
             
-        # Professional Confidence Tiers
-        if abs_edge >= 9.0: confidence = "HIGH"
-        elif abs_edge >= 7.0: confidence = "MEDIUM"
-        elif abs_edge >= 5.0: confidence = "LOW"
-        else: confidence = "NO PLAY"
+        # Professional Confidence Tiers (NCAA structure) mapped to Legacy Strings
+        if c['name'] == "NBA":
+            if abs_edge >= 9.0: confidence = "HIGH"
+            elif abs_edge >= 7.0: confidence = "MEDIUM"
+            elif abs_edge >= 5.0: confidence = "LOW"
+            else: confidence = "NO PLAY"
+        else:
+            # NCAA: New Thresholds -> Legacy Strings
+            if abs_edge >= 9.0: confidence = "HIGH"         # Was TIER A
+            elif 5.0 <= abs_edge < 7.0: confidence = "MEDIUM" # Was TIER B
+            elif (4.0 <= abs_edge < 5.0) or (7.0 <= abs_edge < 9.0): confidence = "LOW" # Was LEAN
+            else: confidence = "NO PLAY"                      # Was PASS
         
         # NCAA Auto-Pass Override (Force PASS for very small edges)
         if self.mode == "full" and c['name'] == "NCAA":
             cutoff = c['thresholds'].get('small_edge_cutoff', 4.0)
             if abs_edge < cutoff:
                 decision = "PASS"
-                confidence = "NO PLAY"
+                confidence = "NO PLAY" # Reverted to legacy key
                 notes.append(f"Auto-Pass: Edge ({abs_edge:.1f}) below threshold ({cutoff})")
 
         # v2.5 Light Selection Filter: Downgrade confidence by one tier for low-total markets
         if self.mode == "full" and c['name'] == "NCAA" and market < 138.0:
-            tier_map = {"HIGH": "MEDIUM", "MEDIUM": "LOW", "LOW": "NO PLAY", "NO PLAY": "NO PLAY"}
+            tier_map = {"HIGH": "MEDIUM", "MEDIUM": "LOW", "LOW": "NO PLAY", "NO PLAY": "NO PLAY"} # Updated map
             old_conf = confidence
             confidence = tier_map.get(confidence, confidence)
             if old_conf != confidence:

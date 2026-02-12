@@ -202,9 +202,9 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                 {/* The "Big Edge" Highlight */}
                 <div className={cn(
                     "mt-4 sm:mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl border transition-silky gap-3 sm:gap-4",
-                    prediction.confidence === 'NO PLAY'
+                    (prediction.confidence === 'NO PLAY' || prediction.confidence === 'PASS')
                         ? "bg-white/5 border-white/10 opacity-60"
-                        : prediction.decision === 'LEAN'
+                        : (prediction.decision === 'LEAN' || prediction.confidence === 'LEAN')
                             ? "bg-gold/5 border-gold/10"
                             : "bg-gold/10 border-gold/20 shadow-lg shadow-gold/5"
                 )}>
@@ -231,11 +231,13 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
                             )}>
                                 <span className="hidden sm:inline">
                                     {prediction.side ? `POTENTIAL ${prediction.side}` : prediction.edge > 0 ? "POTENTIAL OVER" : "POTENTIAL UNDER"}
-                                    {prediction.decision === 'LEAN' ? " LEAN" : " PLAY"} RECOMMENDED
+                                    {prediction.decision === 'LEAN' ? " LEAN" :
+                                        prediction.decision === 'PASS' ? " PASS" : " PLAY"} RECOMMENDED
                                 </span>
                                 <span className="sm:hidden">
                                     {prediction.side || (prediction.edge > 0 ? "OVER" : "UNDER")}
-                                    {prediction.decision === 'LEAN' ? " LEAN" : " PLAY"}
+                                    {prediction.decision === 'LEAN' ? " LEAN" :
+                                        prediction.decision === 'PASS' ? " PASS" : " PLAY"}
                                 </span>
                             </p>
                         </div>
