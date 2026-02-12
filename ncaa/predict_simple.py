@@ -17,14 +17,17 @@ BASE_URLS = ["https://ncaa-api-w2ry.onrender.com"]
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 
-TEAM_STATS_FILE = os.path.join(ROOT_DIR, "data", "consolidated_stats.json")
 BARTTORVIK_STATS_FILE = os.path.join(ROOT_DIR, "data", "barttorvik_stats.json")
 INJURY_NOTES_FILE = os.path.join(ROOT_DIR, "data", "injury_notes.json")
 
-def fetch_scoreboard(year, month, day):
+def get_stats_file(division="d1"):
+    div_suffix = "" if division == "d1" else f"_{division}"
+    return os.path.join(ROOT_DIR, "data", f"consolidated_stats{div_suffix}.json")
+
+def fetch_scoreboard(year, month, day, division="d1"):
     session = get_robust_session(retries=2)
     for base in BASE_URLS:
-        url = f"{base}/scoreboard/basketball-men/d1/{year}/{month:02d}/{day:02d}"
+        url = f"{base}/scoreboard/basketball-men/{division}/{year}/{month:02d}/{day:02d}"
         try:
             # Increased timeout to 15s to handle cold starts or slow networks
             response = session.get(url, timeout=15)
@@ -57,17 +60,34 @@ def find_injury_team(name, injury_dict):
 
 def get_simple_metrics(stats_data):
     teams = {}
-    for key in stats_data:
-        if key not in ["scoring_offense", "scoring_defense"]:
-            continue
-        for entry in stats_data[key]:
-            name = entry['Team']
-            if name not in teams: teams[name] = {}
-            
-            if key == "scoring_offense":
-                teams[name]['offense'] = float(entry.get('PPG', 0))
-            elif key == "scoring_defense":
-                teams[name]['defense'] = float(entry.get('OPP PPG', 0))
+    
+    # Check if this is consolidated format (team-keyed) or original format (stat-keyed)
+    # Consolidated: {"Team Name": {"PPG": ..., "OPP PPG": ...}}
+    # Original: {"scoring_offense": [{"Team": ..., "PPG": ...}], "scoring_defense": [...]}
+    
+    sample_key = list(stats_data.keys())[0] if stats_data else None
+    
+    if sample_key and sample_key in ["scoring_offense", "scoring_defense"]:
+        # Original format (stat-keyed)
+        for key in stats_data:
+            if key not in ["scoring_offense", "scoring_defense"]:
+                continue
+            for entry in stats_data[key]:
+                name = entry['Team']
+                if name not in teams: teams[name] = {}
+                
+                if key == "scoring_offense":
+                    teams[name]['offense'] = float(entry.get('PPG', 0))
+                elif key == "scoring_defense":
+                    teams[name]['defense'] = float(entry.get('OPP PPG', 0))
+    else:
+        # Consolidated format (team-keyed)
+        for team_name, team_stats in stats_data.items():
+            if 'PPG' in team_stats and 'OPP PPG' in team_stats:
+                teams[team_name] = {
+                    'offense': float(team_stats.get('PPG', 0)),
+                    'defense': float(team_stats.get('OPP PPG', 0))
+                }
     
     # Filter only those with both stats
     valid_teams = {n: s for n, s in teams.items() if 'offense' in s and 'defense' in s}
@@ -96,20 +116,31 @@ def print_row(matchup, p_score, spread, conf, adj_t, efg, to, or_rate, ftr):
     print(f"{matchup:<35} | {p_score:<15} | {spread:<8} | {conf:<10} | {adj_t:<11} | {efg:<12} | {to:<12} | {or_rate:<12} | {ftr:<12}")
 
 def main():
-    stats_data = load_json(TEAM_STATS_FILE)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--division", type=str, default="d1", help="NCAA Division (d1, d2, d3)")
+    args = parser.parse_args()
+    
+    division = args.division.lower()
+    
+    stats_file = get_stats_file(division)
+    stats_data = load_json(stats_file)
+    
     if not stats_data:
-        print("Stats data missing.")
+        print(f"Stats data missing for {division} at {stats_file}")
         return
 
     metrics = get_simple_metrics(stats_data)
     
-    bt_stats = load_json(BARTTORVIK_STATS_FILE)
+    # BartTorvik is D1 only, so we skip it for D2/D3 or load if available but mostly likely None/Empty for D2
+    bt_stats = load_json(BARTTORVIK_STATS_FILE) if division == "d1" else {}
     
     # Use current date in ET
     now = datetime.now(zoneinfo.ZoneInfo("America/New_York"))
     
-    board = fetch_scoreboard(now.year, now.month, now.day)
+    board = fetch_scoreboard(now.year, now.month, now.day, division=division)
     if not board or 'games' not in board or not board['games']:
+        print(f"No games found for {division.upper()} on {now.strftime('%Y-%m-%d')}")
         return
 
     # CSV Header
@@ -120,6 +151,9 @@ def main():
     import csv
     writer = csv.writer(sys.stdout)
     writer.writerow(header)
+    
+    # Using alias dict. For D2/D3 we might need to expand aliases if names don't match, 
+    # but for now we rely on the same alias file or direct matches.
     
     for game_wrapper in board['games']:
         game = game_wrapper.get('game')
@@ -140,9 +174,9 @@ def main():
             
             match_str = f"{away_raw} @ {home_raw}"
             
-            # Metadata Lookup
-            btA_name = find_team_in_dict(away_raw, bt_stats, BASKETBALL_ALIASES)
-            btH_name = find_team_in_dict(home_raw, bt_stats, BASKETBALL_ALIASES)
+            # Metadata Lookup (D1 only for now)
+            btA_name = find_team_in_dict(away_raw, bt_stats, BASKETBALL_ALIASES) if bt_stats else None
+            btH_name = find_team_in_dict(home_raw, bt_stats, BASKETBALL_ALIASES) if bt_stats else None
             btA = bt_stats.get(btA_name) if btA_name else None
             btH = bt_stats.get(btH_name) if btH_name else None
             
@@ -171,37 +205,15 @@ def main():
                 get_val(btA, 'adj_def'),
                 get_val(btH, 'adj_def'),
                 get_val(btA, 'efg'),
-                get_val(btH, 'efg_d'), # Use opponent defense stats for H? No, usually side-by-side means Team Stats
-                # WAIT: User example "eFG_A, eFG_H". Usually compares the teams' own stats? 
-                # Or Offense vs Defense? 
-                # Context: "Tempo, Efficiency... All must be numeric only". 
-                # Standard analysis lists Team A stats vs Team B stats.
-                # Let's assume Team A's eFG% and Team B's eFG% (Offensive).
-                # Re-reading: "AdjOE_A", "AdjOE_H". Yes, Team specific stats.
+                get_val(btH, 'efg'), # Use H's offensive eFG
                 get_val(btA, 'to'),
-                get_val(btH, 'to'), # Team H Turnovers? Or Forced? "TO_H" usually means Team H's TO %.
+                get_val(btH, 'to'),
                 get_val(btA, 'or'),
                 get_val(btH, 'or'),
                 get_val(btA, 'ftr'),
                 get_val(btH, 'ftr'),
                 "N/A" # Market_Total
             ]
-            
-            # Correction: eFG_H in previous code used 'efg_d' (Defense) for H?
-            # Previous Line 165: "round(btA['efg'], 1) ... / ... round(btH['efg_d'], 1)"
-            # That was weird. Usually you compare A Off vs H Def. 
-            # BUT the headers are "eFG_A", "eFG_H". This implies Team A's eFG and Team H's eFG. 
-            # I will use 'efg' for both (Offensive eFG%).
-            
-            # Update row with correct keys
-            row[12] = get_val(btA, 'efg')
-            row[13] = get_val(btH, 'efg') # Fixed to use H's offensive eFG
-            row[14] = get_val(btA, 'to')
-            row[15] = get_val(btH, 'to')
-            row[16] = get_val(btA, 'or')
-            row[17] = get_val(btH, 'or')
-            row[18] = get_val(btA, 'ftr')
-            row[19] = get_val(btH, 'ftr')
 
             writer.writerow(row)
 

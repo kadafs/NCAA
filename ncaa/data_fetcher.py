@@ -56,12 +56,22 @@ HEADERS = {
     "Accept": "application/json"
 }
 
-def fetch_stat(stat_id, is_individual=False):
+def get_paths(division="d1"):
+    div_suffix = "" if division == "d1" else f"_{division}"
+    return {
+        "STATS_DIR": os.path.join(ROOT_DIR, "data", f"stats{div_suffix}"),
+        "CONSOLIDATED_FILE": os.path.join(ROOT_DIR, "data", f"consolidated_stats{div_suffix}.json"),
+        "INDIVIDUAL_DIR": os.path.join(ROOT_DIR, "data", f"individual{div_suffix}"),
+        "INDIVIDUAL_CONSOLIDATED": os.path.join(ROOT_DIR, "data", f"individual_stats{div_suffix}.json"),
+        "STANDINGS_FILE": os.path.join(ROOT_DIR, "data", f"standings{div_suffix}.json")
+    }
+
+def fetch_stat(stat_id, division="d1", is_individual=False):
     """
     Fetches statistical data from the centralized API.
     Correct URL construction for NCAA.com scraper:
-    Team: /stats/basketball-men/d1/current/team/{id}
-    Individual: /stats/basketball-men/d1/current/individual/{id}
+    Team: /stats/basketball-men/{division}/current/team/{id}
+    Individual: /stats/basketball-men/{division}/current/individual/{id}
     """
     all_data = []
     page = 1
@@ -70,7 +80,7 @@ def fetch_stat(stat_id, is_individual=False):
     type_segment = "individual" if is_individual else "team"
     
     while page <= total_pages:
-        url = f"{BASE_URL}/stats/basketball-men/d1/current/{type_segment}/{stat_id}?page={page}"
+        url = f"{BASE_URL}/stats/basketball-men/{division}/current/{type_segment}/{stat_id}?page={page}"
         print(f"Fetching {url}")
         try:
             response = http.get(url, headers=HEADERS, timeout=30)
@@ -111,8 +121,8 @@ def fetch_stat(stat_id, is_individual=False):
         time.sleep(0.1) 
     return all_data
 
-def fetch_standings():
-    url = f"{BASE_URL}/standings/basketball-men/d1"
+def fetch_standings(division="d1"):
+    url = f"{BASE_URL}/standings/basketball-men/{division}"
     print(f"Fetching {url}")
     try:
         response = http.get(url, headers=HEADERS, timeout=30)
@@ -139,22 +149,32 @@ def fetch_standings():
         return None
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Fetch NCAA Stats")
+    parser.add_argument("--division", type=str, default="d1", help="NCAA Division (d1, d2, d3)")
+    args = parser.parse_args()
+    
+    division = args.division.lower()
+    paths = get_paths(division) # Use dynamic paths
+    
+    print(f"Starting fetch for Division: {division.upper()}")
+    
     # 1. Fetch standings
-    standings = fetch_standings()
+    standings = fetch_standings(division)
     if standings:
-        os.makedirs(os.path.dirname(STANDINGS_FILE), exist_ok=True)
-        with open(STANDINGS_FILE, "w") as f:
+        os.makedirs(os.path.dirname(paths["STANDINGS_FILE"]), exist_ok=True)
+        with open(paths["STANDINGS_FILE"], "w") as f:
             json.dump(standings, f, indent=2)
-        print(f"Saved standings to {STANDINGS_FILE}")
+        print(f"Saved standings to {paths['STANDINGS_FILE']}")
 
     # 2. Fetch team stats
     consolidated_team = {}
-    os.makedirs(STATS_DIR, exist_ok=True)
+    os.makedirs(paths["STATS_DIR"], exist_ok=True)
     
     for stat_name, stat_id in TEAM_STAT_IDS.items():
-        data = fetch_stat(stat_id, is_individual=False)
+        data = fetch_stat(stat_id, division=division, is_individual=False)
         if data:
-            output_path = os.path.join(STATS_DIR, f"{stat_name}.json")
+            output_path = os.path.join(paths["STATS_DIR"], f"{stat_name}.json")
             with open(output_path, "w") as f:
                 json.dump(data, f, indent=2)
             print(f"Saved {stat_name} to {output_path}")
@@ -169,25 +189,27 @@ def main():
                     for k, v in entry.items():
                         if k not in ["Team", "Conference", "Rank"]:
                             consolidated_team[team][k] = v
+        else:
+             print(f"Warning: No data for {stat_name} in {division}")
                             
     if consolidated_team:
-        with open(CONSOLIDATED_FILE, "w") as f:
+        with open(paths["CONSOLIDATED_FILE"], "w") as f:
             json.dump(consolidated_team, f, indent=2)
-        print(f"Saved consolidated team stats to {CONSOLIDATED_FILE}")
+        print(f"Saved consolidated team stats to {paths['CONSOLIDATED_FILE']}")
 
     # 3. Fetch individual stats (Re-enabled for Injury Filtering Accuracy)
     # We prioritize 'pts_pg' as it's the primary filter for our smart injury logic.
     consolidated_ind = {}
-    os.makedirs(INDIVIDUAL_DIR, exist_ok=True)
+    os.makedirs(paths["INDIVIDUAL_DIR"], exist_ok=True)
     
     # We only fetch pts_pg to keep it fast (~1-2 minutes instead of 7)
     stat_name = "pts_pg"
     stat_id = INDIVIDUAL_STAT_IDS[stat_name]
     
     try:
-        data = fetch_stat(stat_id, is_individual=True)
+        data = fetch_stat(stat_id, division=division, is_individual=True)
         if data:
-            output_path = os.path.join(INDIVIDUAL_DIR, f"{stat_name}.json")
+            output_path = os.path.join(paths["INDIVIDUAL_DIR"], f"{stat_name}.json")
             with open(output_path, "w") as f:
                 json.dump(data, f, indent=2)
             print(f"Saved individual {stat_name} to {output_path}")
@@ -201,11 +223,11 @@ def main():
         print(f"Error fetching individual stats: {e}. Skipping section...")
 
     if consolidated_ind:
-        with open(INDIVIDUAL_CONSOLIDATED, "w") as f:
+        with open(paths["INDIVIDUAL_CONSOLIDATED"], "w") as f:
             json.dump(consolidated_ind, f, indent=2)
-        print(f"Saved consolidated individual stats to {INDIVIDUAL_CONSOLIDATED}")
+        print(f"Saved consolidated individual stats to {paths['INDIVIDUAL_CONSOLIDATED']}")
     else:
-        print("Warning: Skipping individual_stats.json update due to missing data.")
+        print(f"Warning: Skipping individual_stats.json update due to missing data.")
 
 if __name__ == "__main__":
     main()
