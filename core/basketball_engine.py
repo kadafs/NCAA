@@ -101,16 +101,16 @@ class UniversalBasketballEngine:
 
         # Step 4: REGRESSION -> v3.0 DYNAMIC for NBA, static for NCAA
         if c['name'] == "NBA":
-            # Dynamic regression: stronger for extreme totals
+            # Dynamic regression: stepped floors (Protection from under-pulls)
             if stats_total < 215:
-                reg_factor = 0.98
+                reg_factor = 0.99
             elif stats_total <= 235:
-                reg_factor = 0.96
+                reg_factor = 0.97
             elif stats_total <= 250:
-                reg_factor = 0.94
+                reg_factor = 0.95
             else:
-                reg_factor = 0.92
-            self._log(f"Step 4: Dynamic Regression (NBA v3.0, total={stats_total:.1f}) -> factor={reg_factor}")
+                reg_factor = 0.94
+            self._log(f"Step 4: Stepped Regression (NBA v3.5, total={stats_total:.1f}) -> factor={reg_factor}")
         else:
             reg_factor = c.get('regression_factor', 0.97)
         stats_total *= reg_factor
@@ -371,11 +371,33 @@ class UniversalBasketballEngine:
 
         final_total = clamped_sharp if self.mode == "full" else clamped_legacy
 
-        # v3.0 Market Anchoring (NBA FULL mode only): 75% model, 25% market
+        # v3.5 High-Total Protection Rule (NBA)
+        # Cap UNDER edge at 6 points if market >= 232 and teams are elite offensive/pace
+        if c['name'] == "NBA" and market >= 232.0 and self.mode == "full":
+            sA = game_data.get('statsA', {})
+            sH = game_data.get('statsH', {})
+            rank_off_A = sA.get('rank_off', 99)
+            rank_off_H = sH.get('rank_off', 99)
+            rank_pace_A = sA.get('rank_pace', 99)
+            rank_pace_H = sH.get('rank_pace', 99)
+            
+            # Condition: Both Top-10 Offense OR Both Top-10 Pace
+            is_elite_context = (rank_off_A <= 10 and rank_off_H <= 10) or (rank_pace_A <= 10 and rank_pace_H <= 10)
+            
+            if is_elite_context:
+                current_edge = final_total - market
+                # If UNDER edge > 6 (i.e., current_edge < -6)
+                if current_edge < -6.0:
+                    capped_total = market - 6.0
+                    self._log(f"v3.5 High-Total Protection: Cap UNDER edge (Market {market} >= 232, Elite Context) -> {final_total:.1f} to {capped_total:.1f}")
+                    final_total = capped_total
+                    notes.append("Protection Rule: Under edge capped at 6pts (High Total + Elite Off/Pace)")
+
+        # v3.5 Market Anchoring (NBA FULL mode only): 65% model, 35% market
         if self.mode == "full" and c['name'] == "NBA":
-            anchor_weight = 0.25
+            anchor_weight = 0.35
             anchored_total = (final_total * (1 - anchor_weight)) + (market * anchor_weight)
-            self._log(f"v3.0 Market Anchoring: {final_total:.2f} -> {anchored_total:.2f} (75% model, 25% market)")
+            self._log(f"v3.0 Market Anchoring: {final_total:.2f} -> {anchored_total:.2f} (65% model, 35% market)")
             notes.append(f"Market Anchoring: Blended with market ({anchor_weight*100:.0f}%)")
             final_total = anchored_total
         # Absolute Edge Principle
@@ -385,10 +407,10 @@ class UniversalBasketballEngine:
         
         # Decision Logic (Pass/Lean/Play)
         if c['name'] == "NBA":
-            # v3.0 Professional Thresholds
+            # v3.5 Professional Thresholds
             if abs_edge < 5.0:
                 decision = "PASS"
-            elif abs_edge < 7.0:
+            elif abs_edge < 8.0:
                 decision = "LEAN"
             else:
                 decision = "PLAY"
@@ -405,8 +427,8 @@ class UniversalBasketballEngine:
             
         # Professional Confidence Tiers (NCAA structure) mapped to Legacy Strings
         if c['name'] == "NBA":
-            if abs_edge >= 9.0: confidence = "HIGH"
-            elif abs_edge >= 7.0: confidence = "MEDIUM"
+            if abs_edge >= 8.0: confidence = "HIGH"
+            elif abs_edge >= 6.5: confidence = "MEDIUM" # Implicit mid-tier
             elif abs_edge >= 5.0: confidence = "LOW"
             else: confidence = "NO PLAY"
         else:

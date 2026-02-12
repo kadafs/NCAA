@@ -57,6 +57,20 @@ class UniversalDataBridge:
             print(f"Polymarket Init Failed: {e}")
             self.poly_markets = {}
         
+        # Calculate Ranks for "High-Total Protection"
+        # Sort by adj_off (descending) and adj_t (descending)
+        sorted_off = sorted(all_stats.items(), key=lambda x: x[1].get('adj_off', 0), reverse=True)
+        sorted_pace = sorted(all_stats.items(), key=lambda x: x[1].get('adj_t', 0), reverse=True)
+        
+        ranks = {}
+        for i, (team, _) in enumerate(sorted_off):
+            if team not in ranks: ranks[team] = {}
+            ranks[team]['rank_off'] = i + 1
+            
+        for i, (team, _) in enumerate(sorted_pace):
+            if team not in ranks: ranks[team] = {}
+            ranks[team]['rank_pace'] = i + 1
+
         daily_sheet = []
         for m in matchups:
             teamA_name = find_team_in_dict(m['away'], all_stats, BASKETBALL_ALIASES)
@@ -127,6 +141,8 @@ class UniversalDataBridge:
                     "adj_off": sA['adj_off'],
                     "adj_def": sA['adj_def'],
                     "adj_t": sA['adj_t'],
+                    "rank_off": ranks.get(teamA_name, {}).get('rank_off', 99),
+                    "rank_pace": ranks.get(teamA_name, {}).get('rank_pace', 99),
                     "net_rating": 50 + (sA['adj_off'] - sA['adj_def']),
                     "four_factors": sA.get('four_factors', {})
                 },
@@ -134,6 +150,8 @@ class UniversalDataBridge:
                     "adj_off": sH['adj_off'],
                     "adj_def": sH['adj_def'],
                     "adj_t": sH['adj_t'],
+                    "rank_off": ranks.get(teamH_name, {}).get('rank_off', 99),
+                    "rank_pace": ranks.get(teamH_name, {}).get('rank_pace', 99),
                     "net_rating": 50 + (sH['adj_off'] - sH['adj_def']),
                     "four_factors": sH.get('four_factors', {})
                 }
