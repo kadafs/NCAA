@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import requests
 from datetime import datetime
 import argparse
 
@@ -10,7 +11,45 @@ ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, '..'))
 sys.path.append(ROOT_DIR)
 
 from utils.mapping import find_team_in_dict, BASKETBALL_ALIASES
-from ncaa.predict_d1_conf import fetch_scoreboard
+
+def fetch_scores_espn(date_str):
+    """Fetch completed NCAA D1 scores from ESPN for any date (historical or live)."""
+    try:
+        espn_date = date_str.replace("-", "")
+        url = f"https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates={espn_date}&limit=500&groups=50"
+        resp = requests.get(url, timeout=15)
+        data = resp.json()
+
+        live_games = {}
+        for event in data.get('events', []):
+            comp = event['competitions'][0]
+            home_comp = next(c for c in comp['competitors'] if c['homeAway'] == 'home')
+            away_comp = next(c for c in comp['competitors'] if c['homeAway'] == 'away')
+
+            home_name = home_comp['team']['shortDisplayName']
+            away_name = away_comp['team']['shortDisplayName']
+            state = event['status']['type']['state']  # 'pre', 'in', 'post'
+            period = event['status'].get('period', 0)
+            clock = event['status'].get('displayClock', '')
+
+            def safe_int(val):
+                try:
+                    return int(val) if val else 0
+                except (ValueError, TypeError):
+                    return 0
+
+            info = {
+                "status": "FINAL" if state == 'post' else ("IN_PROGRESS" if state == 'in' else "SCHEDULED"),
+                "period": f"Final" if state == 'post' else (f"H{period} {clock}" if state == 'in' else ""),
+                "score_h": safe_int(home_comp.get('score', 0)),
+                "score_a": safe_int(away_comp.get('score', 0)),
+            }
+            live_games[home_name] = info
+            live_games[away_name] = info
+        return live_games
+    except Exception as e:
+        print(f"ESPN fetch failed: {e}")
+        return {}
 
 def load_predictions(path):
     if not os.path.exists(path):
@@ -20,18 +59,30 @@ def load_predictions(path):
         return json.load(f)
 
 def main():
-    print("-" * 60)
-    print(" D1 PREDICTION AUDITOR")
-    print("-" * 60)
-    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--file", default=os.path.join(ROOT_DIR, "data", "d1_conf_predictions.json"), help="Path to predictions JSON")
+    parser.add_argument("--file", default=None, help="Path to predictions JSON (overrides defaults)")
     parser.add_argument("--date", help="Override Date (YYYY-MM-DD)")
     parser.add_argument("--include-pass", action="store_true", help="Include PASS decisions in audit (grades as if betting against the edge)")
+    parser.add_argument("--d1-hybrid", action="store_true", help="Audit D1 Hybrid predictions (d1_hybrid_predictions.json)")
     args = parser.parse_args()
 
+    # Resolve prediction file and label
+    if args.file:
+        pred_file = args.file
+        label = "D1 PREDICTION AUDITOR"
+    elif args.d1_hybrid:
+        pred_file = os.path.join(ROOT_DIR, "data", "d1_hybrid_predictions.json")
+        label = "D1 HYBRID PREDICTION AUDITOR"
+    else:
+        pred_file = os.path.join(ROOT_DIR, "data", "d1_conf_predictions.json")
+        label = "D1 PREDICTION AUDITOR"
+
+    print("-" * 60)
+    print(f" {label}")
+    print("-" * 60)
+
     # 1. Load Predictions
-    preds = load_predictions(args.file)
+    preds = load_predictions(pred_file)
     if not preds:
         return
     
@@ -53,40 +104,13 @@ def main():
             date_str = dt.strftime("%Y-%m-%d")
             print(f"Using default date (Today): {date_str}")
 
-    # 3. Fetch Actual Scores
-    print(f"Fetching live scores for {date_str}...")
-    board = fetch_scoreboard(dt.year, dt.month, dt.day)
-    
-    if not board or 'games' not in board:
-        print("No live games found.")
-        return
+    # 3. Fetch Actual Scores via ESPN (works for historical dates too)
+    print(f"Fetching scores for {date_str} via ESPN...")
+    live_games = fetch_scores_espn(date_str)
 
-    # Map Live Games by Name
-    live_games = {}
-    for g in board['games']:
-        game = g['game']
-        # Map both home and away names for robust lookup
-        h_raw = game['home']['names']['short']
-        a_raw = game['away']['names']['short']
-        status = game.get('gameState', 'SCHEDULED')  # FINAL, SCHEDULED, IN_PROGRESS
-        
-        # Helper to safely parse scores (handles empty strings)
-        def safe_int(val):
-            try:
-                return int(val) if val else 0
-            except (ValueError, TypeError):
-                return 0
-        
-        # We store minimal info needed for grading
-        info = {
-            "status": status,
-            "period": game.get('currentPeriod', ''),
-            "clock": game.get('contestClock', ''),
-            "score_h": safe_int(game['home'].get('score', 0)),
-            "score_a": safe_int(game['away'].get('score', 0)),
-        }
-        live_games[h_raw] = info
-        live_games[a_raw] = info
+    if not live_games:
+        print("No games found from ESPN.")
+        return
 
     # 4. Compare
     wins = 0

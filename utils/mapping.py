@@ -104,6 +104,52 @@ def find_team_in_dict(name, target_dict, aliases=None):
             
     return None
 
+def calculate_weighted_stats(conf_stats, full_stats, conf_weight=0.70):
+    """
+    Combine conference and full-season stats with specified weights.
+    
+    Args:
+        conf_stats: Conference-only stats dict
+        full_stats: Full-season stats dict
+        conf_weight: Weight for conference stats (default 0.70)
+    
+    Returns:
+        Dict with weighted stats combining both sources
+    """
+    if not conf_stats and not full_stats:
+        return None
+    
+    # If only one source available, return it at 100%
+    if not conf_stats:
+        return full_stats.copy()
+    if not full_stats:
+        return conf_stats.copy()
+    
+    full_weight = 1.0 - conf_weight
+    hybrid = {}
+    
+    # Combine all numeric stats with weighting
+    all_keys = set(conf_stats.keys()) | set(full_stats.keys())
+    
+    for key in all_keys:
+        conf_val = conf_stats.get(key)
+        full_val = full_stats.get(key)
+        
+        # For non-numeric values (like 'conf'), prefer conference value
+        if isinstance(conf_val, str) or isinstance(full_val, str):
+            hybrid[key] = conf_val if conf_val else full_val
+        # For numeric values, apply weighted average
+        elif isinstance(conf_val, (int, float)) and isinstance(full_val, (int, float)):
+            hybrid[key] = (conf_val * conf_weight) + (full_val * full_weight)
+        # If only one has the value, use it
+        elif conf_val is not None:
+            hybrid[key] = conf_val
+        elif full_val is not None:
+            hybrid[key] = full_val
+    
+    return hybrid
+
+
 # Common Basketball Aliases (NBA and NCAA)
 # Normalized form (Saint/State -> st) to canonical BARTTORVIK keys
 BASKETBALL_ALIASES = {
