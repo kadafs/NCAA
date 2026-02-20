@@ -80,6 +80,7 @@ export interface PlayerProp {
     edgePct: number;
     usageBoost: boolean;
     recentTrend: number[]; // Last 5 games
+    matchup?: string; // e.g. "LAL @ BOS"
 }
 
 export interface InjuryEntry {

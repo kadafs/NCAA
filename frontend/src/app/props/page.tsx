@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useRef, useEffect as useEffectHook } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Search,
-    Filter,
     Zap,
-    TrendingUp,
-    ArrowUpRight,
     ChevronDown,
-    Flame
+    Flame,
+    ArrowDownUp,
+    Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LeftSidebar, BottomNav } from "@/components/dashboard/LeftSidebar";
@@ -122,17 +121,41 @@ const MOCK_PROPS: PlayerProp[] = [
 const PROP_TYPES = ["All", "PTS", "REB", "AST", "STL", "BLK", "TOV", "3PM", "FGM", "FGA", "FTM", "FTA"];
 const LEAGUES = ["All", "NBA", "NCAA"];
 
+type SortOption = "edgePct" | "edge" | "projection" | "line" | "name" | "matchup";
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+    { value: "edgePct", label: "Edge %" },
+    { value: "edge", label: "Edge (Raw)" },
+    { value: "projection", label: "Projection (High → Low)" },
+    { value: "line", label: "Line (High → Low)" },
+    { value: "name", label: "Name (A → Z)" },
+    { value: "matchup", label: "Matchup" },
+];
+
 export default function PropsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedPropType, setSelectedPropType] = useState("All");
     const [selectedLeague, setSelectedLeague] = useState("All");
-    const [sortBy, setSortBy] = useState<"edge" | "edgePct">("edgePct");
+    const [sortBy, setSortBy] = useState<SortOption>("edgePct");
+    const [sortOpen, setSortOpen] = useState(false);
+    const sortRef = useRef<HTMLDivElement>(null);
     const [props, setProps] = useState<PlayerProp[]>([]);
     const [loading, setLoading] = useState(true);
 
     React.useEffect(() => {
         fetchProps();
     }, [selectedLeague]);
+
+    // Close sort dropdown when clicking outside
+    useEffectHook(() => {
+        const handler = (e: MouseEvent) => {
+            if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+                setSortOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
 
     const fetchProps = async () => {
         setLoading(true);
@@ -200,7 +223,8 @@ export default function PropsPage() {
                                             edge: edge,
                                             edgePct: edgePct,
                                             usageBoost: p.trace?.some((t: string) => t.includes('usage')),
-                                            recentTrend: [1, 1, 1] // Placeholder
+                                            recentTrend: [1, 1, 1], // Placeholder
+                                            matchup: `${game.away_details?.code || game.away} @ ${game.home_details?.code || game.home}`,
                                         });
                                     }
                                 }
@@ -226,7 +250,8 @@ export default function PropsPage() {
     // Filter and sort props
     const filteredProps = props
         .filter(prop => {
-            if (searchQuery && !prop.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+            if (searchQuery && !prop.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                !(prop.matchup?.toLowerCase().includes(searchQuery.toLowerCase()))) {
                 return false;
             }
             if (selectedPropType !== "All" && prop.propType !== selectedPropType) {
@@ -234,7 +259,17 @@ export default function PropsPage() {
             }
             return true;
         })
-        .sort((a, b) => sortBy === "edge" ? b.edge - a.edge : b.edgePct - a.edgePct);
+        .sort((a, b) => {
+            switch (sortBy) {
+                case "edgePct": return b.edgePct - a.edgePct;
+                case "edge": return b.edge - a.edge;
+                case "projection": return b.projection - a.projection;
+                case "line": return b.line - a.line;
+                case "name": return a.name.localeCompare(b.name);
+                case "matchup": return (a.matchup || "").localeCompare(b.matchup || "");
+                default: return b.edgePct - a.edgePct;
+            }
+        });
 
     return (
         <div className="min-h-screen bg-dash-bg text-dash-text-primary">
@@ -310,15 +345,43 @@ export default function PropsPage() {
                                 ))}
                             </div>
 
-                            <div className="ml-auto">
-                                <button
-                                    onClick={() => setSortBy(sortBy === "edge" ? "edgePct" : "edge")}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-dash-bg-secondary border border-dash-border rounded-lg text-[10px] font-bold text-dash-text-muted uppercase hover:text-white transition-colors"
-                                >
-                                    <TrendingUp className="w-3 h-3" />
-                                    Sort: {sortBy === "edge" ? "Edge" : "Edge %"}
-                                    <ChevronDown className="w-3 h-3" />
-                                </button>
+                            <div className="ml-auto" ref={sortRef}>
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setSortOpen(o => !o)}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-dash-bg-secondary border border-dash-border rounded-lg text-[10px] font-bold text-dash-text-muted uppercase hover:text-white transition-colors"
+                                    >
+                                        <ArrowDownUp className="w-3 h-3" />
+                                        Sort: {SORT_OPTIONS.find(o => o.value === sortBy)?.label}
+                                        <ChevronDown className={cn("w-3 h-3 transition-transform", sortOpen && "rotate-180")} />
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {sortOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                                                transition={{ duration: 0.12 }}
+                                                className="absolute right-0 top-full mt-2 w-52 bg-dash-card border border-dash-border rounded-xl overflow-hidden shadow-2xl z-50"
+                                            >
+                                                {SORT_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.value}
+                                                        onClick={() => { setSortBy(opt.value); setSortOpen(false); }}
+                                                        className={cn(
+                                                            "w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-bold uppercase tracking-wide transition-colors hover:bg-dash-bg-secondary",
+                                                            sortBy === opt.value ? "text-gold" : "text-dash-text-muted"
+                                                        )}
+                                                    >
+                                                        {opt.label}
+                                                        {sortBy === opt.value && <Check className="w-3 h-3" />}
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
                         </div>
                     </div>
