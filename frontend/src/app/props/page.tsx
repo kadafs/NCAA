@@ -166,12 +166,22 @@ export default function PropsPage() {
                             categories.forEach(cat => {
                                 const val = p[cat.key];
                                 if (val && val >= cat.threshold) {
-                                    // Logic to generate a realistic "Line"
-                                    // For low-count stats (steals/blocks), line is usually 0.5 or 1.5
-                                    let baseline;
-                                    if (val < 2.5) baseline = 1.5; // e.g. proj 1.8 -> line 1.5
-                                    else if (val < 5) baseline = Math.floor(val) + 0.5;
-                                    else baseline = Math.floor(val - 0.5) + 0.5;
+                                    // Generate a realistic sportsbook-style half-point line.
+                                    // Strategy: snap to nearest 0.5 below the projection.
+                                    // e.g. proj 2.4 -> line 2.0? No — books set lines at natural break points.
+                                    // For very low-count stats (0.5–1.4): line = 0.5
+                                    // For 1.5–2.4: line = 1.5
+                                    // For 2.5+: round down to nearest 0.5
+                                    let baseline: number;
+                                    if (val < 1.5) {
+                                        baseline = 0.5;
+                                    } else if (val < 2.5) {
+                                        baseline = 1.5;
+                                    } else {
+                                        // Snap to nearest 0.5 at or just below val
+                                        baseline = Math.floor(val / 0.5) * 0.5 - 0.5;
+                                        if (baseline < 0.5) baseline = 0.5;
+                                    }
 
                                     const edge = val - baseline;
                                     const edgePct = (edge / baseline) * 100;

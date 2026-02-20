@@ -117,25 +117,52 @@ export default function LeagueDashboard() {
                     // Extract props while we iterate games
                     if (g.props && g.props.length > 0) {
                         g.props.forEach((p: any) => {
-                            const projection = p.pts || 0;
-                            const line = p.seasonal?.pts || projection;
-                            const edge = projection - line;
-                            const edgePct = line > 0 ? (edge / line) * 100 : 0;
+                            // Generate multi-category props with proper sportsbook-style lines
+                            const categories = [
+                                { type: 'PTS', key: 'pts', threshold: 10 },
+                                { type: 'REB', key: 'reb', threshold: 4 },
+                                { type: 'AST', key: 'ast', threshold: 3 },
+                                { type: 'STL', key: 'stl', threshold: 0.5 },
+                                { type: 'BLK', key: 'blk', threshold: 0.5 },
+                                { type: 'TOV', key: 'tov', threshold: 1.5 },
+                                { type: '3PM', key: 'threes', threshold: 1.5 },
+                            ];
 
-                            leagueProps.push({
-                                id: p.id || `${leagueId}-${p.name}`,
-                                name: p.name,
-                                team: p.team_label === 'A' ? (g.away_details?.name || g.away) : (g.home_details?.name || g.home),
-                                teamCode: p.team_label === 'A' ? (g.away_details?.code || g.away) : (g.home_details?.code || g.home),
-                                position: p.position || "G/F",
-                                image: leagueId === 'nba' ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
-                                propType: "PTS",
-                                line: Number(line.toFixed(1)),
-                                projection: Number(projection.toFixed(1)),
-                                edge: Number(edge.toFixed(1)),
-                                edgePct: Number(edgePct.toFixed(1)),
-                                usageBoost: p.trace?.some((t: string) => t.includes("Usage")),
-                                recentTrend: [1, 1, 0, 1, 1]
+                            categories.forEach(cat => {
+                                const val = p[cat.key];
+                                if (val && val >= cat.threshold) {
+                                    // Sportsbook-style half-point line
+                                    let baseline: number;
+                                    if (val < 1.5) {
+                                        baseline = 0.5;
+                                    } else if (val < 2.5) {
+                                        baseline = 1.5;
+                                    } else {
+                                        baseline = Math.floor(val / 0.5) * 0.5 - 0.5;
+                                        if (baseline < 0.5) baseline = 0.5;
+                                    }
+
+                                    const edge = val - baseline;
+                                    const edgePct = (edge / baseline) * 100;
+
+                                    if (edge > 0) {
+                                        leagueProps.push({
+                                            id: `${p.id || p.name}-${cat.type}`,
+                                            name: p.name,
+                                            team: p.team_label === 'A' ? (g.away_details?.name || g.away) : (g.home_details?.name || g.home),
+                                            teamCode: p.team_label === 'A' ? (g.away_details?.code || g.away) : (g.home_details?.code || g.home),
+                                            position: p.position || "G/F",
+                                            image: leagueId === 'nba' ? `https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/${p.id}.png` : "",
+                                            propType: cat.type as any,
+                                            line: baseline,
+                                            projection: val,
+                                            edge: Number(edge.toFixed(1)),
+                                            edgePct: Number(edgePct.toFixed(1)),
+                                            usageBoost: p.trace?.some((t: string) => t.includes("Usage")),
+                                            recentTrend: [1, 1, 0, 1, 1]
+                                        });
+                                    }
+                                }
                             });
                         });
                     }

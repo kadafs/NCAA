@@ -222,8 +222,10 @@ def get_universal_predictions(league="nba", mode="safe", date_obj=None):
         final_total = res['final_model_total']
         final_edge = res['edge']
         
-        # Props scaling factor
-        factor = final_total / (230.0 if league == "nba" else 150.0)
+        # Props scaling factor: ratio of game total to average total per team (halved)
+        # NBA avg ~115 pts/team, NCAA avg ~75 pts/team — factor reflects pace/scoring environment
+        avg_pts_per_team = 115.0 if league == "nba" else 75.0
+        factor = (final_total / 2) / avg_pts_per_team
         
         # Props
         player_props = []
@@ -402,7 +404,27 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--league", default="nba")
     parser.add_argument("--mode", default="safe")
+    parser.add_argument("--out", default=None, help="Optional output file path (overrides default)")
     args = parser.parse_args()
-    
+
     result = get_universal_predictions(args.league, args.mode)
-    print(json.dumps(result, indent=2))
+    output_json = json.dumps(result, indent=2)
+
+    # Print to console
+    print(output_json)
+
+    # Save to file
+    debug_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "debug")
+    os.makedirs(debug_dir, exist_ok=True)
+
+    if args.out:
+        out_path = args.out
+    else:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_path = os.path.join(debug_dir, f"bridge_{args.league}_{args.mode}_{timestamp}.json")
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(output_json)
+
+    print(f"\n[saved] {out_path}")
+
