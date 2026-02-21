@@ -109,8 +109,20 @@ def extract_total_for_matchup(odds_data, away_team, home_team, provider='render'
     # 1. Centralized Render API format (Dict: { "team a vs team b": total })
     if isinstance(odds_data, dict) and "sport_events" not in odds_data:
         for key, val in odds_data.items():
+            # First: try matching the raw key as-is
             if is_match(key):
                 return val
+            # Second: strip the last word (mascot/nickname) from each team half and retry.
+            # Odds keys look like "clemson tigers vs florida state seminoles".
+            # Scoreboard gives "Clemson" / "Florida St." — the nickname blocks the match.
+            if " vs " in key:
+                halves = key.split(" vs ", 1)
+                stripped = " vs ".join(
+                    " ".join(h.split()[:-1]) if len(h.split()) > 1 else h
+                    for h in halves
+                )
+                if stripped != key and is_match(stripped):
+                    return val
         return None
 
     # 2. Sportradar format
