@@ -19,19 +19,83 @@ BASE_URL = "https://api.the-odds-api.com/v4/sports"
 # Sportradar Configuration
 sr_provider = SportradarProvider()
 
+
+def get_espn_odds(league='ncaa'):
+    """
+    Fetches NCAAB/NBA totals from ESPN's public scoreboard API (DraftKings source).
+    Returns a dict in the same format as the render API: { 'team a vs team b': total }
+    Covers all ~148 D1 games per day including small-conference matchups.
+    """
+    from datetime import datetime
+    import zoneinfo
+    today = datetime.now(zoneinfo.ZoneInfo("America/New_York")).strftime("%Y%m%d")
+
+    if 'nba' in league.lower():
+        espn_url = (
+            f"https://site.api.espn.com/apis/site/v2/sports/basketball"
+            f"/nba/scoreboard?dates={today}&limit=30"
+        )
+    else:
+        espn_url = (
+            f"https://site.api.espn.com/apis/site/v2/sports/basketball"
+            f"/mens-college-basketball/scoreboard?dates={today}&groups=50&limit=300"
+        )
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json",
+    }
+    try:
+        from utils.ssl_adapter import get_robust_session
+        session = get_robust_session(retries=2)
+        resp = session.get(espn_url, headers=headers, timeout=15)
+        if resp.status_code != 200:
+            return {}
+        data = resp.json()
+        result = {}
+        for event in data.get('events', []):
+            comps = event.get('competitions', [{}])
+            comp = comps[0] if comps else {}
+            odds_list = comp.get('odds', [])
+            if not odds_list:
+                continue
+            total = odds_list[0].get('overUnder')
+            if total is None:
+                continue
+            # Use homeAway field to correctly identify teams
+            competitors = comp.get('competitors', [])
+            if len(competitors) < 2:
+                continue
+            away_name, home_name = '', ''
+            for c in competitors:
+                t_name = c.get('team', {}).get('displayName', '').lower()
+                if c.get('homeAway') == 'away':
+                    away_name = t_name
+                else:
+                    home_name = t_name
+            if away_name and home_name:
+                key = f"{away_name} vs {home_name}"
+                result[key] = total
+        print(f"ESPN odds: fetched {len(result)} games for {today}")
+        return result
+    except Exception as e:
+        print(f"ESPN odds fetch failed: {e}")
+        return {}
+
 def get_odds(sport_key, regions='us', markets='totals', provider='render'):
     """
     Fetches live totals for a given sport.
-    Priority: Render API -> Sportradar -> The Odds API
+    Priority: Render API + ESPN fallback -> Sportradar -> The Odds API
     """
     if provider == 'render':
         league = "ncaa" if "ncaa" in sport_key.lower() else "nba"
         url = f"https://ncaa-api-w2ry.onrender.com/stats/odds/{league}"
         print(f"Fetching centralized odds from {url}")
+        render_data = {}
         try:
             from utils.ssl_adapter import get_robust_session
             session = get_robust_session(retries=2)
-            
+
             resp = session.get(url, timeout=15)
             if resp.status_code != 200:
                 print(f"Standard fetch failed ({resp.status_code}). Retrying with SSL bypass...")
@@ -40,13 +104,20 @@ def get_odds(sport_key, regions='us', markets='totals', provider='render'):
             if resp.status_code == 200:
                 data = resp.json()
                 if data and len(data) > 0:
-                    return data
-            print(f"Centralized odds check returned {resp.status_code}. Falling back...")
-            try:
-                print(f"Error Details: {resp.text[:200]}")
-            except: pass
+                    render_data = data
+            else:
+                print(f"Centralized odds check returned {resp.status_code}.")
         except Exception as e:
-            print(f"Render Odds API failed ({e}). Falling back to Sportradar...")
+            print(f"Render Odds API failed ({e}).")
+
+        # Always supplement with ESPN for full small-conference coverage
+        espn_data = get_espn_odds(league)
+        # Merge: render takes priority (it's already filtered/curated), ESPN fills gaps
+        merged = {**espn_data, **render_data}
+        if merged:
+            return merged
+        # If both failed fall through to Sportradar
+        print("Both render and ESPN odds failed. Falling back to Sportradar...")
 
     if provider == 'sportradar' or provider == 'render':
         return sr_provider.get_totals(sport_key)

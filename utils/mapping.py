@@ -253,6 +253,9 @@ BASKETBALL_ALIASES = {
     "utrgv": "utriograndevalley",
     "utriograndevalley": "texasriograndevalley",
     "texasriograndevalley": "utriograndevalley",
+    # ESPN uses "SE Louisiana" abbreviation for Southeastern Louisiana
+    "selouisiana": "southeasternlouisiana",
+    "southeasternlouisiana": "selouisiana",
     "westernky": "westernkentucky",
     "omaha": "nebraskaomaha",
     "littlerock": "arkansaslittlerock",
