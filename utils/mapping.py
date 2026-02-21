@@ -267,6 +267,10 @@ BASKETBALL_ALIASES = {
     "southerncal": "southerncalifornia",
     "scupstatespartans": "uscupstate",
     "uscupstatespartans": "uscupstate",
+    # ESPN: "South Carolina Upstate" -> scoreboard: "USC Upstate"
+    "southcarolinaupst": "uscupstate",
+    "southcarolinaupstate": "uscupstate",
+    "uscupstate": "southcarolinaupstate",
     "moreheadstateeagles": "moreheadstate",
     "moreheadsteagles": "moreheadstate",
     "utmartinskyhawks": "tennesseemartin",
@@ -274,6 +278,9 @@ BASKETBALL_ALIASES = {
     "easternillinoispanthers": "easternillinois",
     "ualbany": "albany",
     "albanygreatdanes": "albany",
+    # ESPN: "Long Island University" -> scoreboard: "LIU"
+    "longislanduniversity": "liu",
+    "longislanduniversitysharks": "liu",
     "njithighlanders": "njit",
     "samfordbulldogs": "samford",
     "furmanpaladins": "furman",
