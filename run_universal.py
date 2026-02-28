@@ -22,7 +22,11 @@ ET_TZ = zoneinfo.ZoneInfo("America/New_York")
 
 def main():
     parser = argparse.ArgumentParser(description="Universal Basketball Framework v1.4")
-    parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "nbl1", "acb"], default="nba", help="League to model")
+    parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "nbl1", "acb",
+                                              "epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1"],
+                        default="nba", help="League to model")
+    parser.add_argument("--sport", choices=["basketball", "football"], default="basketball",
+                        help="Sport to model (football = soccer)")
     parser.add_argument("--mode", choices=["safe", "full"], default="safe", help="Prediction mode")
     parser.add_argument("--date", help="Target date in YYYY-MM-DD format")
     parser.add_argument("--trace", action="store_true", help="Show logic trace")
@@ -35,13 +39,21 @@ def main():
     target_date = get_target_date(args.date)
     
     config_map = {
-        "nba": "configs/leagues/nba.json",
-        "ncaa": "configs/leagues/ncaa.json",
-        "euro": "configs/leagues/euro.json",
-        "eurocup": "configs/leagues/eurocup.json",
-        "nbl": "configs/leagues/nbl.json",
-        "nbl1": "configs/leagues/nbl1.json",
-        "acb": "configs/leagues/acb.json"
+        # Basketball
+        "nba":      "configs/leagues/nba.json",
+        "ncaa":     "configs/leagues/ncaa.json",
+        "euro":     "configs/leagues/euro.json",
+        "eurocup":  "configs/leagues/eurocup.json",
+        "nbl":      "configs/leagues/nbl.json",
+        "nbl1":     "configs/leagues/nbl1.json",
+        "acb":      "configs/leagues/acb.json",
+        # Football (soccer)
+        "epl":        "configs/leagues/epl.json",
+        "la_liga":    "configs/leagues/la_liga.json",
+        "a_league":   "configs/leagues/a_league.json",
+        "bundesliga": "configs/leagues/bundesliga.json",
+        "serie_a":    "configs/leagues/serie_a.json",
+        "ligue_1":    "configs/leagues/ligue_1.json",
     }
     
     # 2. Refresh if needed
@@ -82,19 +94,80 @@ def main():
             from acb.fetch_acb_stats import fetch_acb_stats
             fetch_acb_schedule(target_date)
             fetch_acb_stats()
+        elif args.league in ("epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1"):
+            from football.fetch_football_schedule import fetch_football_schedule
+            from football.fetch_football_stats import fetch_football_stats
+            fetch_football_schedule(args.league, date_obj=target_date)
+            fetch_football_stats(args.league)
 
-    # 3. Initialize Engines
+    # -------------------------------------------------------
+    # FOOTBALL SPORT BRANCH — completely separate loop
+    # -------------------------------------------------------
+    if args.sport == "football" or args.league in ("epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1"):
+        from core.football_engine import FootballEngine, load_football_config
+        from football.v1_0.populate import get_daily_input_sheet as football_sheet
+
+        fconfig = load_football_config(args.league)
+        fengine = FootballEngine(fconfig, mode=args.mode, trace=args.trace)
+        daily_sheet = football_sheet(args.league, date_obj=target_date, config=fconfig)
+
+        if not daily_sheet:
+            print(f"No {args.league.upper()} fixtures found for {target_date.strftime('%Y-%m-%d')}.")
+            return
+
+        print("\n" + "█"*80)
+        print(f" ⚽ FOOTBALL ENGINE v1.0 | {args.league.upper()} | {args.mode.upper()}")
+        print(f" Target Date: {target_date.strftime('%Y-%m-%d')}")
+        print("█"*80)
+
+        for game in daily_sheet:
+            result = fengine.calculate(game)
+
+            btts_pct  = result['btts_prob_final'] * 100
+            draw_pct  = result['draw_prob_final'] * 100
+            edge_pct  = result['btts_edge']       * 100
+            conf      = result['btts_confidence']
+            decision  = result['btts_decision']
+
+            print(f"\n⚽  {game['matchup']}")
+            print(f"   xG: {result['xg_home']:.2f} (H) / {result['xg_away']:.2f} (A) | Total xG: {result['xg_total']:.2f}")
+            print(f"   BTTS: {btts_pct:.1f}% | Mkt: {result['btts_market_prob']*100:.1f}% | Edge: {edge_pct:+.1f}% | [{conf}] {decision}")
+            print(f"   Draw: {draw_pct:.1f}% | Fair Odds: {result['draw_fair_odds']:.2f}x", end="")
+            if result.get('draw_value_flag'):
+                print(" ← Check draw market")
+            else:
+                print()
+
+            if args.trace:
+                for t in result['logs']:
+                    print(f"     > {t}")
+
+            if result['notes']:
+                for n in result['notes']:
+                    print(f"   • {n}")
+
+        print("\n" + "█"*80)
+        print("Execution Finished.")
+        return
+
+    # -------------------------------------------------------
+    # BASKETBALL BRANCH (original code below)
+    # -------------------------------------------------------
+    if not daily_sheet:
+        print(f"No {args.league.upper()} games found today.")
+        return
+
+    # Initialize basketball engines
     engine = UniversalBasketballEngine(config_map[args.league], mode=args.mode)
     prop_engine = UniversalPropEngine(mode=args.mode)
     bridge = UniversalDataBridge(args.league)
-    
-    # 4. Initialize Data Bridge with date support
+
+    # Initialize data bridge with date support
     if args.league == "ncaa":
         daily_sheet = bridge.get_standardized_sheet(date_obj=target_date)
     else:
-        # Others use the matchups file written by refresh or existing file
         daily_sheet = bridge.get_standardized_sheet()
-    
+
     if not daily_sheet:
         print(f"No {args.league.upper()} games found today.")
         return
