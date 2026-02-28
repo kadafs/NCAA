@@ -22,7 +22,7 @@ ET_TZ = zoneinfo.ZoneInfo("America/New_York")
 
 def main():
     parser = argparse.ArgumentParser(description="Universal Basketball Framework v1.4")
-    parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "acb"], default="nba", help="League to model")
+    parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "nbl1", "acb"], default="nba", help="League to model")
     parser.add_argument("--mode", choices=["safe", "full"], default="safe", help="Prediction mode")
     parser.add_argument("--date", help="Target date in YYYY-MM-DD format")
     parser.add_argument("--trace", action="store_true", help="Show logic trace")
@@ -40,6 +40,7 @@ def main():
         "euro": "configs/leagues/euro.json",
         "eurocup": "configs/leagues/eurocup.json",
         "nbl": "configs/leagues/nbl.json",
+        "nbl1": "configs/leagues/nbl1.json",
         "acb": "configs/leagues/acb.json"
     }
     
@@ -71,6 +72,11 @@ def main():
             from nbl.fetch_nbl_stats import fetch_nbl_stats
             fetch_nbl_schedule(target_date)
             fetch_nbl_stats()
+        elif args.league == "nbl1":
+            from nbl1.fetch_nbl1_schedule import fetch_nbl1_schedule
+            from nbl1.fetch_nbl1_stats import fetch_nbl1_stats
+            fetch_nbl1_schedule(target_date)
+            fetch_nbl1_stats()
         elif args.league == "acb":
             from acb.fetch_acb_schedule import fetch_acb_schedule
             from acb.fetch_acb_stats import fetch_acb_stats

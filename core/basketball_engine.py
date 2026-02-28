@@ -194,7 +194,91 @@ class UniversalBasketballEngine:
                     self._log(f"Sharp v2.1: Mid-range Volatility Boost -> +{mid_vol_boost}")
                     notes.append(f"Sharp Adjustment: Mid-range Volatility Correction (+{mid_vol_boost} pts)")
 
+            if c['name'] == "NBL1":
+                    # Sharp 2: Elite Offense Boost — CONTINUOUS SCALING (Audit v2)
+                    # Replaces binary threshold with a scaled factor proportional to avg offense above pivot
+                    # elite_factor = avg_OFF − league_pivot  → bonus = factor × 0.12, cap 2.0
+                    nbl1_league_avg = c.get('eff_pivot', 100.0)
+                    sA_off_v = game_data.get('statsA', {}).get('adj_off', nbl1_league_avg)
+                    sH_off_v = game_data.get('statsH', {}).get('adj_off', nbl1_league_avg)
+                    avg_matchup_off = (sA_off_v + sH_off_v) / 2
+                    elite_factor = avg_matchup_off - nbl1_league_avg
+
+                    if elite_factor > 0:
+                        scale_factor = sp.get('elite_offense_scale_factor', 0.12)
+                        eff_cap      = sp.get('elite_offense_continuous_cap', 2.0)
+                        nbl1_elite_bonus = min(elite_factor * scale_factor, eff_cap)
+                        sharp_total += nbl1_elite_bonus
+                        notes.append(f"Sharp Adjustment: Elite Offense Booster (+{nbl1_elite_bonus:.2f} pts)")
+                        self._log(f"Sharp 2: Elite Offense Continuous (avg_OFF {avg_matchup_off:.1f}, delta {elite_factor:.1f}) -> +{nbl1_elite_bonus:.2f}")
+                        # Pace Conflict Gate: cap pace-eff at 50% when elite offense active
+                        if pace_eff_bonus > 0:
+                            pace_eff_bonus *= 0.5
+                            self._log(f"Sharp 2b: High Pace Gate (Elite Offense active) -> Pace Efficiency capped at 50%")
+
+                    # Sharp 3: High Pace Efficiency
+                    if pace_eff_bonus > 0:
+                        sharp_total += pace_eff_bonus
+                        self._log(f"Sharp 3: High Pace Efficiency Bonus -> +{pace_eff_bonus:.2f}")
+
+                    # Sharp 4: Blowout Volatility (NBL1 calibrated to ~8pt spread threshold)
+                    spread_threshold = sp.get('blowout_spread_threshold', 8.0)
+                    if projected_spread > spread_threshold:
+                        penalty = sp.get('blowout_under_penalty', 2.5) if current_lean == "UNDER" else sp.get('blowout_over_boost', 2.0)
+                        sharp_total += penalty
+                        self._log(f"Sharp 4: Blowout Adjustment (NBL1) -> {penalty:+.1f}")
+                        notes.append(f"Sharp Adjustment: Blowout Volatility Correction ({penalty:+.1f} pts)")
+
+                        # Sharp 4b: Large Blowout Bonus — extra +0.5 when spread > 12 (Audit v2)
+                        # Extreme mismatches produce explosive garbage-time scoring
+                        large_blowout_threshold = sp.get('blowout_large_threshold', 12.0)
+                        if projected_spread > large_blowout_threshold:
+                            large_bonus = sp.get('blowout_large_bonus', 0.5)
+                            sharp_total += large_bonus
+                            self._log(f"Sharp 4b: Large Blowout Extra (spread {projected_spread:.1f} > {large_blowout_threshold}) -> +{large_bonus}")
+                            notes.append(f"Sharp Adjustment: Large Blowout Extra (+{large_bonus} pts)")
+
+                    # Sharp 4.5: Form Momentum Bonus (NBL1-only)
+                    # Uses the form string (e.g. "WWLWW") from standings endpoint
+                    home_form_wins = game_data.get('home_form_wins', 2)
+                    away_form_wins = game_data.get('away_form_wins', 2)
+                    combined_form  = home_form_wins + away_form_wins
+                    hot_threshold  = sp.get('form_hot_streak_threshold', 8)
+                    cold_threshold = sp.get('form_cold_streak_threshold', 2)
+                    if combined_form >= hot_threshold:
+                        form_bonus = sp.get('form_hot_streak_bonus', 1.0)   # Audit v2: reduced 1.5 → 1.0
+                        sharp_total += form_bonus
+                        self._log(f"Sharp 4.5: Form Momentum Bonus (Both Hot: {home_form_wins}+{away_form_wins}) -> +{form_bonus}")
+                        notes.append(f"Sharp Adjustment: Hot-Streak Momentum (+{form_bonus} pts)")
+                    elif combined_form <= cold_threshold:
+                        form_drag = sp.get('form_cold_streak_drag', -1.0)
+                        sharp_total += form_drag
+                        self._log(f"Sharp 4.5: Form Momentum Drag (Both Cold: {home_form_wins}+{away_form_wins}) -> {form_drag:.1f}")
+                        notes.append(f"Sharp Adjustment: Cold-Streak Drag ({form_drag:.1f} pts)")
+
+                    # --- SHARP ADJUSTMENT CAP (Audit v2) ---
+                    # Enforces Stats > Sharps hierarchy:
+                    # Phase 2 is behavioral correction, NOT stat override
+                    # Cap: boost ≤ +9.0, drag ≥ -6.0  (relative to stats_baseline)
+                    sharp_adj_cap  = sp.get('sharp_adjustment_cap', 9.0)
+                    sharp_drag_cap = sp.get('sharp_drag_cap', -6.0)
+                    total_sharp_adj = sharp_total - stats_total
+
+                    if total_sharp_adj > sharp_adj_cap:
+                        clipped_total  = stats_total + sharp_adj_cap
+                        self._log(f"Sharp Cap: Boost clipped {sharp_total:.2f} -> {clipped_total:.2f} (adj {total_sharp_adj:+.2f} exceeded cap +{sharp_adj_cap})")
+                        notes.append(f"Sharp Cap: Boost adjustment capped at +{sharp_adj_cap} (Stats > Sharps)")
+                        sharp_total = clipped_total
+                    elif total_sharp_adj < sharp_drag_cap:
+                        clipped_total  = stats_total + sharp_drag_cap
+                        self._log(f"Sharp Cap: Drag clipped {sharp_total:.2f} -> {clipped_total:.2f} (adj {total_sharp_adj:+.2f} exceeded cap {sharp_drag_cap})")
+                        notes.append(f"Sharp Cap: Drag adjustment capped at {sharp_drag_cap} (Stats > Sharps)")
+                        sharp_total = clipped_total
+
+
+
             if c['name'] == "NBA":
+
                 # Sharp 2: Elite Offense
                 if elite_off_bonus > 0:
                     sharp_total += elite_off_bonus
@@ -438,22 +522,31 @@ class UniversalBasketballEngine:
             elif (4.0 <= abs_edge < 5.0) or (7.0 <= abs_edge < 9.0): confidence = "LOW" # Was LEAN
             else: confidence = "NO PLAY"                      # Was PASS
         
-        # NCAA Auto-Pass Override (Force PASS for very small edges)
-        if self.mode == "full" and c['name'] == "NCAA":
+        # NCAA / NBL1 Auto-Pass Override (Force PASS for very small edges)
+        if self.mode == "full" and c['name'] in ("NCAA", "NBL1"):
             cutoff = c['thresholds'].get('small_edge_cutoff', 4.0)
             if abs_edge < cutoff:
                 decision = "PASS"
-                confidence = "NO PLAY" # Reverted to legacy key
+                confidence = "NO PLAY"
                 notes.append(f"Auto-Pass: Edge ({abs_edge:.1f}) below threshold ({cutoff})")
 
-        # v2.5 Light Selection Filter: Downgrade confidence by one tier for low-total markets
+        # v2.5 Light Selection Filter: Downgrade confidence for low-total markets (NCAA)
         if self.mode == "full" and c['name'] == "NCAA" and market < 138.0:
-            tier_map = {"HIGH": "MEDIUM", "MEDIUM": "LOW", "LOW": "NO PLAY", "NO PLAY": "NO PLAY"} # Updated map
+            tier_map = {"HIGH": "MEDIUM", "MEDIUM": "LOW", "LOW": "NO PLAY", "NO PLAY": "NO PLAY"}
             old_conf = confidence
             confidence = tier_map.get(confidence, confidence)
             if old_conf != confidence:
                 self._log(f"v2.5 Light Selection Filter: Market total ({market}) < 138 -> Confidence downgraded {old_conf} -> {confidence}")
                 notes.append(f"Light Selection Filter: Confidence downgraded ({old_conf} -> {confidence})")
+
+        # NBL1 Low-Total Filter: Downgrade confidence for markets below 150
+        if self.mode == "full" and c['name'] == "NBL1" and market < 150.0:
+            tier_map = {"HIGH": "MEDIUM", "MEDIUM": "LOW", "LOW": "NO PLAY", "NO PLAY": "NO PLAY"}
+            old_conf = confidence
+            confidence = tier_map.get(confidence, confidence)
+            if old_conf != confidence:
+                self._log(f"NBL1 Low-Total Filter: Market total ({market}) < 150 -> Confidence downgraded {old_conf} -> {confidence}")
+                notes.append(f"NBL1 Low-Total Filter: Confidence downgraded ({old_conf} -> {confidence})")
 
         return {
             "final_model_total": round(final_total, 2),

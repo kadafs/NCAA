@@ -36,6 +36,8 @@ class UniversalDataBridge:
             return self._pop_eurocup()
         elif self.league == "NBL":
             return self._pop_nbl()
+        elif self.league == "NBL1":
+            return self._pop_nbl1()
         elif self.league == "ACB":
             return self._pop_acb()
         else:
@@ -374,4 +376,22 @@ class UniversalDataBridge:
             triH = [k for k, v in ACB_TRICODES.items() if v in d['opponent'] or d['opponent'] in v][0] if any(v in d['opponent'] or d['opponent'] in v for v in ACB_TRICODES.values()) else "ACB"
             d["away_details"] = {"name": d['team'], "code": triA, "logo": ""}  # ESPN CDN doesn't have ACB logos - frontend handles fallback
             d["home_details"] = {"name": d["opponent"], "code": triH, "logo": ""}  # ESPN CDN doesn't have ACB logos - frontend handles fallback
+        return sheet
+
+    def _pop_nbl1(self):
+        """NBL1-specific population logic v1.0."""
+        from nbl1.v1_2.populate import get_daily_input_sheet
+        sheet = get_daily_input_sheet()
+        for d in sheet:
+            meta = d.get("metadata", {})
+            d["away_details"] = {
+                "name": d['team'],
+                "code": d['team'][:3].upper(),
+                "logo": meta.get("away_logo", "")
+            }
+            d["home_details"] = {
+                "name": d['opponent'],
+                "code": d['opponent'][:3].upper(),
+                "logo": meta.get("home_logo", "")
+            }
         return sheet
