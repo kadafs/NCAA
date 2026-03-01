@@ -24,7 +24,8 @@ def main():
     parser = argparse.ArgumentParser(description="Universal Basketball Framework v1.4")
     parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "nbl1", "acb",
                                               "epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1",
-                                              'hk_1st', 'eng_dev_2', 'eng_pl_2', 'wales_champ', 'aus_landesliga', 'scot_highland', 'scot_lowland', 'ind_ileague', 'cro_1nl', 'swe_div1_norra', 'uefa_cl', 'nor_div1', 'den_superliga', 'ger_reg_west', 'eng_isthmian', 'lat_1liga', 'crc_segunda', 'ned_eredivisie', 'scot_prem', 'ban_pl', 'tha_pl', 'swe_damallsvenskan'],
+                                              'hk_1st', 'eng_dev_2', 'eng_pl_2', 'wales_champ', 'aus_landesliga', 'scot_highland', 'scot_lowland', 'ind_ileague', 'cro_1nl', 'swe_div1_norra', 'uefa_cl', 'nor_div1', 'den_superliga', 'ger_reg_west', 'eng_isthmian', 'lat_1liga', 'crc_segunda', 'ned_eredivisie', 'scot_prem', 'ban_pl', 'tha_pl', 'swe_damallsvenskan',
+                                              'par_primera_ap', 'usa_mls', 'ven_primera', 'spa_tercera_6', 'hon_liga_nac', 'spa_tercera_18', 'ecu_primera_b', 'arg_nacional_b', 'arg_primera', 'ita_serie_b', 'col_primera_a', 'arg_primera_b', 'fra_national', 'egy_prem', 'uru_apertura'],
                         default="nba", help="League to model")
     parser.add_argument("--sport", choices=["basketball", "football"], default="basketball",
                         help="Sport to model (football = soccer)")
@@ -77,6 +78,21 @@ def main():
         "ban_pl": "configs/leagues/ban_pl.json",
         "tha_pl": "configs/leagues/tha_pl.json",
         "swe_damallsvenskan": "configs/leagues/swe_damallsvenskan.json",
+        "par_primera_ap": "configs/leagues/par_primera_ap.json",
+        "usa_mls": "configs/leagues/usa_mls.json",
+        "ven_primera": "configs/leagues/ven_primera.json",
+        "spa_tercera_6": "configs/leagues/spa_tercera_6.json",
+        "hon_liga_nac": "configs/leagues/hon_liga_nac.json",
+        "spa_tercera_18": "configs/leagues/spa_tercera_18.json",
+        "ecu_primera_b": "configs/leagues/ecu_primera_b.json",
+        "arg_nacional_b": "configs/leagues/arg_nacional_b.json",
+        "arg_primera": "configs/leagues/arg_primera.json",
+        "ita_serie_b": "configs/leagues/ita_serie_b.json",
+        "col_primera_a": "configs/leagues/col_primera_a.json",
+        "arg_primera_b": "configs/leagues/arg_primera_b.json",
+        "fra_national": "configs/leagues/fra_national.json",
+        "egy_prem": "configs/leagues/egy_prem.json",
+        "uru_apertura": "configs/leagues/uru_apertura.json",
     }
     
     # 2. Refresh if needed

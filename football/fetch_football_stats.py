@@ -40,8 +40,22 @@ SUPPORTED_LEAGUES = {
     "ned_eredivisie": {"id": 88, "name": "Eredivisie", "country": "Netherlands"},
     "scot_prem": {"id": 179, "name": "Premiership", "country": "Scotland"},
     "ban_pl": {"id": 398, "name": "Premier League", "country": "Bangladesh"},
-    "tha_pl": {"id": 296, "name": "Thai League 1", "country": "Thailand"},
-    "swe_damallsvenskan": {"id": 549, "name": "Damallsvenskan", "country": "Sweden"}
+    "swe_damallsvenskan": {"id": 549, "name": "Damallsvenskan", "country": "Sweden"},
+    "par_primera_ap": {"id": 250, "name": "Division Profesional Apertura", "country": "Paraguay"},
+    "usa_mls": {"id": 253, "name": "Major League Soccer", "country": "USA"},
+    "ven_primera": {"id": 299, "name": "Primera Division", "country": "Venezuela"},
+    "spa_tercera_6": {"id": 444, "name": "Tercera RFEF Group 6", "country": "Spain"},
+    "hon_liga_nac": {"id": 234, "name": "Liga Nacional", "country": "Honduras"},
+    "spa_tercera_18": {"id": 456, "name": "Tercera RFEF Group 18", "country": "Spain"},
+    "ecu_primera_b": {"id": 243, "name": "Liga Pro Serie B", "country": "Ecuador"},
+    "arg_nacional_b": {"id": 129, "name": "Primera Nacional", "country": "Argentina"},
+    "arg_primera": {"id": 128, "name": "Liga Profesional", "country": "Argentina"},
+    "ita_serie_b": {"id": 136, "name": "Serie B", "country": "Italy"},
+    "col_primera_a": {"id": 239, "name": "Primera A", "country": "Colombia"},
+    "arg_primera_b": {"id": 131, "name": "Primera B Metropolitana", "country": "Argentina"},
+    "fra_national": {"id": 63, "name": "National 1", "country": "France"},
+    "egy_prem": {"id": 233, "name": "Premier League", "country": "Egypt"},
+    "uru_apertura": {"id": 268, "name": "Primera Div Apertura", "country": "Uruguay"}
 }
 
 
