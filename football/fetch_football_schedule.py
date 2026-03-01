@@ -13,12 +13,34 @@ BASE_URL = "https://v3.football.api-sports.io"
 HEADERS  = {"x-apisports-key": API_KEY}
 
 SUPPORTED_LEAGUES = {
-    "epl":       {"id": 39,  "timezone": "Europe/London"},
-    "la_liga":   {"id": 140, "timezone": "Europe/Madrid"},
-    "bundesliga":{"id": 78,  "timezone": "Europe/Berlin"},
-    "serie_a":   {"id": 135, "timezone": "Europe/Rome"},
-    "ligue_1":   {"id": 61,  "timezone": "Europe/Paris"},
-    "a_league":  {"id": 188, "timezone": "Australia/Sydney"},
+    "epl":      {"id": 39,  "name": "Premier League",  "country": "England"},
+    "la_liga":  {"id": 140, "name": "La Liga",          "country": "Spain"},
+    "bundesliga":{"id": 78, "name": "Bundesliga",       "country": "Germany"},
+    "serie_a":  {"id": 135, "name": "Serie A",          "country": "Italy"},
+    "ligue_1":  {"id": 61,  "name": "Ligue 1",          "country": "France"},
+    "a_league": {"id": 188, "name": "A-League",         "country": "Australia"},
+    "hk_1st": {"id": 381, "name": "Hong Kong 1st Division", "country": "Hong-Kong"},
+    "eng_dev_2": {"id": 703, "name": "Professional Development League", "country": "England"},
+    "eng_pl_2": {"id": 702, "name": "Premier League 2", "country": "England"},
+    "wales_champ": {"id": 111, "name": "FAW Championship", "country": "Wales"},
+    "aus_landesliga": {"id": 228, "name": "Landesliga Salzburg", "country": "Austria"},
+    "scot_highland": {"id": 730, "name": "Highland League", "country": "Scotland"},
+    "scot_lowland": {"id": 731, "name": "Lowland League", "country": "Scotland"},
+    "ind_ileague": {"id": 324, "name": "I-League", "country": "India"},
+    "cro_1nl": {"id": 211, "name": "First NL", "country": "Croatia"},
+    "swe_div1_norra": {"id": 563, "name": "Ettan Norra", "country": "Sweden"},
+    "uefa_cl": {"id": 2, "name": "UEFA Champions League", "country": "World"},
+    "nor_div1": {"id": 104, "name": "1. Division", "country": "Norway"},
+    "den_superliga": {"id": 119, "name": "Superliga", "country": "Denmark"},
+    "ger_reg_west": {"id": 87, "name": "Regionalliga West", "country": "Germany"},
+    "eng_isthmian": {"id": 58, "name": "Isthmian Premier", "country": "England"},
+    "lat_1liga": {"id": 364, "name": "1. Liga", "country": "Latvia"},
+    "crc_segunda": {"id": 163, "name": "Liga de Ascenso", "country": "Costa-Rica"},
+    "ned_eredivisie": {"id": 88, "name": "Eredivisie", "country": "Netherlands"},
+    "scot_prem": {"id": 179, "name": "Premiership", "country": "Scotland"},
+    "ban_pl": {"id": 398, "name": "Premier League", "country": "Bangladesh"},
+    "tha_pl": {"id": 296, "name": "Thai League 1", "country": "Thailand"},
+    "swe_damallsvenskan": {"id": 549, "name": "Damallsvenskan", "country": "Sweden"}
 }
 
 
@@ -51,6 +73,11 @@ def fetch_football_schedule(league_code, date_obj=None, season=None):
 
     if not fixtures:
         print(f"  No fixtures found for {date_str}.")
+        # Still save an empty file so populate.py doesn't crash
+        os.makedirs("data/football", exist_ok=True)
+        out_path = f"data/football/{league_code}_fixtures.json"
+        with open(out_path, "w") as f:
+            json.dump([], f)
         return []
 
     matchups = []

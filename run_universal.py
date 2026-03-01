@@ -23,7 +23,8 @@ ET_TZ = zoneinfo.ZoneInfo("America/New_York")
 def main():
     parser = argparse.ArgumentParser(description="Universal Basketball Framework v1.4")
     parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "nbl1", "acb",
-                                              "epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1"],
+                                              "epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1",
+                                              'hk_1st', 'eng_dev_2', 'eng_pl_2', 'wales_champ', 'aus_landesliga', 'scot_highland', 'scot_lowland', 'ind_ileague', 'cro_1nl', 'swe_div1_norra', 'uefa_cl', 'nor_div1', 'den_superliga', 'ger_reg_west', 'eng_isthmian', 'lat_1liga', 'crc_segunda', 'ned_eredivisie', 'scot_prem', 'ban_pl', 'tha_pl', 'swe_damallsvenskan'],
                         default="nba", help="League to model")
     parser.add_argument("--sport", choices=["basketball", "football"], default="basketball",
                         help="Sport to model (football = soccer)")
@@ -54,6 +55,28 @@ def main():
         "bundesliga": "configs/leagues/bundesliga.json",
         "serie_a":    "configs/leagues/serie_a.json",
         "ligue_1":    "configs/leagues/ligue_1.json",
+        "hk_1st": "configs/leagues/hk_1st.json",
+        "eng_dev_2": "configs/leagues/eng_dev_2.json",
+        "eng_pl_2": "configs/leagues/eng_pl_2.json",
+        "wales_champ": "configs/leagues/wales_champ.json",
+        "aus_landesliga": "configs/leagues/aus_landesliga.json",
+        "scot_highland": "configs/leagues/scot_highland.json",
+        "scot_lowland": "configs/leagues/scot_lowland.json",
+        "ind_ileague": "configs/leagues/ind_ileague.json",
+        "cro_1nl": "configs/leagues/cro_1nl.json",
+        "swe_div1_norra": "configs/leagues/swe_div1_norra.json",
+        "uefa_cl": "configs/leagues/uefa_cl.json",
+        "nor_div1": "configs/leagues/nor_div1.json",
+        "den_superliga": "configs/leagues/den_superliga.json",
+        "ger_reg_west": "configs/leagues/ger_reg_west.json",
+        "eng_isthmian": "configs/leagues/eng_isthmian.json",
+        "lat_1liga": "configs/leagues/lat_1liga.json",
+        "crc_segunda": "configs/leagues/crc_segunda.json",
+        "ned_eredivisie": "configs/leagues/ned_eredivisie.json",
+        "scot_prem": "configs/leagues/scot_prem.json",
+        "ban_pl": "configs/leagues/ban_pl.json",
+        "tha_pl": "configs/leagues/tha_pl.json",
+        "swe_damallsvenskan": "configs/leagues/swe_damallsvenskan.json",
     }
     
     # 2. Refresh if needed
