@@ -59,17 +59,30 @@ SUPPORTED_LEAGUES = {
 }
 
 
-def _get_current_season(league_id):
+def _get_current_season(league_id, default_season=2024):
     """Returns the current (or most recent) season year for a league."""
     r = requests.get(f"{BASE_URL}/leagues", headers=HEADERS, params={"id": league_id})
-    leagues = r.json().get("response", [])
-    if not leagues:
-        return None
-    seasons = leagues[0].get("seasons", [])
-    for s in sorted(seasons, key=lambda x: x.get("year", 0), reverse=True):
-        if s.get("current"):
-            return s["year"]
-    return sorted(seasons, key=lambda x: x.get("year", 0), reverse=True)[0]["year"]
+    try:
+        leagues = r.json().get("response", [])
+        if not leagues:
+            return default_season
+            
+        seasons = leagues[0].get("seasons", [])
+        if not seasons:
+            return default_season
+            
+        # Try to find the one marked 'current'
+        sorted_seasons = sorted(seasons, key=lambda x: x.get("year", 0), reverse=True)
+        for s in sorted_seasons:
+            if s.get("current"):
+                # Even if it says current, if it's 2025/2026, the free tier often restricts it
+                # So we return the year, but the fetcher fallback logic will step it down if needed
+                return s["year"]
+                
+        # Fallback to the most recent year if no 'current' flag exists
+        return sorted_seasons[0]["year"]
+    except Exception:
+        return default_season
 
 
 def _safe_get(url, headers, params, retries=3, delay=0.4):
@@ -326,7 +339,7 @@ def fetch_football_stats(league_code, season=None):
         "league_averages": league_avgs,
         "teams":        final_stats
     }
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding='utf-8') as f:
         json.dump(payload, f, indent=2)
 
     print(f"\nSaved {len(final_stats)} teams to {out_path}")

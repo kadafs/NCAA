@@ -153,13 +153,28 @@ def main():
     # -------------------------------------------------------
     # FOOTBALL SPORT BRANCH — completely separate loop
     # -------------------------------------------------------
-    if args.sport == "football" or args.league in ("epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1"):
+    if args.sport == "football" or args.league in (
+        "epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1",
+        "hk_1st", "eng_dev_2", "eng_pl_2", "wales_champ", "aus_landesliga", 
+        "scot_highland", "scot_lowland", "ind_ileague", "cro_1nl", 
+        "swe_div1_norra", "uefa_cl", "nor_div1", "den_superliga", 
+        "ger_reg_west", "eng_isthmian", "lat_1liga", "crc_segunda", 
+        "ned_eredivisie", "scot_prem", "ban_pl", "tha_pl", "swe_damallsvenskan",
+        "par_primera_ap", "usa_mls", "ven_primera", "spa_tercera_6", 
+        "hon_liga_nac", "spa_tercera_18", "ecu_primera_b", "arg_nacional_b", 
+        "arg_primera", "ita_serie_b", "col_primera_a", "arg_primera_b", 
+        "fra_national", "egy_prem", "uru_apertura"
+    ):
         from core.football_engine import FootballEngine, load_football_config
         from football.v1_0.populate import get_daily_input_sheet as football_sheet
 
-        fconfig = load_football_config(args.league)
-        fengine = FootballEngine(fconfig, mode=args.mode, trace=args.trace)
-        daily_sheet = football_sheet(args.league, date_obj=target_date, config=fconfig)
+        daily_sheet = []
+        try:
+            fconfig = load_football_config(args.league)
+            fengine = FootballEngine(fconfig, mode=args.mode, trace=args.trace)
+            daily_sheet = football_sheet(args.league, date_obj=target_date, config=fconfig)
+        except Exception as e:
+            print(f"Failed to load football constraints for {args.league}: {e}")
 
         if not daily_sheet:
             print(f"No {args.league.upper()} fixtures found for {target_date.strftime('%Y-%m-%d')}.")

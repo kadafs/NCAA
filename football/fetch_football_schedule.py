@@ -56,7 +56,30 @@ SUPPORTED_LEAGUES = {
     "egy_prem": {"id": 233, "name": "Premier League", "country": "Egypt"},
     "uru_apertura": {"id": 268, "name": "Primera Div Apertura", "country": "Uruguay"}
 }
-
+def _get_current_season(league_id, default_season=2024):
+    """Returns the current (or most recent) season year for a league."""
+    r = requests.get(f"{BASE_URL}/leagues", headers=HEADERS, params={"id": league_id})
+    try:
+        leagues = r.json().get("response", [])
+        if not leagues:
+            return default_season
+            
+        seasons = leagues[0].get("seasons", [])
+        if not seasons:
+            return default_season
+            
+        # Try to find the one marked 'current'
+        sorted_seasons = sorted(seasons, key=lambda x: x.get("year", 0), reverse=True)
+        for s in sorted_seasons:
+            if s.get("current"):
+                # Even if it says current, if it's 2025/2026, the free tier often restricts it
+                # So we return the year, but the fetcher fallback logic will step it down if needed
+                return s["year"]
+                
+        # Fallback to the most recent year if no 'current' flag exists
+        return sorted_seasons[0]["year"]
+    except Exception:
+        return default_season
 
 def fetch_football_schedule(league_code, date_obj=None, season=None):
     """
@@ -78,6 +101,9 @@ def fetch_football_schedule(league_code, date_obj=None, season=None):
 
     print(f"Fetching {league_code.upper()} fixtures for {date_str} (League {league_id})...")
 
+    if season is None:
+        season = _get_current_season(league_id)
+        
     params = {"league": league_id, "date": date_str}
     if season:
         params["season"] = season
@@ -151,7 +177,7 @@ def fetch_football_schedule(league_code, date_obj=None, season=None):
     # Save
     os.makedirs("data/football", exist_ok=True)
     out_path = f"data/football/{league_code}_fixtures.json"
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding='utf-8') as f:
         json.dump(matchups, f, indent=2)
 
     print(f"\nSaved {len(matchups)} fixtures to {out_path}")
