@@ -40,6 +40,7 @@ SUPPORTED_LEAGUES = {
     "ned_eredivisie": {"id": 88, "name": "Eredivisie", "country": "Netherlands"},
     "scot_prem": {"id": 179, "name": "Premiership", "country": "Scotland"},
     "ban_pl": {"id": 398, "name": "Premier League", "country": "Bangladesh"},
+    "tha_pl": {"id": 296, "name": "Thai League 1", "country": "Thailand"},
     "swe_damallsvenskan": {"id": 549, "name": "Damallsvenskan", "country": "Sweden"},
     "par_primera_ap": {"id": 250, "name": "Division Profesional Apertura", "country": "Paraguay"},
     "usa_mls": {"id": 253, "name": "Major League Soccer", "country": "USA"},
