@@ -25,7 +25,8 @@ def main():
     parser.add_argument("--league", choices=["nba", "ncaa", "euro", "eurocup", "nbl", "nbl1", "acb",
                                               "epl", "la_liga", "a_league", "bundesliga", "serie_a", "ligue_1",
                                               'hk_1st', 'eng_dev_2', 'eng_pl_2', 'wales_champ', 'aus_landesliga', 'scot_highland', 'scot_lowland', 'ind_ileague', 'cro_1nl', 'swe_div1_norra', 'uefa_cl', 'nor_div1', 'den_superliga', 'ger_reg_west', 'eng_isthmian', 'lat_1liga', 'crc_segunda', 'ned_eredivisie', 'scot_prem', 'ban_pl', 'tha_pl', 'swe_damallsvenskan',
-                                              'par_primera_ap', 'usa_mls', 'ven_primera', 'spa_tercera_6', 'hon_liga_nac', 'spa_tercera_18', 'ecu_primera_b', 'arg_nacional_b', 'arg_primera', 'ita_serie_b', 'col_primera_a', 'arg_primera_b', 'fra_national', 'egy_prem', 'uru_apertura'],
+                                              'par_primera_ap', 'usa_mls', 'ven_primera', 'spa_tercera_6', 'hon_liga_nac', 'spa_tercera_18', 'ecu_primera_b', 'arg_nacional_b', 'arg_primera', 'ita_serie_b', 'col_primera_a', 'arg_primera_b', 'fra_national', 'egy_prem', 'uru_apertura',
+                                              'eng_championship', 'eng_league_one', 'eng_league_two', 'eng_national'],
                         default="nba", help="League to model")
     parser.add_argument("--sport", choices=["basketball", "football"], default="basketball",
                         help="Sport to model (football = soccer)")
@@ -93,6 +94,10 @@ def main():
         "fra_national": "configs/leagues/fra_national.json",
         "egy_prem": "configs/leagues/egy_prem.json",
         "uru_apertura": "configs/leagues/uru_apertura.json",
+        "eng_championship": "configs/leagues/eng_championship.json",
+        "eng_league_one":   "configs/leagues/eng_league_one.json",
+        "eng_league_two":   "configs/leagues/eng_league_two.json",
+        "eng_national":     "configs/leagues/eng_national.json",
     }
     
     # 2. Refresh if needed
@@ -143,7 +148,8 @@ def main():
             "par_primera_ap", "usa_mls", "ven_primera", "spa_tercera_6", 
             "hon_liga_nac", "spa_tercera_18", "ecu_primera_b", "arg_nacional_b", 
             "arg_primera", "ita_serie_b", "col_primera_a", "arg_primera_b", 
-            "fra_national", "egy_prem", "uru_apertura"
+            "fra_national", "egy_prem", "uru_apertura",
+            "eng_championship", "eng_league_one", "eng_league_two", "eng_national"
         ):
             from football.fetch_football_schedule import fetch_football_schedule
             from football.fetch_football_stats import fetch_football_stats
@@ -163,7 +169,8 @@ def main():
         "par_primera_ap", "usa_mls", "ven_primera", "spa_tercera_6", 
         "hon_liga_nac", "spa_tercera_18", "ecu_primera_b", "arg_nacional_b", 
         "arg_primera", "ita_serie_b", "col_primera_a", "arg_primera_b", 
-        "fra_national", "egy_prem", "uru_apertura"
+        "fra_national", "egy_prem", "uru_apertura",
+        "eng_championship", "eng_league_one", "eng_league_two", "eng_national"
     ):
         from core.football_engine import FootballEngine, load_football_config
         from football.v1_0.populate import get_daily_input_sheet as football_sheet

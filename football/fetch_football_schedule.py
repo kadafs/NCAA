@@ -54,7 +54,11 @@ SUPPORTED_LEAGUES = {
     "arg_primera_b": {"id": 131, "name": "Primera B Metropolitana", "country": "Argentina"},
     "fra_national": {"id": 63, "name": "National 1", "country": "France"},
     "egy_prem": {"id": 233, "name": "Premier League", "country": "Egypt"},
-    "uru_apertura": {"id": 268, "name": "Primera Div Apertura", "country": "Uruguay"}
+    "uru_apertura": {"id": 268, "name": "Primera Div Apertura", "country": "Uruguay"},
+    "eng_championship": {"id": 40,  "name": "Championship",    "country": "England"},
+    "eng_league_one":   {"id": 41,  "name": "League One",       "country": "England"},
+    "eng_league_two":   {"id": 42,  "name": "League Two",       "country": "England"},
+    "eng_national":     {"id": 43,  "name": "National League",  "country": "England"},
 }
 def _get_current_season(league_id, default_season=2024):
     """Returns the current (or most recent) season year for a league."""
