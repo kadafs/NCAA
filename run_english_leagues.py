@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--mode", choices=["safe", "full"], default="full", help="Prediction mode")
     parser.add_argument("--refresh", action="store_true", help="Refresh data before running")
     parser.add_argument("--trace", action="store_true", help="Show logic trace")
+    parser.add_argument("--date", help="Target date in YYYY-MM-DD format (default: today)")
     args = parser.parse_args()
 
     project_root = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +31,8 @@ def main():
         base_cmd.append("--refresh")
     if args.trace:
         base_cmd.append("--trace")
+    if args.date:
+        base_cmd += ["--date", args.date]
 
     for idx, (code, name) in enumerate(ENGLISH_LEAGUES, 1):
         print(f"\n[{idx}/5] {name} ({code.upper()})")

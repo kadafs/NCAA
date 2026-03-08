@@ -16,6 +16,7 @@ def main():
     parser.add_argument("--mode", choices=["safe", "full"], default="full", help="Prediction mode")
     parser.add_argument("--refresh", action="store_true", help="Refresh data before running")
     parser.add_argument("--trace", action="store_true", help="Show logic trace")
+    parser.add_argument("--date", help="Target date in YYYY-MM-DD format (default: today)")
     args = parser.parse_args()
 
     # Move to project root to run the universal script
@@ -31,6 +32,8 @@ def main():
         base_cmd.append("--refresh")
     if args.trace:
         base_cmd.append("--trace")
+    if args.date:
+        base_cmd += ["--date", args.date]
 
     for idx, league in enumerate(HIGH_DRAW_LEAGUES, 1):
         print(f"\n[{idx}/15] Running {league.upper()}...")
