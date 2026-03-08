@@ -180,10 +180,10 @@ def main():
             print(f"No {args.league.upper()} fixtures found for {target_date.strftime('%Y-%m-%d')}.")
             return
 
-        print("\n" + "█"*80)
-        print(f" ⚽ FOOTBALL ENGINE v1.0 | {args.league.upper()} | {args.mode.upper()}")
+        print("\n" + "="*80)
+        print(f" [FOOTBALL ENGINE v1.0] {args.league.upper()} | {args.mode.upper()}")
         print(f" Target Date: {target_date.strftime('%Y-%m-%d')}")
-        print("█"*80)
+        print("="*80)
 
         for game in daily_sheet:
             result = fengine.calculate(game)
@@ -194,7 +194,7 @@ def main():
             conf      = result['btts_confidence']
             decision  = result['btts_decision']
 
-            print(f"\n⚽  {game['matchup']}")
+            print(f"\n[MATCH] {game['matchup']}")
             print(f"   xG: {result['xg_home']:.2f} (H) / {result['xg_away']:.2f} (A) | Total xG: {result['xg_total']:.2f}")
             print(f"   BTTS: {btts_pct:.1f}% | Mkt: {result['btts_market_prob']*100:.1f}% | Edge: {edge_pct:+.1f}% | [{conf}] {decision}")
             print(f"   Draw: {draw_pct:.1f}% | Fair Odds: {result['draw_fair_odds']:.2f}x", end="")
@@ -211,8 +211,9 @@ def main():
                 for n in result['notes']:
                     print(f"   • {n}")
 
-        print("\n" + "█"*80)
+        print("\n" + "="*80)
         print("Execution Finished.")
+        print("="*80)
         return
 
     # -------------------------------------------------------

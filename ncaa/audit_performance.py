@@ -64,12 +64,16 @@ def main():
     parser.add_argument("--date", help="Override Date (YYYY-MM-DD)")
     parser.add_argument("--include-pass", action="store_true", help="Include PASS decisions in audit (grades as if betting against the edge)")
     parser.add_argument("--d1-hybrid", action="store_true", help="Audit D1 Hybrid predictions (d1_hybrid_predictions.json)")
+    parser.add_argument("--no-injuries", action="store_true", help="Audit D1 Conf No-Injuries predictions (d1_conf_predictions_no_injuries.json)")
     args = parser.parse_args()
 
     # Resolve prediction file and label
     if args.file:
         pred_file = args.file
         label = "D1 PREDICTION AUDITOR"
+    elif args.no_injuries:
+        pred_file = os.path.join(ROOT_DIR, "data", "d1_conf_predictions_no_injuries.json")
+        label = "D1 CONF (NO INJURIES) PREDICTION AUDITOR"
     elif args.d1_hybrid:
         pred_file = os.path.join(ROOT_DIR, "data", "d1_hybrid_predictions.json")
         label = "D1 HYBRID PREDICTION AUDITOR"

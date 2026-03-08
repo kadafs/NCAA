@@ -39,7 +39,13 @@ def main():
         cmd = base_cmd + ["--league", league]
         try:
             # Capture output and print it as it comes
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                encoding='utf-8',
+                errors='replace'
+            )
             for line in process.stdout:
                 print(line, end="")
             process.wait()
