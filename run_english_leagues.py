@@ -1,6 +1,8 @@
 import os
+import json
 import subprocess
 import argparse
+from datetime import datetime
 
 # All 5 English football leagues
 ENGLISH_LEAGUES = [
@@ -22,8 +24,11 @@ def main():
     project_root = os.path.dirname(os.path.abspath(__file__))
     os.chdir(project_root)
 
+    target_date = args.date or datetime.now().strftime("%Y-%m-%d")
+
     print("=" * 70)
     print(f" BATCH RUN: 5 ENGLISH FOOTBALL LEAGUES | MODE: {args.mode.upper()}")
+    print(f" Date: {target_date}")
     print("=" * 70)
 
     base_cmd = ["python", "run_universal.py", "--sport", "football", "--mode", args.mode]
@@ -56,9 +61,26 @@ def main():
         except Exception as e:
             print(f"  [!] Exception running {code}: {e}")
 
+    # --- Merge all per-league predictions into a combined output ---
+    combined = []
+    for code, name in ENGLISH_LEAGUES:
+        league_file = f"data/football/{code}_predictions.json"
+        if os.path.exists(league_file):
+            with open(league_file, "r", encoding="utf-8") as f:
+                records = json.load(f)
+            combined.extend(records)
+            print(f"  Collected {len(records)} records from {code}")
+
+    if combined:
+        out_path = f"data/football/english_leagues_predictions_{target_date}.json"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(combined, f, indent=2)
+        print(f"\nCombined output saved -> {out_path}  ({len(combined)} total predictions)")
+
     print("\n" + "=" * 70)
     print(" BATCH RUN COMPLETE: English Leagues")
     print("=" * 70)
 
 if __name__ == "__main__":
     main()
+

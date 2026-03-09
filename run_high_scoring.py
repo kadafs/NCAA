@@ -1,7 +1,8 @@
 import os
-import sys
+import json
 import subprocess
 import argparse
+from datetime import datetime
 
 # The 22 high-scoring leagues we added
 HIGH_SCORING_LEAGUES = [
@@ -24,8 +25,11 @@ def main():
     project_root = os.path.dirname(os.path.abspath(__file__))
     os.chdir(project_root)
 
+    target_date = args.date or datetime.now().strftime("%Y-%m-%d")
+
     print("================================================================")
     print(f" BATCH RUN: 22 HIGH-SCORING LEAGUES | MODE: {args.mode.upper()}")
+    print(f" Date: {target_date}")
     print("================================================================\n")
 
     base_cmd = ["python", "run_universal.py", "--sport", "football", "--mode", args.mode]
@@ -58,6 +62,23 @@ def main():
                 print(f"  [!] Failed to execute {league} (Exit code: {process.returncode})")
         except Exception as e:
             print(f"  [!] Exception running {league}: {e}")
+
+    # --- Merge all per-league predictions into a combined output ---
+    combined = []
+    for league in HIGH_SCORING_LEAGUES:
+        league_file = f"data/football/{league}_predictions.json"
+        if os.path.exists(league_file):
+            with open(league_file, "r", encoding="utf-8") as f:
+                records = json.load(f)
+            if records:
+                combined.extend(records)
+                print(f"  Collected {len(records)} records from {league}")
+
+    if combined:
+        out_path = f"data/football/high_scoring_predictions_{target_date}.json"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(combined, f, indent=2)
+        print(f"\nCombined output saved -> {out_path}  ({len(combined)} total predictions)")
 
     print("\n================================================================")
     print(" BATCH RUN COMPLETE: High-Scoring Leagues")

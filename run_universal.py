@@ -192,6 +192,8 @@ def main():
         print(f" Target Date: {target_date.strftime('%Y-%m-%d')}")
         print("="*80)
 
+        prediction_records = []
+
         for game in daily_sheet:
             result = fengine.calculate(game)
 
@@ -206,7 +208,7 @@ def main():
             print(f"   BTTS: {btts_pct:.1f}% | Mkt: {result['btts_market_prob']*100:.1f}% | Edge: {edge_pct:+.1f}% | [{conf}] {decision}")
             print(f"   Draw: {draw_pct:.1f}% | Fair Odds: {result['draw_fair_odds']:.2f}x", end="")
             if result.get('draw_value_flag'):
-                print(" ← Check draw market")
+                print(" <- Check draw market")
             else:
                 print()
 
@@ -216,12 +218,43 @@ def main():
 
             if result['notes']:
                 for n in result['notes']:
-                    print(f"   • {n}")
+                    print(f"   * {n}")
+
+            # Build structured record for JSON output
+            prediction_records.append({
+                "matchup":          game['matchup'],
+                "home_team":        game.get('home_team', ''),
+                "away_team":        game.get('away_team', ''),
+                "date":             target_date.strftime('%Y-%m-%d'),
+                "league":           args.league,
+                "mode":             args.mode,
+                "xg_home":          round(result['xg_home'], 3),
+                "xg_away":          round(result['xg_away'], 3),
+                "xg_total":         round(result['xg_total'], 3),
+                "btts_prob":        round(btts_pct, 1),
+                "btts_market":      round(result['btts_market_prob'] * 100, 1),
+                "btts_edge":        round(edge_pct, 1),
+                "btts_confidence":  conf,
+                "btts_decision":    decision,
+                "draw_prob":        round(draw_pct, 1),
+                "draw_fair_odds":   result['draw_fair_odds'],
+                "draw_value_flag":  result.get('draw_value_flag', False),
+                "notes":            result.get('notes', []),
+                "timestamp":        datetime.now(ET_TZ).isoformat(),
+            })
+
+        # Save predictions to data/football/
+        os.makedirs("data/football", exist_ok=True)
+        out_path = f"data/football/{args.league}_predictions.json"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(prediction_records, f, indent=2)
+        print(f"\nSaved {len(prediction_records)} predictions -> {out_path}")
 
         print("\n" + "="*80)
         print("Execution Finished.")
         print("="*80)
         return
+
 
     # -------------------------------------------------------
     # BASKETBALL BRANCH (original code below)
