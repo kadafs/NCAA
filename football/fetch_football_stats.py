@@ -61,6 +61,15 @@ SUPPORTED_LEAGUES = {
     "eng_league_one":   {"id": 41,  "name": "League One",       "country": "England"},
     "eng_league_two":   {"id": 42,  "name": "League Two",       "country": "England"},
     "eng_national":     {"id": 43,  "name": "National League",  "country": "England"},
+    "bra_serie_a":   {"id": 71,  "name": "Serie A",               "country": "Brazil"},
+    "bra_serie_b":   {"id": 72,  "name": "Serie B",               "country": "Brazil"},
+    "chi_primera":   {"id": 265, "name": "Primera Division",       "country": "Chile"},
+    "bol_primera":   {"id": 344, "name": "Primera Division",       "country": "Bolivia"},
+    "per_primera":   {"id": 281, "name": "Primera Division",       "country": "Peru"},
+    "ecu_primera_a": {"id": 242, "name": "Liga Pro",               "country": "Ecuador"},
+    "uru_clausura":  {"id": 270, "name": "Primera Div Clausura",   "country": "Uruguay"},
+    "par_primera_cl":{"id": 252, "name": "Division Profesional Clausura", "country": "Paraguay"},
+    "col_primera_b": {"id": 240, "name": "Primera B",              "country": "Colombia"},
 }
 
 
