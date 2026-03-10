@@ -69,6 +69,17 @@ SUPPORTED_LEAGUES = {
     "uru_clausura":  {"id": 270, "name": "Primera Div Clausura",   "country": "Uruguay"},
     "par_primera_cl":{"id": 252, "name": "Division Profesional Clausura", "country": "Paraguay"},
     "col_primera_b": {"id": 240, "name": "Primera B",              "country": "Colombia"},
+    "sui_super":       {"id": 207, "name": "Super League",         "country": "Switzerland"},
+    "sui_challenge":   {"id": 208, "name": "Challenge League",     "country": "Switzerland"},
+    "aut_bundesliga":  {"id": 218, "name": "Bundesliga",           "country": "Austria"},
+    "aut_2liga":       {"id": 219, "name": "2. Liga",              "country": "Austria"},
+    "bel_pro":         {"id": 144, "name": "Pro League",           "country": "Belgium"},
+    "ned_eerste":      {"id": 89,  "name": "Eerste Divisie",       "country": "Netherlands"},
+    "swe_allsvenskan": {"id": 113, "name": "Allsvenskan",          "country": "Sweden"},
+    "nor_eliteserien": {"id": 69,  "name": "Eliteserien",          "country": "Norway"},
+    "isl_urvalsdeild": {"id": 119, "name": "Urvalsdeild",          "country": "Iceland"},
+    "ger_2bundesliga": {"id": 79,  "name": "2. Bundesliga",        "country": "Germany"},
+    "tur_super_lig":   {"id": 203, "name": "Super Lig",            "country": "Turkey"},
 }
 def _get_current_season(league_id, default_season=2024):
     """Returns the current (or most recent) season year for a league."""

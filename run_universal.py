@@ -27,7 +27,8 @@ def main():
                                               'hk_1st', 'eng_dev_2', 'eng_pl_2', 'wales_champ', 'aus_landesliga', 'scot_highland', 'scot_lowland', 'ind_ileague', 'cro_1nl', 'swe_div1_norra', 'uefa_cl', 'nor_div1', 'den_superliga', 'ger_reg_west', 'eng_isthmian', 'lat_1liga', 'crc_segunda', 'ned_eredivisie', 'scot_prem', 'ban_pl', 'tha_pl', 'swe_damallsvenskan',
                                               'par_primera_ap', 'usa_mls', 'ven_primera', 'spa_tercera_6', 'hon_liga_nac', 'spa_tercera_18', 'ecu_primera_b', 'arg_nacional_b', 'arg_primera', 'ita_serie_b', 'col_primera_a', 'arg_primera_b', 'fra_national', 'egy_prem', 'uru_apertura',
                                               'eng_championship', 'eng_league_one', 'eng_league_two', 'eng_national',
-                                              'bra_serie_a', 'bra_serie_b', 'chi_primera', 'bol_primera', 'per_primera', 'ecu_primera_a', 'uru_clausura', 'par_primera_cl', 'col_primera_b'],
+                                              'bra_serie_a', 'bra_serie_b', 'chi_primera', 'bol_primera', 'per_primera', 'ecu_primera_a', 'uru_clausura', 'par_primera_cl', 'col_primera_b',
+                                              'sui_super', 'sui_challenge', 'aut_bundesliga', 'aut_2liga', 'bel_pro', 'ned_eerste', 'swe_allsvenskan', 'nor_eliteserien', 'isl_urvalsdeild', 'ger_2bundesliga', 'tur_super_lig'],
                         default="nba", help="League to model")
     parser.add_argument("--sport", choices=["basketball", "football"], default="basketball",
                         help="Sport to model (football = soccer)")
@@ -108,6 +109,17 @@ def main():
         "uru_clausura":     "configs/leagues/uru_clausura.json",
         "par_primera_cl":   "configs/leagues/par_primera_cl.json",
         "col_primera_b":    "configs/leagues/col_primera_b.json",
+        "sui_super":        "configs/leagues/sui_super.json",
+        "sui_challenge":    "configs/leagues/sui_challenge.json",
+        "aut_bundesliga":   "configs/leagues/aut_bundesliga.json",
+        "aut_2liga":        "configs/leagues/aut_2liga.json",
+        "bel_pro":          "configs/leagues/bel_pro.json",
+        "ned_eerste":       "configs/leagues/ned_eerste.json",
+        "swe_allsvenskan":  "configs/leagues/swe_allsvenskan.json",
+        "nor_eliteserien":  "configs/leagues/nor_eliteserien.json",
+        "isl_urvalsdeild":  "configs/leagues/isl_urvalsdeild.json",
+        "ger_2bundesliga":  "configs/leagues/ger_2bundesliga.json",
+        "tur_super_lig":    "configs/leagues/tur_super_lig.json",
     }
     
     # 2. Refresh if needed
@@ -162,7 +174,10 @@ def main():
             "eng_championship", "eng_league_one", "eng_league_two", "eng_national",
             "bra_serie_a", "bra_serie_b", "chi_primera", "bol_primera", 
             "per_primera", "ecu_primera_a", "uru_clausura", "par_primera_cl", 
-            "col_primera_b"
+            "col_primera_b",
+            "sui_super", "sui_challenge", "aut_bundesliga", "aut_2liga", 
+            "bel_pro", "ned_eerste", "swe_allsvenskan", "nor_eliteserien", 
+            "isl_urvalsdeild", "ger_2bundesliga", "tur_super_lig"
         ):
             from football.fetch_football_schedule import fetch_football_schedule
             from football.fetch_football_stats import fetch_football_stats
@@ -186,7 +201,10 @@ def main():
         "eng_championship", "eng_league_one", "eng_league_two", "eng_national",
         "bra_serie_a", "bra_serie_b", "chi_primera", "bol_primera", 
         "per_primera", "ecu_primera_a", "uru_clausura", "par_primera_cl", 
-        "col_primera_b"
+        "col_primera_b",
+        "sui_super", "sui_challenge", "aut_bundesliga", "aut_2liga", 
+        "bel_pro", "ned_eerste", "swe_allsvenskan", "nor_eliteserien", 
+        "isl_urvalsdeild", "ger_2bundesliga", "tur_super_lig"
     ):
         from core.football_engine import FootballEngine, load_football_config
         from football.v1_0.populate import get_daily_input_sheet as football_sheet
