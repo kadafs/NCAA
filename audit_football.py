@@ -73,10 +73,19 @@ def load_predictions(date_str, specific_file=None):
         return predictions
 
     if specific_file:
-        file_path = os.path.join(data_dir, specific_file)
+        file_path = specific_file if os.path.exists(specific_file) else os.path.join(data_dir, specific_file)
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:
-                predictions.extend(json.load(f))
+                try:
+                    records = json.load(f)
+                    if isinstance(records, list):
+                        date_records = [r for r in records if isinstance(r, dict) and r.get('date') == date_str]
+                        predictions.extend(date_records)
+                except json.JSONDecodeError:
+                    pass
+        else:
+            print(f"  [X] Could not find specific file: {specific_file}")
+            
         return predictions
 
     # Otherwise scan all files that end with expected patterns for that date
