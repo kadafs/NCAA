@@ -3,6 +3,24 @@ description: Daily Football BTTS + Draw prediction workflow
 ---
 # Football Prediction Workflow
 
+## Universal Runner (All Leagues — Recommended)
+
+Runs predictions for **every football league** active today in a single command:
+
+```bash
+python run_football_daily.py                    # all leagues today (safe mode)
+python run_football_daily.py --mode full        # sharp layer on
+python run_football_daily.py --league_id 39     # EPL only
+python run_football_daily.py --min_games 2      # skip leagues with < 2 games
+python run_football_daily.py --date 2026-03-15  # past date (backtesting)
+```
+
+Output: `data/football/universal_predictions_YYYY-MM-DD.json`
+
+---
+
+## Per-League Runner (Hand-Tuned Leagues)
+
 This workflow covers the daily execution of the Football BTTS (Both Teams to Score) and Draw prediction models. Currently supported leagues: `epl`, `la_liga`, `bundesliga`, `serie_a`, `ligue_1`, `a_league`.
 
 > [!IMPORTANT]
