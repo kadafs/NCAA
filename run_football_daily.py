@@ -610,19 +610,32 @@ def main():
             print(f"    {away:28} @ {home:28}")
             print(f"      xG {xg_h:.2f}-{xg_a:.2f}  BTTS:{btts_pct:.1f}%  "
                   f"Draw:{draw_pct:.1f}%  Edge:{edge_pct:+.1f}%  [{conf}] {decision}")
+            # 1X2 line
+            hw_pct = result.get("home_win_prob", 0)
+            dw_pct = result.get("draw_prob_1x2", 0)
+            aw_pct = result.get("away_win_prob", 0)
+            hw_odds = result.get("home_win_odds", 0)
+            dw_odds = result.get("draw_odds", 0)
+            aw_odds = result.get("away_win_odds", 0)
+            pred    = result.get("predicted_result", "?")
+            print(f"      1X2:  Home {hw_pct:.1f}% ({hw_odds}x)  "
+                  f"Draw {dw_pct:.1f}% ({dw_odds}x)  "
+                  f"Away {aw_pct:.1f}% ({aw_odds}x)  → {pred}")
 
             if args.trace:
                 for log in result.get("logs", []):
                     print(f"        > {log}")
 
             # Check actual result if game finished
-            score_str = ""
             if game.get("is_completed") and game.get("home_goals") is not None:
                 hg = game["home_goals"]; ag = game["away_goals"]
                 actual_btts = "Y" if (hg > 0 and ag > 0) else "N"
                 actual_draw = "Y" if hg == ag else "N"
-                score_str = f"Final:{ag}-{hg} BTTS:{actual_btts} Draw:{actual_draw}"
-                print(f"      {score_str}")
+                if hg > ag:   actual_result = "HOME"
+                elif hg == ag: actual_result = "DRAW"
+                else:          actual_result = "AWAY"
+                print(f"      Final: {ag}-{hg}  BTTS:{actual_btts}  Result:{actual_result}  "
+                      f"(Pred:{pred})")
 
             all_predictions.append({
                 "league_id":   lid,
@@ -635,20 +648,36 @@ def main():
                 "xg_home":     round(xg_h, 3),
                 "xg_away":     round(xg_a, 3),
                 "xg_total":    round(xg_h + xg_a, 3),
-                "btts_prob":   round(btts_pct, 1),
-                "btts_edge":   round(edge_pct, 1),
-                "btts_decision": decision,
-                "btts_confidence": conf,
-                "draw_prob":   round(draw_pct, 1),
-                "draw_fair_odds": result.get("draw_fair_odds"),
-                "draw_value_flag": result.get("draw_value_flag", False),
+                # BTTS
+                "btts_prob":        round(btts_pct, 1),
+                "btts_edge":        round(edge_pct, 1),
+                "btts_decision":    decision,
+                "btts_confidence":  conf,
+                "draw_prob":        round(draw_pct, 1),
+                "draw_fair_odds":   result.get("draw_fair_odds"),
+                "draw_value_flag":  result.get("draw_value_flag", False),
+                # 1X2
+                "home_win_prob":    result.get("home_win_prob"),
+                "draw_prob_1x2":    result.get("draw_prob_1x2"),
+                "away_win_prob":    result.get("away_win_prob"),
+                "home_win_odds":    result.get("home_win_odds"),
+                "draw_odds":        result.get("draw_odds"),
+                "away_win_odds":    result.get("away_win_odds"),
+                "predicted_result": result.get("predicted_result"),
                 "mode":        args.mode,
                 "timestamp":   datetime.now(ET_TZ).isoformat(),
                 # Actual results for backtesting
                 "actual_home_goals": game.get("home_goals") if game.get("is_completed") else None,
                 "actual_away_goals": game.get("away_goals") if game.get("is_completed") else None,
-                "actual_btts": game.get("btts_result"),
-                "actual_draw": game.get("draw_result"),
+                "actual_btts":   game.get("btts_result"),
+                "actual_draw":   game.get("draw_result"),
+                "actual_result": (
+                    "HOME" if (game.get("is_completed") and game.get("home_goals") is not None
+                               and game["home_goals"] > game["away_goals"]) else
+                    "DRAW" if (game.get("is_completed") and game.get("home_goals") is not None
+                               and game["home_goals"] == game["away_goals"]) else
+                    "AWAY" if (game.get("is_completed") and game.get("home_goals") is not None) else None
+                ),
             })
             total_predicted += 1
 

@@ -9,6 +9,30 @@ def poisson_prob(lam, k):
     return (math.e ** -lam) * (lam ** k) / math.factorial(k)
 
 
+def calc_outcome_probs(xg_home, xg_away, max_goals=8):
+    """
+    Compute 1X2 (Home Win / Draw / Away Win) probabilities via Poisson scoreline matrix.
+    Returns dict with home_win, draw, away_win (all 0-1 floats, sum ~ 1.0).
+    """
+    home_win = draw = away_win = 0.0
+    for n in range(max_goals + 1):
+        ph = poisson_prob(xg_home, n)
+        for m in range(max_goals + 1):
+            p = ph * poisson_prob(xg_away, m)
+            if n > m:
+                home_win += p
+            elif n == m:
+                draw += p
+            else:
+                away_win += p
+    total = home_win + draw + away_win or 1.0
+    return {
+        "home_win": round(home_win / total, 4),
+        "draw":     round(draw     / total, 4),
+        "away_win": round(away_win / total, 4),
+    }
+
+
 class FootballEngine:
     """
     Poisson-based BTTS + Draw prediction engine for football (soccer).
@@ -150,6 +174,29 @@ class FootballEngine:
         self._log(f"Phase 3: Draw = {draw_prob_final*100:.1f}% | Fair odds = {draw_fair_odds}")
         self._log(f"Decision: BTTS {btts_decision} [{btts_confidence}]")
 
+        # -------------------------------------------------------
+        # PHASE 4 — 1X2 Outcome Prediction
+        # -------------------------------------------------------
+        outcome = calc_outcome_probs(xg_home, xg_away)
+        hw = outcome["home_win"]
+        dw = outcome["draw"]
+        aw = outcome["away_win"]
+
+        def _odds(p): return round(1 / p, 2) if p > 0 else 99.0
+
+        # Predicted result label
+        best_p = max(hw, dw, aw)
+        if best_p == hw:
+            predicted_result = "HOME"
+        elif best_p == dw:
+            predicted_result = "DRAW"
+        else:
+            predicted_result = "AWAY"
+
+        self._log(f"Phase 4: Home {hw*100:.1f}% ({_odds(hw)}x)  "
+                  f"Draw {dw*100:.1f}% ({_odds(dw)}x)  "
+                  f"Away {aw*100:.1f}% ({_odds(aw)}x)  -> {predicted_result}")
+
         return {
             # Poisson outputs
             "xg_home": xg_home,
@@ -169,6 +216,15 @@ class FootballEngine:
             "draw_prob_final": draw_prob_final,
             "draw_fair_odds":  draw_fair_odds,
             "draw_value_flag": draw_value_flag,
+
+            # 1X2
+            "home_win_prob":   round(hw * 100, 1),
+            "draw_prob_1x2":   round(dw * 100, 1),
+            "away_win_prob":   round(aw * 100, 1),
+            "home_win_odds":   _odds(hw),
+            "draw_odds":       _odds(dw),
+            "away_win_odds":   _odds(aw),
+            "predicted_result": predicted_result,
 
             # Metadata
             "mode":   self.mode,
