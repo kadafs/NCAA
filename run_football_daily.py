@@ -178,16 +178,11 @@ def fetch_all_fixtures(date_str, refresh=False):
 # STEP 2: FETCH / CACHE TEAM STATS FOR A LEAGUE
 # ------------------------------------------------------------------
 
-def get_or_fetch_stats(league_id, season, refresh=False):
+def get_or_fetch_stats(league_id, season, games, refresh=False):
     """
     Returns {team_name: stats_dict} for a league.
-    Priority:
-      1. Existing dedicated-script stats file (data/football/{code}_stats.json)
-         if fresh (< 24h) — avoids double-fetching known leagues.
-      2. Universal cache (data/football/universal_{league_id}_stats.json) if fresh.
-      3. Live fetch from /teams/statistics (paid tier — always works).
     """
-    # Priority 1: Check if any existing stats file maps to this league_id
+    # Priority 1: Check existing stats
     if not refresh:
         for stats_file in glob("data/football/*_stats.json"):
             cached = load_json(stats_file)
@@ -202,22 +197,18 @@ def get_or_fetch_stats(league_id, season, refresh=False):
             return cached.get("teams", {}), cached.get("league_averages", {})
 
     # Priority 3: Fetch from API
-    return fetch_stats_from_api(league_id, season)
+    return fetch_stats_from_api(league_id, season, games)
 
 
-def fetch_stats_from_api(league_id, season):
+def fetch_stats_from_api(league_id, season, games):
     """
-    Pulls /teams/statistics for every team in the league.
-    Computes attack/defense ratings normalized to league average.
-    Saves to data/football/universal_{league_id}_stats.json.
-    Returns (teams_dict, league_averages_dict).
+    Pulls /teams/statistics. To avoid rate-limit hangs on huge leagues (like Friendlies
+    with 2000+ teams), it only fetches stats for teams actually playing today.
     """
-    # Get all teams
     teams_data = safe_get(f"{BASE_URL}/teams", {"league": league_id, "season": season})
     teams = teams_data.get("response", [])
 
     if not teams:
-        # Try previous season
         prev = season - 1 if isinstance(season, int) else int(str(season)[:4]) - 1
         teams_data = safe_get(f"{BASE_URL}/teams", {"league": league_id, "season": prev})
         teams = teams_data.get("response", [])
@@ -226,9 +217,30 @@ def fetch_stats_from_api(league_id, season):
         else:
             return {}, {}
 
+    # Filter `teams` to only those playing in `games` to avoid massive API loops
+    playing_team_names = set()
+    for g in games:
+        playing_team_names.add(g.get("home_team", "").lower().strip())
+        playing_team_names.add(g.get("away_team", "").lower().strip())
+        
+    filtered_teams = []
+    for t_entry in teams:
+        name = t_entry.get("team", {}).get("name", "").lower().strip()
+        # Basic matching: if any of the playing names is in the API name or vice-versa
+        is_playing = any(p in name or name in p for p in playing_team_names)
+        if is_playing:
+            filtered_teams.append(t_entry)
+            
+    # If the filter is too tight, fallback to fetching all (capped at 80 to prevent total hangs)
+    if not filtered_teams:
+        filtered_teams = teams[:80]
+    else:
+        # Also cap filtered just in case
+        filtered_teams = filtered_teams[:80]
+
     raw_stats = []
 
-    for team_entry in teams:
+    for team_entry in filtered_teams:
         team = team_entry.get("team", {})
         tid  = team.get("id")
         name = team.get("name", "Unknown")
@@ -556,7 +568,7 @@ def main():
         print(f"  [{lid}] {lname} ({country}) — {len(games)} game(s)")
 
         # Step 2: Team stats
-        teams, league_avgs = get_or_fetch_stats(lid, season, refresh=args.refresh)
+        teams, league_avgs = get_or_fetch_stats(lid, season, games, refresh=args.refresh)
         if not teams:
             print(f"    SKIP -- no team stats available\n")
             total_skipped += len(games)
