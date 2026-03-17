@@ -21,9 +21,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-API_KEY  = os.getenv("API_BASKETBALL_KEY") or os.getenv("FOOTBALL_API_KEY")
-API_HOST = "api-football-v1.p.rapidapi.com"
-HEADERS  = {"x-rapidapi-host": API_HOST, "x-rapidapi-key": API_KEY}
+API_KEY  = os.getenv("API_BASKETBALL_KEY")   # same key covers api-sports football
+BASE_URL = "https://v3.football.api-sports.io"
+HEADERS  = {"x-apisports-key": API_KEY}
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "football")
 
 
@@ -49,13 +49,17 @@ def save_predictions(date: str, data: dict) -> None:
 
 
 def fetch_fixtures_for_date(date: str) -> list:
-    """Return all finished fixtures for the given date from API-Football."""
-    url = "https://api-football-v1.p.rapidapi.com/v3/fixtures"
-    params = {"date": date, "status": "FT"}
+    """Return all finished fixtures for the given date from api-sports.io."""
+    url = f"{BASE_URL}/fixtures"
+    params = {"date": date}
     try:
         r = requests.get(url, headers=HEADERS, params=params, timeout=20)
         r.raise_for_status()
-        return r.json().get("response", [])
+        all_fixtures = r.json().get("response", [])
+        # Filter to only finished games (FT, AET, PEN)
+        finished = [f for f in all_fixtures
+                    if f.get("fixture", {}).get("status", {}).get("short") in ("FT", "AET", "PEN")]
+        return finished
     except Exception as e:
         print(f"  ⚠️  API error fetching fixtures: {e}")
         return []
