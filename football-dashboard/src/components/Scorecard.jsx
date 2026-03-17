@@ -25,10 +25,10 @@ export default function Scorecard({ data }) {
   const x12T = summary?.outcome_total ?? graded.length
   const bW   = summary?.btts_wins  ?? graded.filter(p => {
     const d = p.btts_decision; const a = p.actual_btts
-    return (d === 'PLAY YES' && a === true) || (d === 'PLAY NO' && a === false)
+    return (d === 'PLAY YES' && a === true) || (d === 'PLAY NO' && a === false) || (d === '[STRONG] PLAY NO' && a === false)
   }).length
   const bT   = summary?.btts_total ?? graded.filter(p =>
-    p.btts_decision === 'PLAY YES' || p.btts_decision === 'PLAY NO'
+    p.btts_decision === 'PLAY YES' || p.btts_decision === 'PLAY NO' || p.btts_decision === '[STRONG] PLAY NO'
   ).length
 
   const x12pct = pct(x12W, x12T)

@@ -66,10 +66,11 @@ export default function App() {
   const groups = useMemo(() => sortGroups(groupByLeague(filtered), sortBy), [filtered, sortBy])
 
   const counts = useMemo(() => {
-    const yes  = filtered.filter(p => p.btts_decision === 'PLAY YES').length
-    const no   = filtered.filter(p => p.btts_decision === 'PLAY NO').length
-    const pass = filtered.filter(p => p.btts_decision === 'PASS').length
-    return { total: filtered.length, yes, no, pass }
+    const yes    = filtered.filter(p => p.btts_decision === 'PLAY YES').length
+    const no     = filtered.filter(p => p.btts_decision === 'PLAY NO' || p.btts_decision === '[STRONG] PLAY NO').length
+    const strong = filtered.filter(p => p.btts_decision === '[STRONG] PLAY NO').length
+    const pass   = filtered.filter(p => p.btts_decision === 'PASS').length
+    return { total: filtered.length, yes, no, strong, pass }
   }, [filtered])
 
   // Is this date graded at all (partially or fully)?
@@ -85,6 +86,13 @@ export default function App() {
 
         {/* Scorecard (only shown if grading data exists) */}
         {hasGrading && data && <Scorecard data={data} />}
+
+        {/* API connection error — shown prominently above controls */}
+        {error && !loading && (
+          <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 8, padding: '12px 16px', marginBottom: 12, color: '#991b1b', fontWeight: 600, fontSize: 13 }}>
+            ❌ {error}
+          </div>
+        )}
 
         {/* Controls row */}
         <div className="controls-bar">
@@ -112,7 +120,8 @@ export default function App() {
             <div className="summary-pill">
               <strong>{counts.total}</strong> games ·{' '}
               <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} YES</span> ·{' '}
-              <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO (incl. strong)</span> ·{' '}
+              <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO</span>
+              {counts.strong > 0 && <span style={{ color: '#7f1d1d', fontWeight: 700 }}> ({counts.strong} ⚡)</span>} ·{' '}
               <span style={{ color: '#6b7280' }}>{counts.pass} PASS</span>
             </div>
           )}
