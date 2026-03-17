@@ -74,9 +74,13 @@ export default function MatchRow({ game }) {
         </div>
 
         {/* TIP + grade */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div className={`tip-badge ${tip.cls}`}>{tip.label}</div>
-          <GradeIcon grade={oGrade} />
+          {oGrade !== null && (
+            <span style={{ position: 'absolute', bottom: -14, left: '50%', transform: 'translateX(-50%)', fontSize: 9, lineHeight: 1 }}>
+              {oGrade === 'WIN' ? '✅' : '❌'}
+            </span>
+          )}
         </div>
 
         {/* Expand chevron */}
@@ -90,9 +94,13 @@ export default function MatchRow({ game }) {
         </div>
 
         {/* BTTS box + grade */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+        <div style={{ position: 'relative' }}>
           <div className="btts-box">{fmt(game.btts_prob)}<sub>%</sub></div>
-          <GradeIcon grade={bGrade} />
+          {bGrade !== null && (
+            <span style={{ position: 'absolute', bottom: -14, left: '50%', transform: 'translateX(-50%)', fontSize: 9, lineHeight: 1 }}>
+              {bGrade === 'WIN' ? '✅' : '❌'}
+            </span>
+          )}
         </div>
 
         {/* xG box */}
