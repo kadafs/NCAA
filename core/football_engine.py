@@ -161,6 +161,8 @@ class FootballEngine:
         elif btts_edge <= -btts_threshold:
             btts_decision    = "PLAY NO"
             btts_confidence  = "HIGH" if btts_edge <= -btts_threshold * 2 else "MEDIUM"
+            if (btts_prob_final * 100) <= 38.0:
+                btts_decision = "[STRONG] PLAY NO"
         else:
             btts_decision    = "PASS"
             btts_confidence  = "NO PLAY"

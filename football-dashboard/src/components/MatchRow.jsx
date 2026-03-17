@@ -10,6 +10,7 @@ function tipFor(predicted_result) {
 function decisionClass(decision) {
   if (decision === 'PLAY YES') return 'yes'
   if (decision === 'PLAY NO')  return 'no'
+  if (decision === '[STRONG] PLAY NO') return 'strong-no'
   return 'pass'
 }
 
@@ -33,7 +34,7 @@ function outcomeGrade(game) {
 function bttsGrade(game) {
   if (game.actual_btts == null) return null
   if (game.btts_decision === 'PLAY YES') return game.actual_btts ? 'WIN' : 'LOSS'
-  if (game.btts_decision === 'PLAY NO')  return game.actual_btts ? 'LOSS' : 'WIN'
+  if (game.btts_decision === 'PLAY NO' || game.btts_decision === '[STRONG] PLAY NO')  return game.actual_btts ? 'LOSS' : 'WIN'
   return null // PASS
 }
 

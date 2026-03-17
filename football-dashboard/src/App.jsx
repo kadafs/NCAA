@@ -100,6 +100,7 @@ export default function App() {
             <option value="all">All decisions</option>
             <option value="PLAY YES">PLAY YES</option>
             <option value="PLAY NO">PLAY NO</option>
+            <option value="[STRONG] PLAY NO">[STRONG] PLAY NO</option>
             <option value="PASS">PASS</option>
           </select>
 
@@ -111,7 +112,7 @@ export default function App() {
             <div className="summary-pill">
               <strong>{counts.total}</strong> games ·{' '}
               <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} YES</span> ·{' '}
-              <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO</span> ·{' '}
+              <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO (incl. strong)</span> ·{' '}
               <span style={{ color: '#6b7280' }}>{counts.pass} PASS</span>
             </div>
           )}
