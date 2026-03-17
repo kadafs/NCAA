@@ -21,10 +21,11 @@ function sortGroups(groups, sortBy) {
   return [...groups].sort((a, b) => a.league.localeCompare(b.league))
 }
 
-function filterPredictions(predictions, decision, country) {
+function filterPredictions(predictions, decision, country, drawMin) {
   return predictions.filter(p => {
     if (decision !== 'all' && p.btts_decision !== decision) return false
     if (country  !== 'all' && p.country        !== country)  return false
+    if (drawMin  !== 0     && (p.draw_prob_1x2 ?? 0) < drawMin) return false
     return true
   })
 }
@@ -38,6 +39,7 @@ export default function App() {
   const [sortBy,        setSortBy]        = useState('competition')
   const [filterDecision,setFilterDecision]= useState('all')
   const [filterCountry, setFilterCountry] = useState('all')
+  const [filterDraw,    setFilterDraw]    = useState(0)    // min draw_prob_1x2 threshold
 
   useEffect(() => {
     fetchDates()
@@ -60,8 +62,8 @@ export default function App() {
 
   const filtered = useMemo(() => {
     if (!data) return []
-    return filterPredictions(data.predictions, filterDecision, filterCountry)
-  }, [data, filterDecision, filterCountry])
+    return filterPredictions(data.predictions, filterDecision, filterCountry, filterDraw)
+  }, [data, filterDecision, filterCountry, filterDraw])
 
   const groups = useMemo(() => sortGroups(groupByLeague(filtered), sortBy), [filtered, sortBy])
 
@@ -110,6 +112,15 @@ export default function App() {
             <option value="PLAY NO">PLAY NO</option>
             <option value="[STRONG] PLAY NO">[STRONG] PLAY NO</option>
             <option value="PASS">PASS</option>
+          </select>
+
+          <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, marginLeft: 8 }}>Draw:</span>
+          <select className="filter-select" value={filterDraw} onChange={e => setFilterDraw(Number(e.target.value))}>
+            <option value={0}>All draws</option>
+            <option value={25}>≥ 25%</option>
+            <option value={30}>≥ 30%</option>
+            <option value={35}>≥ 35%</option>
+            <option value={40}>≥ 40%</option>
           </select>
 
           <select className="filter-select" value={filterCountry} onChange={e => setFilterCountry(e.target.value)}>
