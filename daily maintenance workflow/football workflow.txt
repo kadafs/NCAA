@@ -9,7 +9,12 @@ To pull today's data for all 15 high-draw leagues and run the predictions in ful
 
 3. python run_sa_draw.py --refresh --mode full
 
+4. python audit_football.py --date 2026-03-09 --file high_scoring_predictions_2026-03-09.json
 
+
+5. python run_football_daily.py               # all leagues, safe mode
+python run_football_daily.py --mode full   # sharp BTTS adjustments
+python run_football_daily.py --min_games 2 # filter small match-count leagues
 
 
 
