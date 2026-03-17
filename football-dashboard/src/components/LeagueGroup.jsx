@@ -16,7 +16,7 @@ export default function LeagueGroup({ group }) {
         <div className="col-label" style={{ textAlign: 'center' }}>1X2</div>
         <div className="col-label" style={{ textAlign: 'center' }}>BTTS</div>
         <div className="col-label" style={{ textAlign: 'center' }}>xG</div>
-        <div className="col-label" style={{ textAlign: 'center' }}>DECISION</div>
+        <div className="col-label" style={{ textAlign: 'center' }}>BTTS PLAY</div>
       </div>
 
       {/* Match rows */}
