@@ -122,6 +122,10 @@ export default function MatchRow({ game }) {
             <span className="detail-value">{fmt(game.away_win_odds, 2)}x</span>
           </div>
           <div className="detail-item">
+            <span className="detail-label">BTTS probability</span>
+            <span className="detail-value">{fmt(game.btts_prob, 1)}%</span>
+          </div>
+          <div className="detail-item">
             <span className="detail-label">BTTS edge</span>
             <span className="detail-value" style={{ color: game.btts_edge >= 0 ? '#16a34a' : '#dc2626' }}>
               {game.btts_edge != null ? (game.btts_edge >= 0 ? '+' : '') + fmt(game.btts_edge, 1) + '%' : '—'}
