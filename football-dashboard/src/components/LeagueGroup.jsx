@@ -5,17 +5,18 @@ export default function LeagueGroup({ group }) {
   const { league, country, games } = group
   return (
     <div>
-      {/* League header */}
+      {/* League header — 8-col grid: time | teams | tip | chev | 1x2 | btts | xg | decision */}
       <div className="league-header">
-        <div className="league-name" style={{ gridColumn: '1 / 4' }}>
+        <div className="league-name" style={{ gridColumn: '1 / 3' }}>
           <span>{flagFor(country)}</span>
           <span>{country.toUpperCase()} — {league.toUpperCase()}</span>
         </div>
         <div className="col-label">TIP</div>
-        <div className="col-label" style={{ gridColumn: '5' }}>1X2</div>
+        <div /> {/* chevron spacer */}
+        <div className="col-label">1X2</div>
         <div className="col-label">BTTS</div>
         <div className="col-label">xG</div>
-        <div className="col-label">Decision</div>
+        <div className="col-label">DECISION</div>
       </div>
 
       {/* Match rows */}
