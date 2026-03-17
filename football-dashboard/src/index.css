@@ -265,7 +265,7 @@ body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  overflow: hidden;
+  overflow: clip;   /* clips for border-radius without breaking sticky */
   box-shadow: var(--shadow-md);
 }
 
@@ -276,11 +276,9 @@ body {
   align-items: center;
   background: var(--bg-league);
   padding: 7px 12px;
+  border-top: 1px solid var(--border-soft);
   border-bottom: 2px solid var(--brand);
   gap: 6px;
-  position: sticky;
-  top: 58px;
-  z-index: 2;
 }
 .league-header .league-name {
   font-size: 11px;
