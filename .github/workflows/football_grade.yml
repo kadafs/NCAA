@@ -32,11 +32,17 @@ jobs:
           python grade_football.py
           echo "Done."
 
+      - name: Sync graded data to Vercel public folder
+        run: |
+          mkdir -p football-dashboard/public/data/football
+          cp data/football/universal_predictions_*.json football-dashboard/public/data/football/
+          echo "Synced graded files to public/"
+
       - name: Commit and push graded files
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
-          git add data/football/
+          git add data/football/ football-dashboard/public/data/football/
           git diff --staged --quiet && echo "No changes to commit." || (
             git commit -m "chore: grade football results $(date -u +'%Y-%m-%d')"
             git push

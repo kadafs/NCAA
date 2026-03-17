@@ -54,6 +54,13 @@ jobs:
           print(f"dates_index.json updated with {len(result)} date(s)")
           EOF
 
+      - name: Sync data to Vercel public folder
+        run: |
+          mkdir -p football-dashboard/public/data/football
+          cp data/football/universal_predictions_*.json football-dashboard/public/data/football/
+          cp data/football/dates_index.json football-dashboard/public/data/football/
+          echo "Synced prediction files to public/"
+
       - name: Commit and push prediction files
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"

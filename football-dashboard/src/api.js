@@ -1,14 +1,12 @@
 /**
- * api.js — Production: fetches data/football JSON straight from GitHub raw CDN.
- * Dev: proxied locally via vite.config.js → localhost:8080
+ * api.js
+ * Dev:  proxied via Vite → localhost:8080 (FastAPI)
+ * Prod: static JSON files bundled in Vercel at /data/football/
  */
 
 const isDev = import.meta.env.DEV
-
-// In dev, use the local FastAPI proxy; in prod, fetch from GitHub raw
-const RAW  = 'https://raw.githubusercontent.com/kadafs/NCAA/master'
-const DATA = `${RAW}/data/football`
-const API  = '/api'   // vite proxy → localhost:8080 in dev
+const API   = '/api'          // vite proxy in dev
+const DATA  = '/data/football' // static public/ files in prod
 
 export async function fetchDates() {
   if (isDev) {
@@ -17,8 +15,7 @@ export async function fetchDates() {
     const d = await r.json()
     return d.dates
   }
-  // Production: read the pre-generated index file committed to the repo
-  const r = await fetch(`${DATA}/dates_index.json`, { cache: 'no-store' })
+  const r = await fetch(`${DATA}/dates_index.json?t=${Date.now()}`)
   if (!r.ok) throw new Error('Failed to fetch dates index')
   const d = await r.json()
   return d.dates   // [{ date, total, graded, graded_count, grade_summary }]
@@ -30,8 +27,7 @@ export async function fetchFootball(date) {
     if (!r.ok) throw new Error(`No predictions for ${date}`)
     return r.json()
   }
-  // Production: fetch the daily JSON directly
-  const r = await fetch(`${DATA}/universal_predictions_${date}.json`, { cache: 'no-store' })
+  const r = await fetch(`${DATA}/universal_predictions_${date}.json?t=${Date.now()}`)
   if (!r.ok) throw new Error(`No predictions for ${date}`)
   return r.json()
 }
