@@ -36,12 +36,27 @@ def get_football(date: str = None):
 
 @app.get("/api/dates")
 def get_dates():
-    """Return sorted list of dates that have football prediction files."""
+    """Return sorted list of dates that have football prediction files,
+    with a graded flag so the frontend can show the scorecard tab."""
     pattern = os.path.join(DATA_DIR, "football", "universal_predictions_*.json")
-    files = glob.glob(pattern)
-    dates = sorted(
-        [os.path.basename(f).replace("universal_predictions_", "").replace(".json", "")
-         for f in files],
-        reverse=True,
-    )
-    return {"dates": dates}
+    files   = glob.glob(pattern)
+    result  = []
+    for f in sorted(files, reverse=True):
+        date = (os.path.basename(f)
+                .replace("universal_predictions_", "")
+                .replace(".json", ""))
+        with open(f, encoding="utf-8") as fh:
+            payload = json.load(fh)
+        graded = payload.get("grade_summary") is not None
+        scored_count = sum(
+            1 for p in payload.get("predictions", [])
+            if p.get("actual_result") is not None
+        )
+        result.append({
+            "date":         date,
+            "total":        payload.get("total_predictions", 0),
+            "graded":       graded,
+            "graded_count": scored_count,
+            "grade_summary": payload.get("grade_summary"),
+        })
+    return {"dates": result}

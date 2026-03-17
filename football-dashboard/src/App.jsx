@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { fetchDates, fetchFootball } from './api'
 import Header from './components/Header'
 import Navigator from './components/Navigator'
+import Scorecard from './components/Scorecard'
 import LeagueGroup from './components/LeagueGroup'
 
-// ─── Helpers ──────────────────────────────────────────────
 function groupByLeague(predictions) {
   const map = new Map()
   for (const p of predictions) {
@@ -16,46 +16,38 @@ function groupByLeague(predictions) {
 }
 
 function sortGroups(groups, sortBy) {
-  if (sortBy === 'country') return [...groups].sort((a, b) => a.country.localeCompare(b.country))
-  if (sortBy === 'time') return [...groups] // already time-ordered from server
-  return [...groups].sort((a, b) => a.league.localeCompare(b.league)) // competition
+  if (sortBy === 'country')    return [...groups].sort((a, b) => a.country.localeCompare(b.country))
+  if (sortBy === 'time')       return [...groups]
+  return [...groups].sort((a, b) => a.league.localeCompare(b.league))
 }
 
 function filterPredictions(predictions, decision, country) {
   return predictions.filter(p => {
     if (decision !== 'all' && p.btts_decision !== decision) return false
-    if (country !== 'all' && p.country !== country) return false
+    if (country  !== 'all' && p.country        !== country)  return false
     return true
   })
 }
 
-// ─── App ──────────────────────────────────────────────────
 export default function App() {
-  const [dates, setDates] = useState([])
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [sortBy, setSortBy] = useState('competition')
-  const [filterDecision, setFilterDecision] = useState('all')
+  const [dates,         setDates]         = useState([])   // [{date,graded,...}]
+  const [selectedDate,  setSelectedDate]  = useState(null)
+  const [data,          setData]          = useState(null)
+  const [loading,       setLoading]       = useState(false)
+  const [error,         setError]         = useState(null)
+  const [sortBy,        setSortBy]        = useState('competition')
+  const [filterDecision,setFilterDecision]= useState('all')
   const [filterCountry, setFilterCountry] = useState('all')
 
-  // Load available dates
   useEffect(() => {
     fetchDates()
-      .then(d => {
-        setDates(d)
-        if (d.length > 0) setSelectedDate(d[0])
-      })
+      .then(d => { setDates(d); if (d.length > 0) setSelectedDate(d[0].date) })
       .catch(() => setError('Could not connect to API. Is the backend running?'))
   }, [])
 
-  // Load predictions when date changes
   useEffect(() => {
     if (!selectedDate) return
-    setLoading(true)
-    setError(null)
-    setData(null)
+    setLoading(true); setError(null); setData(null)
     fetchFootball(selectedDate)
       .then(d => { setData(d); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
@@ -63,7 +55,7 @@ export default function App() {
 
   const countries = useMemo(() => {
     if (!data) return []
-    return ['all', ...new Set(data.predictions.map(p => p.country)).values()]
+    return ['all', ...new Set(data.predictions.map(p => p.country))]
   }, [data])
 
   const filtered = useMemo(() => {
@@ -73,31 +65,32 @@ export default function App() {
 
   const groups = useMemo(() => sortGroups(groupByLeague(filtered), sortBy), [filtered, sortBy])
 
-  // Summary counts
   const counts = useMemo(() => {
-    const yes = filtered.filter(p => p.btts_decision === 'PLAY YES').length
-    const no  = filtered.filter(p => p.btts_decision === 'PLAY NO').length
+    const yes  = filtered.filter(p => p.btts_decision === 'PLAY YES').length
+    const no   = filtered.filter(p => p.btts_decision === 'PLAY NO').length
     const pass = filtered.filter(p => p.btts_decision === 'PASS').length
     return { total: filtered.length, yes, no, pass }
   }, [filtered])
+
+  // Is this date graded at all (partially or fully)?
+  const dateInfo    = dates.find(d => d.date === selectedDate)
+  const hasGrading  = (dateInfo?.graded_count ?? 0) > 0
 
   return (
     <div>
       <Header />
       <div className="main-wrapper">
 
-        {/* Date Navigator */}
         <Navigator dates={dates} selected={selectedDate} onSelect={setSelectedDate} />
+
+        {/* Scorecard (only shown if grading data exists) */}
+        {hasGrading && data && <Scorecard data={data} />}
 
         {/* Controls row */}
         <div className="controls-bar">
           <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>Sort:</span>
           {['competition', 'country', 'time'].map(s => (
-            <button
-              key={s}
-              className={`control-btn ${sortBy === s ? 'active' : ''}`}
-              onClick={() => setSortBy(s)}
-            >
+            <button key={s} className={`control-btn ${sortBy === s ? 'active' : ''}`} onClick={() => setSortBy(s)}>
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
@@ -124,21 +117,10 @@ export default function App() {
           )}
         </div>
 
-        {/* Content */}
         {loading && <div className="loading">⚽ Loading predictions…</div>}
-
-        {error && (
-          <div className="empty-state">
-            <div className="icon">❌</div>
-            <p>{error}</p>
-          </div>
-        )}
-
+        {error   && <div className="empty-state"><div className="icon">❌</div><p>{error}</p></div>}
         {!loading && !error && groups.length === 0 && data && (
-          <div className="empty-state">
-            <div className="icon">📭</div>
-            <p>No predictions match your current filters.</p>
-          </div>
+          <div className="empty-state"><div className="icon">📭</div><p>No predictions match your filters.</p></div>
         )}
 
         {!loading && !error && groups.length > 0 && (
