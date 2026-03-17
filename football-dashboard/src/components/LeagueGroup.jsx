@@ -11,12 +11,12 @@ export default function LeagueGroup({ group }) {
           <span>{flagFor(country)}</span>
           <span>{country.toUpperCase()} — {league.toUpperCase()}</span>
         </div>
-        <div className="col-label">TIP</div>
+        <div className="col-label" style={{ textAlign: 'center' }}>TIP</div>
         <div /> {/* chevron spacer */}
-        <div className="col-label">1X2</div>
-        <div className="col-label">BTTS</div>
-        <div className="col-label">xG</div>
-        <div className="col-label">DECISION</div>
+        <div className="col-label" style={{ textAlign: 'center' }}>1X2</div>
+        <div className="col-label" style={{ textAlign: 'center' }}>BTTS</div>
+        <div className="col-label" style={{ textAlign: 'center' }}>xG</div>
+        <div className="col-label" style={{ textAlign: 'center' }}>DECISION</div>
       </div>
 
       {/* Match rows */}
