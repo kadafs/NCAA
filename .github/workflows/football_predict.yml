@@ -32,6 +32,28 @@ jobs:
           python run_football_daily.py --mode full
           echo "Done."
 
+      - name: Regenerate dates index
+        run: |
+          python - <<'EOF'
+          import json, os, glob
+          DATA_DIR = 'data/football'
+          files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')), reverse=True)
+          result = []
+          for f in files:
+              date = os.path.basename(f).replace('universal_predictions_', '').replace('.json', '')
+              try:
+                  payload = json.load(open(f, encoding='utf-8'))
+              except Exception:
+                  continue
+              graded = payload.get('grade_summary') is not None
+              scored = sum(1 for p in payload.get('predictions', []) if p.get('actual_result') is not None)
+              result.append({'date': date, 'total': payload.get('total_predictions', 0),
+                             'graded': graded, 'graded_count': scored, 'grade_summary': payload.get('grade_summary')})
+          with open(os.path.join(DATA_DIR, 'dates_index.json'), 'w', encoding='utf-8') as out:
+              json.dump({'dates': result}, out, indent=2)
+          print(f"dates_index.json updated with {len(result)} date(s)")
+          EOF
+
       - name: Commit and push prediction files
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
