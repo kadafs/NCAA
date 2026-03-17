@@ -1,0 +1,49 @@
+name: ⚽ Football Grade Results
+
+on:
+  schedule:
+    - cron: '30 23 * * *'  # 23:30 UTC (after most leagues finish)
+  workflow_dispatch:         # manual trigger
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Grade today's predictions
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+        run: |
+          echo "Grading football results..."
+          python grade_football.py
+          echo "Done."
+
+      - name: Commit and push graded files
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add data/football/
+          git diff --staged --quiet && echo "No changes to commit." || (
+            git commit -m "chore: grade football results $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Latest graded file ==="
+          ls -lht data/football/ | head -3

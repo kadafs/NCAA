@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/dates",    "destination": "/api/dates" },
+    { "source": "/api/football", "destination": "/api/football" },
+    { "source": "/(.*)",         "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" }
+      ]
+    }
+  ],
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- . ':!../frontend' ':!../.github/workflows/nba_update.yml' ':!../.github/workflows/data_update.yml'"
+}

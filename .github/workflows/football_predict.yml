@@ -1,0 +1,49 @@
+name: ⚽ Football Daily Predictions
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 08:00 UTC daily (after overnight markets settle)
+  workflow_dispatch:        # manual trigger from Actions tab
+
+jobs:
+  predict:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run football predictions (full mode)
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+        run: |
+          echo "Generating football predictions..."
+          python run_football_daily.py --mode full
+          echo "Done."
+
+      - name: Commit and push prediction files
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add data/football/
+          git diff --staged --quiet && echo "No changes to commit." || (
+            git commit -m "chore: football predictions $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Football prediction files ==="
+          ls -lh data/football/ | tail -5
