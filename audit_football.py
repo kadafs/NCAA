@@ -224,7 +224,7 @@ def main():
                 btts_yes_l += 1
                 league_stats[league_name]['btts_yes_l'] += 1
                 
-        elif decision == "PLAY NO":
+        elif decision in ("PLAY NO", "[STRONG] PLAY NO"):
             if not result['btts_hit']:
                 btts_no_w += 1
                 league_stats[league_name]['btts_no_w'] += 1

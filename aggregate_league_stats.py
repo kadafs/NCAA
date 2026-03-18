@@ -52,7 +52,7 @@ def process_file(file_path, stats_dict):
                     l_stats["btts_yes_w"] += 1
                 else:
                     l_stats["btts_yes_l"] += 1
-            elif decision == "PLAY NO" and actual_btts is not None:
+            elif decision in ("PLAY NO", "[STRONG] PLAY NO") and actual_btts is not None:
                 if not actual_btts:
                     l_stats["btts_no_w"] += 1
                 else:
