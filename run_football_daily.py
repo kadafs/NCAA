@@ -735,6 +735,7 @@ def main():
                 "away_team":   away,
                 "home_team":   home,
                 "status":      game.get("status", ""),
+                "kickoff":     game.get("kickoff", ""),
                 "xg_home":     round(xg_h, 3),
                 "xg_away":     round(xg_a, 3),
                 "xg_total":    round(xg_h + xg_a, 3),

@@ -13,6 +13,7 @@ Usage:
 import argparse
 import json
 import os
+import sys
 import time
 from datetime import datetime
 
@@ -20,6 +21,12 @@ import requests
 from dotenv import load_dotenv
 
 load_dotenv()
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 API_KEY  = os.getenv("API_BASKETBALL_KEY")   # same key covers api-sports football
 BASE_URL = "https://v3.football.api-sports.io"
