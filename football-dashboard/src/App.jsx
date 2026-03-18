@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { fetchDates, fetchFootball } from './api'
 import Header from './components/Header'
-import Navigator from './components/Navigator'
 import Scorecard from './components/Scorecard'
 import LeagueGroup from './components/LeagueGroup'
 
