@@ -26,7 +26,7 @@ import os
 import json
 import argparse
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from glob import glob
 from dotenv import load_dotenv
