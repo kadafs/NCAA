@@ -42,6 +42,14 @@ yarn-error.log*
 data/*.log
 data/temp/
 
+# Football intermediate files (stats, fixtures, league-specific predictions)
+data/football/universal_*_stats.json
+data/football/universal_fixtures_*.json
+data/football/*_fixtures.json
+data/football/*_stats.json
+data/football/*_predictions.json
+# Keep only:  universal_predictions_YYYY-MM-DD.json  and  dates_index.json
+
 # vercel
 .vercel
 
