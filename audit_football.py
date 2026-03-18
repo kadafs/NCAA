@@ -182,6 +182,8 @@ def main():
     draw_flag_w = 0
     draw_flag_l = 0
     
+    league_stats = {}
+    
     matched_count = 0
     
     print("\n" + "-" * 64)
@@ -197,9 +199,17 @@ def main():
         matched_count += 1
         
         matchup = p['matchup']
+        league_name = p.get('league', 'Unknown').upper()
         decision = p['btts_decision']
         conf = p['btts_confidence']
         d_flag = p.get('draw_value_flag', False)
+        
+        if league_name not in league_stats:
+            league_stats[league_name] = {
+                'btts_yes_w': 0, 'btts_yes_l': 0,
+                'btts_no_w': 0, 'btts_no_l': 0,
+                'draw_w': 0, 'draw_l': 0
+            }
         
         # Determine grades
         is_win = False
@@ -208,22 +218,28 @@ def main():
         if decision == "PLAY YES":
             if result['btts_hit']:
                 btts_yes_w += 1
+                league_stats[league_name]['btts_yes_w'] += 1
                 is_win = True
             else:
                 btts_yes_l += 1
+                league_stats[league_name]['btts_yes_l'] += 1
                 
         elif decision == "PLAY NO":
             if not result['btts_hit']:
                 btts_no_w += 1
+                league_stats[league_name]['btts_no_w'] += 1
                 is_win = True
             else:
                 btts_no_l += 1
+                league_stats[league_name]['btts_no_l'] += 1
                 
         if d_flag:
             if result['draw_hit']:
                 draw_flag_w += 1
+                league_stats[league_name]['draw_w'] += 1
             else:
                 draw_flag_l += 1
+                league_stats[league_name]['draw_l'] += 1
                 
         # Output visual log
         prefix = "[+]" if is_win else "[-]"
@@ -277,6 +293,57 @@ def main():
         print(" DRAW FLAGS      : 0 Flags")
         
     print("=" * 64)
+
+    # 5. League Leaderboard
+    print("\n" + "=" * 80)
+    print(" LEAGUE LEADERBOARD (Sorted by BTTS ROI)")
+    print("=" * 80)
+    
+    league_results = []
+    
+    for lname, stats in league_stats.items():
+        b_w = stats['btts_yes_w'] + stats['btts_no_w']
+        b_l = stats['btts_yes_l'] + stats['btts_no_l']
+        b_total = b_w + b_l
+        roi = 0.0
+        hit_rate = 0.0
+        
+        if b_total > 0:
+            roi = (b_w * 0.909) - b_l
+            hit_rate = (b_w / b_total) * 100
+            
+        league_results.append({
+            'name': lname,
+            'btts_plays': b_total,
+            'btts_w': b_w,
+            'btts_l': b_l,
+            'hit_rate': hit_rate,
+            'roi': roi,
+            'draw_w': stats['draw_w'],
+            'draw_l': stats['draw_l']
+        })
+        
+    league_results.sort(key=lambda x: x['roi'], reverse=True)
+    
+    print(f"{'League':<30} | {'Plays':<5} | {'W-L':<6} | {'Hit %':<6} | {'ROI (U)':<8} | {'Draws (W-L)'}")
+    print("-" * 80)
+    
+    for lr in league_results:
+        total_actions = lr['btts_plays'] + lr['draw_w'] + lr['draw_l']
+        if total_actions == 0:
+            continue
+            
+        roi_str = f"{lr['roi']:+.2f}"
+        hit_str = f"{lr['hit_rate']:.1f}%"
+        wl_str = f"{lr['btts_w']}-{lr['btts_l']}"
+        draw_str = f"{lr['draw_w']}-{lr['draw_l']}"
+        
+        # Truncate unusually long league names
+        disp_name = (lr['name'][:27] + "...") if len(lr['name']) > 30 else lr['name']
+        
+        print(f"{disp_name:<30} | {lr['btts_plays']:<5} | {wl_str:<6} | {hit_str:<6} | {roi_str:<8} | {draw_str}")
+        
+    print("=" * 80)
 
 if __name__ == "__main__":
     main()

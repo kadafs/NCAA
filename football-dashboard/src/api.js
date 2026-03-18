@@ -31,3 +31,16 @@ export async function fetchFootball(date) {
   if (!r.ok) throw new Error(`No predictions for ${date}`)
   return r.json()
 }
+
+export async function fetchLeagueLeaderboard() {
+  if (isDev) {
+    const r = await fetch(`${API}/leaderboard`)
+    if (!r.ok) return []
+    const d = await r.json()
+    return d.leaderboard || []
+  }
+  const r = await fetch(`${DATA}/league_leaderboard.json?t=${Date.now()}`)
+  if (!r.ok) return []
+  const d = await r.json()
+  return d.leaderboard || []
+}

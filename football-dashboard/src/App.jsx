@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { fetchDates, fetchFootball } from './api'
+import { fetchDates, fetchFootball, fetchLeagueLeaderboard } from './api'
 import Header from './components/Header'
 import Scorecard from './components/Scorecard'
 import LeagueGroup from './components/LeagueGroup'
@@ -40,10 +40,16 @@ export default function App() {
   const [filterCountry, setFilterCountry] = useState('all')
   const [filterDraw,    setFilterDraw]    = useState(0)    // min draw_prob_1x2 threshold
 
+  const [leaderboard,   setLeaderboard]   = useState([])
+
   useEffect(() => {
     fetchDates()
       .then(d => { setDates(d); if (d.length > 0) setSelectedDate(d[0].date) })
       .catch(() => setError('Could not connect to API. Is the backend running?'))
+      
+    fetchLeagueLeaderboard()
+      .then(d => setLeaderboard(d))
+      .catch(e => console.warn('Could not fetch leaderboard:', e))
   }, [])
 
   useEffect(() => {
@@ -152,9 +158,10 @@ export default function App() {
 
         {!loading && !error && groups.length > 0 && (
           <div className="predictions-table">
-            {groups.map(g => (
-              <LeagueGroup key={`${g.league_id}-${g.league}`} group={g} />
-            ))}
+            {groups.map(g => {
+              const stats = leaderboard.find(x => x.name === g.league.toUpperCase())
+              return <LeagueGroup key={`${g.league_id}-${g.league}`} group={{...g, stats}} />
+            })}
           </div>
         )}
       </div>

@@ -303,7 +303,7 @@ def fetch_stats_from_api(league_id, season, games):
             "draws_away": draws_away,
             "win_pct":    _((wins_home + wins_away), played_all),
             "clean_sheets":  cs,
-            "failed_score":  failed,
+            "failed_to_score":  failed,
             "btts_count":    btts_count,
             "btts_rate":     _(btts_count, played_all),
             "form":          form_str,
@@ -367,7 +367,68 @@ def fetch_stats_from_api(league_id, season, games):
 
 
 # ------------------------------------------------------------------
-# STEP 3: FUZZY TEAM MATCHING
+# STEP 3: API WRAPPERS FOR STANDINGS & H2H
+# ------------------------------------------------------------------
+
+def fetch_standings(league_id, season, refresh=False):
+    cache_file = f"data/football/standings_{league_id}_{season}.json"
+    if not refresh and is_cache_fresh(cache_file):
+        return load_json(cache_file)
+    r = safe_get(f"{BASE_URL}/standings", {"league": league_id, "season": season})
+    response = r.get("response", [])
+    if not response:
+        return []
+    
+    # Standings can be a list of lists (for different groups/stages)
+    standings_lists = response[0].get("league", {}).get("standings", [])
+    flat_standings = []
+    for s_list in standings_lists:
+        if isinstance(s_list, list):
+            flat_standings.extend(s_list)
+        else:
+            flat_standings.append(s_list)
+            
+    if flat_standings:
+        save_json(cache_file, flat_standings)
+    return flat_standings
+
+def fetch_team_recent_fixtures(team_id, last=5, refresh=False):
+    """Fetch last N completed fixtures for a team."""
+    cache_file = f"data/football/recent_{team_id}.json"
+    
+    if not refresh and os.path.exists(cache_file):
+        age = time.time() - os.path.getmtime(cache_file)
+        if age < 86400:  # 24h cache for recent form
+            return load_json(cache_file)
+
+    r = safe_get(f"{BASE_URL}/fixtures", {"team": team_id, "last": last, "status": "FT"})
+    data = r.get("response", [])
+    if data:
+        save_json(cache_file, data)
+    return data
+
+def fetch_h2h(home_id, away_id, refresh=False):
+    if not home_id or not away_id:
+        return []
+    min_id = min(home_id, away_id)
+    max_id = max(home_id, away_id)
+    h2h_str = f"{min_id}-{max_id}"
+    cache_file = f"data/football/h2h_{h2h_str}.json"
+    
+    if not refresh and os.path.exists(cache_file):
+        age = time.time() - os.path.getmtime(cache_file)
+        if age < 86400 * 14:  # H2H changes slowly, 14 days is safe between meetings
+            return load_json(cache_file)
+
+    r = safe_get(f"{BASE_URL}/fixtures/headtohead", {"h2h": h2h_str, "last": 5})
+    data = r.get("response", [])
+    if data is not None:
+        save_json(cache_file, data)
+    return data or []
+
+
+# ------------------------------------------------------------------
+# STEP 4: FUZZY TEAM MATCHING & MATH LOGIC
 # ------------------------------------------------------------------
 
 def find_team(name, teams):
@@ -401,6 +462,12 @@ def calc_btts_prob(xg_h, xg_a):
 
 def calc_draw_prob(xg_h, xg_a, max_g=6):
     return round(sum(poisson_prob(xg_h, k) * poisson_prob(xg_a, k) for k in range(max_g + 1)), 4)
+
+def calc_over_prob(xg_total, threshold):
+    under_p = 0.0
+    for k in range(int(threshold + 0.5)):
+        under_p += poisson_prob(xg_total, k)
+    return round(1.0 - under_p, 4)
 
 def calc_xg(home_s, away_s, avg_home, avg_away, regression=0.88):
     ar_home = home_s.get("attack_rating_home", 1.0)
@@ -466,6 +533,10 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace):
             "pgf": home_s.get("pgf_home"), "pga": home_s.get("pga_home"),
             "form": home_s.get("form"), "btts_rate": home_s.get("btts_rate"),
             "clean_sheets": home_s.get("clean_sheets"),
+            "played_all": home_s.get("played_all"),
+            "failed_score": home_s.get("failed_score"),
+            "rank": home_s.get("league_rank"),
+            "win_pct": home_s.get("win_pct")
         },
         "statsA": {
             "attack_rating":  away_s.get("attack_rating_away"),
@@ -473,6 +544,10 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace):
             "pgf": away_s.get("pgf_away"), "pga": away_s.get("pga_away"),
             "form": away_s.get("form"), "btts_rate": away_s.get("btts_rate"),
             "clean_sheets": away_s.get("clean_sheets"),
+            "played_all": away_s.get("played_all"),
+            "failed_score": away_s.get("failed_score"),
+            "rank": away_s.get("league_rank"),
+            "win_pct": away_s.get("win_pct")
         },
         "metadata": {},
     }
@@ -577,13 +652,20 @@ def main():
         avg_home = league_avgs.get("avg_home_goals_for", 1.5)
         avg_away = league_avgs.get("avg_away_goals_for", 1.2)
 
+        # Fetch and cache standings for the league early
+        league_standings = fetch_standings(lid, season, refresh=args.refresh)
+        if not league_standings and season == 2025:
+            # print(f"    [DEBUG] No standings for {lid} in 2025, trying 2026...")
+            league_standings = fetch_standings(lid, 2026, args.refresh)
+
         # Step 3: Predict each game
-        for game in games:
+        for game in upcoming:
             home = game["home_team"]
             away = game["away_team"]
 
             hk, home_s = find_team(home, teams)
             ak, away_s = find_team(away, teams)
+
 
             if not home_s or not away_s:
                 missing = []
@@ -598,6 +680,14 @@ def main():
                 print(f"    {away:28} @ {home:28}  -- SKIP ({err})")
                 total_skipped += 1
                 continue
+                
+            # Grab latest ranks
+            home_rank = next((s.get("rank") for s in league_standings if s.get("team", {}).get("id") == home_s.get("team_id")), None)
+            away_rank = next((s.get("rank") for s in league_standings if s.get("team", {}).get("id") == away_s.get("team_id")), None)
+
+            # Inject the ranks directly into the stats dicts for extraction later
+            home_s["league_rank"] = home_rank
+            away_s["league_rank"] = away_rank
 
             btts_pct = result["btts_prob_final"] * 100
             draw_pct = result["draw_prob_final"] * 100
@@ -678,7 +768,39 @@ def main():
                                and game["home_goals"] == game["away_goals"]) else
                     "AWAY" if (game.get("is_completed") and game.get("home_goals") is not None) else None
                 ),
+                # Match Center Data for UI Drawer
+                "match_center": {
+                    "h2h": fetch_h2h(home_s.get("team_id"), away_s.get("team_id"), args.refresh),
+                    "recentH": fetch_team_recent_fixtures(home_s.get("team_id"), last=5, refresh=args.refresh),
+                    "recentA": fetch_team_recent_fixtures(away_s.get("team_id"), last=5, refresh=args.refresh),
+                    "full_standings": league_standings if len(league_standings) > 0 else None,
+                    "over_1_5_prob": round(calc_over_prob(xg_h + xg_a, 1.5) * 100, 1),
+                    "over_2_5_prob": round(calc_over_prob(xg_h + xg_a, 2.5) * 100, 1),
+                    "statsH": {
+                        "played": home_s.get("played_all"),
+                        "win_pct": home_s.get("win_pct"),
+                        "scored": home_s.get("pgf_all"),
+                        "conceded": home_s.get("pga_all"),
+                        "clean_sheets": home_s.get("clean_sheets"),
+                        "failed_to_score": home_s.get("failed_to_score"),
+                        "btts_rate": home_s.get("btts_rate"),
+                        "rank": home_s.get("league_rank"),
+                        "form": home_s.get("form_wins")
+                    },
+                    "statsA": {
+                        "played": away_s.get("played_all"),
+                        "win_pct": away_s.get("win_pct"),
+                        "scored": away_s.get("pgf_all"),
+                        "conceded": away_s.get("pga_all"),
+                        "clean_sheets": away_s.get("clean_sheets"),
+                        "failed_to_score": away_s.get("failed_to_score"),
+                        "btts_rate": away_s.get("btts_rate"),
+                        "rank": away_s.get("league_rank"),
+                        "form": away_s.get("form_wins")
+                    }
+                }
             })
+
             total_predicted += 1
 
         print()

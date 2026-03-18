@@ -34,6 +34,15 @@ def get_football(date: str = None):
         return json.load(f)
 
 
+@app.get("/api/leaderboard")
+def get_leaderboard():
+    path = os.path.join(DATA_DIR, "football", "league_leaderboard.json")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="No leaderboard found")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
 @app.get("/api/dates")
 def get_dates():
     """Return sorted list of dates that have football prediction files,

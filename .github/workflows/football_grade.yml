@@ -32,12 +32,18 @@ jobs:
           python grade_football.py
           echo "Done."
 
+      - name: Aggregate League Stats
+        run: |
+          echo "Aggregating global league performance..."
+          python aggregate_league_stats.py
+          echo "Done."
+
       - name: Sync graded data to Vercel public folder
         run: |
           mkdir -p football-dashboard/public/data/football
           cp data/football/universal_predictions_*.json football-dashboard/public/data/football/
+          cp data/football/league_leaderboard.json football-dashboard/public/data/football/ || true
           echo "Synced graded files to public/"
-
       - name: Commit and push graded files
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"

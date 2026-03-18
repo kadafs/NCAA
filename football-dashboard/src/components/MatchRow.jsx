@@ -48,6 +48,8 @@ function GradeIcon({ grade }) {
 
 export default function MatchRow({ game }) {
   const [open, setOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('stats') // 'stats', 'h2h', 'standings'
+
   const tip    = tipFor(game.predicted_result)
   const dClass = decisionClass(game.btts_decision)
   const oGrade = outcomeGrade(game)
@@ -115,70 +117,331 @@ export default function MatchRow({ game }) {
       </div>
 
       {/* Expanded detail */}
+      {/* Expanded detail - Tabbed Match Center */}
       {open && (
-        <div className="match-detail">
-          <div className="detail-item">
-            <span className="detail-label">Home win odds</span>
-            <span className="detail-value">{fmt(game.home_win_odds, 2)}x</span>
+        <div className="match-detail-container">
+          <div className="tab-nav">
+            <button 
+              className={activeTab === 'stats' ? 'active' : ''} 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('stats') }}
+            >
+              TEAM STATS
+            </button>
+            <button 
+              className={activeTab === 'h2h' ? 'active' : ''} 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('h2h') }}
+            >
+              LAST 5 H2H
+            </button>
+            <button 
+              className={activeTab === 'standings' ? 'active' : ''} 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('standings') }}
+            >
+              STANDINGS
+            </button>
+            <button 
+              className={activeTab === 'probabilities' ? 'active' : ''} 
+              onClick={(e) => { e.stopPropagation(); setActiveTab('probabilities') }}
+            >
+              PROBABILITIES
+            </button>
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Draw odds</span>
-            <span className="detail-value">{fmt(game.draw_odds, 2)}x</span>
+
+          <div className="tab-content border-top">
+            
+            {/* STATS TAB */}
+            {activeTab === 'stats' && (
+              <div className="tab-stats">
+                <div className="stats-header">
+                  <span className="sh-team">{game.home_team}</span>
+                  <span className="sh-title">TALE OF THE TAPE</span>
+                  <span className="sh-team">{game.away_team}</span>
+                </div>
+                
+                {(() => {
+                  const m = game.match_center || {}
+                  const sh = m.statsH || {}
+                  const sa = m.statsA || {}
+                  return (
+                    <div className="stats-body">
+                      <StatRow label="Matches Played" home={sh.played} away={sa.played} />
+                      <StatRow label="Win %" home={sh.win_pct != null ? `${(sh.win_pct*100).toFixed(0)}%` : null} away={sa.win_pct != null ? `${(sa.win_pct*100).toFixed(0)}%` : null} />
+                      <StatRow label="Goals Scored/Game" home={sh.scored} away={sa.scored} highlight="high" />
+                      <StatRow label="Goals Cond/Game" home={sh.conceded} away={sa.conceded} highlight="low" />
+                      <StatRow label="Clean Sheets" home={sh.clean_sheets} away={sa.clean_sheets} highlight="high" />
+                      <StatRow label="Failed to Score" home={sh.failed_to_score} away={sa.failed_to_score} highlight="low" />
+                      <StatRow label="BTTS Rate" home={sh.btts_rate != null ? `${(sh.btts_rate*100).toFixed(0)}%` : null} away={sa.btts_rate != null ? `${(sa.btts_rate*100).toFixed(0)}%` : null} />
+                      <StatRow label="Recent Form" home={sh.form} away={sa.form} />
+                      
+                      {m.over_1_5_prob != null && (
+                        <div className="poisson-banner">
+                          <div className="pb-title">Poisson Match Probabilities</div>
+                          <div className="pb-values">
+                            <span>O1.5: <b>{m.over_1_5_prob}%</b></span>
+                            <span>O2.5: <b>{m.over_2_5_prob}%</b></span>
+                            <span>BTTS: <b className={game.btts_prob >= 50 ? 'high' : 'low'}>{fmt(game.btts_prob,1)}%</b></span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+
+            {/* H2H TAB */}
+            {activeTab === 'h2h' && (
+              <div className="tab-h2h">
+                <div className="h2h-container">
+                  {/* HEAD TO HEAD SECTION */}
+                  <div className="h2h-block">
+                    <div className="h2h-section-title">Head to Head</div>
+                    {(() => {
+                      const m = game.match_center || {}
+                      if (!m.h2h || m.h2h.length === 0) return <div className="no-data">No recent H2H data available.</div>
+                      return m.h2h.slice(0, 5).map((h, i) => {
+                        const d = new Date(h.fixture.date)
+                        const dStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        return (
+                          <div key={i} className="h2h-row">
+                            <div className="h2h-date">{dStr}</div>
+                            <div className={`h2h-team ${h.teams.home.winner ? 'winner' : ''}`}>{h.teams.home.name}</div>
+                            <div className="h2h-score">{h.goals.home ?? '-'} : {h.goals.away ?? '-'}</div>
+                            <div className={`h2h-team right ${h.teams.away.winner ? 'winner' : ''}`}>{h.teams.away.name}</div>
+                          </div>
+                        )
+                      })
+                    })()}
+                  </div>
+
+                  {/* RECENT FORM SECTION */}
+                  <div className="h2h-block">
+                    <div className="h2h-section-title">Recent Form (Last 5)</div>
+                    <div className="form-columns">
+                      <RecentFormColumn teamName={game.home_team} fixtures={game.match_center?.recentH} />
+                      <RecentFormColumn teamName={game.away_team} fixtures={game.match_center?.recentA} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STANDINGS TAB */}
+            {activeTab === 'standings' && (
+              <div className="tab-standings" style={{ maxWidth: '600px' }}>
+                {(() => {
+                  const m = game.match_center || {}
+                  const sh = m.statsH || {}
+                  const sa = m.statsA || {}
+                  return (
+                    <>
+                      <div className="standings-cards">
+                        <div className="s-card">
+                          <div className="s-rank">{sh.rank ? `#${sh.rank}` : '-'}</div>
+                          <div className="s-name">{game.home_team}</div>
+                        </div>
+                        <div className="s-vs">VS</div>
+                        <div className="s-card">
+                          <div className="s-rank">{sa.rank ? `#${sa.rank}` : '-'}</div>
+                          <div className="s-name">{game.away_team}</div>
+                        </div>
+                      </div>
+
+                      {m.full_standings && (
+                        <div className="standings-table-container">
+                          <table className="standings-table">
+                            <thead>
+                              <tr>
+                                <th>#</th>
+                                <th>Team</th>
+                                <th style={{textAlign:'center'}}>P</th>
+                                <th style={{textAlign:'center'}}>GD</th>
+                                <th style={{textAlign:'center'}}>Pts</th>
+                                <th>Form</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {m.full_standings.map((s, idx) => {
+                                const isHome = s.team.name === game.home_team
+                                const isAway = s.team.name === game.away_team
+                                return (
+                                  <tr key={idx} className={isHome || isAway ? 'highlight' : ''}>
+                                    <td className="st-rank">{s.rank}</td>
+                                    <td className="st-team">
+                                      <img src={s.team.logo} className="st-logo" alt="" />
+                                      {s.team.name}
+                                    </td>
+                                    <td className="st-val">{s.all.played}</td>
+                                    <td className="st-val">{s.goalsDiff}</td>
+                                    <td className="st-val st-pts">{s.points}</td>
+                                    <td>
+                                      <div className="st-form">
+                                        {(s.form || '').split('').map((f, fi) => (
+                                          <div key={fi} className={`st-f fm-res ${f}`}>{f}</div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+            )}
+
+            {/* PROBABILITIES TAB */}
+            {activeTab === 'probabilities' && (
+              <div className="tab-probabilities">
+                <div className="prob-grid">
+                  {/* Match Outcome Section */}
+                  <div className="prob-section full">
+                    <div className="ps-title">Match Outcome (Poisson)</div>
+                    <div className="prob-outcome-row">
+                      <div className="po-box">
+                        <span className="po-val">{fmt(game.home_win_prob)}%</span>
+                        <span className="po-lbl">{game.home_team} (1)</span>
+                      </div>
+                      <div className="po-box">
+                        <span className="po-val">{fmt(game.draw_prob_1x2)}%</span>
+                        <span className="po-lbl">Draw (X)</span>
+                      </div>
+                      <div className="po-box">
+                        <span className="po-val">{fmt(game.away_win_prob)}%</span>
+                        <span className="po-lbl">{game.away_team} (2)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Goal Markets Section */}
+                  <div className="prob-section">
+                    <div className="ps-title">Goal Markets</div>
+                    <ProbabilityItem 
+                      label="Over 1.5 Goals" 
+                      value={game.match_center?.over_1_5_prob} 
+                      color="goals" 
+                    />
+                    <ProbabilityItem 
+                      label="Over 2.5 Goals" 
+                      value={game.match_center?.over_2_5_prob} 
+                      color="goals" 
+                    />
+                    <div style={{marginTop: 12, fontSize: 10, color: '#94a3b8', fontStyle: 'italic'}}>
+                      * Poisson Projections
+                    </div>
+                  </div>
+
+                  {/* BTTS Section */}
+                  <div className="prob-section">
+                    <div className="ps-title">Both Teams to Score</div>
+                    <ProbabilityItem 
+                      label="BTTS: Yes" 
+                      value={game.btts_prob} 
+                      color="btts" 
+                    />
+                    <div style={{marginTop: 16, fontSize: 10, color: '#94a3b8'}}>
+                      Confidence: {game.btts_decision?.includes('STRONG') ? 'HIGH' : 'MEDIUM'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
-          <div className="detail-item">
-            <span className="detail-label">Away win odds</span>
-            <span className="detail-value">{fmt(game.away_win_odds, 2)}x</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">BTTS probability</span>
-            <span className="detail-value">{fmt(game.btts_prob, 1)}%</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">BTTS edge</span>
-            <span className="detail-value" style={{ color: game.btts_edge >= 0 ? '#16a34a' : '#dc2626' }}>
-              {game.btts_edge != null ? (game.btts_edge >= 0 ? '+' : '') + fmt(game.btts_edge, 1) + '%' : '—'}
-            </span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Draw prob (Poisson)</span>
-            <span className="detail-value">{fmt(game.draw_prob, 1)}%</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">Draw fair odds</span>
-            <span className="detail-value">{fmt(game.draw_fair_odds, 2)}x</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">xG total</span>
-            <span className="detail-value">{fmt(game.xg_total, 2)}</span>
-          </div>
-          <div className="detail-item">
-            <span className="detail-label">BTTS confidence</span>
-            <span className="detail-value">{game.btts_confidence || '—'}</span>
-          </div>
+          
+          {/* Legacy Graded Detail Wrapper at bottom if needed */}
           {isGraded && (
-            <>
-              <div className="detail-item">
-                <span className="detail-label">Final score</span>
-                <span className="detail-value" style={{ fontWeight: 700 }}>
-                  {game.home_team} {game.actual_home_goals} – {game.actual_away_goals} {game.away_team}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">1X2 result</span>
-                <span className="detail-value" style={{ color: oGrade === 'WIN' ? '#16a34a' : '#dc2626' }}>
-                  {game.actual_result}  {oGrade === 'WIN' ? '✅' : '❌'}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">BTTS result</span>
-                <span className="detail-value" style={{ color: bGrade === 'WIN' ? '#16a34a' : bGrade === 'LOSS' ? '#dc2626' : '#6b7280' }}>
-                  {game.actual_btts ? 'Yes' : 'No'}  {bGrade === 'WIN' ? '✅' : bGrade === 'LOSS' ? '❌' : '➖'}
-                </span>
-              </div>
-            </>
+             <div className="graded-footer">
+               <span><b>Final:</b> {game.actual_home_goals} - {game.actual_away_goals}</span>
+               <span style={{ marginLeft: 16 }}><b>1X2:</b> {game.actual_result} {oGrade === 'WIN' ? '✅' : '❌'}</span>
+               <span style={{ marginLeft: 16 }}><b>BTTS:</b> {game.actual_btts ? 'Yes' : 'No'} {bGrade === 'WIN' ? '✅' : bGrade === 'LOSS' ? '❌' : '➖'}</span>
+             </div>
           )}
         </div>
       )}
     </>
+  )
+}
+
+function StatRow({ label, home, away, highlight }) {
+  const hVal = parseFloat(home)
+  const aVal = parseFloat(away)
+  
+  let hCls = 'sr-val'
+  let aCls = 'sr-val'
+
+  if (!isNaN(hVal) && !isNaN(aVal)) {
+    if (highlight === 'high') {
+      if (hVal > aVal) hCls += ' better'
+      else if (aVal > hVal) aCls += ' better'
+    } else if (highlight === 'low') {
+      if (hVal < aVal) hCls += ' better'
+      else if (aVal < hVal) aCls += ' better'
+    }
+  }
+
+  return (
+    <div className="stat-row">
+      <div className={hCls}>{home ?? '-'}</div>
+      <div className="sr-label">{label}</div>
+      <div className={aCls} style={{ textAlign: 'right' }}>{away ?? '-'}</div>
+    </div>
+  )
+}
+
+function RecentFormColumn({ teamName, fixtures }) {
+  if (!fixtures || fixtures.length === 0) return (
+    <div className="form-column">
+      <div style={{fontSize: 10, fontStyle: 'italic', color: '#94a3b8', marginBottom: 6}}>{teamName}</div>
+      <div className="no-data" style={{padding: '10px 0'}}>No recent form.</div>
+    </div>
+  )
+
+  const getResult = (f) => {
+    const isHome = f.teams.home.name === teamName
+    if (f.teams.home.winner === null && f.teams.away.winner === null) return 'D'
+    return isHome 
+      ? (f.teams.home.winner ? 'W' : 'L')
+      : (f.teams.away.winner ? 'W' : 'L')
+  }
+
+  return (
+    <div className="form-column">
+      <div style={{fontSize: 10, fontWeight: 700, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase'}}>{teamName}</div>
+      {fixtures.map((f, i) => {
+        const isHome = f.teams.home.name === teamName
+        const opp = isHome ? f.teams.away.name : f.teams.home.name
+        const res = getResult(f)
+        
+        return (
+          <div key={i} className="form-match">
+            <div className={`fm-res ${res}`}>{res}</div>
+            <div className="fm-opp" title={opp}>{opp}</div>
+            <div className="fm-score">{f.goals.home}-{f.goals.away}</div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+function ProbabilityItem({ label, value, color }) {
+  const val = parseFloat(value) || 0
+  return (
+    <div className="prob-item">
+      <div className="pi-label-row">
+        <span>{label}</span>
+        <span>{fmt(val, 1)}%</span>
+      </div>
+      <div className="pi-bar-bg">
+        <div 
+          className={`pi-bar-fill ${color}`} 
+          style={{ width: `${val}%` }}
+        ></div>
+      </div>
+    </div>
   )
 }

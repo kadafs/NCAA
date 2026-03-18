@@ -22,13 +22,13 @@ export default function Header({
   return (
     <header className="site-header">
       <div className="header-inner">
-        <div className="logo">
+        <a href="/" className="logo">
           <img
             src="/logo.png"
             alt="blowrout — Advanced Football Prediction"
             className="logo-img"
           />
-        </div>
+        </a>
 
         {visible.length > 0 && (
           <div className="header-nav">
