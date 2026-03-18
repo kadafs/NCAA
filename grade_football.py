@@ -175,14 +175,15 @@ def main():
             o_grade = outcome_grade(graded)
             b_grade = btts_grade(graded)
             score_str   = f"{home_goals}-{away_goals}"
-            outcome_str = f"  1X2: {graded['predicted_result']} → {graded['actual_result']} [{o_grade}]"
+            outcome_str = f"  1X2: {graded['predicted_result']} -> {graded['actual_result']} [{o_grade}]"
             btts_str    = f"  BTTS: {graded['btts_decision']} [{b_grade}]" if b_grade else ""
-            print(f"  ✓  {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}")
+            
+            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}")
         else:
             graded_predictions.append(pred)
             missed += 1
-            if missed <= 5:  # only show first few misses to keep output tidy
-                print(f"  ✗  No match found: {pred['home_team']} vs {pred['away_team']} (league {pred['league_id']})")
+            if missed <= 5:  # only show first few misses
+                print(f"  [X] No match found: {pred['home_team']} vs {pred['away_team']} (league {pred['league_id']})")
 
     if missed > 5:
         print(f"     ... and {missed - 5} more unmatched games")
@@ -200,7 +201,7 @@ def main():
     btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
     btts_total  = len(btts_played)
 
-    print(f"\n  📊 Grade Summary ({date})")
+    print(f"\n  [---] Grade Summary ({date})")
     print(f"     1X2:  {x12_wins}/{x12_total} correct" + (f"  ({100*x12_wins//x12_total}%)" if x12_total else ""))
     print(f"     BTTS: {btts_wins}/{btts_total} wins"  + (f"  ({100*btts_wins//btts_total}%)" if btts_total else ""))
 
