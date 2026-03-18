@@ -24,8 +24,8 @@
   --border-soft: #f1f5f9;
 
   /* Header */
-  --bg-header:   #0f172a;
-  --text-header: #f8fafc;
+  --bg-header:   #ffffff;
+  --text-header: #1e293b;
 
   /* League header row */
   --bg-league:   #f8fafc;
@@ -86,18 +86,23 @@ body {
 
 /* ---- HEADER ---- */
 .site-header {
-  background: var(--bg-header);
-  color: var(--text-header);
+  background: #ffffff;
+  color: #1e293b;
   padding: 0 24px;
-  height: 58px;
+  height: 80px;
+  border-bottom: 2px solid #f1f5f9;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  /* Removed position: sticky per user request for header to "move" */
+}
+
+.header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(8px);
+  align-items: center;
+  height: 100%;
 }
 
 .logo {
@@ -105,25 +110,14 @@ body {
   align-items: center;
   gap: 10px;
 }
-.logo-icon { font-size: 20px; }
-.logo-text {
-  font-family: var(--font-brand);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  color: #f8fafc;
-}
-.logo-text .accent { color: var(--brand-light); }
-.logo-divider {
-  color: #334155;
-  font-size: 18px;
-  font-weight: 300;
-}
-.logo-tagline {
-  font-size: 11px;
-  font-weight: 500;
-  color: #94a3b8;
-  letter-spacing: 0.3px;
+.logo-img {
+  height: 72px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  /* Blends logo background with header background */
+  mix-blend-mode: multiply;
+  filter: contrast(1.02);
 }
 .header-right {
   display: flex;
@@ -131,14 +125,72 @@ body {
   gap: 6px;
 }
 .header-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #94a3b8;
-  background: rgba(255,255,255,0.06);
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.08);
+  color: #64748b;
+  background: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+.header-badge:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.header-badge.active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
+}
+
+/* Header Navigation Tabs */
+.header-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nav-date-tab {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 0.3px;
+}
+
+.nav-date-tab:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.nav-date-tab.active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.tab-check {
+  font-size: 10px;
+  color: #10b981;
+}
+
+.nav-date-tab.active .tab-check {
+  color: #34d399;
 }
 
 /* ---- WRAPPER ---- */
@@ -148,55 +200,7 @@ body {
   padding: 16px 16px 40px;
 }
 
-/* ---- NAVIGATOR ---- */
-.navigator {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  box-shadow: var(--shadow-sm);
-}
-.navigator-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  margin-bottom: 8px;
-  letter-spacing: 0.8px;
-}
-.date-tabs {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-.date-tab {
-  padding: 5px 14px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1.5px solid var(--border);
-  background: var(--bg-page);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.date-tab:hover {
-  background: #e0e7ff;
-  color: var(--brand-dark);
-  border-color: var(--brand-light);
-}
-.date-tab.active {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
-  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
-}
-.tab-graded { font-size: 10px; color: #22c55e; }
-.date-tab.active .tab-graded { color: #bbf7d0; }
+/* ---- Obsolete Navigator Styles Removed ---- */
 
 /* ---- CONTROLS BAR ---- */
 .controls-bar {

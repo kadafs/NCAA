@@ -81,10 +81,17 @@ export default function App() {
 
   return (
     <div>
-      <Header />
+      <Header 
+        dates={dates} 
+        selected={selectedDate} 
+        onSelect={setSelectedDate} 
+        filterDecision={filterDecision}
+        setFilterDecision={setFilterDecision}
+        filterDraw={filterDraw}
+        setFilterDraw={setFilterDraw}
+        setFilterCountry={setFilterCountry}
+      />
       <div className="main-wrapper">
-
-        <Navigator dates={dates} selected={selectedDate} onSelect={setSelectedDate} />
 
         {/* Scorecard (only shown if grading data exists) */}
         {hasGrading && data && <Scorecard data={data} />}
