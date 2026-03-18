@@ -45,7 +45,7 @@ load_dotenv()
 API_KEY  = os.getenv("API_BASKETBALL_KEY")          # Same key covers api-sports football
 BASE_URL = "https://v3.football.api-sports.io"
 HEADERS  = {"x-apisports-key": API_KEY}
-ET_TZ    = ZoneInfo("America/New_York")
+ET_TZ    = timezone.utc
 
 # Stats cache max age in seconds (24 hours)
 CACHE_MAX_AGE = 86400

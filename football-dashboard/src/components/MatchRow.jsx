@@ -20,8 +20,11 @@ function fmt(v, digits = 0) {
 }
 
 function kickoffTime(game) {
-  if (!game.timestamp) return '—'
-  try { return new Date(game.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  if (!game.kickoff) return '—'
+  try { 
+    // game.kickoff is format "YYYY-MM-DD HH:MM" in UTC (from API)
+     return game.kickoff.split(' ')[1] + ' UTC'
+  }
   catch { return '—' }
 }
 

@@ -44,7 +44,7 @@ load_dotenv()
 API_KEY = os.getenv("API_BASKETBALL_KEY")
 BASE_URL = "https://v1.basketball.api-sports.io"
 HEADERS = {"x-apisports-key": API_KEY}
-ET_TZ = ZoneInfo("America/New_York")
+ET_TZ    = timezone.utc
 
 
 # ------------------------------------------------------------------
