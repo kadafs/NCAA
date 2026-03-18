@@ -69,13 +69,40 @@ def process_file(file_path, stats_dict):
         print(f"Error processing {os.path.basename(file_path)}: {e}")
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Aggregate historical league performance stats.")
+    parser.add_argument("--date", help="End date (YYYY-MM-DD) for aggregation. Only files on or before this date are included.")
+    parser.add_argument("--verbose", action="store_true", help="Print names of processed files")
+    args = parser.parse_args()
+
     print("Aggregating historical league performance...")
     search_pattern = os.path.join(DATA_DIR, "universal_predictions_*.json")
-    files = glob.glob(search_pattern)
+    all_files = glob.glob(search_pattern)
     
+    # Filter files by date if requested
+    files = []
+    if args.date:
+        try:
+            target_dt = datetime.strptime(args.date, "%Y-%m-%d")
+            for f in all_files:
+                file_date_str = os.path.basename(f).replace("universal_predictions_", "").replace(".json", "")
+                try:
+                    file_dt = datetime.strptime(file_date_str, "%Y-%m-%d")
+                    if file_dt <= target_dt:
+                        files.append(f)
+                except ValueError:
+                    continue
+        except ValueError:
+            print(f"Invalid date format: {args.date}. Using all files.")
+            files = all_files
+    else:
+        files = all_files
+
     league_stats = {}
     
-    for f in files:
+    for f in sorted(files):
+        if args.verbose:
+            print(f" - Processing {os.path.basename(f)}...")
         process_file(f, league_stats)
         
     # Compile into array and calculate metrics
@@ -124,6 +151,8 @@ def main():
         json.dump(output_data, f, indent=2, ensure_ascii=False)
         
     print(f"Successfully aggregated {len(files)} files into league_leaderboard.json.")
+    if args.date:
+        print(f"Filter: Files on or before {args.date}")
     print(f"Tracked {len(leaderboard)} unique leagues.")
 
 if __name__ == "__main__":
