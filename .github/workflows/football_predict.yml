@@ -28,8 +28,9 @@ jobs:
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
-          echo "Generating football predictions..."
-          python run_football_daily.py --mode full
+          TODAY=$(date -u +'%Y-%m-%d')
+          echo "Generating football predictions for $TODAY..."
+          python run_football_daily.py --mode full --date "$TODAY"
           echo "Done."
 
       - name: Regenerate dates index
