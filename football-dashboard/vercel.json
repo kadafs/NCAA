@@ -5,5 +5,5 @@
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- football-dashboard/"
+  "ignoreCommand": "git diff $VERCEL_GIT_PREVIOUS_SHA $VERCEL_GIT_COMMIT_SHA --quiet -- football-dashboard/"
 }
