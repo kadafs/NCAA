@@ -194,21 +194,26 @@ def get_or_calibrate_config(league_id, league_name, auto_calibrate=True):
 def get_or_fetch_stats(league_id, season, refresh=False):
     """
     Load cached team stats or fetch fresh from API.
+    PRIORITY 1: Proprietary Offline Matrix ([ADVANCED] / [SRS])
     Returns {team_name: {adj_off, adj_def, adj_t, ...}} or {}.
     """
-    from fetch_universal_bball_stats import get_current_season, fetch_stats
+    # 1. Proprietary Matrix Intercept
+    matrix_path = f"data/bball_stats_{league_id}.json"
+    if os.path.exists(matrix_path):
+        data = load_json(matrix_path)
+        teams_list = data.get("teams", [])
+        return {t["team_name"]: t for t in teams_list}
 
-    # Auto-detect season if not provided by fixture file
+    # 2. Legacy API fallback
+    from fetch_universal_bball_stats import get_current_season, fetch_stats
     if not season:
         season = get_current_season(league_id)
 
-    # Check for exact cache file
     exact_path = f"data/bball_stats_{league_id}_{season}.json"
     if not refresh and os.path.exists(exact_path):
         data = load_json(exact_path)
         return data.get("teams", {})
 
-    # Broader cache search: any season file for this league
     if not refresh:
         existing = sorted(glob(f"data/bball_stats_{league_id}_*.json"), reverse=True)
         if existing:
@@ -217,7 +222,6 @@ def get_or_fetch_stats(league_id, season, refresh=False):
             if teams:
                 return teams
 
-    # Fetch fresh
     try:
         return fetch_stats(league_id, season=season, verbose=False)
     except Exception as e:
@@ -362,6 +366,9 @@ def main():
     all_predictions = []
     total_predicted = 0
     total_skipped   = 0
+    
+    # Load Global M.B.E.T Array
+    mbet_matrix = load_json("configs/league_edge_thresholds.json") or {}
 
     for league_entry in leagues:
         lid      = league_entry["league_id"]
@@ -409,28 +416,43 @@ def main():
                 total_skipped += 1
                 continue
 
-            model_total = result["final_model_total"]
-            market      = result["market_total"]
-            edge        = result["edge"]
-            decision    = result["decision"]
-            confidence  = result["confidence"]
-            side        = result["side"]
+            model_total = result.get("final_model_total", 0.0)
+            market      = result.get("market_total")
+            edge        = result.get("edge")
+            decision    = result.get("decision", "MODEL ONLY")
+            confidence  = result.get("confidence", "-")
+            side        = result.get("side", "-")
+            
+            # Post-Engine M.B.E.T Filter Enforcement
+            mbet = mbet_matrix.get(str(lid), {}).get("recommended_minimum_edge", 4.0)
+            if edge is not None and market not in (145.5, 230.0):
+                if edge >= mbet:
+                    decision = f"PLAY {side}"
+                    confidence = "HIGH" if edge >= mbet + 1.5 else "SOLID"
+                else:
+                    decision = "PASS"
+                    confidence = "MBET FILTER"
 
             # Format output line
-            if market and market != 145.5 and market != 230.0:
-                # Real market line was provided
+            if market and market not in (145.5, 230.0):
                 mkt_str = f"Mkt:{market:.1f}"
                 edge_str = f"Edge:{edge:+.1f} {side} [{confidence}] -> {decision}"
             else:
                 mkt_str = "Mkt:N/A"
-                edge_str = "MODEL ONLY (no market line)"
+                edge_str = "MODEL ONLY (no line)"
 
             score_str = ""
             if game.get("home_score") is not None:
                 score_str = f"  Final: {game['away_score']}-{game['home_score']}"
 
-            print(f"    {away:28} @ {home:28}")
-            print(f"      Model:{model_total:.1f}  {mkt_str}  {edge_str}{score_str}")
+            matrix_type = " [ API ] "
+            matrix_path = f"data/bball_stats_{lid}.json"
+            if os.path.exists(matrix_path):
+                m_data = load_json(matrix_path) or {}
+                matrix_type = m_data.get("model_architecture", "[  SRS   ]") + " "
+
+            print(f"    {matrix_type}{away:24} @ {home:24}")
+            print(f"      Model:{model_total:.1f}  {mkt_str}  {edge_str}{score_str} | MBET: {mbet}")
 
             if args.trace:
                 for t in result.get("trace", []):
