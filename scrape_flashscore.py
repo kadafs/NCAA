@@ -108,8 +108,12 @@ def scrape_one_league(url, browser):
             stats_url = f"https://www.flashscore.com/match/{g['match_id']}/#/match-summary/match-statistics/0"
             try:
                 page.goto(stats_url, wait_until="domcontentloaded", timeout=6000)
-                # Ensure react components populate fully
-                page.wait_for_timeout(800)
+                
+                # Dynamically wait for the React stats table to finish painting
+                try:
+                    page.wait_for_selector(".stat__row", state="attached", timeout=3500)
+                except Exception:
+                    pass # If it times out here, the match genuinely doesn't have advanced stats published
                 
                 rows = page.locator(".stat__row").all()
                 stats_obj = {}
