@@ -82,7 +82,9 @@ def process_leagues():
     with open(map_file, encoding="utf-8") as f:
         slug_map = json.load(f)
         
-    historical_files = glob.glob("data/historical/flashscore_*.json")
+    f_files = glob.glob("data/historical/flashscore_*.json")
+    p_files = glob.glob("data/historical/proballers_*.json")
+    historical_files = f_files + p_files
     os.makedirs("data/team_stats", exist_ok=True)
     
     season = datetime.datetime.now().year
@@ -90,7 +92,7 @@ def process_leagues():
     
     for hf in historical_files:
         basename = os.path.basename(hf) 
-        slug = basename.replace("flashscore_", "").replace(".json", "")
+        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace(".json", "")
         
         league_id = slug_map.get(slug)
         if not league_id:

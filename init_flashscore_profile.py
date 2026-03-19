@@ -3,7 +3,7 @@ import time
 from playwright.sync_api import sync_playwright
 
 print("\nBooting persistent Flashscore identity profile...")
-profile_dir = os.path.join(os.getcwd(), 'playwright_profile')
+profile_dir = os.path.join(os.getcwd(), 'playwright_profile2')
 
 with sync_playwright() as p:
     browser = p.chromium.launch_persistent_context(

@@ -100,51 +100,8 @@ def scrape_one_league(url, browser):
         
     print(f"  -> Natively extracted {len(games)} basic box scores.")
     
-    if "--fast" not in sys.argv:
-        print(f"  -> Initiating DEEP SCRAPE. Harvesting Advanced Four-Factor Stats mapping...")
-        for i, g in enumerate(games):
-            if not g["match_id"]: continue
-            
-            stats_url = f"https://www.flashscore.com/match/{g['match_id']}/#/match-summary/match-statistics/0"
-            try:
-                page.goto(stats_url, wait_until="domcontentloaded", timeout=6000)
-                
-                # Native Resolution Array for Flashscore's secondary UI layout 
-                try:
-                    stats_tab = page.locator('a[href*="/summary/stats/"]')
-                    if stats_tab.count() > 0 and stats_tab.first.is_visible():
-                        stats_tab.first.click()
-                    else:
-                        generic_tab = page.locator("text=STATS")
-                        if generic_tab.count() > 0:
-                            generic_tab.first.click()
-                except:
-                    pass
-                    
-                # Dynamically wait for the React stats table to finish painting
-                try:
-                    page.wait_for_selector(".stat__row", state="attached", timeout=3500)
-                except Exception:
-                    # Capture exactly what the scraper physically sees when missing stats
-                    page.screenshot(path=f"debug_miss_{g['match_id']}.png")
-                    pass # If it times out here, the match genuinely doesn't have advanced stats published
-                
-                rows = page.locator(".stat__row").all()
-                stats_obj = {}
-                for r in rows:
-                    if r.locator(".stat__categoryName").count() > 0:
-                        c = r.locator(".stat__categoryName").inner_text().strip().lower()
-                        h = r.locator(".stat__homeValue").inner_text().strip() if r.locator(".stat__homeValue").count() > 0 else None
-                        a = r.locator(".stat__awayValue").inner_text().strip() if r.locator(".stat__awayValue").count() > 0 else None
-                        if h and a:
-                            stats_obj[c] = {"home": h, "away": a}
-                            
-                g["advanced_stats"] = stats_obj
-                print(f"      [{i+1}/{len(games)}] Deep Profile: {g['home_team']} vs {g['away_team']} -> Found {len(stats_obj)} physical metrics")
-            except Exception as e:
-                print(f"      [{i+1}/{len(games)}] Deep Profile: Timeout/Missing DOM on {g['match_id']}")
-    else:
-        print("  -> [--fast] flag detected. Bypassing Deep Scrape.")
+    # DEEP SCRAPE HAS BEEN MIGRATED TO PROBALLERS.COM
+    # Flashscore now exclusively provides the master baseline [SRS] final score arrays.
 
     page.close()
     
@@ -175,23 +132,23 @@ def main():
     failed = []
     
     with sync_playwright() as p:
-        profile_dir = os.path.join(os.getcwd(), 'playwright_profile')
-        browser = p.chromium.launch_persistent_context(
-            user_data_dir=profile_dir,
-            headless=False,
+        context = p.chromium.launch_persistent_context(
+            user_data_dir="playwright_profile2",
+            headless=True,
             channel="chrome",
             args=['--disable-blink-features=AutomationControlled']
         )
         for url in args:
             try:
-                if scrape_one_league(url, browser):
+                if scrape_one_league(url, context):
                     successful.append(url)
                 else:
                     failed.append(url)
             except Exception as e:
                 print(f"  -> CRITICAL FAILURE ON LEAGUE: {url} | Error: {e}")
                 failed.append(url)
-        browser.close()
+        # Teardown physical engine cleanly
+        context.close()
         
     print(f"\n===========================================================")
     print("  SCRAPING BATCH COMPLETE")

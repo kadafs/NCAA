@@ -1,63 +1,15 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-.idea
-/bridge_test.json
-/bridge_test_utf8.json
+*.png
+*.webp
+playwright_profile*/
 __pycache__/
-*.pyc
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# data (Enable for GHA)
-# /data/
-# /nba/data/
-data/*.log
-data/temp/
-
-# Football intermediate files (stats, fixtures, league-specific predictions)
-data/football/universal_*_stats.json
-data/football/universal_fixtures_*.json
-data/football/*_fixtures.json
-data/football/*_stats.json
-data/football/*_predictions.json
-# Keep only:  universal_predictions_YYYY-MM-DD.json  and  dates_index.json
-
-# vercel
-.vercel
-
-**/*.trace
-**/*.zip
-**/*.tar.gz
-**/*.tgz
-**/*.log
+data/
+node_modules/
 package-lock.json
-**/*.bun
-playwright_profile/
+error.log
+batch_failed_urls.txt
+all_427_flashscore_urls.txt
+*.log
+tests/
+test_*.py
+debug_*.py

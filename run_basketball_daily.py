@@ -474,6 +474,8 @@ def main():
                 "side":         side if (market and market not in (145.5, 230.0)) else None,
                 "decision":     decision if (market and market not in (145.5, 230.0)) else "MODEL ONLY",
                 "confidence":   confidence,
+                "mbet_threshold": mbet,
+                "model_architecture": matrix_type.strip(),
                 "mode":         args.mode,
                 "config_source": config.get("_source", "unknown"),
                 "tier":         config.get("_tier", "unknown"),
