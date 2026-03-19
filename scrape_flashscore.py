@@ -109,10 +109,24 @@ def scrape_one_league(url, browser):
             try:
                 page.goto(stats_url, wait_until="domcontentloaded", timeout=6000)
                 
+                # Native Resolution Array for Flashscore's secondary UI layout 
+                try:
+                    stats_tab = page.locator('a[href*="/summary/stats/"]')
+                    if stats_tab.count() > 0 and stats_tab.first.is_visible():
+                        stats_tab.first.click()
+                    else:
+                        generic_tab = page.locator("text=STATS")
+                        if generic_tab.count() > 0:
+                            generic_tab.first.click()
+                except:
+                    pass
+                    
                 # Dynamically wait for the React stats table to finish painting
                 try:
                     page.wait_for_selector(".stat__row", state="attached", timeout=3500)
                 except Exception:
+                    # Capture exactly what the scraper physically sees when missing stats
+                    page.screenshot(path=f"debug_miss_{g['match_id']}.png")
                     pass # If it times out here, the match genuinely doesn't have advanced stats published
                 
                 rows = page.locator(".stat__row").all()
@@ -161,7 +175,13 @@ def main():
     failed = []
     
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        profile_dir = os.path.join(os.getcwd(), 'playwright_profile')
+        browser = p.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
+            headless=False,
+            channel="chrome",
+            args=['--disable-blink-features=AutomationControlled']
+        )
         for url in args:
             try:
                 if scrape_one_league(url, browser):

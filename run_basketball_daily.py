@@ -355,6 +355,7 @@ def main():
         l for l in leagues
         if l["league_id"] not in EXCLUDED_LEAGUE_IDS
         and l["league_name"] not in EXCLUDED_LEAGUE_NAMES
+        and str(l.get("country") or "").strip().upper() != "USA"
     ]
     if args.league_id:
         leagues = [l for l in leagues if l["league_id"] == args.league_id]

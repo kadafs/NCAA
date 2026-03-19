@@ -120,6 +120,13 @@ def process_leagues():
         # Calculate isolated native SRS algorithms for this specific geographical locale
         srs_teams = calculate_iterative_srs(games)
         
+        # Grab local pace configuration to scale strictly into Efficiency (per 100 possessions)
+        config_path = f"configs/leagues/{league_id}.json"
+        pace_pivot = 76.0
+        if os.path.exists(config_path):
+            with open(config_path, encoding="utf-8") as f:
+                pace_pivot = json.load(f).get("pace_pivot", 76.0)
+                
         # Build Standardized Payload Output Matrix perfectly matching what UniversalBasketballEngine looks for natively
         output_stats = []
         for team_name, data in srs_teams.items():
@@ -129,16 +136,19 @@ def process_leagues():
             raw_def = data["pts_against"] / data["games"]
             
             # True Offense: Raw Offense intrinsically adjusted computationally upward by overall team SRS
-            adjO = round(raw_off + (data["srs"] / 2), 1)
+            true_ppg_o = raw_off + (data["srs"] / 2)
             # True Defense: Raw Defense intrinsically lowered by overall team SRS
-            adjD = round(raw_def - (data["srs"] / 2), 1)
+            true_ppg_d = raw_def - (data["srs"] / 2)
+            
+            adjO = round(true_ppg_o / (pace_pivot / 100), 1) if pace_pivot > 0 else 108.0
+            adjD = round(true_ppg_d / (pace_pivot / 100), 1) if pace_pivot > 0 else 108.0
             
             team_obj = {
                 "team_name": team_name,
                 "team_id": 0, # Since we lack API ID, UniversalEngine maps via name string natively
                 "adj_off": adjO,
                 "adj_def": adjD,
-                "adj_t": round((raw_off + raw_def) / 2, 1),
+                "adj_t": round(pace_pivot, 1),
                 "games_played": data["games"],
                 "srs_rating": round(data["srs"], 2)
             }
