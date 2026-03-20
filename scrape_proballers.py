@@ -123,10 +123,14 @@ def scrape_match(url, context):
     except:
         pass # Catch infinite Cloudflare spinner loading loops
         
-    html = page.content()
-    data = parse_boxscore(html)
+    try:
+        html = page.content()
+        data = parse_boxscore(html)
+    except Exception as e:
+        print(f"      [!] Skipping game (DOM locked/navigating): {e}")
+        data = {}
+        
     page.close()
-    
     return data
 
 import argparse
@@ -202,7 +206,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Proballers Advanced Metrics Mass Scraper")
     parser.add_argument("--url", type=str, help="Single schedule URL to scrape")
     parser.add_argument("--file", type=str, help="Text file containing multiple schedule URLs to batch process")
-    parser.add_argument("--max", type=int, default=15, help="Max games to scrape per league (prevent timeout during sync)")
+    parser.add_argument("--max", type=int, default=200, help="Max games to scrape per league (prevent timeout during sync)")
     
     args = parser.parse_args()
     

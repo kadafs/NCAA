@@ -21,9 +21,9 @@ def calculate_iterative_srs(games):
             continue
             
         if ht not in teams:
-            teams[ht] = {"games": 0, "pts_for": 0, "pts_against": 0, "opponents": []}
+            teams[ht] = {"games": 0, "wins": 0, "pts_for": 0, "pts_against": 0, "opponents": []}
         if at not in teams:
-            teams[at] = {"games": 0, "pts_for": 0, "pts_against": 0, "opponents": []}
+            teams[at] = {"games": 0, "wins": 0, "pts_for": 0, "pts_against": 0, "opponents": []}
             
         margin = hs - as_
         
@@ -35,11 +35,13 @@ def calculate_iterative_srs(games):
         teams[ht]["pts_for"] += hs
         teams[ht]["pts_against"] += as_
         teams[ht]["opponents"].append(at)
+        if hs > as_: teams[ht]["wins"] += 1
         
         teams[at]["games"] += 1
         teams[at]["pts_for"] += as_
         teams[at]["pts_against"] += hs
         teams[at]["opponents"].append(ht)
+        if as_ > hs: teams[at]["wins"] += 1
         
     for t, data in teams.items():
         if data["games"] > 0:
@@ -84,7 +86,8 @@ def process_leagues():
         
     f_files = glob.glob("data/historical/flashscore_*.json")
     p_files = glob.glob("data/historical/proballers_*.json")
-    historical_files = f_files + p_files
+    a_files = glob.glob("data/historical/api_basketball_*.json")
+    historical_files = f_files + p_files + a_files
     os.makedirs("data/team_stats", exist_ok=True)
     
     season = datetime.datetime.now().year
@@ -92,9 +95,13 @@ def process_leagues():
     
     for hf in historical_files:
         basename = os.path.basename(hf) 
-        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace(".json", "")
+        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace("api_basketball_", "").replace(".json", "")
         
-        league_id = slug_map.get(slug)
+        # When parsing an api_basketball_[LEAGUE_ID].json file, the slug is actually the exact ID!
+        if slug.isdigit():
+            league_id = int(slug)
+        else:
+            league_id = slug_map.get(slug)
         if not league_id:
             # Fallback for Proballers slugs which use hyphens
             league_id = slug_map.get(slug.replace("-", "_"))
@@ -152,13 +159,17 @@ def process_leagues():
             adjO = round(true_ppg_o / (pace_pivot / 100), 1) if pace_pivot > 0 else 108.0
             adjD = round(true_ppg_d / (pace_pivot / 100), 1) if pace_pivot > 0 else 108.0
             
+            win_pct = round(data["wins"] / data["games"], 3) if data["games"] > 0 else 0.0
+            
             team_obj = {
                 "team_name": team_name,
-                "team_id": 0, # Since we lack API ID, UniversalEngine maps via name string natively
+                "team_id": 0,
                 "adj_off": adjO,
                 "adj_def": adjD,
                 "adj_t": round(pace_pivot, 1),
                 "games_played": data["games"],
+                "wins": data["wins"],
+                "win_pct": win_pct,
                 "srs_rating": round(data["srs"], 2)
             }
             
