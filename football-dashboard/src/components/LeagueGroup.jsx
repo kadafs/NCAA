@@ -22,6 +22,11 @@ export default function LeagueGroup({ group, sport }) {
                 MBET {games[0].mbet_threshold}
               </span>
             )}
+            {!isFootball && games && games.length > 0 && games[0].model_architecture && (
+              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 800, padding: '2px 6px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 4 }}>
+                {games[0].model_architecture.replace(/\[|\]/g, '').trim()}
+              </span>
+            )}
           </span>
           {isFootball && stats && (stats.btts_plays > 0) && (
             <span style={{ 

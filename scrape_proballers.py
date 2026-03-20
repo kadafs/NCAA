@@ -108,6 +108,9 @@ def extract_league_schedule(url, context):
                 box_urls.append(full_url)
                 
     page.close()
+    
+    # Reverse to prioritize the most recent games (found at the bottom of the schedule)
+    box_urls.reverse()
     return box_urls
 
 def scrape_match(url, context):
@@ -133,10 +136,20 @@ def run_proballers_scraper(target_url, max_games=None):
     domain_slug = target_url.strip('/').split('/')[-2]
     out_file = f"data/historical/proballers_{domain_slug}.json"
     
-    # Simple resume logic: If file already exists and isn't empty, skip
+    existing_data = []
+    seen_sigs = set()
+    
+    # Intelligent resume logic: Load existing data to append strictly new games
     if os.path.exists(out_file) and os.path.getsize(out_file) > 1024:
-        print(f"  [~] SKIPPING {domain_slug.upper()} -> Payload already exists!")
-        return True
+        try:
+            with open(out_file, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+                for item in existing_data:
+                    sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
+                    seen_sigs.add(sig)
+            print(f"  [~] Loaded {len(existing_data)} existing historical records.")
+        except Exception as e:
+            print(f"  [!] Failed to load existing payload: {str(e)}. Starting fresh.")
 
     print(f"\n===========================================================")
     print(f"  STARTING PROBALLERS SCRAPER -> {domain_slug.upper()}")
@@ -157,22 +170,29 @@ def run_proballers_scraper(target_url, max_games=None):
         if max_games and len(matches) > max_games:
             matches = matches[:max_games]
             
-        final_dataset = []
+        new_matches_added = 0
         for i, match_url in enumerate(matches):
             print(f"      [{i+1}/{len(matches)}] Harvesting advanced stats: {match_url.split('/')[-1]}")
             m_data = scrape_match(match_url, context)
             if m_data:
-                final_dataset.append(m_data)
+                sig = f"{m_data.get('date')} {m_data.get('home_team')} {m_data.get('away_team')}"
+                if sig not in seen_sigs:
+                    existing_data.append(m_data)
+                    seen_sigs.add(sig)
+                    new_matches_added += 1
+                    print(f"        -> [+] Appended new data!")
+                else:
+                    print(f"        -> [~] Match already exists in dataset: {sig}")
                 
             # Intelligent rate limit to avoid Cloudflare shadowbans
             time.sleep(random.uniform(2.1, 4.3))
                 
-        print("\n  [+] Mapped Mathematical Payloads:")
+        print(f"\n  [+] Mapped Mathematical Payloads (New: {new_matches_added})")
         
-        if final_dataset:
+        if existing_data:
             os.makedirs("data/historical", exist_ok=True)
             with open(out_file, 'w', encoding='utf-8') as f:
-                json.dump(final_dataset, f, indent=2, ensure_ascii=False)
+                json.dump(existing_data, f, indent=2, ensure_ascii=False)
             print(f"  [+] SUCCESS: Historical [ADVANCED] payload locked -> {out_file}")
             
         browser.close()

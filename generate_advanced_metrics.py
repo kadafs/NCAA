@@ -96,12 +96,19 @@ def process_leagues():
         
         league_id = slug_map.get(slug)
         if not league_id:
-            continue
+            # Fallback for Proballers slugs which use hyphens
+            league_id = slug_map.get(slug.replace("-", "_"))
+            if not league_id:
+                print(f"Skipping {slug} - mapping ID not found in league_slug_map.json.")
+                continue
             
         with open(hf, encoding="utf-8") as f:
             data = json.load(f)
             
-        games = data.get("games", [])
+        if isinstance(data, list):
+            games = data
+        else:
+            games = data.get("games", [])
         if len(games) < 5:
             continue
             
@@ -109,7 +116,7 @@ def process_leagues():
         advanced_eligible = False
         rebound_count = 0
         for g in games[-10:]:
-            if "advanced_stats" in g and len(g["advanced_stats"]) > 0:
+            if ("advanced_stats" in g and len(g["advanced_stats"]) > 0) or ("stats" in g and len(g["stats"]) > 0):
                 rebound_count += 1
                 
         if rebound_count >= 3:

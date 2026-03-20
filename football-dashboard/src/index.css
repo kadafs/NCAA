@@ -486,6 +486,55 @@ body {
   color: var(--box-xg);
 }
 
+/* Basketball Analytics Boxes */
+.bball-model-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 0 4px;
+  white-space: nowrap;
+  width: 100%;
+  border: 1.5px solid var(--border);
+}
+.bball-model-box.over { 
+  background: #dcfce7; 
+  color: var(--badge-yes); 
+  border-color: #bbf7d0;
+}
+.bball-model-box.under { 
+  background: #fee2e2; 
+  color: var(--badge-no); 
+  border-color: #fecaca;
+}
+
+.bball-xpts-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--box-xg);
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 0 4px;
+  white-space: nowrap;
+  width: 100%;
+}
+.bball-xpts-box sub {
+  font-size: 7px;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
 .stat-label {
   font-size: 8px;
   font-weight: 700;

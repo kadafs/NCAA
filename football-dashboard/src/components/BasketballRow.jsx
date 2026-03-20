@@ -45,10 +45,10 @@ export default function BasketballRow({ game }) {
         
         <div className="match-teams">
           <div className="team-row">
-            <span className="team-name">{away_team} {away_source && <span className="source-flag">{away_source}</span>}</span>
+            <span className="team-name">{home_team}</span>
           </div>
           <div className="team-row">
-            <span className="team-name">{home_team}</span>
+            <span className="team-name">{away_team}</span>
           </div>
         </div>
 
@@ -70,15 +70,20 @@ export default function BasketballRow({ game }) {
 
         {/* MODEL COLUMN (Model Total) */}
         <div className="stat-col center">
-          <div className="stat-val model-pct">
+          <div className={`bball-model-box ${decision === 'PLAY OVER' ? 'over' : decision === 'PLAY UNDER' ? 'under' : ''}`}>
             {model_total > 0 ? model_total.toFixed(1) : '—'}
           </div>
         </div>
 
         {/* xPTS COLUMN */}
         <div className="stat-col center">
-          <div className="stat-val xpts-val" style={{ whiteSpace: 'nowrap' }}>
-            {xpts_a.toFixed(1)} - {xpts_h.toFixed(1)}
+          <div className="bball-xpts-box" style={{ flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '4px 12px' }}>
+            <span style={{ fontWeight: tip === '1' ? 800 : 500, opacity: tip === '1' ? 1 : 0.7 }}>
+              {xpts_h.toFixed(1)}
+            </span>
+            <span style={{ fontWeight: tip === '2' ? 800 : 500, opacity: tip === '2' ? 1 : 0.7 }}>
+              {xpts_a.toFixed(1)}
+            </span>
           </div>
         </div>
       </div>
