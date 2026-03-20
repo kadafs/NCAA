@@ -98,10 +98,11 @@ def main():
         lid = fix["league"]["id"]
         h_name = fix["teams"]["home"]["name"]
         a_name = fix["teams"]["away"]["name"]
+        status = fix.get("status", {}).get("short")
         h_score = fix.get("scores", {}).get("home", {}).get("total")
         a_score = fix.get("scores", {}).get("away", {}).get("total")
         if h_score is not None and a_score is not None:
-            results_map[(lid, h_name, a_name)] = (int(h_score), int(a_score))
+            results_map[(lid, h_name, a_name)] = (int(h_score), int(a_score), status)
 
     matched = 0
     graded_list = []
@@ -115,7 +116,7 @@ def main():
         
         key = (pred["league_id"], pred["home_team"], pred["away_team"])
         if key in results_map:
-            h_s, a_s = results_map[key]
+            h_s, a_s, status = results_map[key]
             actual = "HOME" if h_s > a_s else "AWAY"
             
             p = pred.copy()
@@ -123,12 +124,36 @@ def main():
             p["actual_away_score"] = a_s
             p["actual_result"]     = actual
             
+            # The Delta Grading Matrix
+            model_total = p.get("model", {}).get("total")
+            if model_total:
+                if status == "AOT":
+                    p["accuracy_tier"] = "🚨 OT WARP"
+                    p["total_delta"] = None
+                    p["total_rpe"] = None
+                else:
+                    actual_total = h_s + a_s
+                    delta = abs(actual_total - model_total)
+                    rpe = (delta / actual_total) * 100 if actual_total > 0 else 0
+                    
+                    if delta <= 4.0: tier = "🎯 BULLSEYE"
+                    elif delta <= 8.5: tier = "🟢 EXCELLENT"
+                    elif delta <= 14.5: tier = "🟡 SOLID"
+                    elif delta <= 21.0: tier = "🟠 MISS"
+                    else: tier = "🔴 BUST"
+                    
+                    p["total_delta"] = round(delta, 2)
+                    p["total_rpe"] = round(rpe, 2)
+                    p["accuracy_tier"] = tier
+            
             # Outcome grade
             is_win = (p.get("predicted_result") == actual)
             if is_win: wins += 1
             total += 1
             
-            print(f"  [OK] {pred['home_team']} {h_s}-{a_s} {pred['away_team']} -> {actual} ({'WIN' if is_win else 'LOSS'})")
+            # Formatted Output
+            tier_str = p.get("accuracy_tier", "")
+            print(f"  [OK] {pred['home_team']} {h_s}-{a_s} {pred['away_team']} -> {actual} ({'WIN' if is_win else 'LOSS'}) | {tier_str}")
             graded_list.append(p)
             matched += 1
         else:

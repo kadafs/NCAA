@@ -26,17 +26,16 @@ def process_file(file_path, stats_dict):
             actual_1x2 = p.get("actual_result")
             is_1x2_win = (pred_1x2 == actual_1x2)
             
-            # Totals grade
-            market_total = p.get("market_total")
-            actual_home = p.get("actual_home_score", 0)
-            actual_away = p.get("actual_away_score", 0)
-            actual_total = actual_home + actual_away if actual_home and actual_away else 0
+            # Totals grade (The Delta Matrix)
+            tier = p.get("accuracy_tier")
+            rpe = p.get("total_rpe")
             
             if league_name not in stats_dict:
                 stats_dict[league_name] = {
-                    "over_w": 0, "over_l": 0,
-                    "under_w": 0, "under_l": 0,
-                    "1x2_w": 0, "1x2_l": 0
+                    "1x2_w": 0, "1x2_l": 0,
+                    "bullseyes": 0, "excellents": 0, "solids": 0,
+                    "misses": 0, "busts": 0, "ots": 0,
+                    "sum_rpe": 0.0, "count_rpe": 0
                 }
                 
             l_stats = stats_dict[league_name]
@@ -48,17 +47,17 @@ def process_file(file_path, stats_dict):
                 else:
                     l_stats["1x2_l"] += 1
             
-            # Tally Totals
-            if decision == "PLAY OVER" and actual_total > 0 and market_total:
-                if actual_total > market_total:
-                    l_stats["over_w"] += 1
-                else:
-                    l_stats["over_l"] += 1
-            elif decision == "PLAY UNDER" and actual_total > 0 and market_total:
-                if actual_total < market_total:
-                    l_stats["under_w"] += 1
-                else:
-                    l_stats["under_l"] += 1
+            # Tally Totals Accuracy Matrix
+            if tier == "🎯 BULLSEYE": l_stats["bullseyes"] += 1
+            elif tier == "🟢 EXCELLENT": l_stats["excellents"] += 1
+            elif tier == "🟡 SOLID": l_stats["solids"] += 1
+            elif tier == "🟠 MISS": l_stats["misses"] += 1
+            elif tier == "🔴 BUST": l_stats["busts"] += 1
+            elif tier == "🚨 OT WARP": l_stats["ots"] += 1
+            
+            if rpe is not None:
+                l_stats["sum_rpe"] += rpe
+                l_stats["count_rpe"] += 1
                     
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")
@@ -104,20 +103,9 @@ def main():
     leaderboard = []
     
     for lname, s in league_stats.items():
-        o_w = s["over_w"]
-        o_l = s["over_l"]
-        u_w = s["under_w"]
-        u_l = s["under_l"]
-        totals_w = o_w + u_w
-        totals_l = o_l + u_l
-        totals_plays = totals_w + totals_l
+        count_rpe = s["count_rpe"]
+        mape = (s["sum_rpe"] / count_rpe) if count_rpe > 0 else 0.0
         
-        roi = 0.0
-        hit_rate = 0.0
-        if totals_plays > 0:
-            roi = (totals_w * 0.909) - totals_l
-            hit_rate = (totals_w / totals_plays) * 100
-            
         x_w = s["1x2_w"]
         x_l = s["1x2_l"]
         x_total = x_w + x_l
@@ -125,18 +113,21 @@ def main():
             
         leaderboard.append({
             "name": lname,
-            "totals_plays": totals_plays,
-            "totals_w": totals_w,
-            "totals_l": totals_l,
-            "totals_hit_rate": round(hit_rate, 1),
-            "totals_roi": round(roi, 2),
+            "mape": round(mape, 2),
+            "graded_totals": count_rpe,
+            "bullseyes": s["bullseyes"],
+            "excellents": s["excellents"],
+            "solids": s["solids"],
+            "misses": s["misses"],
+            "busts": s["busts"],
+            "ots": s["ots"],
             "outcome_w": x_w,
             "outcome_l": x_l,
             "outcome_hit_rate": round(x_hit_rate, 1)
         })
         
-    # Sort by Totals ROI descending
-    leaderboard.sort(key=lambda x: x["totals_roi"], reverse=True)
+    # Sort by MAPE ascending (lowest error is best, ignoring 0 mapes)
+    leaderboard.sort(key=lambda x: (x["mape"] == 0, x["mape"]))
     
     output_data = {
         "updated_at": datetime.now().isoformat(),

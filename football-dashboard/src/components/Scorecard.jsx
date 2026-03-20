@@ -39,16 +39,6 @@ export default function Scorecard({ data, sport = 'football' }) {
     // Basketball Outcome (1X2 / ML)
     outcomeW = graded.filter(p => p.predicted_result === p.actual_result).length
     outcomeT = graded.length
-    // Total (O/U)
-    playW = graded.filter(p => {
-      const d = p.decision;
-      const actualTotal = (p.actual_home_score || 0) + (p.actual_away_score || 0);
-      const marketTotal = p.market_total;
-      if (!marketTotal || !actualTotal) return false;
-      return (d === 'PLAY OVER' && actualTotal > marketTotal) || (d === 'PLAY UNDER' && actualTotal < marketTotal);
-    }).length
-    playT = graded.filter(p => p.decision === 'PLAY OVER' || p.decision === 'PLAY UNDER').length
-    playLabel = "O/U Plays"
   }
 
   const outcomePct = pct(outcomeW, outcomeT)
@@ -66,13 +56,15 @@ export default function Scorecard({ data, sport = 'football' }) {
         )}
       </div>
 
-      <div className="scorecard-stat">
-        <span className="sc-label">{playLabel}</span>
-        <span className="sc-record">{playW}W – {playT - playW}L</span>
-        {playPct != null && (
-          <span className="sc-pct" style={{ color: pctColor(playPct) }}>{playPct}%</span>
-        )}
-      </div>
+      {isFootball && (
+        <div className="scorecard-stat">
+          <span className="sc-label">{playLabel}</span>
+          <span className="sc-record">{playW}W – {playT - playW}L</span>
+          {playPct != null && (
+            <span className="sc-pct" style={{ color: pctColor(playPct) }}>{playPct}%</span>
+          )}
+        </div>
+      )}
 
       {pending > 0 && (
         <div className="sc-pending">⏳ {pending} game{pending !== 1 ? 's' : ''} pending</div>
