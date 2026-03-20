@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { fetchDates, fetchFootball, fetchLeagueLeaderboard } from './api'
+import { fetchDates, fetchPredictions, fetchLeaderboard } from './api'
 import Header from './components/Header'
 import Scorecard from './components/Scorecard'
 import LeagueGroup from './components/LeagueGroup'
@@ -20,16 +20,20 @@ function sortGroups(groups, sortBy) {
   return [...groups].sort((a, b) => a.league.localeCompare(b.league))
 }
 
-function filterPredictions(predictions, decision, country, drawMin) {
+function filterPredictions(predictions, decision, country, drawMin, sport) {
   return predictions.filter(p => {
-    if (decision !== 'all' && p.btts_decision !== decision) return false
+    // Sport-specific decision mapping
+    const pDecision = sport === 'football' ? p.btts_decision : p.decision
+    if (decision !== 'all' && pDecision !== decision) return false
+    
     if (country  !== 'all' && p.country        !== country)  return false
-    if (drawMin  !== 0     && (p.draw_prob_1x2 ?? 0) < drawMin) return false
+    if (sport === 'football' && drawMin !== 0 && (p.draw_prob_1x2 ?? 0) < drawMin) return false
     return true
   })
 }
 
 export default function App() {
+  const [sport,         setSport]         = useState('football')
   const [dates,         setDates]         = useState([])   // [{date,graded,...}]
   const [selectedDate,  setSelectedDate]  = useState(null)
   const [data,          setData]          = useState(null)
@@ -43,22 +47,37 @@ export default function App() {
   const [leaderboard,   setLeaderboard]   = useState([])
 
   useEffect(() => {
-    fetchDates()
-      .then(d => { setDates(d); if (d.length > 0) setSelectedDate(d[0].date) })
-      .catch(() => setError('Could not connect to API. Is the backend running?'))
+    setLoading(true)
+    fetchDates(sport)
+      .then(d => { 
+        setDates(d)
+        if (d.length > 0) {
+          // Keep same date if possible when switching sports
+          const matches = d.find(x => x.date === selectedDate)
+          if (!matches) setSelectedDate(d[0].date) 
+        } else {
+          setSelectedDate(null)
+          setData(null)
+        }
+        setLoading(false)
+      })
+      .catch(() => {
+        setError(`Could not fetch ${sport} dates.`)
+        setLoading(false)
+      })
       
-    fetchLeagueLeaderboard()
+    fetchLeaderboard(sport)
       .then(d => setLeaderboard(d))
-      .catch(e => console.warn('Could not fetch leaderboard:', e))
-  }, [])
+      .catch(e => console.warn(`Could not fetch ${sport} leaderboard:`, e))
+  }, [sport])
 
   useEffect(() => {
     if (!selectedDate) return
-    setLoading(true); setError(null); setData(null)
-    fetchFootball(selectedDate)
+    setLoading(true); setError(null); 
+    fetchPredictions(selectedDate, sport)
       .then(d => { setData(d); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
-  }, [selectedDate])
+  }, [selectedDate, sport])
 
   const countries = useMemo(() => {
     if (!data) return []
@@ -67,18 +86,26 @@ export default function App() {
 
   const filtered = useMemo(() => {
     if (!data) return []
-    return filterPredictions(data.predictions, filterDecision, filterCountry, filterDraw)
-  }, [data, filterDecision, filterCountry, filterDraw])
+    return filterPredictions(data.predictions, filterDecision, filterCountry, filterDraw, sport)
+  }, [data, filterDecision, filterCountry, filterDraw, sport])
 
   const groups = useMemo(() => sortGroups(groupByLeague(filtered), sortBy), [filtered, sortBy])
 
   const counts = useMemo(() => {
-    const yes    = filtered.filter(p => p.btts_decision === 'PLAY YES').length
-    const no     = filtered.filter(p => p.btts_decision === 'PLAY NO' || p.btts_decision === '[STRONG] PLAY NO').length
-    const strong = filtered.filter(p => p.btts_decision === '[STRONG] PLAY NO').length
-    const pass   = filtered.filter(p => p.btts_decision === 'PASS').length
-    return { total: filtered.length, yes, no, strong, pass }
-  }, [filtered])
+    if (sport === 'football') {
+      const yes    = filtered.filter(p => p.btts_decision === 'PLAY YES').length
+      const no     = filtered.filter(p => p.btts_decision === 'PLAY NO' || p.btts_decision === '[STRONG] PLAY NO').length
+      const strong = filtered.filter(p => p.btts_decision === '[STRONG] PLAY NO').length
+      const pass   = filtered.filter(p => p.btts_decision === 'PASS').length
+      return { total: filtered.length, yes, no, strong, pass }
+    } else {
+      const yes    = filtered.filter(p => p.decision === 'PLAY OVER').length
+      const no     = filtered.filter(p => p.decision === 'PLAY UNDER').length
+      const strong = filtered.filter(p => (p.edge ?? 0) > 5.0).length
+      const pass   = filtered.filter(p => p.decision === 'PASS' || p.decision === 'MODEL ONLY').length
+      return { total: filtered.length, yes, no, strong, pass }
+    }
+  }, [filtered, sport])
 
   // Is this date graded at all (partially or fully)?
   const dateInfo    = dates.find(d => d.date === selectedDate)
@@ -90,6 +117,15 @@ export default function App() {
         dates={dates} 
         selected={selectedDate} 
         onSelect={setSelectedDate} 
+        sport={sport}
+        setSport={(s) => { 
+          setSport(s); 
+          setData(null);
+          setError(null);
+          setFilterDecision('all'); 
+          setFilterCountry('all'); 
+          setFilterDraw(0); 
+        }}
         filterDecision={filterDecision}
         setFilterDecision={setFilterDecision}
         filterDraw={filterDraw}
@@ -99,7 +135,7 @@ export default function App() {
       <div className="main-wrapper">
 
         {/* Scorecard (only shown if grading data exists) */}
-        {hasGrading && data && <Scorecard data={data} />}
+        {hasGrading && data && <Scorecard data={data} sport={sport} />}
 
         {/* API connection error — shown prominently above controls */}
         {error && !loading && (
@@ -117,23 +153,38 @@ export default function App() {
             </button>
           ))}
 
-          <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, marginLeft: 12 }}>BTTS:</span>
+          <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, marginLeft: 12 }}>
+            {sport === 'football' ? 'BTTS:' : 'DECISION:'}
+          </span>
           <select className="filter-select" value={filterDecision} onChange={e => setFilterDecision(e.target.value)}>
             <option value="all">All decisions</option>
-            <option value="PLAY YES">PLAY YES</option>
-            <option value="PLAY NO">PLAY NO</option>
-            <option value="[STRONG] PLAY NO">[STRONG] PLAY NO</option>
+            {sport === 'football' ? (
+              <>
+                <option value="PLAY YES">PLAY YES</option>
+                <option value="PLAY NO">PLAY NO</option>
+                <option value="[STRONG] PLAY NO">[STRONG] PLAY NO</option>
+              </>
+            ) : (
+              <>
+                <option value="PLAY OVER">PLAY OVER</option>
+                <option value="PLAY UNDER">PLAY UNDER</option>
+              </>
+            )}
             <option value="PASS">PASS</option>
           </select>
 
-          <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, marginLeft: 8 }}>Draw:</span>
-          <select className="filter-select" value={filterDraw} onChange={e => setFilterDraw(Number(e.target.value))}>
-            <option value={0}>All draws</option>
-            <option value={25}>≥ 25%</option>
-            <option value={30}>≥ 30%</option>
-            <option value={35}>≥ 35%</option>
-            <option value={40}>≥ 40%</option>
-          </select>
+          {sport === 'football' && (
+            <>
+              <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600, marginLeft: 8 }}>Draw:</span>
+              <select className="filter-select" value={filterDraw} onChange={e => setFilterDraw(Number(e.target.value))}>
+                <option value={0}>All draws</option>
+                <option value={25}>≥ 25%</option>
+                <option value={30}>≥ 30%</option>
+                <option value={35}>≥ 35%</option>
+                <option value={40}>≥ 40%</option>
+              </select>
+            </>
+          )}
 
           <select className="filter-select" value={filterCountry} onChange={e => setFilterCountry(e.target.value)}>
             {countries.map(c => <option key={c} value={c}>{c === 'all' ? 'All countries' : c}</option>)}
@@ -142,8 +193,17 @@ export default function App() {
           {data && (
             <div className="summary-pill">
               <strong>{counts.total}</strong> games ·{' '}
-              <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} YES</span> ·{' '}
-              <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO</span>
+              {sport === 'football' ? (
+                <>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} YES</span> ·{' '}
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO</span>
+                </>
+              ) : (
+                <>
+                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} OVER</span> ·{' '}
+                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} UNDER</span>
+                </>
+              )}
               {counts.strong > 0 && <span style={{ color: '#7f1d1d', fontWeight: 700 }}> ({counts.strong} ⚡)</span>} ·{' '}
               <span style={{ color: '#6b7280' }}>{counts.pass} PASS</span>
             </div>
@@ -160,7 +220,7 @@ export default function App() {
           <div className="predictions-table">
             {groups.map(g => {
               const stats = leaderboard.find(x => x.name === g.league.toUpperCase())
-              return <LeagueGroup key={`${g.league_id}-${g.league}`} group={{...g, stats}} />
+              return <LeagueGroup key={`${g.league_id}-${g.league}`} group={{...g, stats}} sport={sport} />
             })}
           </div>
         )}

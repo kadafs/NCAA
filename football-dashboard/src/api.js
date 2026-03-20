@@ -5,41 +5,41 @@
  */
 
 const isDev = import.meta.env.DEV
-const API   = '/api'          // vite proxy in dev
-const DATA  = '/data/football' // static public/ files in prod
+const API   = '/api'
+const DATA  = '/data'
 
-export async function fetchDates() {
+export async function fetchDates(sport = 'football') {
   if (isDev) {
-    const r = await fetch(`${API}/dates`)
-    if (!r.ok) throw new Error('Failed to fetch dates')
+    const r = await fetch(`${API}/dates?sport=${sport}`)
+    if (!r.ok) throw new Error(`Failed to fetch ${sport} dates`)
     const d = await r.json()
     return d.dates
   }
-  const r = await fetch(`${DATA}/dates_index.json?t=${Date.now()}`)
-  if (!r.ok) throw new Error('Failed to fetch dates index')
+  const r = await fetch(`${DATA}/${sport}/dates_index.json?t=${Date.now()}`)
+  if (!r.ok) throw new Error(`Failed to fetch ${sport} dates index`)
   const d = await r.json()
-  return d.dates   // [{ date, total, graded, graded_count, grade_summary }]
+  return d.dates
 }
 
-export async function fetchFootball(date) {
+export async function fetchPredictions(date, sport = 'football') {
   if (isDev) {
-    const r = await fetch(`${API}/football?date=${date}`)
-    if (!r.ok) throw new Error(`No predictions for ${date}`)
+    const r = await fetch(`${API}/${sport}?date=${date}`)
+    if (!r.ok) throw new Error(`No ${sport} predictions for ${date}`)
     return r.json()
   }
-  const r = await fetch(`${DATA}/universal_predictions_${date}.json?t=${Date.now()}`)
-  if (!r.ok) throw new Error(`No predictions for ${date}`)
+  const r = await fetch(`${DATA}/${sport}/universal_predictions_${date}.json?t=${Date.now()}`)
+  if (!r.ok) throw new Error(`No ${sport} predictions for ${date}`)
   return r.json()
 }
 
-export async function fetchLeagueLeaderboard() {
+export async function fetchLeaderboard(sport = 'football') {
   if (isDev) {
-    const r = await fetch(`${API}/leaderboard`)
+    const r = await fetch(`${API}/leaderboard?sport=${sport}`)
     if (!r.ok) return []
     const d = await r.json()
     return d.leaderboard || []
   }
-  const r = await fetch(`${DATA}/league_leaderboard.json?t=${Date.now()}`)
+  const r = await fetch(`${DATA}/${sport}/league_leaderboard.json?t=${Date.now()}`)
   if (!r.ok) return []
   const d = await r.json()
   return d.leaderboard || []

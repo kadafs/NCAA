@@ -126,9 +126,20 @@ def scrape_match(url, context):
     
     return data
 
-def run_proballers_scraper(target_url):
+import argparse
+import random
+
+def run_proballers_scraper(target_url, max_games=None):
+    domain_slug = target_url.strip('/').split('/')[-2]
+    out_file = f"data/historical/proballers_{domain_slug}.json"
+    
+    # Simple resume logic: If file already exists and isn't empty, skip
+    if os.path.exists(out_file) and os.path.getsize(out_file) > 1024:
+        print(f"  [~] SKIPPING {domain_slug.upper()} -> Payload already exists!")
+        return True
+
     print(f"\n===========================================================")
-    print(f"  STARTING PROBALLERS SCRAPER")
+    print(f"  STARTING PROBALLERS SCRAPER -> {domain_slug.upper()}")
     print(f"===========================================================")
 
     with sync_playwright() as p:
@@ -143,32 +154,56 @@ def run_proballers_scraper(target_url):
         matches = extract_league_schedule(target_url, context)
         print(f"  -> Extracted {len(matches)} historical payload links from DOM.")
         
-        # Only test first 3 Matches to avoid massive delays dynamically
-        # In production this loop executes on entire seasons.
+        if max_games and len(matches) > max_games:
+            matches = matches[:max_games]
+            
         final_dataset = []
-        for i, match_url in enumerate(matches[:3]):
-            print(f"      [{i+1}/{len(matches[:3])}] Harvesting advanced stats: {match_url.split('/')[-1]}")
+        for i, match_url in enumerate(matches):
+            print(f"      [{i+1}/{len(matches)}] Harvesting advanced stats: {match_url.split('/')[-1]}")
             m_data = scrape_match(match_url, context)
             if m_data:
                 final_dataset.append(m_data)
                 
+            # Intelligent rate limit to avoid Cloudflare shadowbans
+            time.sleep(random.uniform(2.1, 4.3))
+                
         print("\n  [+] Mapped Mathematical Payloads:")
         
-        # Save payload mechanically
         if final_dataset:
             os.makedirs("data/historical", exist_ok=True)
-            domain_slug = target_url.strip('/').split('/')[-2]
-            out_file = f"data/historical/proballers_{domain_slug}.json"
-            
             with open(out_file, 'w', encoding='utf-8') as f:
                 json.dump(final_dataset, f, indent=2, ensure_ascii=False)
             print(f"  [+] SUCCESS: Historical [ADVANCED] payload locked -> {out_file}")
             
         browser.close()
+        return True
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python scrape_proballers.py <LEAGUE_SCHEDULE_URL>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Proballers Advanced Metrics Mass Scraper")
+    parser.add_argument("--url", type=str, help="Single schedule URL to scrape")
+    parser.add_argument("--file", type=str, help="Text file containing multiple schedule URLs to batch process")
+    parser.add_argument("--max", type=int, default=15, help="Max games to scrape per league (prevent timeout during sync)")
     
-    run_proballers_scraper(sys.argv[1])
+    args = parser.parse_args()
+    
+    if args.url:
+        run_proballers_scraper(args.url, max_games=args.max)
+    elif args.file:
+        if not os.path.exists(args.file):
+            print(f"Error: File {args.file} not found.")
+            sys.exit(1)
+            
+        with open(args.file, "r") as f:
+            urls = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+            
+        print(f"Found {len(urls)} leagues in target manifest. Commencing Mass Extraction Sequence.")
+        for idx, url in enumerate(urls):
+            print(f"\n[BATCH ROUTINE] Extracting League {idx+1} of {len(urls)}...")
+            run_proballers_scraper(url, max_games=args.max)
+            
+            if idx < len(urls) - 1:
+                cooldown = random.uniform(8.5, 14.5)
+                print(f"  -> Cooldown for {cooldown:.1f}s before next league...")
+                time.sleep(cooldown)
+    else:
+        parser.print_help()

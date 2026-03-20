@@ -10,7 +10,8 @@ function pctColor(p) {
   return '#dc2626'
 }
 
-export default function Scorecard({ data }) {
+export default function Scorecard({ data, sport = 'football' }) {
+  const isFootball = sport === 'football'
   const summary = data?.grade_summary
   const predictions = data?.predictions ?? []
 
@@ -20,37 +21,56 @@ export default function Scorecard({ data }) {
 
   if (!summary && graded.length === 0) return null  // nothing to show yet
 
-  // Compute live from predictions if summary not embedded
-  const x12W = summary?.outcome_wins  ?? graded.filter(p => p.predicted_result === p.actual_result).length
-  const x12T = summary?.outcome_total ?? graded.length
-  const bW   = summary?.btts_wins  ?? graded.filter(p => {
-    const d = p.btts_decision; const a = p.actual_btts
-    return (d === 'PLAY YES' && a === true) || (d === 'PLAY NO' && a === false) || (d === '[STRONG] PLAY NO' && a === false)
-  }).length
-  const bT   = summary?.btts_total ?? graded.filter(p =>
-    p.btts_decision === 'PLAY YES' || p.btts_decision === 'PLAY NO' || p.btts_decision === '[STRONG] PLAY NO'
-  ).length
+  // Logic varies by sport
+  let outcomeW, outcomeT, playW, playT, playLabel
 
-  const x12pct = pct(x12W, x12T)
-  const bpct   = pct(bW, bT)
+  if (isFootball) {
+    outcomeW = summary?.outcome_wins  ?? graded.filter(p => p.predicted_result === p.actual_result).length
+    outcomeT = summary?.outcome_total ?? graded.length
+    playW   = summary?.btts_wins  ?? graded.filter(p => {
+      const d = p.btts_decision; const a = p.actual_btts
+      return (d === 'PLAY YES' && a === true) || (d === 'PLAY NO' && a === false) || (d === '[STRONG] PLAY NO' && a === false)
+    }).length
+    playT   = summary?.btts_total ?? graded.filter(p =>
+      p.btts_decision === 'PLAY YES' || p.btts_decision === 'PLAY NO' || p.btts_decision === '[STRONG] PLAY NO'
+    ).length
+    playLabel = "BTTS Plays"
+  } else {
+    // Basketball Outcome (1X2 / ML)
+    outcomeW = graded.filter(p => p.predicted_result === p.actual_result).length
+    outcomeT = graded.length
+    // Total (O/U)
+    playW = graded.filter(p => {
+      const d = p.decision;
+      const actualTotal = (p.actual_home_score || 0) + (p.actual_away_score || 0);
+      const marketTotal = p.market_total;
+      if (!marketTotal || !actualTotal) return false;
+      return (d === 'PLAY OVER' && actualTotal > marketTotal) || (d === 'PLAY UNDER' && actualTotal < marketTotal);
+    }).length
+    playT = graded.filter(p => p.decision === 'PLAY OVER' || p.decision === 'PLAY UNDER').length
+    playLabel = "O/U Plays"
+  }
+
+  const outcomePct = pct(outcomeW, outcomeT)
+  const playPct    = pct(playW, playT)
 
   return (
     <div className="scorecard">
       <div className="scorecard-title">📊 Grade Summary</div>
 
       <div className="scorecard-stat">
-        <span className="sc-label">1X2 Outcome</span>
-        <span className="sc-record">{x12W}W – {x12T - x12W}L</span>
-        {x12pct != null && (
-          <span className="sc-pct" style={{ color: pctColor(x12pct) }}>{x12pct}%</span>
+        <span className="sc-label">{isFootball ? '1X2 Outcome' : 'Winner (ML)'}</span>
+        <span className="sc-record">{outcomeW}W – {outcomeT - outcomeW}L</span>
+        {outcomePct != null && (
+          <span className="sc-pct" style={{ color: pctColor(outcomePct) }}>{outcomePct}%</span>
         )}
       </div>
 
       <div className="scorecard-stat">
-        <span className="sc-label">BTTS Plays</span>
-        <span className="sc-record">{bW}W – {bT - bW}L</span>
-        {bpct != null && (
-          <span className="sc-pct" style={{ color: pctColor(bpct) }}>{bpct}%</span>
+        <span className="sc-label">{playLabel}</span>
+        <span className="sc-record">{playW}W – {playT - playW}L</span>
+        {playPct != null && (
+          <span className="sc-pct" style={{ color: pctColor(playPct) }}>{playPct}%</span>
         )}
       </div>
 

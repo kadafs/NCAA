@@ -27,6 +27,17 @@ Output: `data/api_basketball_today_YYYY-MM-DD.json`
 
 ---
 
+## Step 1.5 — Update Advanced Form (Proballers)
+
+Run the mass batch extractor to fetch the most recent data points for active global leagues and recalibrate True Offense/Defense metrics.
+
+```bash
+python scrape_proballers.py --file configs/proballers_leagues.txt --max 5
+python generate_advanced_metrics.py
+```
+
+---
+
 ## Step 2 — Run predictions
 
 ```bash

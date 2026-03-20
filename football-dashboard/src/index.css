@@ -61,7 +61,7 @@
   --shadow-md:   0 4px 16px rgba(0,0,0,.08);
   --shadow-lg:   0 8px 32px rgba(0,0,0,.12);
 
-  /* Grid — columns: time | teams | tip+grade | chevron | 1x2 | btts | xg | decision */
+  /* Football Grid */
   --col-time:     72px;
   --col-tip:      44px;
   --col-chev:     22px;
@@ -71,6 +71,16 @@
   --col-decision: 130px;
   --grid:         var(--col-time) 1fr var(--col-tip) var(--col-chev)
                   var(--col-1x2) var(--col-btts) var(--col-xg) var(--col-decision);
+
+  /* Basketball Grid */
+  --col-model:    80px;
+  --col-xpts:     100px;
+  --grid-bball:   var(--col-time) 1fr var(--col-tip) var(--col-chev)
+                  var(--col-1x2) var(--col-model) var(--col-xpts);
+}
+
+.bball-grid {
+  grid-template-columns: var(--grid-bball) !important;
 }
 
 body {
@@ -124,6 +134,54 @@ body {
   align-items: center;
   gap: 6px;
 }
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.sport-toggle {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.sport-btn {
+  padding: 6px 14px;
+  border-radius: 9px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  outline: none;
+}
+
+.sport-btn:hover:not(.active) {
+  background: rgba(0,0,0,0.03);
+  color: #1e293b;
+}
+
+.sport-btn.active {
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.league-header.bball-grid,
+.match-row.bball-grid {
+  display: grid !important;
+  grid-template-columns: var(--grid-bball) !important;
+}
+
 .header-badge {
   font-size: 11px;
   font-weight: 700;
@@ -382,6 +440,59 @@ body {
 .tip-badge.home { background: var(--box-home); box-shadow: 0 2px 6px rgba(239,68,68,0.28); }
 .tip-badge.draw { background: var(--box-draw); box-shadow: none; }
 .tip-badge.away { background: var(--box-away); box-shadow: 0 2px 6px rgba(59,130,246,0.28); }
+
+/* Basketball Specific UI */
+.source-flag {
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #94a3b8;
+  margin-left: 6px;
+  vertical-align: middle;
+  border: 1px solid #e2e8f0;
+}
+
+.prob-box-1x2 {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+}
+.prob-box-1x2 .p-item {
+  width: 32px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 4px;
+}
+.prob-box-1x2 .p-item.h { background: var(--box-home); }
+.prob-box-1x2 .p-item.d { background: var(--box-draw); }
+.prob-box-1x2 .p-item.a { background: var(--box-away); }
+
+.model-pct {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.xpts-val {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--box-xg);
+}
+
+.stat-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-top: -2px;
+}
 
 /* Stat boxes */
 .stat-group { display: flex; gap: 3px; justify-content: center; }

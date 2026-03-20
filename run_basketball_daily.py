@@ -26,10 +26,12 @@ import os
 import json
 import argparse
 import requests
+import math
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from glob import glob
 from dotenv import load_dotenv
+from scipy.stats import norm
 
 if sys.platform == "win32":
     try:
@@ -96,6 +98,88 @@ def save_json(path, data):
 
 
 # ------------------------------------------------------------------
+# MATCH CENTER HELPERS (Parity with Football)
+# ------------------------------------------------------------------
+
+def fetch_h2h_bball(h_id, a_id, refresh=False):
+    if not h_id or not a_id: return []
+    cache_path = f"data/bball_h2h_{h_id}_{a_id}.json"
+    if not refresh and os.path.exists(cache_path):
+        return load_json(cache_path).get("response", [])
+    
+    print(f"    Fetching H2H for {h_id} vs {a_id}...")
+    try:
+        r = requests.get(f"{BASE_URL}/games", headers=HEADERS, params={"h2h": f"{h_id}-{a_id}"}, timeout=10)
+        data = r.json()
+        if not data.get("response"):
+            print(f"      H2H empty response for {h_id}-{a_id}")
+        save_json(cache_path, data)
+        return data.get("response", [])
+    except Exception as e:
+        print(f"      H2H error: {e}")
+        return []
+
+def fetch_team_recent_bball(team_id, last=5, refresh=False):
+    if not team_id: return []
+    cache_path = f"data/bball_recent_{team_id}.json"
+    if not refresh and os.path.exists(cache_path):
+        return load_json(cache_path).get("response", [])[:last]
+
+    print(f"    Fetching recent {last} for team {team_id}...")
+    try:
+        r = requests.get(f"{BASE_URL}/games", headers=HEADERS, params={"team": team_id, "last": last}, timeout=10)
+        data = r.json()
+        if not data.get("response"):
+            print(f"      Recent form empty for team {team_id}")
+        save_json(cache_path, data)
+        return data.get("response", [])
+    except Exception as e:
+        print(f"      Recent form error: {e}")
+        return []
+
+def fetch_standings_bball(league_id, season, refresh=False):
+    if not league_id or not season: return []
+    cache_path = f"data/bball_standings_{league_id}_{season}.json"
+    if not refresh and os.path.exists(cache_path):
+        return load_json(cache_path).get("response", [])
+
+    print(f"    Fetching standings for league {league_id}...")
+    s_val = str(season).split("-")[0]
+    try:
+        r = requests.get(f"{BASE_URL}/standings", headers=HEADERS, params={"league": league_id, "season": s_val}, timeout=10)
+        data = r.json()
+        if not data.get("response"):
+            # Try full season string if YYYY failed
+            print(f"      Standings {s_val} empty, trying {season}...")
+            r = requests.get(f"{BASE_URL}/standings", headers=HEADERS, params={"league": league_id, "season": season}, timeout=10)
+            data = r.json()
+        
+        save_json(cache_path, data)
+        return data.get("response", [])
+    except Exception as e:
+        print(f"      Standings error: {e}")
+        return []
+
+def fetch_league_recent_games(league_id, season, date_str, refresh=False):
+    if not league_id or not season: return []
+    # Make cache date-specific to ensure we get fresh results each day but stay cached within the day
+    cache_path = f"data/bball_league_recents_{league_id}_{date_str}.json"
+    if not refresh and os.path.exists(cache_path):
+        return load_json(cache_path).get("response", [])
+
+    print(f"    Fetching league-wide recents for league {league_id} {date_str}...")
+    s_val = str(season).split("-")[0]
+    try:
+        # Fetch last 50 games for the whole league
+        r = requests.get(f"{BASE_URL}/games", headers=HEADERS, params={"league": league_id, "season": s_val, "last": 50}, timeout=10)
+        data = r.json()
+        save_json(cache_path, data)
+        return data.get("response", [])
+    except Exception as e:
+        print(f"      League recents error: {e}")
+        return []
+
+# ------------------------------------------------------------------
 # STEP 1: FETCH TODAY'S FIXTURES
 # ------------------------------------------------------------------
 
@@ -138,8 +222,11 @@ def fetch_today_fixtures(date_str, refresh=False):
         away = game.get("teams", {}).get("away", {}).get("name", "?")
         hs = game.get("scores", {}).get("home", {}).get("total")
         as_ = game.get("scores", {}).get("away", {}).get("total")
+        home_id = game.get("teams", {}).get("home", {}).get("id")
+        away_id = game.get("teams", {}).get("away", {}).get("id")
         by_league[(lid, lname, country, season)].append({
             "home": home, "away": away,
+            "home_id": home_id, "away_id": away_id,
             "home_score": hs, "away_score": as_,
             "time": game.get("date", "")[:16].replace("T", " "),
             "status": game.get("status", {}).get("long", "Scheduled"),
@@ -276,6 +363,12 @@ def find_team(name, stats_dict):
 # STEP 5: PREDICT ONE GAME
 # ------------------------------------------------------------------
 
+def calculate_win_prob(spread, std_dev=12.0):
+    """Convert a point spread to a win probability using a normal distribution."""
+    # probability = norm.cdf(spread / std_dev)
+    # Using a simple approximation if scipy is not available, but norm.cdf is better
+    return norm.cdf(spread / std_dev)
+
 def predict_game(away_name, home_name, team_stats, config, config_path, mode, trace):
     """
     Run the UniversalBasketballEngine for a single matchup.
@@ -316,6 +409,25 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
         engine = UniversalBasketballEngine(config_path, mode=mode)
         engine.trace_enabled = trace
         result = engine.calculate_total(game_data, injury_notes=[])
+        # Calculate Spread and xPTS
+        spr = (game_data["statsH"].get("adj_off", 108) - game_data["statsA"].get("adj_off", 108)) / 2
+        model_total = result.get("final_model_total", 0.0)
+        
+        xpts_h = (model_total / 2) + (spr / 2)
+        xpts_a = (model_total / 2) - (spr / 2)
+        result["xpts_h"] = round(xpts_h, 1)
+        result["xpts_a"] = round(xpts_a, 1)
+
+        # Calculate Win Probabilities (12 style)
+        p_home = calculate_win_prob(spr)
+        p_away = 1.0 - p_home
+        
+        result["probs_1x2"] = {
+            "home": round(p_home * 100, 1),
+            "away": round(p_away * 100, 1)
+        }
+        result["predicted_result"] = "HOME" if spr > 0 else "AWAY"
+        
         return result, None
     except Exception as e:
         return None, str(e)
@@ -336,6 +448,10 @@ def main():
     parser.add_argument("--trace",      action="store_true", help="Show engine math trace")
     parser.add_argument("--no_calibrate", action="store_true",
                         help="Skip auto-calibration (use existing configs only)")
+    parser.add_argument("--match_center", action="store_true", default=True,
+                        help="Enrich with H2H, Standings, etc (costly API calls)")
+    parser.add_argument("--no_match_center", action="store_false", dest="match_center",
+                        help="Disable Match Center enrichment to save API credits")
     args = parser.parse_args()
 
     date_str = get_today_str(args.date)
@@ -363,6 +479,7 @@ def main():
         leagues = [l for l in leagues if l["game_count"] >= args.min_games]
 
     print(f"  Running predictions for {len(leagues)} league(s)...\n")
+    total_games_today = sum(l.get("game_count", 0) for l in leagues)
 
     all_predictions = []
     total_predicted = 0
@@ -402,7 +519,13 @@ def main():
             total_skipped += len(games)
             continue
 
-        # Step 4: predict each game
+        # Step 4: league standings
+        league_standings = fetch_standings_bball(lid, season, refresh=args.refresh)
+
+        # Step 5: pre-fetch league recents (saves calls vs per-team)
+        league_recents = fetch_league_recent_games(lid, season, args.date, refresh=args.refresh)
+
+        # Step 6: predict each game
         for game in games:
             away = game["away"]
             home = game["home"]
@@ -459,6 +582,31 @@ def main():
                 for t in result.get("trace", []):
                     print(f"        > {t}")
 
+            # Optimized Match Center Data
+            h2h = []
+            recentH = []
+            recentA = []
+            league_standings_data = None
+            
+            if args.match_center:
+                # 1. H2H (Expensive! Only for marketable games AND if we aren't overloaded)
+                # Safety: If there are > 150 total games today, we skip H2H to save credits
+                if market and market not in (145.5, 230.0):
+                    if total_games_today < 150 or args.refresh:
+                        h2h = fetch_h2h_bball(game.get("home_id"), game.get("away_id"), refresh=args.refresh)
+                
+                # 2. Extract recent form from the league-wide fetch
+                def filter_recent(tid):
+                    matches = [m for m in league_recents if (m.get("teams",{}).get("home",{}).get("id") == tid or m.get("teams",{}).get("away",{}).get("id") == tid)]
+                    return matches[:5]
+                
+                recentH = filter_recent(game.get("home_id"))
+                recentA = filter_recent(game.get("away_id"))
+                league_standings_data = league_standings if (league_standings and len(league_standings) > 0) else None
+            
+            _, sA = find_team(away, stats)
+            _, sH = find_team(home, stats)
+
             # Build record
             all_predictions.append({
                 "league_id":    lid,
@@ -469,6 +617,12 @@ def main():
                 "home_team":    home,
                 "status":       status,
                 "model_total":  model_total,
+                "xpts_h":       round(result.get("xpts_h", 0), 1),
+                "xpts_a":       round(result.get("xpts_a", 0), 1),
+                "probs_1x2":    result.get("probs_1x2", {}),
+                "predicted_result": result.get("predicted_result"),
+                "home_source":  sH.get("source", "SRS") if sH else "SRS",
+                "away_source":  sA.get("source", "SRS") if sA else "SRS",
                 "market_total": market if (market and market not in (145.5, 230.0)) else None,
                 "edge":         edge if (market and market not in (145.5, 230.0)) else None,
                 "side":         side if (market and market not in (145.5, 230.0)) else None,
@@ -480,6 +634,26 @@ def main():
                 "config_source": config.get("_source", "unknown"),
                 "tier":         config.get("_tier", "unknown"),
                 "timestamp":    datetime.now(ET_TZ).isoformat(),
+                "match_center": {
+                    "h2h": h2h,
+                    "recentH": recentH,
+                    "recentA": recentA,
+                    "full_standings": league_standings if (league_standings and len(league_standings) > 0) else None,
+                    "statsH": {
+                        "played": sH.get("played", sH.get("games_played", 0)) if sH else 0,
+                        "win_pct": sH.get("win_pct", 0) if sH else 0,
+                        "scored": sH.get("adj_off", 0) if sH else 0,
+                        "conceded": sH.get("adj_def", 0) if sH else 0,
+                        "rank": sH.get("rank") if sH else None,
+                    },
+                    "statsA": {
+                        "played": sA.get("played", sA.get("games_played", 0)) if sA else 0,
+                        "win_pct": sA.get("win_pct", 0) if sA else 0,
+                        "scored": sA.get("adj_off", 0) if sA else 0,
+                        "conceded": sA.get("adj_def", 0) if sA else 0,
+                        "rank": sA.get("rank") if sA else None,
+                    }
+                }
             })
             total_predicted += 1
 
@@ -492,7 +666,7 @@ def main():
 
     # Save
     if all_predictions:
-        out_path = f"data/basketball_predictions_{date_str}.json"
+        out_path = f"data/basketball/universal_predictions_{date_str}.json"
         save_json(out_path, {
             "date": date_str,
             "mode": args.mode,
