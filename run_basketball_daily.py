@@ -260,7 +260,14 @@ def get_or_calibrate_config(league_id, league_name, auto_calibrate=True):
 
     if os.path.exists(config_path):
         cfg = load_json(config_path)
-        return config_path, cfg
+        if cfg and cfg.get("name"):
+            return config_path, cfg
+        else:
+            print(f"    WARNING: Legacy config {league_id}.json is missing 'name'. Deleting to force fresh auto-calibration.")
+            try:
+                os.remove(config_path)
+            except Exception as e:
+                print(f"      Failed to delete corrupted config: {e}")
 
     if auto_calibrate:
         print(f"    No config found — auto-calibrating league {league_id}...")
