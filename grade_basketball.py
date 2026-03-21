@@ -66,6 +66,8 @@ def main():
     parser = argparse.ArgumentParser(description="Grade basketball predictions")
     parser.add_argument("--date",    default=datetime.now().strftime("%Y-%m-%d"))
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--regrade", action="store_true",
+                        help="Recalculate Delta Matrix fields on already-graded games (no API call needed)")
     args = parser.parse_args()
 
     date = args.date
@@ -81,10 +83,59 @@ def main():
 
     predictions = data.get("predictions", [])
     ungraded = [p for p in predictions if p.get("actual_result") is None]
-    print(f"  {len(predictions)} total, {len(ungraded)} ungraded")
+    missing_delta = [
+        p for p in predictions
+        if p.get("actual_result")
+        and p.get("accuracy_tier") is None
+        and (p.get("model", {}).get("total") or p.get("model_total"))
+    ]
+    print(f"  {len(predictions)} total, {len(ungraded)} ungraded, {len(missing_delta)} graded but missing Delta fields")
+
+    # --regrade: recalculate Delta fields on already-stored scores, no API call
+    if args.regrade:
+        if not missing_delta:
+            print("  ✅ All graded games already have Delta fields.")
+            return
+        print(f"  🔄 Regrading {len(missing_delta)} games with Delta Matrix (using stored scores)...")
+        graded_list = []
+        patched = 0
+        for pred in predictions:
+            if pred.get("actual_result") and pred.get("accuracy_tier") is None:
+                p = pred.copy()
+                h_s = p.get("actual_home_score")
+                a_s = p.get("actual_away_score")
+                status = p.get("status", "FT")
+                model_total = p.get("model", {}).get("total") or p.get("model_total")
+                if h_s is not None and a_s is not None and model_total:
+                    if status == "AOT":
+                        p["accuracy_tier"] = "🚨 OT WARP"
+                        p["total_delta"] = None
+                        p["total_rpe"] = None
+                    else:
+                        actual_total = h_s + a_s
+                        delta = abs(actual_total - model_total)
+                        rpe = (delta / actual_total) * 100 if actual_total > 0 else 0
+                        if delta <= 4.0:   tier = "🎯 BULLSEYE"
+                        elif delta <= 8.5: tier = "🟢 EXCELLENT"
+                        elif delta <= 14.5: tier = "🟡 SOLID"
+                        elif delta <= 21.0: tier = "🟠 MISS"
+                        else:              tier = "🔴 BUST"
+                        p["total_delta"] = round(delta, 2)
+                        p["total_rpe"] = round(rpe, 2)
+                        p["accuracy_tier"] = tier
+                    print(f"  [REGRADE] {pred['home_team']} vs {pred['away_team']} → {p.get('accuracy_tier')}")
+                    patched += 1
+                graded_list.append(p)
+            else:
+                graded_list.append(pred)
+        print(f"\n  Patched {patched} games with Delta fields.")
+        if not args.dry_run:
+            data["predictions"] = graded_list
+            save_predictions(date, data)
+        return
 
     if not ungraded:
-        print("  ✅ Already graded.")
+        print("  ✅ Already graded. Run with --regrade to backfill Delta fields.")
         return
 
     fixtures = fetch_fixtures_for_date(date)
