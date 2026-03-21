@@ -599,6 +599,7 @@ def main():
                         help="Skip leagues with fewer than this many fixtures today")
     parser.add_argument("--refresh",    action="store_true", help="Re-fetch fixtures and stats")
     parser.add_argument("--trace",      action="store_true", help="Show engine math trace")
+    parser.add_argument("--low-data",   action="store_true", help="Skip expensive H2H/Recent for Match Center")
     args = parser.parse_args()
 
     date_str = get_today_str(args.date)
@@ -771,9 +772,9 @@ def main():
                 ),
                 # Match Center Data for UI Drawer
                 "match_center": {
-                    "h2h": fetch_h2h(home_s.get("team_id"), away_s.get("team_id"), args.refresh),
-                    "recentH": fetch_team_recent_fixtures(home_s.get("team_id"), last=5, refresh=args.refresh),
-                    "recentA": fetch_team_recent_fixtures(away_s.get("team_id"), last=5, refresh=args.refresh),
+                    "h2h": fetch_h2h(home_s.get("team_id"), away_s.get("team_id"), args.refresh) if not args.low_data else [],
+                    "recentH": fetch_team_recent_fixtures(home_s.get("team_id"), last=5, refresh=args.refresh) if not args.low_data else [],
+                    "recentA": fetch_team_recent_fixtures(away_s.get("team_id"), last=5, refresh=args.refresh) if not args.low_data else [],
                     "full_standings": league_standings if len(league_standings) > 0 else None,
                     "over_1_5_prob": round(calc_over_prob(xg_h + xg_a, 1.5) * 100, 1),
                     "over_2_5_prob": round(calc_over_prob(xg_h + xg_a, 2.5) * 100, 1),
