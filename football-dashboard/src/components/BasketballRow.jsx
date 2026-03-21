@@ -16,12 +16,16 @@ export default function BasketballRow({ game }) {
     model_total = 0, market_total, edge, side = '',
     decision = 'MODEL ONLY', confidence = '', mbet_threshold,
     home_source = 'SRS', away_source = 'SRS',
-    match_center = {}
+    match_center = {},
+    actual_home_score, actual_away_score, actual_result,
+    accuracy_tier, total_delta
   } = game
 
   const { statsH = {}, statsA = {}, h2h = [], recentH = [], recentA = [], full_standings = [] } = match_center
 
   const tip = predicted_result === 'HOME' ? '1' : '2'
+  const isGraded = actual_result != null
+  const isWin = isGraded && predicted_result === actual_result
   
   // Custom decision badge color logic
   let badgeBg = '#64748b' // PASS
@@ -45,16 +49,23 @@ export default function BasketballRow({ game }) {
         
         <div className="match-teams">
           <div className="team-row">
-            <span className="team-name">{home_team}</span>
+            <span className="team-name" style={{ fontWeight: (isGraded && actual_home_score > actual_away_score) ? 700 : 400 }}>{home_team}</span>
+            {actual_home_score !== undefined && <span style={{marginLeft:'auto', fontWeight:700, fontSize:13, color: (isGraded && actual_home_score > actual_away_score) ? '#15803d' : '#64748b'}}>{actual_home_score}</span>}
           </div>
           <div className="team-row">
-            <span className="team-name">{away_team}</span>
+            <span className="team-name" style={{ fontWeight: (isGraded && actual_away_score > actual_home_score) ? 700 : 400 }}>{away_team}</span>
+            {actual_away_score !== undefined && <span style={{marginLeft:'auto', fontWeight:700, fontSize:13, color: (isGraded && actual_away_score > actual_home_score) ? '#15803d' : '#64748b'}}>{actual_away_score}</span>}
           </div>
         </div>
 
         {/* TIP COLUMN */}
-        <div className="stat-col center divider-left">
+        <div className="stat-col center divider-left" style={{ position: 'relative' }}>
            <div className={`tip-badge ${tip === '1' ? 'home' : 'away'}`}>{tip}</div>
+           {isGraded && (
+             <span style={{ position: 'absolute', bottom: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 10 }}>
+               {isWin ? '✅' : '❌'}
+             </span>
+           )}
         </div>
 
         {/* Expand chevron */}
@@ -198,6 +209,14 @@ export default function BasketballRow({ game }) {
               </div>
             )}
           </div>
+          
+          {isGraded && (
+             <div className="graded-footer" style={{ padding: '8px 12px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '16px', fontSize: 11, color: '#475569' }}>
+               <span><b>RESULT:</b> {actual_home_score}-{actual_away_score} {actual_result} {isWin ? '✅' : '❌'}</span>
+               {accuracy_tier && <span><b>ACCURACY:</b> {accuracy_tier}</span>}
+               {total_delta != null && <span><b>DELTA:</b> {total_delta.toFixed(1)} pts</span>}
+             </div>
+          )}
         </div>
       )}
     </>

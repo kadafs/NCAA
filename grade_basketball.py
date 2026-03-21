@@ -123,6 +123,7 @@ def main():
             p["actual_home_score"] = h_s
             p["actual_away_score"] = a_s
             p["actual_result"]     = actual
+            p["status"]            = status
             
             # The Delta Grading Matrix
             model_total = p.get("model", {}).get("total")

@@ -2,15 +2,22 @@ import json
 import os
 from http.server import BaseHTTPRequestHandler
 
+from urllib.parse import urlparse, parse_qs
+
 # Navigate from football-dashboard/api/ → football-dashboard/ → repo root
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DATA_DIR  = os.path.join(REPO_ROOT, 'data', 'football')
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        path = os.path.join(DATA_DIR, 'league_leaderboard.json')
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        sport  = params.get('sport', ['football'])[0]
+        
+        data_dir = os.path.join(REPO_ROOT, 'data', sport)
+        path = os.path.join(data_dir, 'league_leaderboard.json')
+        
         if not os.path.exists(path):
-            msg = json.dumps({'error': 'No leaderboard found'}).encode()
+            msg = json.dumps({'error': f'No {sport} leaderboard found'}).encode()
             self.send_response(404)
         else:
             with open(path, encoding='utf-8') as f:

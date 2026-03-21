@@ -3,14 +3,19 @@ import os
 import glob
 from http.server import BaseHTTPRequestHandler
 
+from urllib.parse import urlparse, parse_qs
+
 # Navigate from football-dashboard/api/ → football-dashboard/ → repo root
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-DATA_DIR  = os.path.join(REPO_ROOT, 'data', 'football')
-
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        pattern = os.path.join(DATA_DIR, 'universal_predictions_*.json')
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        sport  = params.get('sport', ['football'])[0]
+        
+        data_dir = os.path.join(REPO_ROOT, 'data', sport)
+        pattern = os.path.join(data_dir, 'universal_predictions_*.json')
         files   = sorted(glob.glob(pattern), reverse=True)
         result  = []
         for f in files:
