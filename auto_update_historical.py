@@ -10,6 +10,7 @@ import os
 import sys
 import json
 import requests
+import argparse
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
@@ -31,7 +32,14 @@ API_BASKETBALL_HEADERS = {"x-apisports-key": API_BASKETBALL_KEY}
 ET_TZ = ZoneInfo("America/New_York")
 
 def main():
-    target_date = (datetime.now(ET_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
+    parser = argparse.ArgumentParser(description="Fetch daily games from API-Basketball.")
+    parser.add_argument("--date", type=str, help="Target date in YYYY-MM-DD format (default: yesterday)")
+    args = parser.parse_args()
+
+    if args.date:
+        target_date = args.date
+    else:
+        target_date = (datetime.now(ET_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
     
     print(f"\n===========================================================")
     print(f"  API-BASKETBALL AUTO-UPDATER | Target Date: {target_date}")
