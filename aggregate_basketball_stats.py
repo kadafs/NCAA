@@ -35,7 +35,8 @@ def process_file(file_path, stats_dict):
                     "1x2_w": 0, "1x2_l": 0,
                     "bullseyes": 0, "excellents": 0, "solids": 0,
                     "misses": 0, "busts": 0, "ots": 0,
-                    "sum_rpe": 0.0, "count_rpe": 0
+                    "sum_rpe": 0.0, "count_rpe": 0,
+                    "sum_signed_delta": 0.0, "count_signed_delta": 0
                 }
                 
             l_stats = stats_dict[league_name]
@@ -58,6 +59,11 @@ def process_file(file_path, stats_dict):
             if rpe is not None:
                 l_stats["sum_rpe"] += rpe
                 l_stats["count_rpe"] += 1
+
+            signed_delta = p.get("signed_delta")
+            if signed_delta is not None:
+                l_stats["sum_signed_delta"] += signed_delta
+                l_stats["count_signed_delta"] += 1
                     
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")
@@ -111,6 +117,11 @@ def main():
         x_total = x_w + x_l
         x_hit_rate = (x_w / x_total * 100) if x_total > 0 else 0.0
             
+        count_signed = s["count_signed_delta"]
+        avg_signed_delta = (s["sum_signed_delta"] / count_signed) if count_signed > 0 else None
+        # Positive avg_signed_delta = model undershoots (games go OVER model)
+        # Negative avg_signed_delta = model overshoots (games go UNDER model)
+
         leaderboard.append({
             "name": lname,
             "mape": round(mape, 2),
@@ -121,6 +132,7 @@ def main():
             "misses": s["misses"],
             "busts": s["busts"],
             "ots": s["ots"],
+            "avg_signed_delta": round(avg_signed_delta, 2) if avg_signed_delta is not None else None,
             "outcome_w": x_w,
             "outcome_l": x_l,
             "outcome_hit_rate": round(x_hit_rate, 1)

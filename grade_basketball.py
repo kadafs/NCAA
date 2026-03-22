@@ -114,6 +114,7 @@ def main():
                     else:
                         actual_total = h_s + a_s
                         delta = abs(actual_total - model_total)
+                        signed_delta = actual_total - model_total
                         rpe = (delta / actual_total) * 100 if actual_total > 0 else 0
                         if delta <= 4.0:   tier = "🎯 BULLSEYE"
                         elif delta <= 8.5: tier = "🟢 EXCELLENT"
@@ -121,6 +122,7 @@ def main():
                         elif delta <= 21.0: tier = "🟠 MISS"
                         else:              tier = "🔴 BUST"
                         p["total_delta"] = round(delta, 2)
+                        p["signed_delta"] = round(signed_delta, 2)
                         p["total_rpe"] = round(rpe, 2)
                         p["accuracy_tier"] = tier
                     print(f"  [REGRADE] {pred['home_team']} vs {pred['away_team']} → {p.get('accuracy_tier')}")
@@ -186,6 +188,7 @@ def main():
                 else:
                     actual_total = h_s + a_s
                     delta = abs(actual_total - model_total)
+                    signed_delta = actual_total - model_total
                     rpe = (delta / actual_total) * 100 if actual_total > 0 else 0
                     
                     if delta <= 4.0: tier = "🎯 BULLSEYE"
@@ -195,6 +198,7 @@ def main():
                     else: tier = "🔴 BUST"
                     
                     p["total_delta"] = round(delta, 2)
+                    p["signed_delta"] = round(signed_delta, 2)
                     p["total_rpe"] = round(rpe, 2)
                     p["accuracy_tier"] = tier
             
