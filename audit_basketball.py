@@ -218,7 +218,116 @@ def print_league_breakdown(graded):
 
         print(f"  {col(name_s, BO)}  {w_c}  {l_c}  {wr_c}  {d_s}  {s_c}  {bias_s}")
 
+def print_team_breakdown(graded, min_games=3):
+    """
+    Build a per-team performance table and surface standout teams.
+    Each game contributes twice — once as home team, once as away team.
+    min_games: minimum appearances before a team is shown.
+    """
+    teams = {}
+
+    for p in graded:
+        is_win  = p.get("predicted_result") == p.get("actual_result")
+        delta   = p.get("total_delta")
+        signed  = p.get("signed_delta")
+        ot      = "OT" in (p.get("accuracy_tier") or "")
+        tier    = p.get("accuracy_tier") or ""
+
+        for role, key in [("home", p.get("home_team")), ("away", p.get("away_team"))]:
+            if not key: continue
+            if key not in teams:
+                teams[key] = {"w": 0, "l": 0, "deltas": [], "signed": [], "tiers": [], "league": p.get("league", "")}
+            entry = teams[key]
+            if is_win:  entry["w"] += 1
+            else:       entry["l"] += 1
+            if delta  is not None and not ot: entry["deltas"].append(delta)
+            if signed is not None:            entry["signed"].append(signed)
+            entry["tiers"].append(tier)
+
+    # Build rows
+    rows = []
+    for name, s in teams.items():
+        total = s["w"] + s["l"]
+        if total < min_games:
+            continue
+        wr    = pct(s["w"], total)
+        avg_d = sum(s["deltas"]) / len(s["deltas"]) if s["deltas"] else None
+        avg_s = sum(s["signed"]) / len(s["signed"]) if s["signed"] else None
+        bullseyes = sum(1 for t in s["tiers"] if "BULLSEYE" in t)
+        busts     = sum(1 for t in s["tiers"] if "BUST"     in t)
+        rows.append({
+            "name": name, "w": s["w"], "l": s["l"], "total": total,
+            "wr": wr, "avg_d": avg_d, "avg_s": avg_s,
+            "bullseyes": bullseyes, "busts": busts, "league": s["league"]
+        })
+
+    if not rows:
+        print(col(f"  No team appeared ≥{min_games} times. Widen your date range.", DIM))
+        return
+
+    rows.sort(key=lambda r: -(r["w"] + r["l"]))
+
+    # ── Auto-detect cash cows and problem cases ──────────────────────────────
+    cash_teams    = [r for r in rows if (r["wr"] or 0) >= 75 and (r["avg_d"] or 999) <= 10]
+    problem_teams = [r for r in rows if (r["avg_d"] or 0) >= 18 or
+                     (r["avg_s"] is not None and abs(r["avg_s"]) >= 10)]
+
+    if cash_teams:
+        print(f"\n  {col('💰  CASH TEAMS  (Win rate ≥75% + Avg Δ ≤10)', BO, G)}")
+        for r in sorted(cash_teams, key=lambda x: -(x["wr"] or 0)):
+            wr_s   = f"{r['wr']}%".rjust(4)
+            d_s    = f"{r['avg_d']:.1f}".rjust(5) if r["avg_d"] is not None else "  —  "
+            league = r["league"][:28]
+            print(f"    {col('★', G, BO)} {col(r['name'][:30].ljust(30), BO, G)}  "
+                  f"{col(r['w'], G)}W-{col(r['l'], R)}L  "
+                  f"WR:{col(wr_s, G, BO)}  Δ:{col(d_s, G)}  {col(league, DIM)}")
+
+    if problem_teams:
+        print(f"\n  {col('🚨  PROBLEM TEAMS  (Avg Δ ≥18 OR Signed Δ bias ≥±10)', BO, R)}")
+        for r in sorted(problem_teams, key=lambda x: -(x["avg_d"] or 0)):
+            d_s    = f"{r['avg_d']:.1f}".rjust(5) if r["avg_d"] is not None else "  —  "
+            s_raw  = f"{r['avg_s']:+.1f}" if r["avg_s"] is not None else "—"
+            bias   = ("model undershoots" if (r["avg_s"] or 0) > 0 else "model overshoots") if r["avg_s"] else ""
+            print(f"    {col('⚠', R, BO)} {col(r['name'][:30].ljust(30), BO, R)}  "
+                  f"{col(r['w'], G)}W-{col(r['l'], R)}L  "
+                  f"Δ:{col(d_s, R)}  ±Δ:{col(s_raw.rjust(6), R)}  {col(bias, DIM)}")
+
+    # ── Full table ───────────────────────────────────────────────────────────
+    print(f"\n  {col('ALL TEAMS  (min ' + str(min_games) + ' appearances)', DIM)}")
+    C1, C2, C3, C4, C5, C6, C7 = 28, 3, 3, 5, 6, 8, 8
+    hdr = (f"  {'TEAM':<{C1}} {'W':>{C2}} {'L':>{C3}} {'WIN%':>{C4}} "
+           f"{'AVG Δ':>{C5}} {'SIGNED Δ':>{C6}}  {'🎯':>{C7}}  {'💀':>{C7}}")
+    print(col(hdr, DIM))
+    print(col("  " + "─" * (C1+C2+C3+C4+C5+C6+C7+16), DIM))
+
+    for r in rows:
+        name_s = r["name"][:C1].ljust(C1)
+        w_s    = str(r["w"]).rjust(C2)
+        l_s    = str(r["l"]).rjust(C3)
+        wr_s   = (f"{r['wr']}%").rjust(C4) if r["wr"] is not None else "—".rjust(C4)
+        d_s    = f"{r['avg_d']:.1f}".rjust(C5) if r["avg_d"] is not None else "—".rjust(C5)
+        s_raw  = f"{r['avg_s']:+.1f}" if r["avg_s"] is not None else "—"
+        s_s    = s_raw.rjust(C6)
+        bull_s = str(r["bullseyes"]).rjust(C7)
+        bust_s = str(r["busts"]).rjust(C7)
+
+        # Flag rows with notable characteristics
+        is_cash    = (r["wr"] or 0) >= 75 and (r["avg_d"] or 999) <= 10
+        is_problem = (r["avg_d"] or 0) >= 18 or (r["avg_s"] is not None and abs(r["avg_s"]) >= 10)
+        flag = col(" ★", G) if is_cash else col(" ⚠", R) if is_problem else "  "
+
+        name_c = col(name_s, G, BO) if is_cash else col(name_s, R) if is_problem else col(name_s, BO)
+        w_c    = col(w_s, G)
+        l_c    = col(l_s, R)
+        wr_c   = col(wr_s, pct_color(r["wr"]))
+        s_c    = col(s_s, R if (r["avg_s"] or 0) > 0 else G if (r["avg_s"] or 0) < 0 else DIM)
+        bull_c = col(bull_s, M)
+        bust_c = col(bust_s, R)
+
+        print(f"  {name_c}  {w_c}  {l_c}  {wr_c}  {d_s}  {s_c}  {bull_c}  {bust_c}{flag}")
+
 def print_game_log(games, sort_mode, filter_result, filter_tier, filter_league):
+
     filtered = list(games)
 
     if filter_result == "win":       filtered = [p for p in filtered if p.get("actual_result") and p.get("predicted_result") == p.get("actual_result")]
@@ -338,7 +447,11 @@ def main():
     section("🏆  LEAGUE BREAKDOWN")
     print_league_breakdown(graded)
 
-    # Section 4: Game log
+    # Section 4: Team breakdown
+    section("👤  TEAM BREAKDOWN")
+    print_team_breakdown(graded)
+
+    # Section 5: Game log
     if not args.no_log:
         section("📋  GAME LOG")
         print_game_log(all_preds, args.sort, args.result, args.tier, None)
