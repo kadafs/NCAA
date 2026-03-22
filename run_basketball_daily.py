@@ -33,6 +33,8 @@ from glob import glob
 from dotenv import load_dotenv
 from scipy.stats import norm
 
+from core.offline_match_center import compile_offline_match_center
+
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -101,83 +103,7 @@ def save_json(path, data):
 # MATCH CENTER HELPERS (Parity with Football)
 # ------------------------------------------------------------------
 
-def fetch_h2h_bball(h_id, a_id, refresh=False):
-    if not h_id or not a_id: return []
-    cache_path = f"data/bball_h2h_{h_id}_{a_id}.json"
-    if not refresh and os.path.exists(cache_path):
-        return load_json(cache_path).get("response", [])
-    
-    print(f"    Fetching H2H for {h_id} vs {a_id}...")
-    try:
-        r = requests.get(f"{BASE_URL}/games", headers=HEADERS, params={"h2h": f"{h_id}-{a_id}"}, timeout=10)
-        data = r.json()
-        if not data.get("response"):
-            print(f"      H2H empty response for {h_id}-{a_id}")
-        save_json(cache_path, data)
-        return data.get("response", [])
-    except Exception as e:
-        print(f"      H2H error: {e}")
-        return []
 
-def fetch_team_recent_bball(team_id, last=5, refresh=False):
-    if not team_id: return []
-    cache_path = f"data/bball_recent_{team_id}.json"
-    if not refresh and os.path.exists(cache_path):
-        return load_json(cache_path).get("response", [])[:last]
-
-    print(f"    Fetching recent {last} for team {team_id}...")
-    try:
-        r = requests.get(f"{BASE_URL}/games", headers=HEADERS, params={"team": team_id, "last": last}, timeout=10)
-        data = r.json()
-        if not data.get("response"):
-            print(f"      Recent form empty for team {team_id}")
-        save_json(cache_path, data)
-        return data.get("response", [])
-    except Exception as e:
-        print(f"      Recent form error: {e}")
-        return []
-
-def fetch_standings_bball(league_id, season, refresh=False):
-    if not league_id or not season: return []
-    cache_path = f"data/bball_standings_{league_id}_{season}.json"
-    if not refresh and os.path.exists(cache_path):
-        return load_json(cache_path).get("response", [])
-
-    print(f"    Fetching standings for league {league_id}...")
-    s_val = str(season).split("-")[0]
-    try:
-        r = requests.get(f"{BASE_URL}/standings", headers=HEADERS, params={"league": league_id, "season": s_val}, timeout=10)
-        data = r.json()
-        if not data.get("response"):
-            # Try full season string if YYYY failed
-            print(f"      Standings {s_val} empty, trying {season}...")
-            r = requests.get(f"{BASE_URL}/standings", headers=HEADERS, params={"league": league_id, "season": season}, timeout=10)
-            data = r.json()
-        
-        save_json(cache_path, data)
-        return data.get("response", [])
-    except Exception as e:
-        print(f"      Standings error: {e}")
-        return []
-
-def fetch_league_recent_games(league_id, season, date_str, refresh=False):
-    if not league_id or not season: return []
-    # Make cache date-specific to ensure we get fresh results each day but stay cached within the day
-    cache_path = f"data/bball_league_recents_{league_id}_{date_str}.json"
-    if not refresh and os.path.exists(cache_path):
-        return load_json(cache_path).get("response", [])
-
-    print(f"    Fetching league-wide recents for league {league_id} {date_str}...")
-    s_val = str(season).split("-")[0]
-    try:
-        # Fetch last 50 games for the whole league
-        r = requests.get(f"{BASE_URL}/games", headers=HEADERS, params={"league": league_id, "season": s_val, "last": 50}, timeout=10)
-        data = r.json()
-        save_json(cache_path, data)
-        return data.get("response", [])
-    except Exception as e:
-        print(f"      League recents error: {e}")
-        return []
 
 # ------------------------------------------------------------------
 # STEP 1: FETCH TODAY'S FIXTURES
@@ -217,7 +143,7 @@ def fetch_today_fixtures(date_str, refresh=False):
         lid    = league.get("id")
         lname  = league.get("name", "Unknown")
         country = game.get("country", {}).get("name", "")
-        season = game.get("season")
+        season = league.get("season")
         home = game.get("teams", {}).get("home", {}).get("name", "?")
         away = game.get("teams", {}).get("away", {}).get("name", "?")
         hs = game.get("scores", {}).get("home", {}).get("total")
@@ -527,10 +453,10 @@ def main():
             continue
 
         # Step 4: league standings
-        league_standings = fetch_standings_bball(lid, season, refresh=args.refresh)
+        # Removed API standings fetch
 
         # Step 5: pre-fetch league recents (saves calls vs per-team)
-        league_recents = fetch_league_recent_games(lid, season, args.date, refresh=args.refresh)
+        # Removed API league recents fetch
 
         # Step 6: predict each game
         for game in games:
@@ -596,20 +522,11 @@ def main():
             league_standings_data = None
             
             if args.match_center:
-                # 1. H2H (Expensive! Only for marketable games AND if we aren't overloaded)
-                # Safety: If there are > 150 total games today, we skip H2H to save credits
-                if market and market not in (145.5, 230.0):
-                    if total_games_today < 150 or args.refresh:
-                        h2h = fetch_h2h_bball(game.get("home_id"), game.get("away_id"), refresh=args.refresh)
-                
-                # 2. Extract recent form from the league-wide fetch
-                def filter_recent(tid):
-                    matches = [m for m in league_recents if (m.get("teams",{}).get("home",{}).get("id") == tid or m.get("teams",{}).get("away",{}).get("id") == tid)]
-                    return matches[:5]
-                
-                recentH = filter_recent(game.get("home_id"))
-                recentA = filter_recent(game.get("away_id"))
-                league_standings_data = league_standings if (league_standings and len(league_standings) > 0) else None
+                offline_data = compile_offline_match_center(lid, lname, home, away)
+                h2h = offline_data["h2h"]
+                recentH = offline_data["recentH"]
+                recentA = offline_data["recentA"]
+                league_standings_data = offline_data["full_standings"]
             
             _, sA = find_team(away, stats)
             _, sH = find_team(home, stats)
@@ -645,7 +562,7 @@ def main():
                     "h2h": h2h,
                     "recentH": recentH,
                     "recentA": recentA,
-                    "full_standings": league_standings if (league_standings and len(league_standings) > 0) else None,
+                    "full_standings": league_standings_data,
                     "statsH": {
                         "played": sH.get("played", sH.get("games_played", 0)) if sH else 0,
                         "win_pct": sH.get("win_pct", 0) if sH else 0,

@@ -5,6 +5,12 @@ function fmt(v, digits = 0) {
   return typeof v === 'number' ? v.toFixed(digits) : v
 }
 
+function isMatch(t1, t2) {
+  const l1 = (t1 || '').toLowerCase()
+  const l2 = (t2 || '').toLowerCase()
+  return l1.includes(l2) || l2.includes(l1)
+}
+
 export default function BasketballRow({ game }) {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('stats')
@@ -153,41 +159,89 @@ export default function BasketballRow({ game }) {
             )}
 
             {activeTab === 'standings' && (
-              <div className="tab-standings">
-                {!full_standings || full_standings.length === 0 ? <div className="no-data">Standings unavailable.</div> : (
-                   <table className="standings-table" style={{ width: '100%', fontSize: 12 }}>
-                     <thead>
-                       <tr>
-                         <th>#</th>
-                         <th>Team</th>
-                         <th>P</th>
-                         <th>W-L</th>
-                         <th>+/-</th>
-                         <th>%</th>
-                       </tr>
-                     </thead>
-                     <tbody>
-                       {full_standings[0]?.map((s, idx) => (
-                         <tr key={idx} className={(s.team.name === home_team || s.team.name === away_team) ? 'highlight' : ''}>
-                           <td>{s.position}</td>
-                           <td style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                             <img src={s.team.logo} width="16" height="16" alt=""/> {s.team.name}
-                           </td>
-                           <td>{s.games.played}</td>
-                           <td>{s.games.win.total}-{s.games.lose.total}</td>
-                           <td>{s.points.for - s.points.against}</td>
-                           <td>{s.games.win.percentage}</td>
-                         </tr>
-                       ))}
-                     </tbody>
-                   </table>
-                )}
+              <div className="tab-standings" style={{ maxWidth: '600px', margin: '0 auto' }}>
+                {(() => {
+                  let hRank = '-'
+                  let aRank = '-'
+                  
+                  for (const group of full_standings) {
+                    for (const st of group) {
+                      if (isMatch(st.team.name, home_team)) hRank = `#${st.position}`
+                      if (isMatch(st.team.name, away_team)) aRank = `#${st.position}`
+                    }
+                  }
+                  return (
+                    <div className="standings-cards" style={{ marginBottom: 20 }}>
+                      <div className="s-card">
+                        <div className="s-rank">{hRank}</div>
+                        <div className="s-name">{home_team}</div>
+                      </div>
+                      <div className="s-vs">VS</div>
+                      <div className="s-card">
+                        <div className="s-rank">{aRank}</div>
+                        <div className="s-name">{away_team}</div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                <div className="standings-table-container">
+                  {full_standings.length === 0 ? <div className="no-data">League offline standings not available.</div> : (
+                    full_standings.map((group, gIdx) => (
+                      <div key={gIdx} className="standings-group">
+                        {group[0]?.group?.name && <div className="group-name">{group[0].group.name}</div>}
+                        <table className="standings-table">
+                          <thead>
+                            <tr>
+                              <th>#</th>
+                              <th>Team</th>
+                              <th style={{textAlign:'center'}}>P</th>
+                              <th style={{textAlign:'center'}}>W</th>
+                              <th style={{textAlign:'center'}}>L</th>
+                              <th style={{textAlign:'center'}}>%</th>
+                              <th style={{textAlign:'center'}}>Pts</th>
+                              <th>Form</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {group.map((st, i) => {
+                              const isTargetHome = isMatch(st.team.name, home_team)
+                              const isTargetAway = isMatch(st.team.name, away_team)
+                              return (
+                                <tr key={i} className={isTargetHome || isTargetAway ? "highlight" : ""}>
+                                  <td className="st-rank">{st.position}</td>
+                                  <td className="st-team">
+                                    {st.team.logo && <img src={st.team.logo} className="st-logo" alt="" style={{width:16, height:16, marginRight:6, verticalAlign:'middle'}} />}
+                                    {st.team.name}
+                                  </td>
+                                  <td className="st-val">{st.games.played}</td>
+                                  <td className="st-val">{st.games.win.total}</td>
+                                  <td className="st-val">{st.games.lose.total}</td>
+                                  <td className="st-val">{st.games.win.percentage}</td>
+                                  <td className="st-val st-pts">{st.points.for}-{st.points.against}</td>
+                                  <td>
+                                    <div className="st-form" style={{display:'flex', gap:2, justifyContent:'flex-end'}}>
+                                      {(st.form || '').split('').map((f, fi) => (
+                                        <div key={fi} className={`st-f fm-res ${f}`}>{f}</div>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
 
             {activeTab === 'probabilities' && (
               <div className="tab-probabilities">
                 <div className="prob-grid">
+                  {/* Card 1: Edge Analysis Boxes */}
                   <div className="prob-section full">
                     <div className="ps-title">Edge Analysis</div>
                     <div className="prob-outcome-row">
@@ -196,7 +250,7 @@ export default function BasketballRow({ game }) {
                         <span className="po-lbl">Model Projection</span>
                       </div>
                       <div className="po-box">
-                        <span className="po-val">{market_total ? market_total.toFixed(1) : 'N/A'}</span>
+                        <span className="po-val">{market_total ? market_total.toFixed(1) : '—'}</span>
                         <span className="po-lbl">Market Line</span>
                       </div>
                       <div className="po-box">
@@ -204,6 +258,51 @@ export default function BasketballRow({ game }) {
                         <span className="po-lbl">Calculated Edge</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Card 2: Match Winner Bars */}
+                  <div className="prob-section">
+                    <div className="ps-title">Match Winner (Poisson)</div>
+                    <ProbabilityItem 
+                      label={`${home_team} Win`} 
+                      value={probs_1x2?.home || 0} 
+                      color="home" 
+                    />
+                    <ProbabilityItem 
+                      label={`${away_team} Win`} 
+                      value={probs_1x2?.away || 0} 
+                      color="away" 
+                    />
+                    <div style={{marginTop: 12, fontSize: 10, color: '#94a3b8', fontStyle: 'italic'}}>
+                      * Calculated Match Projections
+                    </div>
+                  </div>
+
+                  {/* Card 3: Expected Points Ratio Bars */}
+                  <div className="prob-section">
+                    <div className="ps-title">Expected Points Ratio</div>
+                    {(() => {
+                      const totalX = (xpts_h || 0) + (xpts_a || 0);
+                      const hp = totalX > 0 ? (xpts_h / totalX) * 100 : 0;
+                      const ap = totalX > 0 ? (xpts_a / totalX) * 100 : 0;
+                      return (
+                        <>
+                          <ProbabilityItem 
+                            label={`${home_team} xPts / ${xpts_h.toFixed(1)}`} 
+                            value={hp} 
+                            color="goals" 
+                          />
+                          <ProbabilityItem 
+                            label={`${away_team} xPts / ${xpts_a.toFixed(1)}`} 
+                            value={ap} 
+                            color="goals" 
+                          />
+                          <div style={{marginTop: 12, fontSize: 10, color: '#94a3b8', fontStyle: 'italic'}}>
+                            * Offensive & Defensive Matrix
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -262,6 +361,24 @@ function RecentFormColumn({ teamName, fixtures }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function ProbabilityItem({ label, value, color }) {
+  const val = parseFloat(value) || 0
+  return (
+    <div className="prob-item">
+      <div className="pi-label-row">
+        <span>{label}</span>
+        <span>{fmt(val, 1)}%</span>
+      </div>
+      <div className="pi-bar-bg">
+        <div 
+          className={`pi-bar-fill ${color}`} 
+          style={{ width: `${val}%` }}
+        ></div>
+      </div>
     </div>
   )
 }
