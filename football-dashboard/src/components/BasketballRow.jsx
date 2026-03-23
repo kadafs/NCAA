@@ -22,10 +22,13 @@ export default function BasketballRow({ game }) {
     model_total = 0, market_total, edge, side = '',
     decision = 'MODEL ONLY', confidence = '', mbet_threshold,
     home_source = 'SRS', away_source = 'SRS',
+    model_architecture = '[  SRS   ]',
     match_center = {},
     actual_home_score, actual_away_score, actual_result,
     accuracy_tier, total_delta
   } = game
+
+  const isAdvanced = model_architecture?.includes('ADVANCED')
 
   const { statsH = {}, statsA = {}, h2h = [], recentH = [], recentA = [], full_standings = [] } = match_center
 
@@ -51,6 +54,20 @@ export default function BasketballRow({ game }) {
           {status && status !== 'Scheduled' && status !== 'Game Finished' && (
             <div className="live-indicator">{status}</div>
           )}
+          <div style={{
+            marginTop: 3,
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.03em',
+            padding: '1px 5px',
+            borderRadius: 3,
+            display: 'inline-block',
+            background: isAdvanced ? '#7c3aed' : '#0369a1',
+            color: '#fff',
+            opacity: 0.92,
+          }}>
+            {isAdvanced ? 'ADV' : 'SRS'}
+          </div>
         </div>
         
         <div className="match-teams">

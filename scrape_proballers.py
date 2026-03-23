@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import time
+from datetime import datetime
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
@@ -136,7 +137,7 @@ def scrape_match(url, context):
 import argparse
 import random
 
-def run_proballers_scraper(target_url, max_games=None):
+def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
     domain_slug = target_url.strip('/').split('/')[-2]
     out_file = f"data/historical/proballers_{domain_slug}.json"
     
@@ -179,6 +180,17 @@ def run_proballers_scraper(target_url, max_games=None):
             print(f"      [{i+1}/{len(matches)}] Harvesting advanced stats: {match_url.split('/')[-1]}")
             m_data = scrape_match(match_url, context)
             if m_data:
+                game_date_str = m_data.get('date', 'Unknown')
+                if cutoff_date and game_date_str != "Unknown":
+                    try:
+                        game_dt = datetime.strptime(game_date_str.strip(), "%b %d, %Y").date()
+                        cutoff_dt = datetime.strptime(cutoff_date, "%Y-%m-%d").date()
+                        if game_dt < cutoff_dt:
+                            print(f"        -> [!] Game date {game_date_str} is older than cutoff {cutoff_date}. Stopping extraction.")
+                            break
+                    except Exception as e:
+                        pass # Silently continue if date parsing fails
+
                 sig = f"{m_data.get('date')} {m_data.get('home_team')} {m_data.get('away_team')}"
                 if sig not in seen_sigs:
                     existing_data.append(m_data)
@@ -207,11 +219,12 @@ if __name__ == "__main__":
     parser.add_argument("--url", type=str, help="Single schedule URL to scrape")
     parser.add_argument("--file", type=str, help="Text file containing multiple schedule URLs to batch process")
     parser.add_argument("--max", type=int, default=200, help="Max games to scrape per league (prevent timeout during sync)")
+    parser.add_argument("--cutoff_date", type=str, help="Do not scrape games older than this date (YYYY-MM-DD)")
     
     args = parser.parse_args()
     
     if args.url:
-        run_proballers_scraper(args.url, max_games=args.max)
+        run_proballers_scraper(args.url, max_games=args.max, cutoff_date=args.cutoff_date)
     elif args.file:
         if not os.path.exists(args.file):
             print(f"Error: File {args.file} not found.")
@@ -223,7 +236,7 @@ if __name__ == "__main__":
         print(f"Found {len(urls)} leagues in target manifest. Commencing Mass Extraction Sequence.")
         for idx, url in enumerate(urls):
             print(f"\n[BATCH ROUTINE] Extracting League {idx+1} of {len(urls)}...")
-            run_proballers_scraper(url, max_games=args.max)
+            run_proballers_scraper(url, max_games=args.max, cutoff_date=args.cutoff_date)
             
             if idx < len(urls) - 1:
                 cooldown = random.uniform(8.5, 14.5)

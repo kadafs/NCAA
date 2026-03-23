@@ -7,6 +7,8 @@ Reads local prediction JSON files — no API calls, no frontend needed.
 Usage:
     python audit_basketball.py --date 2026-03-21
     python audit_basketball.py --from 2026-03-19 --to 2026-03-21
+    python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --model srs
+    python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --model adv
     python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --league "NBA"
     python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --tier BUST
     python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --sort delta
@@ -401,6 +403,8 @@ def main():
     parser.add_argument("--result", choices=["win", "loss", "pending"], help="Filter game log by outcome")
     parser.add_argument("--sort",   choices=["date", "delta", "tier"], default="date", help="Sort game log")
     parser.add_argument("--no-log", action="store_true", help="Skip the full game log (faster summary-only view)")
+    parser.add_argument("--model",  choices=["srs", "adv", "all"], default="all",
+                        help="Filter by model: srs | adv | all (default: all — note: 'all' double-counts dual-model games)")
     args = parser.parse_args()
 
     # Resolve date range
@@ -422,6 +426,20 @@ def main():
         return
 
     print(col(f"  Loaded {len(all_preds)} predictions across {len(dates_loaded)} day(s): {', '.join(dates_loaded)}", DIM))
+
+    # ── Model filter ───────────────────────────────────────────────────────────
+    model_filter = args.model
+    if model_filter == "srs":
+        all_preds = [p for p in all_preds if "ADVANCED" not in (p.get("model_architecture") or "")]
+        print(col(f"  Model filter: [  SRS   ] → {len(all_preds)} predictions", B))
+    elif model_filter == "adv":
+        all_preds = [p for p in all_preds if "ADVANCED" in (p.get("model_architecture") or "")]
+        print(col(f"  Model filter: [ADVANCED] → {len(all_preds)} predictions", M))
+    else:
+        # 'all' — warn about double-counting
+        has_dual = any("ADVANCED" in (p.get("model_architecture") or "") for p in all_preds)
+        if has_dual:
+            print(col("  ⚠️  --model all: dual-model games counted twice. Use --model srs or --model adv for clean stats.", Y))
 
     # Apply league filter globally if specified
     if args.league:

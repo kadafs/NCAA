@@ -6,65 +6,63 @@ from datetime import datetime
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "basketball")
 OUTPUT_FILE = os.path.join(DATA_DIR, "league_leaderboard.json")
 
+def _blank_model_stats():
+    return {
+        "1x2_w": 0, "1x2_l": 0,
+        "bullseyes": 0, "excellents": 0, "solids": 0,
+        "misses": 0, "busts": 0, "ots": 0,
+        "sum_rpe": 0.0, "count_rpe": 0,
+        "sum_signed_delta": 0.0, "count_signed_delta": 0
+    }
+
+def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
+    """Add one prediction's data into a stats bucket."""
+    if pred_1x2 and actual_1x2:
+        if pred_1x2 == actual_1x2:
+            bucket["1x2_w"] += 1
+        else:
+            bucket["1x2_l"] += 1
+    if tier == "🎯 BULLSEYE":    bucket["bullseyes"]  += 1
+    elif tier == "🟢 EXCELLENT": bucket["excellents"] += 1
+    elif tier == "🟡 SOLID":    bucket["solids"]     += 1
+    elif tier == "🟠 MISS":     bucket["misses"]     += 1
+    elif tier == "🔴 BUST":     bucket["busts"]      += 1
+    elif tier == "🚨 OT WARP":  bucket["ots"]        += 1
+    if rpe is not None:
+        bucket["sum_rpe"]    += rpe
+        bucket["count_rpe"]  += 1
+    if signed_delta is not None:
+        bucket["sum_signed_delta"]   += signed_delta
+        bucket["count_signed_delta"] += 1
+
 def process_file(file_path, stats_dict):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            
+
         predictions = data.get("predictions", [])
-        
+
         for p in predictions:
-            # Only process graded predictions
             if p.get("actual_result") is None:
                 continue
-                
-            league_name = p.get("league", "Unknown").upper()
-            decision = p.get("decision", "")
-            
-            # Outcome grade (1X2 / ML)
-            pred_1x2 = p.get("predicted_result")
-            actual_1x2 = p.get("actual_result")
-            is_1x2_win = (pred_1x2 == actual_1x2)
-            
-            # Totals grade (The Delta Matrix)
-            tier = p.get("accuracy_tier")
-            rpe = p.get("total_rpe")
-            
-            if league_name not in stats_dict:
-                stats_dict[league_name] = {
-                    "1x2_w": 0, "1x2_l": 0,
-                    "bullseyes": 0, "excellents": 0, "solids": 0,
-                    "misses": 0, "busts": 0, "ots": 0,
-                    "sum_rpe": 0.0, "count_rpe": 0,
-                    "sum_signed_delta": 0.0, "count_signed_delta": 0
-                }
-                
-            l_stats = stats_dict[league_name]
-            
-            # Tally 1X2 / Moneyline
-            if pred_1x2 and actual_1x2:
-                if is_1x2_win:
-                    l_stats["1x2_w"] += 1
-                else:
-                    l_stats["1x2_l"] += 1
-            
-            # Tally Totals Accuracy Matrix
-            if tier == "🎯 BULLSEYE": l_stats["bullseyes"] += 1
-            elif tier == "🟢 EXCELLENT": l_stats["excellents"] += 1
-            elif tier == "🟡 SOLID": l_stats["solids"] += 1
-            elif tier == "🟠 MISS": l_stats["misses"] += 1
-            elif tier == "🔴 BUST": l_stats["busts"] += 1
-            elif tier == "🚨 OT WARP": l_stats["ots"] += 1
-            
-            if rpe is not None:
-                l_stats["sum_rpe"] += rpe
-                l_stats["count_rpe"] += 1
 
+            league_name  = p.get("league", "Unknown").upper()
+            model_arch   = p.get("model_architecture", "[  SRS   ]")
+            is_adv       = "ADVANCED" in (model_arch or "")
+            model_key    = "adv" if is_adv else "srs"
+
+            pred_1x2     = p.get("predicted_result")
+            actual_1x2   = p.get("actual_result")
+            tier         = p.get("accuracy_tier")
+            rpe          = p.get("total_rpe")
             signed_delta = p.get("signed_delta")
-            if signed_delta is not None:
-                l_stats["sum_signed_delta"] += signed_delta
-                l_stats["count_signed_delta"] += 1
-                    
+
+            if league_name not in stats_dict:
+                stats_dict[league_name] = {"srs": _blank_model_stats(), "adv": _blank_model_stats()}
+
+            _tally(stats_dict[league_name][model_key],
+                   pred_1x2, actual_1x2, tier, rpe, signed_delta)
+
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")
 
@@ -107,36 +105,53 @@ def main():
         
     # Compile into array and calculate metrics
     leaderboard = []
-    
-    for lname, s in league_stats.items():
-        count_rpe = s["count_rpe"]
-        mape = (s["sum_rpe"] / count_rpe) if count_rpe > 0 else 0.0
-        
-        x_w = s["1x2_w"]
-        x_l = s["1x2_l"]
-        x_total = x_w + x_l
-        x_hit_rate = (x_w / x_total * 100) if x_total > 0 else 0.0
-            
-        count_signed = s["count_signed_delta"]
-        avg_signed_delta = (s["sum_signed_delta"] / count_signed) if count_signed > 0 else None
-        # Positive avg_signed_delta = model undershoots (games go OVER model)
-        # Negative avg_signed_delta = model overshoots (games go UNDER model)
 
-        leaderboard.append({
+    def _compile_model(s):
+        """Turn a raw stats bucket into display-ready metrics."""
+        count_rpe    = s["count_rpe"]
+        count_signed = s["count_signed_delta"]
+        x_w, x_l    = s["1x2_w"], s["1x2_l"]
+        x_total      = x_w + x_l
+        return {
+            "mape":              round(s["sum_rpe"] / count_rpe, 2) if count_rpe else 0.0,
+            "graded_totals":     count_rpe,
+            "bullseyes":         s["bullseyes"],
+            "excellents":        s["excellents"],
+            "solids":            s["solids"],
+            "misses":            s["misses"],
+            "busts":             s["busts"],
+            "ots":               s["ots"],
+            "avg_signed_delta":  round(s["sum_signed_delta"] / count_signed, 2) if count_signed else None,
+            "outcome_w":         x_w,
+            "outcome_l":         x_l,
+            "outcome_hit_rate":  round(x_w / x_total * 100, 1) if x_total else 0.0,
+        }
+
+    for lname, models in league_stats.items():
+        srs = _compile_model(models["srs"])
+        adv = _compile_model(models["adv"])
+        has_adv = adv["graded_totals"] > 0
+
+        entry = {
             "name": lname,
-            "mape": round(mape, 2),
-            "graded_totals": count_rpe,
-            "bullseyes": s["bullseyes"],
-            "excellents": s["excellents"],
-            "solids": s["solids"],
-            "misses": s["misses"],
-            "busts": s["busts"],
-            "ots": s["ots"],
-            "avg_signed_delta": round(avg_signed_delta, 2) if avg_signed_delta is not None else None,
-            "outcome_w": x_w,
-            "outcome_l": x_l,
-            "outcome_hit_rate": round(x_hit_rate, 1)
-        })
+            # Combined (SRS) stats — primary sort key, backwards-compatible
+            "mape":               srs["mape"],
+            "graded_totals":      srs["graded_totals"],
+            "bullseyes":          srs["bullseyes"],
+            "excellents":         srs["excellents"],
+            "solids":             srs["solids"],
+            "misses":             srs["misses"],
+            "busts":              srs["busts"],
+            "ots":                srs["ots"],
+            "avg_signed_delta":   srs["avg_signed_delta"],
+            "outcome_w":          srs["outcome_w"],
+            "outcome_l":          srs["outcome_l"],
+            "outcome_hit_rate":   srs["outcome_hit_rate"],
+            # Per-model breakdowns
+            "srs":  srs,
+            "adv":  adv if has_adv else None,
+        }
+        leaderboard.append(entry)
         
     # Sort by MAPE ascending (lowest error is best, ignoring 0 mapes)
     leaderboard.sort(key=lambda x: (x["mape"] == 0, x["mape"]))

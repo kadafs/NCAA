@@ -99,6 +99,8 @@ def main():
         print(f"  🔄 Regrading {len(missing_delta)} games with Delta Matrix (using stored scores)...")
         graded_list = []
         patched = 0
+        wins_by_model  = {}
+        total_by_model = {}
         for pred in predictions:
             if pred.get("actual_result") and pred.get("accuracy_tier") is None:
                 p = pred.copy()
@@ -106,6 +108,7 @@ def main():
                 a_s = p.get("actual_away_score")
                 status = p.get("status", "FT")
                 model_total = p.get("model", {}).get("total") or p.get("model_total")
+                mdl = p.get("model_architecture", "[  SRS   ]")
                 if h_s is not None and a_s is not None and model_total:
                     if status == "AOT":
                         p["accuracy_tier"] = "🚨 OT WARP"
@@ -125,7 +128,11 @@ def main():
                         p["signed_delta"] = round(signed_delta, 2)
                         p["total_rpe"] = round(rpe, 2)
                         p["accuracy_tier"] = tier
-                    print(f"  [REGRADE] {pred['home_team']} vs {pred['away_team']} → {p.get('accuracy_tier')}")
+                    # Per-model outcome tracking
+                    is_win = p.get("predicted_result") == p.get("actual_result")
+                    wins_by_model[mdl]  = wins_by_model.get(mdl, 0)  + (1 if is_win else 0)
+                    total_by_model[mdl] = total_by_model.get(mdl, 0) + 1
+                    print(f"  [REGRADE] {pred['home_team']} vs {pred['away_team']} ({mdl.strip()}) → {p.get('accuracy_tier')}")
                     patched += 1
                 graded_list.append(p)
             else:
@@ -159,8 +166,8 @@ def main():
 
     matched = 0
     graded_list = []
-    wins = 0
-    total = 0
+    wins_by_model  = {}   # { model_architecture: win_count }
+    total_by_model = {}   # { model_architecture: total_count }
 
     for pred in predictions:
         if pred.get("actual_result"):
@@ -203,24 +210,38 @@ def main():
                     p["accuracy_tier"] = tier
             
             # Outcome grade
+            mdl = p.get("model_architecture", "[  SRS   ]")
             is_win = (p.get("predicted_result") == actual)
-            if is_win: wins += 1
-            total += 1
+            wins_by_model[mdl]  = wins_by_model.get(mdl, 0)  + (1 if is_win else 0)
+            total_by_model[mdl] = total_by_model.get(mdl, 0) + 1
             
             # Formatted Output
             tier_str = p.get("accuracy_tier", "")
-            print(f"  [OK] {pred['home_team']} {h_s}-{a_s} {pred['away_team']} -> {actual} ({'WIN' if is_win else 'LOSS'}) | {tier_str}")
+            print(f"  [OK] {pred['home_team']} {h_s}-{a_s} {pred['away_team']} ({mdl.strip()}) -> {actual} ({'WIN' if is_win else 'LOSS'}) | {tier_str}")
             graded_list.append(p)
             matched += 1
         else:
             graded_list.append(pred)
 
-    print(f"\n  Matched: {matched} | Accuracy: {wins}/{total}" + (f" ({100*wins//total}%)" if total else ""))
+    # Per-model summary line
+    for mdl, tot in total_by_model.items():
+        w = wins_by_model.get(mdl, 0)
+        label = mdl.strip()
+        pct_str = f" ({100*w//tot}%)" if tot else ""
+        print(f"  [{label}] Matched: {matched} | Accuracy: {w}/{tot}{pct_str}")
 
     if not args.dry_run:
         data["predictions"] = graded_list
         data["graded_at"] = datetime.now().isoformat()
-        data["grade_summary"] = {"wins": wins, "total": total, "pct": round(100*wins/total,1) if total else 0}
+        # Build per-model grade summary
+        grade_summary_by_model = {}
+        for mdl, tot in total_by_model.items():
+            w = wins_by_model.get(mdl, 0)
+            grade_summary_by_model[mdl.strip()] = {
+                "wins": w, "total": tot,
+                "pct": round(100 * w / tot, 1) if tot else 0
+            }
+        data["grade_summary"] = grade_summary_by_model
         save_predictions(date, data)
 
 if __name__ == "__main__":

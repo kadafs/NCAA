@@ -32,8 +32,14 @@ function filterPredictions(predictions, decision, country, drawMin, sport, leade
     // MAPE Filter (Basketball only)
     if (sport === 'basketball' && maxMape < 100) {
       const stats = leaderboard.find(x => x.name === p.league.toUpperCase())
-      // Filter out leagues that have no graded history OR a MAPE worse than the filter
-      if (!stats || stats.graded_totals === 0 || stats.mape > maxMape) return false
+      if (!stats) return false
+      
+      const isAdv = p.model_architecture?.includes('ADVANCED')
+      const targetStats = isAdv ? stats.adv : stats.srs
+      
+      if (!targetStats || targetStats.graded_totals === 0 || targetStats.mape > maxMape) {
+        return false
+      }
     }
     
     return true

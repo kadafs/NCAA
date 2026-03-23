@@ -22,11 +22,6 @@ export default function LeagueGroup({ group, sport }) {
                 MBET {games[0].mbet_threshold}
               </span>
             )}
-            {!isFootball && games && games.length > 0 && games[0].model_architecture && (
-              <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 800, padding: '2px 6px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 4 }}>
-                {games[0].model_architecture.replace(/\[|\]/g, '').trim()}
-              </span>
-            )}
           </span>
           {isFootball && stats && (stats.btts_plays > 0) && (
             <span style={{ 
@@ -44,46 +39,47 @@ export default function LeagueGroup({ group, sport }) {
               BTTS: {stats.btts_roi > 0 ? '+' : ''}{stats.btts_roi} U ({stats.btts_hit_rate}%)
             </span>
           )}
-          {!isFootball && stats && stats.graded_totals > 0 && (() => {
-            const mape = stats.mape ?? 0
-            const mapeColor  = mape <= 6.5 ? '#15803d' : mape <= 10.0 ? '#d97706' : '#b91c1c'
-            const mapeBg     = mape <= 6.5 ? '#f0fdf4' : mape <= 10.0 ? '#fffbeb' : '#fef2f2'
-            const mapeBorder = mape <= 6.5 ? '#bbf7d0' : mape <= 10.0 ? '#fde68a' : '#fecaca'
-            const tierTooltip = [
-              stats.bullseyes  > 0 ? `🎯×${stats.bullseyes}`  : null,
-              stats.excellents > 0 ? `🟢×${stats.excellents}` : null,
-              stats.solids     > 0 ? `🟡×${stats.solids}`     : null,
-              stats.misses     > 0 ? `🟠×${stats.misses}`     : null,
-              stats.busts      > 0 ? `🔴×${stats.busts}`      : null,
-            ].filter(Boolean).join('  ')
+          {!isFootball && stats && (() => {
+            const renderStats = (modelName, mStats) => {
+              if (!mStats || mStats.graded_totals === 0) return null
+              const mape = mStats.mape ?? 0
+              const isAdv    = modelName === 'ADV'
+              const bg       = isAdv ? '#f5f3ff' : '#f0f9ff'
+              const color    = isAdv ? '#7c3aed' : '#0369a1'
+              const border   = isAdv ? '#ddd6fe' : '#bae6fd'
+              const mapeColor = mape <= 6.5 ? '#15803d' : mape <= 10.0 ? '#d97706' : '#b91c1c'
+              
+              const tierTooltip = [
+                mStats.bullseyes  > 0 ? `🎯×${mStats.bullseyes}`  : null,
+                mStats.excellents > 0 ? `🟢×${mStats.excellents}` : null,
+                mStats.solids     > 0 ? `🟡×${mStats.solids}`     : null,
+                mStats.misses     > 0 ? `🟠×${mStats.misses}`     : null,
+                mStats.busts      > 0 ? `🔴×${mStats.busts}`      : null,
+              ].filter(Boolean).join('  ')
+
+              return (
+                <div key={modelName} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '2px 6px', background: bg, border: `1px solid ${border}`, borderRadius: 4 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: color }}>{modelName}</span>
+                  <span title={tierTooltip || undefined} style={{ fontSize: 11, fontWeight: 700, color: mapeColor, whiteSpace: 'nowrap', cursor: 'default' }}>
+                    MAPE {mape.toFixed(1)}% <span style={{ fontWeight: 400, fontSize: 10, color: '#94a3b8' }}>({mStats.graded_totals}g)</span>
+                  </span>
+                  {(mStats.outcome_w + mStats.outcome_l > 0) && (
+                    <span style={{ fontSize: 10, fontWeight: 600, color: color, opacity: 0.8, paddingLeft: 4, borderLeft: `1px solid ${border}` }}>
+                      1X2: {mStats.outcome_w}W-{mStats.outcome_l}L ({mStats.outcome_hit_rate}%)
+                    </span>
+                  )}
+                </div>
+              )
+            }
+
             return (
-              <span title={tierTooltip || undefined} style={{
-                fontSize: 11, padding: '2px 8px', background: mapeBg, color: mapeColor,
-                borderRadius: 4, whiteSpace: 'nowrap', fontWeight: 700,
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                border: `1px solid ${mapeBorder}`, cursor: 'default',
-              }}>
-                MAPE {mape.toFixed(1)}%
-                <span style={{ fontWeight: 400, fontSize: 10, color: '#94a3b8' }}>({stats.graded_totals}g)</span>
-              </span>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {stats.srs && renderStats('SRS', stats.srs)}
+                {stats.adv && renderStats('ADV', stats.adv)}
+              </div>
             )
           })()}
-          {stats && (stats.outcome_w + stats.outcome_l > 0) && (
-            <span style={{ 
-              fontSize: 11, 
-              padding: '2px 8px', 
-              background: '#eef2ff', 
-              color: '#4338ca',
-              borderRadius: 4, 
-              whiteSpace: 'nowrap',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              border: '1px solid #e0e7ff'
-            }}>
-              1X2: {stats.outcome_w}W-{stats.outcome_l}L ({stats.outcome_hit_rate}%)
-            </span>
-          )}
+
         </div>
         
         {isFootball ? (
