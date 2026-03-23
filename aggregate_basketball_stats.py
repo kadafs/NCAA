@@ -46,7 +46,14 @@ def process_file(file_path, stats_dict):
             if p.get("actual_result") is None:
                 continue
 
-            league_name  = p.get("league", "Unknown").upper()
+            league_id    = p.get("league_id")
+            league_name  = p.get("league", "Unknown")
+            country      = p.get("country", "")
+            
+            # Key by league_id if available, fallback to unique composite string
+            key = str(league_id) if league_id else f"{country}_{league_name}".upper()
+            display_name = f"{country.upper()} — {league_name.upper()}" if country else league_name.upper()
+
             model_arch   = p.get("model_architecture", "[  SRS   ]")
             is_adv       = "ADVANCED" in (model_arch or "")
             model_key    = "adv" if is_adv else "srs"
@@ -57,10 +64,15 @@ def process_file(file_path, stats_dict):
             rpe          = p.get("total_rpe")
             signed_delta = p.get("signed_delta")
 
-            if league_name not in stats_dict:
-                stats_dict[league_name] = {"srs": _blank_model_stats(), "adv": _blank_model_stats()}
+            if key not in stats_dict:
+                stats_dict[key] = {
+                    "league_id": league_id,
+                    "name": display_name,
+                    "srs": _blank_model_stats(),
+                    "adv": _blank_model_stats()
+                }
 
-            _tally(stats_dict[league_name][model_key],
+            _tally(stats_dict[key][model_key],
                    pred_1x2, actual_1x2, tier, rpe, signed_delta)
 
     except Exception as e:
@@ -127,13 +139,14 @@ def main():
             "outcome_hit_rate":  round(x_w / x_total * 100, 1) if x_total else 0.0,
         }
 
-    for lname, models in league_stats.items():
+    for key, models in league_stats.items():
         srs = _compile_model(models["srs"])
         adv = _compile_model(models["adv"])
         has_adv = adv["graded_totals"] > 0
 
         entry = {
-            "name": lname,
+            "name": models["name"],
+            "league_id": models["league_id"],
             # Combined (SRS) stats — primary sort key, backwards-compatible
             "mape":               srs["mape"],
             "graded_totals":      srs["graded_totals"],

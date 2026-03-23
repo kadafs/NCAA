@@ -31,7 +31,7 @@ function filterPredictions(predictions, decision, country, drawMin, sport, leade
     
     // MAPE Filter (Basketball only)
     if (sport === 'basketball' && maxMape < 100) {
-      const stats = leaderboard.find(x => x.name === p.league.toUpperCase())
+      const stats = leaderboard.find(x => (p.league_id && x.league_id === p.league_id) || x.name === `${p.country?.toUpperCase()} — ${p.league?.toUpperCase()}`)
       if (!stats) return false
       
       const isAdv = p.model_architecture?.includes('ADVANCED')
@@ -249,7 +249,7 @@ export default function App() {
         {!loading && !error && groups.length > 0 && (
           <div className="predictions-table">
             {groups.map(g => {
-              const stats = leaderboard.find(x => x.name === g.league.toUpperCase())
+              const stats = leaderboard.find(x => (g.league_id && x.league_id === g.league_id) || x.name === `${g.country?.toUpperCase()} — ${g.league?.toUpperCase()}`)
               return <LeagueGroup key={`${g.league_id}-${g.league}`} group={{...g, stats}} sport={sport} />
             })}
           </div>

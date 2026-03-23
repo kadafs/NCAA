@@ -214,33 +214,132 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
         browser.close()
         return True
 
+def get_daily_urls(date_str):
+    """
+    Reads the daily fixtures JSON to find which leagues are actively playing,
+    then looks up their proballers_url. Only active leagues will be scraped.
+    """
+    if date_str == "today" or not date_str:
+        from datetime import timezone
+        ET_TZ = timezone.utc
+        date_str = datetime.now(ET_TZ).strftime("%Y-%m-%d")
+        
+    fixtures_file = f"data/api_basketball_today_{date_str}.json"
+    
+    if not os.path.exists(fixtures_file):
+        print(f"  [!] Fixtures file not found: {fixtures_file}")
+        print(f"      Attempting to fetch fixtures for {date_str}...")
+        try:
+            # Reuses the exact fetcher logic from the daily runner
+            from run_basketball_daily import fetch_today_fixtures
+            fetch_today_fixtures(date_str)
+        except Exception as e:
+            print(f"  [X] Failed to fetch fixtures: {e}")
+            return []
+            
+    if not os.path.exists(fixtures_file):
+        return []
+        
+    try:
+        with open(fixtures_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            
+        try:
+            from run_basketball_daily import EXCLUDED_LEAGUE_IDS, EXCLUDED_LEAGUE_NAMES
+        except ImportError:
+            EXCLUDED_LEAGUE_IDS = set()
+            EXCLUDED_LEAGUE_NAMES = set()
+            
+        valid_leagues = [
+            l for l in data.get("leagues_summary", [])
+            if l.get("league_id") not in EXCLUDED_LEAGUE_IDS
+            and l.get("league_name") not in EXCLUDED_LEAGUE_NAMES
+            and str(l.get("country") or "").strip().upper() != "USA"
+        ]
+        
+        leagues_today = [str(l.get("league_id")) for l in valid_leagues if l.get("league_id")]
+        
+        urls = []
+        for lid in leagues_today:
+            cfg_path = f"configs/leagues/{lid}.json"
+            if os.path.exists(cfg_path):
+                try:
+                    with open(cfg_path, "r", encoding="utf-8") as cf:
+                        cfg = json.load(cf)
+                        url = cfg.get("proballers_url")
+                        if url:
+                            if url not in urls:
+                                urls.append(url)
+                except Exception:
+                    pass
+        # 2. Legacy Method: Lookup via league_slug_map + proballers_schedule_links
+        map_file = "data/league_slug_map.json"
+        txt_files = ["proballers_schedule_links.txt", "proballers_priority_links.txt"]
+        
+        if os.path.exists(map_file):
+            try:
+                with open(map_file, "r", encoding="utf-8") as mf:
+                    slug_map = json.load(mf)
+                    
+                for tfile in txt_files:
+                    if os.path.exists(tfile):
+                        with open(tfile, "r", encoding="utf-8") as tf:
+                            for line in tf:
+                                url = line.strip()
+                                if not url or url.startswith("#"): continue
+                                
+                                parts = url.strip("/").split("/")
+                                if len(parts) >= 2:
+                                    slug = parts[-2]
+                                    api_id = slug_map.get(slug)
+                                    if not api_id:
+                                        api_id = slug_map.get(slug.replace("-", "_"))
+                                        
+                                    if api_id and str(api_id) in leagues_today:
+                                        if url not in urls:
+                                            urls.append(url)
+            except Exception as e:
+                print(f"  [X] Failed parsing legacy mapping: {e}")
+
+        return urls
+    except Exception as e:
+        print(f"  [X] Error parsing daily leagues: {e}")
+        return []
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Proballers Advanced Metrics Mass Scraper")
     parser.add_argument("--url", type=str, help="Single schedule URL to scrape")
     parser.add_argument("--file", type=str, help="Text file containing multiple schedule URLs to batch process")
+    parser.add_argument("--daily", type=str, nargs="?", const="today", help="Scrape only leagues playing on this date (YYYY-MM-DD or 'today')")
     parser.add_argument("--max", type=int, default=200, help="Max games to scrape per league (prevent timeout during sync)")
     parser.add_argument("--cutoff_date", type=str, help="Do not scrape games older than this date (YYYY-MM-DD)")
     
     args = parser.parse_args()
     
-    if args.url:
-        run_proballers_scraper(args.url, max_games=args.max, cutoff_date=args.cutoff_date)
+    target_urls = []
+    
+    if args.daily:
+        print(f"\n[DAILY OPTIMIZATION] Identifying active leagues for date: {args.daily}")
+        target_urls = get_daily_urls(args.daily)
+        print(f"-> Found {len(target_urls)} active Proballers leagues scheduled for {args.daily if args.daily != 'today' else 'today'}\n")
     elif args.file:
         if not os.path.exists(args.file):
             print(f"Error: File {args.file} not found.")
             sys.exit(1)
-            
         with open(args.file, "r") as f:
-            urls = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-            
-        print(f"Found {len(urls)} leagues in target manifest. Commencing Mass Extraction Sequence.")
-        for idx, url in enumerate(urls):
-            print(f"\n[BATCH ROUTINE] Extracting League {idx+1} of {len(urls)}...")
-            run_proballers_scraper(url, max_games=args.max, cutoff_date=args.cutoff_date)
-            
-            if idx < len(urls) - 1:
-                cooldown = random.uniform(8.5, 14.5)
-                print(f"  -> Cooldown for {cooldown:.1f}s before next league...")
-                time.sleep(cooldown)
+            target_urls = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+        print(f"Found {len(target_urls)} leagues in target manifest. Commencing Mass Extraction Sequence.")
+    elif args.url:
+        target_urls = [args.url]
     else:
         parser.print_help()
+        sys.exit(0)
+        
+    for idx, url in enumerate(target_urls):
+        print(f"\n[BATCH ROUTINE] Extracting League {idx+1} of {len(target_urls)}: {url.split('/')[-2] if '/' in url else url}")
+        run_proballers_scraper(url, max_games=args.max, cutoff_date=args.cutoff_date)
+        
+        if idx < len(target_urls) - 1:
+            cooldown = random.uniform(8.5, 14.5)
+            print(f"  -> Cooldown for {cooldown:.1f}s before next league...")
+            time.sleep(cooldown)
