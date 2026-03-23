@@ -39,6 +39,12 @@ def verify():
     api_leagues = data.get("response", [])
     print(f"Retrieved {len(api_leagues)} total leagues from API.\n")
 
+    # Print all leagues for manual inspection
+    for l in api_leagues:
+        print(f"ID: {l['id']:<5} | Country: {l['country']['name']:<20} | Name: {l['name']}")
+    
+    print("\n" + "="*80 + "\n")
+
     # Create simplified search index
     # [ (name, country, id) ]
     search_index = []

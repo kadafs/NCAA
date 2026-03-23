@@ -80,6 +80,10 @@ EXCLUDED_LEAGUE_NAMES = {
 # HELPERS
 # ------------------------------------------------------------------
 
+TEAM_NAME_OVERRIDES = {
+    "Psychikou": "Psyhiko Athens",
+}
+
 def get_today_str(date_str=None):
     if date_str:
         return date_str
@@ -296,6 +300,9 @@ def find_team(name, stats_dict):
     """
     if not name or not stats_dict:
         return None, None
+
+    # Step 0: Manual Overrides
+    name = TEAM_NAME_OVERRIDES.get(name, name)
 
     name_lower = name.lower().strip()
 
