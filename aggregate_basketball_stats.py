@@ -144,29 +144,32 @@ def main():
         adv = _compile_model(models["adv"])
         has_adv = adv["graded_totals"] > 0
 
+        # ADV is primary when available; fall back to SRS
+        primary = adv if has_adv else srs
+
         entry = {
             "name": models["name"],
             "league_id": models["league_id"],
-            # Combined (SRS) stats — primary sort key, backwards-compatible
-            "mape":               srs["mape"],
-            "graded_totals":      srs["graded_totals"],
-            "bullseyes":          srs["bullseyes"],
-            "excellents":         srs["excellents"],
-            "solids":             srs["solids"],
-            "misses":             srs["misses"],
-            "busts":              srs["busts"],
-            "ots":                srs["ots"],
-            "avg_signed_delta":   srs["avg_signed_delta"],
-            "outcome_w":          srs["outcome_w"],
-            "outcome_l":          srs["outcome_l"],
-            "outcome_hit_rate":   srs["outcome_hit_rate"],
-            # Per-model breakdowns
-            "srs":  srs,
+            # Top-level fields use ADV when available (primary model)
+            "mape":               primary["mape"],
+            "graded_totals":      primary["graded_totals"],
+            "bullseyes":          primary["bullseyes"],
+            "excellents":         primary["excellents"],
+            "solids":             primary["solids"],
+            "misses":             primary["misses"],
+            "busts":              primary["busts"],
+            "ots":                primary["ots"],
+            "avg_signed_delta":   primary["avg_signed_delta"],
+            "outcome_w":          primary["outcome_w"],
+            "outcome_l":          primary["outcome_l"],
+            "outcome_hit_rate":   primary["outcome_hit_rate"],
+            # Per-model breakdowns always available for reference
+            "srs":  srs if srs["graded_totals"] > 0 else None,
             "adv":  adv if has_adv else None,
         }
         leaderboard.append(entry)
-        
-    # Sort by MAPE ascending (lowest error is best, ignoring 0 mapes)
+
+    # Sort by MAPE ascending using primary model (ADV-first), ignoring 0 mapes
     leaderboard.sort(key=lambda x: (x["mape"] == 0, x["mape"]))
     
     output_data = {

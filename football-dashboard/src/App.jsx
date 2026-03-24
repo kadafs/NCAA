@@ -4,13 +4,42 @@ import Header from './components/Header'
 import Scorecard from './components/Scorecard'
 import LeagueGroup from './components/LeagueGroup'
 
-function groupByLeague(predictions) {
+function groupByLeague(predictions, sport) {
   const map = new Map()
   for (const p of predictions) {
     const key = `${p.league_id}||${p.league}||${p.country}`
     if (!map.has(key)) map.set(key, { league: p.league, country: p.country, league_id: p.league_id, games: [] })
     map.get(key).games.push(p)
   }
+
+  if (sport === 'basketball') {
+    return [...map.values()].map(group => {
+      const consolidatedMap = new Map()
+      for (const game of group.games) {
+        const fixtureKey = `${game.home_team}||${game.away_team}||${game.time}`
+        if (!consolidatedMap.has(fixtureKey)) {
+          consolidatedMap.set(fixtureKey, {
+            home_team: game.home_team,
+            away_team: game.away_team,
+            time: game.time,
+            predictions: {}
+          })
+        }
+        const consolidated = consolidatedMap.get(fixtureKey)
+        const isAdv = game.model_architecture?.includes('ADVANCED')
+        if (isAdv) consolidated.predictions.adv = game
+        else consolidated.predictions.srs = game
+
+        // Sync match-level info to top level (status, scores, result)
+        if (game.status) consolidated.status = game.status
+        if (game.actual_home_score !== undefined) consolidated.actual_home_score = game.actual_home_score
+        if (game.actual_away_score !== undefined) consolidated.actual_away_score = game.actual_away_score
+        if (game.actual_result) consolidated.actual_result = game.actual_result
+      }
+      return { ...group, games: [...consolidatedMap.values()] }
+    })
+  }
+
   return [...map.values()]
 }
 
@@ -117,7 +146,7 @@ export default function App() {
     return filterPredictions(data.predictions, filterDecision, filterCountry, filterDraw, sport, leaderboard, filterMape)
   }, [data, filterDecision, filterCountry, filterDraw, sport, leaderboard, filterMape])
 
-  const groups = useMemo(() => sortGroups(groupByLeague(filtered), sortBy), [filtered, sortBy])
+  const groups = useMemo(() => sortGroups(groupByLeague(filtered, sport), sortBy), [filtered, sortBy, sport])
 
   const counts = useMemo(() => {
     if (sport === 'football') {
@@ -131,7 +160,9 @@ export default function App() {
       const no     = filtered.filter(p => p.decision === 'PLAY UNDER').length
       const strong = filtered.filter(p => (p.edge ?? 0) > 5.0).length
       const pass   = filtered.filter(p => p.decision === 'PASS' || p.decision === 'MODEL ONLY').length
-      return { total: filtered.length, yes, no, strong, pass }
+      // Count unique fixtures (not raw predictions which may include both models)
+      const matchSet = new Set(filtered.map(p => `${p.home_team}||${p.away_team}||${p.time}`))
+      return { total: matchSet.size, yes, no, strong, pass }
     }
   }, [filtered, sport])
 

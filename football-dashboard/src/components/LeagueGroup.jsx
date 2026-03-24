@@ -5,6 +5,8 @@ import BasketballRow from './BasketballRow'
 export default function LeagueGroup({ group, sport }) {
   const { league, country, games, stats } = group
   const isFootball = sport === 'football'
+  // Does any game today in this league have an ADV prediction?
+  const leagueHasAdv = !isFootball && games.some(g => g.predictions?.adv)
 
   return (
     <div>
@@ -74,8 +76,10 @@ export default function LeagueGroup({ group, sport }) {
 
             return (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {stats.srs && renderStats('SRS', stats.srs)}
-                {stats.adv && renderStats('ADV', stats.adv)}
+                {stats.adv && stats.adv.graded_totals > 0
+                  ? renderStats('ADV', stats.adv)
+                  : (stats.srs && renderStats('SRS', stats.srs))
+                }
               </div>
             )
           })()}
@@ -106,7 +110,7 @@ export default function LeagueGroup({ group, sport }) {
       {games.map((g, i) => (
         isFootball 
           ? <MatchRow key={`${g.home_team}-${g.away_team}-${i}`} game={g} />
-          : <BasketballRow key={`${g.home_team}-${g.away_team}-${i}`} game={g} />
+          : <BasketballRow key={`${g.home_team}-${g.away_team}-${i}`} game={g} leagueHasAdv={leagueHasAdv} />
       ))}
     </div>
   )

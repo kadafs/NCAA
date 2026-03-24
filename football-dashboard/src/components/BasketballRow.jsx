@@ -11,84 +11,137 @@ function isMatch(t1, t2) {
   return l1.includes(l2) || l2.includes(l1)
 }
 
-export default function BasketballRow({ game }) {
+const FINISHED_STATUSES = new Set(['FT', 'FINISHED', 'GAME FINISHED'])
+function isFinishedStatus(s) {
+  return s && FINISHED_STATUSES.has(s.trim().toUpperCase())
+}
+
+export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = false }) {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('stats')
 
+  // ── Pull top-level match info synced from App.jsx ──
   const {
-    time = '', away_team, home_team, status,
-    predicted_result = '', probs_1x2 = {},
-    xpts_h = 0, xpts_a = 0,
-    model_total = 0, market_total, edge, side = '',
-    decision = 'MODEL ONLY', confidence = '', mbet_threshold,
-    home_source = 'SRS', away_source = 'SRS',
+    home_team,
+    away_team,
+    time = '',
+    status: topStatus,
+    actual_home_score: topHomeScore,
+    actual_away_score: topAwayScore,
+    actual_result: topResult,
+    predictions = {}
+  } = consolidatedGame
+
+  // ── ADV is primary; SRS is secondary (flag only) ──
+  const primary   = predictions.adv || predictions.srs || {}
+  const secondary = predictions.adv ? predictions.srs : null   // only show SRS flag when ADV present
+
+  const {
+    predicted_result = '',
+    probs_1x2 = {},
+    xpts_h = 0,
+    xpts_a = 0,
+    model_total = 0,
+    market_total,
+    edge,
+    decision = 'MODEL ONLY',
     model_architecture = '[  SRS   ]',
     match_center = {},
-    actual_home_score, actual_away_score, actual_result,
-    accuracy_tier, total_delta
-  } = game
+    actual_home_score: primaryHomeScore,
+    actual_away_score: primaryAwayScore,
+    actual_result:     primaryResult,
+    accuracy_tier,
+    total_delta,
+  } = primary
+
+  // Use top-level synced values first, fallback to primary model values
+  const finalStatus    = topStatus    || primary.status
+  const finalHomeScore = topHomeScore !== undefined ? topHomeScore : primaryHomeScore
+  const finalAwayScore = topAwayScore !== undefined ? topAwayScore : primaryAwayScore
+  const finalResult    = topResult    || primaryResult
 
   const isAdvanced = model_architecture?.includes('ADVANCED')
+  const hasSRSFlag = !!secondary && isAdvanced
 
   const { statsH = {}, statsA = {}, h2h = [], recentH = [], recentA = [], full_standings = [] } = match_center
 
-  const tip = predicted_result === 'HOME' ? '1' : '2'
-  const isGraded = actual_result != null
-  const isWin = isGraded && predicted_result === actual_result
-  
-  // Custom decision badge color logic
-  let badgeBg = '#64748b' // PASS
-  if (decision === 'PLAY OVER')  badgeBg = '#15803d'
-  if (decision === 'PLAY UNDER') badgeBg = '#b91c1c'
-  if (decision === 'MODEL ONLY') badgeBg = '#94a3b8'
+  const tip      = predicted_result === 'HOME' ? '1' : '2'
+  const isGraded = finalResult != null
+  const isWin    = isGraded && predicted_result === finalResult
+
+  // Badge display rules:
+  // - FT / graded games → never show badge (already done via isGraded/isFinishedStatus)
+  // - Not Started, ADV primary → hide badge (clean; it's expected)
+  // - Not Started, SRS but leagueHasAdv=true → show SRS warning (fallback, team missing from ADV)
+  // - Not Started, SRS and leagueHasAdv=false → hide badge (expected, SRS-only league)
+  const isFinished = isGraded || isFinishedStatus(finalStatus) || finalHomeScore !== undefined
+  const isSRSFallback = !isAdvanced && leagueHasAdv   // ADV league but this game used SRS
+  const showBadge = !isFinished && isSRSFallback
 
   return (
     <>
-      <div 
-        className={`match-row bball-grid ${open ? 'expanded' : ''}`} 
+      <div
+        className={`match-row bball-grid ${open ? 'expanded' : ''}`}
         onClick={() => setOpen(!open)}
         style={{ gridTemplateColumns: '72px 1fr 44px 22px 116px 80px 100px' }}
       >
+        {/* TIME / STATUS COLUMN */}
         <div className="match-time">
           {time?.includes(' ') ? time.split(' ')[1] : time}
-          {status && status !== 'Scheduled' && status !== 'Game Finished' && (
-            <div className="live-indicator">{status}</div>
+          {finalStatus && !isFinishedStatus(finalStatus) && finalStatus !== 'Scheduled' && finalStatus !== 'Game Finished' && (
+            <div className="live-indicator">{finalStatus}</div>
           )}
-          <div style={{
-            marginTop: 3,
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: '0.03em',
-            padding: '1px 5px',
-            borderRadius: 3,
-            display: 'inline-block',
-            background: isAdvanced ? '#7c3aed' : '#0369a1',
-            color: '#fff',
-            opacity: 0.92,
-          }}>
-            {isAdvanced ? 'ADV' : 'SRS'}
-          </div>
+          {showBadge && (
+            <div style={{
+              marginTop: 3,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.03em',
+              padding: '1px 5px',
+              borderRadius: 3,
+              display: 'inline-block',
+              background: '#dc2626',
+              color: '#fff',
+              opacity: 0.9,
+              title: 'ADV data missing for this team — using SRS fallback',
+            }}>
+              SRS ⚠
+            </div>
+          )}
         </div>
-        
+
+        {/* TEAMS COLUMN */}
         <div className="match-teams">
           <div className="team-row">
-            <span className="team-name" style={{ fontWeight: (isGraded && actual_home_score > actual_away_score) ? 700 : 400 }}>{home_team}</span>
-            {actual_home_score !== undefined && <span style={{marginLeft:'auto', fontWeight:700, fontSize:13, color: (isGraded && actual_home_score > actual_away_score) ? '#15803d' : '#64748b'}}>{actual_home_score}</span>}
+            <span className="team-name" style={{ fontWeight: (isGraded && finalHomeScore > finalAwayScore) ? 700 : 400 }}>
+              {home_team}
+            </span>
+            {finalHomeScore !== undefined && (
+              <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 13, color: (isGraded && finalHomeScore > finalAwayScore) ? '#15803d' : '#64748b' }}>
+                {finalHomeScore}
+              </span>
+            )}
           </div>
           <div className="team-row">
-            <span className="team-name" style={{ fontWeight: (isGraded && actual_away_score > actual_home_score) ? 700 : 400 }}>{away_team}</span>
-            {actual_away_score !== undefined && <span style={{marginLeft:'auto', fontWeight:700, fontSize:13, color: (isGraded && actual_away_score > actual_home_score) ? '#15803d' : '#64748b'}}>{actual_away_score}</span>}
+            <span className="team-name" style={{ fontWeight: (isGraded && finalAwayScore > finalHomeScore) ? 700 : 400 }}>
+              {away_team}
+            </span>
+            {finalAwayScore !== undefined && (
+              <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 13, color: (isGraded && finalAwayScore > finalHomeScore) ? '#15803d' : '#64748b' }}>
+                {finalAwayScore}
+              </span>
+            )}
           </div>
         </div>
 
         {/* TIP COLUMN */}
         <div className="stat-col center divider-left" style={{ position: 'relative' }}>
-           <div className={`tip-badge ${tip === '1' ? 'home' : 'away'}`}>{tip}</div>
-           {isGraded && (
-             <span style={{ position: 'absolute', bottom: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 10 }}>
-               {isWin ? '✅' : '❌'}
-             </span>
-           )}
+          <div className={`tip-badge ${tip === '1' ? 'home' : 'away'}`}>{tip}</div>
+          {isGraded && (
+            <span style={{ position: 'absolute', bottom: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 10 }}>
+              {isWin ? '✅' : '❌'}
+            </span>
+          )}
         </div>
 
         {/* Expand chevron */}
@@ -102,11 +155,31 @@ export default function BasketballRow({ game }) {
           </div>
         </div>
 
-        {/* MODEL COLUMN (Model Total) */}
-        <div className="stat-col center">
+        {/* MODEL COLUMN — ADV total + optional SRS flag below */}
+        <div className="stat-col center" style={{ flexDirection: 'column', alignItems: 'center', gap: '0px' }}>
           <div className={`bball-model-box ${decision === 'PLAY OVER' ? 'over' : decision === 'PLAY UNDER' ? 'under' : ''}`}>
             {model_total > 0 ? model_total.toFixed(1) : '—'}
           </div>
+          {hasSRSFlag && (
+            <div style={{
+              fontSize: 7,
+              fontWeight: 800,
+              color: '#64748b',
+              background: '#f8fafc',
+              padding: '1px 3px',
+              borderRadius: '0 0 4px 4px',
+              border: '1px solid #e2e8f0',
+              borderTop: 'none',
+              marginTop: '-1px',
+              minWidth: '40px',
+              textAlign: 'center',
+              textTransform: 'uppercase',
+              lineHeight: 1.2,
+              boxShadow: '0 1px 1px rgba(0,0,0,0.03)',
+            }}>
+              SRS {secondary.model_total?.toFixed(1)}
+            </div>
+          )}
         </div>
 
         {/* xPTS COLUMN */}
@@ -180,7 +253,6 @@ export default function BasketballRow({ game }) {
                 {(() => {
                   let hRank = '-'
                   let aRank = '-'
-                  
                   for (const group of full_standings) {
                     for (const st of group) {
                       if (isMatch(st.team.name, home_team)) hRank = `#${st.position}`
@@ -225,10 +297,10 @@ export default function BasketballRow({ game }) {
                               const isTargetHome = isMatch(st.team.name, home_team)
                               const isTargetAway = isMatch(st.team.name, away_team)
                               return (
-                                <tr key={i} className={isTargetHome || isTargetAway ? "highlight" : ""}>
+                                <tr key={i} className={isTargetHome || isTargetAway ? 'highlight' : ''}>
                                   <td className="st-rank">{st.position}</td>
                                   <td className="st-team">
-                                    {st.team.logo && <img src={st.team.logo} className="st-logo" alt="" style={{width:16, height:16, marginRight:6, verticalAlign:'middle'}} />}
+                                    {st.team.logo && <img src={st.team.logo} className="st-logo" alt="" style={{width:16,height:16,marginRight:6,verticalAlign:'middle'}} />}
                                     {st.team.name}
                                   </td>
                                   <td className="st-val">{st.games.played}</td>
@@ -237,7 +309,7 @@ export default function BasketballRow({ game }) {
                                   <td className="st-val">{st.games.win.percentage}</td>
                                   <td className="st-val st-pts">{st.points.for}-{st.points.against}</td>
                                   <td>
-                                    <div className="st-form" style={{display:'flex', gap:2, justifyContent:'flex-end'}}>
+                                    <div className="st-form" style={{display:'flex',gap:2,justifyContent:'flex-end'}}>
                                       {(st.form || '').split('').map((f, fi) => (
                                         <div key={fi} className={`st-f fm-res ${f}`}>{f}</div>
                                       ))}
@@ -258,7 +330,6 @@ export default function BasketballRow({ game }) {
             {activeTab === 'probabilities' && (
               <div className="tab-probabilities">
                 <div className="prob-grid">
-                  {/* Card 1: Edge Analysis Boxes */}
                   <div className="prob-section full">
                     <div className="ps-title">Edge Analysis</div>
                     <div className="prob-outcome-row">
@@ -277,61 +348,43 @@ export default function BasketballRow({ game }) {
                     </div>
                   </div>
 
-                  {/* Card 2: Match Winner Bars */}
                   <div className="prob-section">
                     <div className="ps-title">Match Winner (Poisson)</div>
-                    <ProbabilityItem 
-                      label={`${home_team} Win`} 
-                      value={probs_1x2?.home || 0} 
-                      color="home" 
-                    />
-                    <ProbabilityItem 
-                      label={`${away_team} Win`} 
-                      value={probs_1x2?.away || 0} 
-                      color="away" 
-                    />
+                    <ProbabilityItem label={`${home_team} Win`} value={probs_1x2?.home || 0} color="home" />
+                    <ProbabilityItem label={`${away_team} Win`} value={probs_1x2?.away || 0} color="away" />
                     <div style={{marginTop: 12, fontSize: 10, color: '#94a3b8', fontStyle: 'italic'}}>
                       * Calculated Match Projections
                     </div>
                   </div>
 
-                  {/* Card 3: Expected Points Ratio Bars */}
                   <div className="prob-section">
                     <div className="ps-title">Expected Points Ratio</div>
                     {(() => {
-                      const totalX = (xpts_h || 0) + (xpts_a || 0);
-                      const hp = totalX > 0 ? (xpts_h / totalX) * 100 : 0;
-                      const ap = totalX > 0 ? (xpts_a / totalX) * 100 : 0;
+                      const totalX = (xpts_h || 0) + (xpts_a || 0)
+                      const hp = totalX > 0 ? (xpts_h / totalX) * 100 : 0
+                      const ap = totalX > 0 ? (xpts_a / totalX) * 100 : 0
                       return (
                         <>
-                          <ProbabilityItem 
-                            label={`${home_team} xPts / ${xpts_h.toFixed(1)}`} 
-                            value={hp} 
-                            color="goals" 
-                          />
-                          <ProbabilityItem 
-                            label={`${away_team} xPts / ${xpts_a.toFixed(1)}`} 
-                            value={ap} 
-                            color="goals" 
-                          />
+                          <ProbabilityItem label={`${home_team} xPts / ${xpts_h.toFixed(1)}`} value={hp} color="goals" />
+                          <ProbabilityItem label={`${away_team} xPts / ${xpts_a.toFixed(1)}`} value={ap} color="goals" />
                           <div style={{marginTop: 12, fontSize: 10, color: '#94a3b8', fontStyle: 'italic'}}>
-                            * Offensive & Defensive Matrix
+                            * Offensive &amp; Defensive Matrix
                           </div>
                         </>
-                      );
+                      )
                     })()}
                   </div>
                 </div>
               </div>
             )}
           </div>
-          
+
           {isGraded && (
-             <div className="graded-footer" style={{ padding: '8px 12px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '16px', fontSize: 11, color: '#475569' }}>
-               <span><b>RESULT:</b> {actual_home_score}-{actual_away_score} {actual_result} {isWin ? '✅' : '❌'}</span>
-               {accuracy_tier && <span><b>ACCURACY:</b> {accuracy_tier}</span>}
-               {total_delta != null && <span><b>DELTA:</b> {total_delta.toFixed(1)} pts</span>}
-             </div>
+            <div className="graded-footer" style={{ padding: '8px 12px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '16px', fontSize: 11, color: '#475569' }}>
+              <span><b>RESULT:</b> {finalHomeScore}-{finalAwayScore} {finalResult} {isWin ? '✅' : '❌'}</span>
+              {accuracy_tier && <span><b>ACCURACY:</b> {accuracy_tier}</span>}
+              {total_delta != null && <span><b>DELTA:</b> {total_delta.toFixed(1)} pts</span>}
+            </div>
           )}
         </div>
       )}
@@ -391,10 +444,7 @@ function ProbabilityItem({ label, value, color }) {
         <span>{fmt(val, 1)}%</span>
       </div>
       <div className="pi-bar-bg">
-        <div 
-          className={`pi-bar-fill ${color}`} 
-          style={{ width: `${val}%` }}
-        ></div>
+        <div className={`pi-bar-fill ${color}`} style={{ width: `${val}%` }}></div>
       </div>
     </div>
   )
