@@ -18,7 +18,9 @@ def process_file(file_path, stats_dict):
             if p.get("actual_result") is None:
                 continue
                 
+            league_id   = p.get("league_id")
             league_name = p.get("league", "Unknown").upper()
+            country     = p.get("country", "").upper()
             decision = p.get("btts_decision")
             d_flag = p.get("draw_value_flag", False)
             actual_btts = p.get("actual_btts")
@@ -28,16 +30,27 @@ def process_file(file_path, stats_dict):
             pred_1x2 = p.get("predicted_result")
             actual_1x2 = p.get("actual_result")
             is_1x2_win = (pred_1x2 == actual_1x2)
+
+            # Build display name matching App.jsx lookup: "COUNTRY — LEAGUE"
+            if country:
+                display_name = f"{country} — {league_name}"
+            else:
+                display_name = league_name
+
+            # Key by league_id when available for accurate matching
+            key = str(league_id) if league_id else display_name
             
-            if league_name not in stats_dict:
-                stats_dict[league_name] = {
+            if key not in stats_dict:
+                stats_dict[key] = {
+                    "league_id": league_id,
+                    "name": display_name,
                     "btts_yes_w": 0, "btts_yes_l": 0,
                     "btts_no_w": 0, "btts_no_l": 0,
                     "draw_w": 0, "draw_l": 0,
                     "1x2_w": 0, "1x2_l": 0
                 }
                 
-            l_stats = stats_dict[league_name]
+            l_stats = stats_dict[key]
             
             # Tally 1X2
             if pred_1x2 and actual_1x2:
@@ -108,7 +121,7 @@ def main():
     # Compile into array and calculate metrics
     leaderboard = []
     
-    for lname, s in league_stats.items():
+    for key, s in league_stats.items():
         b_w = s["btts_yes_w"] + s["btts_no_w"]
         b_l = s["btts_yes_l"] + s["btts_no_l"]
         b_total = b_w + b_l
@@ -125,7 +138,8 @@ def main():
         x_hit_rate = (x_w / x_total * 100) if x_total > 0 else 0.0
             
         leaderboard.append({
-            "name": lname,
+            "league_id": s.get("league_id"),
+            "name": s["name"],
             "btts_plays": b_total,
             "btts_w": b_w,
             "btts_l": b_l,

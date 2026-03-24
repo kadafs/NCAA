@@ -46,9 +46,9 @@ export default function LeagueGroup({ group, sport }) {
               if (!mStats || mStats.graded_totals === 0) return null
               const mape = mStats.mape ?? 0
               const isAdv    = modelName === 'ADV'
-              const bg       = isAdv ? '#f5f3ff' : '#f0f9ff'
-              const color    = isAdv ? '#7c3aed' : '#0369a1'
-              const border   = isAdv ? '#ddd6fe' : '#bae6fd'
+              const bg       = isAdv ? '#eff6ff' : '#f0f9ff'
+              const color    = isAdv ? '#1d4ed8' : '#0369a1'
+              const border   = isAdv ? '#bfdbfe' : '#bae6fd'
               const mapeColor = mape <= 6.5 ? '#15803d' : mape <= 10.0 ? '#d97706' : '#b91c1c'
               
               const tierTooltip = [
