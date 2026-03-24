@@ -36,9 +36,9 @@
   --box-draw:    #94a3b8;
   --box-away:    #3b82f6;
   --box-btts:    #10b981;
-  --box-xg:      #fff7ed;   /* Light orange background */
-  --text-xg:     #c2410c;   /* Dark orange text */
-  --border-xg:   #fdba74;   /* Muted orange border */
+  --box-xg:      #fff9f2;   /* Muted orange background */
+  --text-xg:     #ea580c;   /* Muted orange text */
+  --border-xg:   #fed7aa;   /* Very subtle orange border */
 
   /* Decision badges */
   --badge-yes:   #15803d;
@@ -52,7 +52,7 @@
 
   /* Typography */
   --text-primary:   #0f172a;
-  --text-secondary: #64748b;
+  --text-secondary: #94a3b8;
   --text-xs:        10px;
   --text-sm:        11px;
   --text-base:      13px;
@@ -372,22 +372,64 @@ body {
   letter-spacing: 0.4px;
 }
 
-/* ---- MATCH ROW ---- */
+/* =====================================================
+   MATCH ROW — PRODUCT-GRADE CARD STYLE
+   ===================================================== */
 .match-row {
   display: grid;
   grid-template-columns: var(--grid);
   align-items: center;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border-soft);
-  gap: 6px;
+  min-height: 48px;
+  padding: 8px 12px;
+  background: #fff;
+  margin: 6px 0;
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid transparent; /* Reserve space to prevent layout shift */
+  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.12s;
+  
+  /* Softer, cleaner shadow */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+
+  /* Performance-friendly transitions */
+  will-change: transform;
+  transition: 
+    box-shadow 0.15s ease,
+    transform 0.12s ease,
+    border-color 0.15s ease,
+    background 0.2s ease;
 }
-.match-row:hover { background: #f8faff; }
-.match-row:last-child { border-bottom: none; }
-.match-row.expanded { background: #eef2ff; }
-.match-row.graded   { border-left: 3px solid #e2e8f0; padding-bottom: 18px; }
+
+/* List rhythm (stack feel) */
+.match-row + .match-row {
+  margin-top: 4px;
+}
+
+/* Hover — Subtle Affordance (Desktop only) */
+@media (hover: hover) {
+  .match-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+    border-color: rgba(99, 102, 241, 0.35);
+    border-left: 3px solid rgba(99, 102, 241, 0.15); /* Subtle hint */
+  }
+}
+
+/* Expanded — Primary Focus */
+.match-row.expanded {
+  border-left: 3px solid var(--brand);
+  background: #fcfcff;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  outline: 1px solid rgba(99, 102, 241, 0.25);
+  outline-offset: 0;
+  
+  /* Smoother state transition */
+  transition: all 0.2s ease;
+}
+
+.match-row.graded {
+  padding-bottom: 20px;
+}
 
 .match-time {
   font-size: 11px;

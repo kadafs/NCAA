@@ -145,7 +145,7 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
         </div>
 
         {/* Expand chevron */}
-        <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
 
         {/* 12 COLUMN */}
         <div className="stat-col center">
@@ -168,7 +168,7 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
               background: '#f8fafc',
               padding: '1px 3px',
               borderRadius: '0 0 4px 4px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid var(--border-soft)',
               borderTop: 'none',
               marginTop: '-1px',
               minWidth: '40px',
