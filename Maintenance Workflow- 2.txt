@@ -1,0 +1,381 @@
+/ **[python grade_basketball.py]  --regrade
+python aggregate_basketball_stats.py)** 
+
+
+# 1. Update the raw stats from Proballers (just the most recent 2 games)
+python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
+python scrape_proballers.py --daily 2026-03-24 --cutoff_date 2026-03-01 
+  
+  1b. # Update the raw stats from api python auto_update_historical.py
+
+# 2. Convert raw stats into the True Offense/Defense Matrix
+python generate_advanced_metrics.py
+
+# 3. Finally, run today's predictions using those updated matrices
+python run_basketball_daily.py --mode full --date 2026-03-21 --refresh
+python run_basketball_daily.py --date 2026-03-19 --no_match_center
+python run_basketball_daily.py --mode full --no_match_center --date 2026-03-21
+
+#4 Update match centre 
+cd football-dashboard
+node scripts/sync-data.js
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+Audit Summary Script -- backend only --Explanation of the metrics at the end of this page 
+# Python audit_basketball.py
+
+**Single day:**
+python audit_basketball.py --date 2026-03-21
+
+**Weekend audit (Fri → Sun):**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21
+
+**Filter by league:**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --league "NBA"
+
+**Show only busts, sorted by delta:**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --tier BUST --sort delta
+
+**Just wins, no game log (summary only):**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --result win --no-log
+
+
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+python scrape_flashscore.py (Get-Content batch_failed_urls.txt)
+python scrape_flashscore.py (Get-Content all_427_flashscore_urls.txt) --force
+python run_basketball_daily.py
+and python explore_api_basketball_today.py
+
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+
+#D1
+Step 1: Copy the Data
+Go to: Barttorvik Conference Only (https://barttorvik.com/trank.php?year=2026&conflimit=1)
+Verify the "Conf. Games Only" filter is active.
+Select the entire table (Click in table, Ctrl+A might work, or drag to select headers + rows).
+convert to .csv with grok.
+save to data/barttorvik.csv
+Run: python ncaa/import_clipboard.py #to convert to json
+
+Step 2: 
+Run: python ncaa/fetch_barttorvik_conf.py #optional 
+
+# Check if a team's conference stats differ from full-season
+python verify_conf_data.py
+
+
+
+3. Update NCAA Data
+This refreshes team rankings, stats, and injury reports.
+
+bash
+# Fetch BartTorvik rankings (required for engine mapping)
+python -m ncaa.fetch_barttorvik (https://barttorvik.com/trank.php?year=2026&json=1) TO barttorvik_raw.json
+# Fetch NCAA team stats and standings
+python -m ncaa.data_fetcher
+# Fetch latest NCAA injury reports
+python ncaa/fetch_injuries.py
+
+4. Update NBA Data
+This refreshes the schedule and advanced team/player metrics.
+
+bash
+# Fetch team and player statistics
+python -m nba.fetch_nba_stats
+python -m nba.fetch_nba_player_stats
+# Fetch NBA injury reports
+python -m nba.fetch_nba_injuries
+# Fetch today's matchups
+python -m nba.fetch_nba_schedule 
+
+Step 5. Generate Predictions
+bash
+# Safe mode
+python ncaa/predict_d1_conf.py --mode safe
+# With injury data - Full Mode
+python ncaa/predict_d1_conf.py --mode full
+# Without injury data - Full Mode
+python ncaa/predict_d1_conf_no_injuries.py 
+
+
+# python core/supabase_pusher.py
+
+# Show calculation details
+python ncaa/predict_d1_conf.py --mode safe --trace
+
+#Hybrid 
+python ncaa/predict_d1_hybrid.py --date 2026-02-17 --mode safe
+
+ Default 70/30 split
+python ncaa/predict_d1_hybrid.py --date 2026-03-02
+
+ Custom weights
+python ncaa/predict_d1_hybrid.py --conf-weight 0.80 --full-weight 0.20 ----mode full
+
+Compare Results:
+bash
+python compare_models.py --division d1 --mode full
+
+# Grade only PLAY/LEAN decisions
+python ncaa/audit_performance.py
+
+# Include PASS decisions in the audit
+python ncaa/audit_performance.py --include-pass
+
+# Grade no inuries 
+python ncaa/audit_performance.py --no-injuries
+
+
+# Audit hybrid predictions
+python ncaa/audit_performance.py --d1-hybrid
+
+# With date override
+python ncaa/audit_performance.py --d1-hybrid --date 2026-02-17
+
+# Include PASS decisions
+python ncaa/audit_performance.py --d1-hybrid --include-pass
+
+##########
+
+
+#To manually run the data pipeline and update the platform, you can execute the following steps in order from your terminal. I've designed these to follow the exact sequence used by the automated GitHub Action.
+
+
+
+1. Update NCAA Data
+This refreshes team rankings, stats, and injury reports.
+
+bash
+# Fetch BartTorvik rankings (required for engine mapping)
+python -m ncaa.fetch_barttorvik (https://barttorvik.com/trank.php?year=2026&json=1) TO barttorvik_raw.json
+# Fetch NCAA team stats and standings
+python -m ncaa.data_fetcher
+# Fetch latest NCAA injury reports
+python ncaa/fetch_injuries.py
+
+2. Update NBA Data
+This refreshes the schedule and advanced team/player metrics.
+
+bash
+# Fetch team and player statistics
+python -m nba.fetch_nba_stats
+python -m nba.fetch_nba_player_stats
+# Fetch NBA injury reports
+python -m nba.fetch_nba_injuries
+# Fetch today's matchups
+python -m nba.fetch_nba_schedule 
+python core/universal_bridge.py --league nba --mode safe  (for player props) 
+
+3. Generate Predictions & Sync to Dashboard
+Once the data is fresh, run the engine to calculate model totals and push the results to your Supabase backend.
+
+bash
+# Push all league predictions (NBA, NCAA, Euro, etc.) to the live dashboard
+python core/supabase_pusher.py --league nba
+# Grade yesterday's games
+   python core/audit_engine.py --days 1 --league ncaa /nba 
+# Not needed, as the supabase pusher run the predicition script
+
+
+D2 
+# Full D2 pipeline (fetch + predict)
+python ncaa/run_d2.py
+
+# Or run individually:
+python ncaa/data_fetcher.py --division d2
+python ncaa/predict_simple.py --division d2
+
+# Advanced Model for D2 -- Run after using the d2 data fetcher 
+python ncaa/predict_d2_hybrid.py
+
+
+Run the NBA prediction engine (Safe Mode)
+python -m nba.v1_2.run --mode safe
+
+[!TIP] Why no --refresh? You might notice I didn't include the --refresh flag for ncaa.v1_2.run. Following my latest optimization, the scripts are now modular. It is much faster to run the fetchers individually (Steps 1 & 2) before running the engine (Step 3) to avoid "double-fetching" the same data.
+
+do I need to push to Github for manual update of the pipeline? or is supabase pusher enough 
+
+Thought for <1s
+
+
+For a manual data update, 
+supabase_pusher.py
+ is enough. You do not need to push to GitHub to see the data update on your live platform.
+
+Here is why:
+
+1. The Data Flow
+When you run the scripts locally:
+
+Fetchers download data to your local 
+data/
+ folder.
+Engine processes that local data to create predictions.
+supabase_pusher.py
+ takes those predictions and sends them directly to your Supabase Database.
+Since your live website (the frontend) pulls its data directly from Supabase, the changes will appear instantly once the pusher finishes.
+
+2. When do you need to push to GitHub?
+You only need to push to GitHub in these two scenarios:
+
+Code Changes: If you (or I) modify the Python logic, the API mapping, or the Frontend components, you must push to GitHub so the live site (on Render/Vercel) gets the new code.
+Auto-Sync: If you want the cloud to handle the data updates automatically every 2 hours without you having to run anything on your computer.
+Summary: If you just want to refresh the odds or scores right now, run the manual steps I provided earlier. Once 
+supabase_pusher.py
+ says "Push Complete," your website is updated! 🚀
+
+
+Prediction Platform: All Systems Go 🏀🚀
+I have streamlined the data pipeline and restored the V1.3 Universal Prediction Engine as the primary driver for both the dashboard and manual runs.
+
+1. The Universal Engine (V1.3)
+The system is now fully unified. The dashboard is powered by the logic in 
+run_universal.py
+ and core.universal_bridge.
+
+Manual Running Instructions
+To run predictions locally for any league, use the following commands:
+
+NCAA (College Basketball):
+
+python run_universal.py --league ncaa --mode safe
+NBA (Pro Basketball):
+
+python run_universal.py --league nba --mode safe
+TIP
+
+Use --mode full to include injury adjustments if you have updated injury notes in 
+data/
+.
+
+2. NBA API Robustness 🛡️
+The NBA data sync has been significantly strengthened to handle the frequent timeouts from stats.nba.com.
+
+Robust Client: Centralized logic with 3x retries and exponential backoff.
+ESPN Fallback: If the official API is down, the system automatically scrapes ESPN Team Stats (Offensive/Defensive data) to ensure predictions never stop.
+Verification of Fallback
+In our latest sync test, the official API timed out after 45s. The system successfully pivoted:
+
+NBA API failed: Connection timed out...
+Attempting ESPN fallback for NBA stats via scraping...
+ESPN Fallback successful for 30 teams.
+Successfully saved stats for 30 NBA teams.
+3. Advanced Metrics Accuracy (NCAA)
+I resolved the issue where eFG%, Turnover%, and Rebounding% were falling back to default values (50/18/28).
+
+Validation Logic: The scraper now detects and rejects "default" data from centralized sources.
+High-Quality Fallback: If the live CSV is blocked, the system now pulls from a high-quality raw data cache that preserves the true Four Factors for every team.
+Result: Predictions for Kansas, Duke, and other teams now reflect their actual statistical profiles rather than league-wide averages.
+4. GitHub Workflow Optimization ⚡
+The 
+.github/workflows/data_update.yml
+ has been modularized for speed and reliability.
+
+Modular Steps: Separate blocks for NCAA and NBA with 5-minute per-step timeouts.
+Dual-Mode Generation: Now runs both --mode safe and --mode full for all leagues to ensure the dashboard has both standard and injury-adjusted data.
+Redundancy Removed: Orchestration is now handled by the YAML file, following the V1.3 universal pattern.
+Total Sync Time: ~7 minutes.
+Workflow Logs
+Review
+Workflow Logs
+
+Start Sync
+Fetch NBA Stats/Injuries
+Fetch NCAA Stats/Injuries
+Universal Engine v1.3
+Push to Supabase Store
+Dashboard Updated
+These changes ensure the system is both faster and more resilient than ever before.
+
+5. Trust but Verify: Manual vs. Automated 🛠️
+The GitHub Workflow is your "Workhorse"—it keeps the dashboard updated while you sleep. However, for maximum accuracy, you should adopt a Hybrid Approach:
+
+When to run Manually?
+High-Stakes Game Days: Run locally to see the full "Advanced Metrics" logs I've added to ensure teams aren't hitting defaults.
+Injecting Manual Odds: If Vegas lines move significantly, place a ncaa_market_YYYY-MM-DD.csv in 
+data/
+ and run locally for immediate results.
+Emergency Refresh: If the dashboard looks stale, run the fetchers manually to bypass temp blocks.
+The "System Health" Tool
+I created a diagnostic script for instant visibility:
+
+python check_system_health.py
+This will tell you exactly which files are stale, if teams are missing, or if metrics are currently falling back to defaults.
+
+6. How to Inspect Failures
+If the dashboard stops updating:
+
+Go to your GitHub Repository -> Actions tab.
+Click on the latest "NBA/NCAA Data Update" run.
+Check the "Generate Predictions" step. The echo statements now clearly show success or failure for each league.
+
+
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+## Glossary of Audit Metrics
+
+### `Δ` — Absolute Delta *(per game, in the game log)*
+> **"How far off was the model, regardless of direction?"**
+
+```
+Δ = |Actual Game Total − Model Projected Total|
+```
+Always a positive number. A Δ of `8.0` means the model was 8 points off — whether the game went higher or lower than projected. This is what drives the **Tier** (BULLSEYE/SOLID/BUST etc).
+
+---
+
+### `±Δ` — Signed Delta *(per game, in the game log)*
+> **"Which way did the model miss?"**
+
+```
+±Δ = Actual Game Total − Model Projected Total
+```
+- **`+8.0` (green)** → game scored **8 more points** than the model expected *(game went OVER)*
+- **`−8.0` (red)** → game scored **8 fewer points** than the model expected *(game went UNDER)*
+
+Same magnitude as `Δ`, but tells you the direction of the error.
+
+---
+
+### `AVG Δ` — Average Absolute Delta *(league breakdown)*
+> **"On average, how many points does the model miss by in this league?"**
+
+The mean of all `Δ` values for a league. Lower is better. This is your **accuracy score** for the league — equivalent to MAPE but in raw points.
+
+| AVG Δ | Meaning |
+|---|---|
+| ≤ 8.5 | 🟢 Very accurate |
+| ≤ 14.5 | 🟡 Respectable |
+| > 14.5 | 🔴 Struggling |
+
+---
+
+### `SIGNED Δ` — Average Signed Delta *(league breakdown)*
+> **"Does the model consistently overshoot or undershoot this league?"**
+
+The mean of all `±Δ` values for a league. This reveals **systematic bias**:
+
+- **`+4.2` (red)** → model consistently underestimates scoring in this league — games tend to go **Over** the model's projection
+- **`−4.2` (green)** → model consistently overestimates scoring — games tend to go **Under** the model's projection
+- **Near 0** → no systematic bias, errors are random noise
+
+---
+
+### `BIAS` *(league breakdown)*
+> **"Plain-English label for the signed delta direction"**
+
+| BIAS | Signed Δ | Meaning |
+|---|---|---|
+| 📈 Over | < −3 | Model overshoots — back Unders in this league |
+| 📉 Under | > +3 | Model undershoots — back Overs in this league |
+| ✅ Neutral | −3 to +3 | No significant directional lean |
+
+The threshold of ±3 points is deliberate — anything smaller is statistical noise for basketball games averaging 150+ points.
+
