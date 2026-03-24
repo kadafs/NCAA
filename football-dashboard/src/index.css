@@ -540,23 +540,25 @@ body {
   justify-content: center;
   font-size: 11px;
   font-weight: 700;
-  color: #fff;
-  border-radius: 4px;
+  border-radius: 6px; /* standard badge shape */
+  outline: 1px solid transparent;
 }
-.prob-box-1x2 .p-item.h { background: var(--box-home); }
-.prob-box-1x2 .p-item.d { background: var(--box-draw); }
-.prob-box-1x2 .p-item.a { background: var(--box-away); }
+.prob-box-1x2 .p-item.h { background: var(--prob-home-bg); color: var(--prob-home-txt); border: 1px solid rgba(239, 68, 68, 0.1); }
+.prob-box-1x2 .p-item.d { background: var(--prob-draw-bg); color: var(--prob-draw-txt); border: 1px solid rgba(148, 163, 184, 0.15); }
+.prob-box-1x2 .p-item.a { background: var(--prob-away-bg); color: var(--prob-away-txt); border: 1px solid rgba(59, 130, 246, 0.1); }
 
 .model-pct {
   font-size: 14px;
   font-weight: 800;
   color: var(--text-primary);
+  opacity: 0.9;
 }
 
 .xpts-val {
   font-size: 12px;
   font-weight: 800;
-  color: var(--box-xg);
+  color: var(--text-xg);
+  opacity: 0.85;
 }
 
 /* Basketball Analytics Boxes */
