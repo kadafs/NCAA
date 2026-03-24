@@ -36,7 +36,9 @@
   --box-draw:    #94a3b8;
   --box-away:    #3b82f6;
   --box-btts:    #10b981;
-  --box-xg:      #f59e0b;
+  --box-xg:      #fff7ed;   /* Light orange background */
+  --text-xg:     #c2410c;   /* Dark orange text */
+  --border-xg:   #fdba74;   /* Muted orange border */
 
   /* Decision badges */
   --badge-yes:   #15803d;
@@ -530,7 +532,8 @@ body {
   height: 30px;
   border-radius: 6px;
   background: var(--box-xg);
-  color: #fff;
+  color: var(--text-xg);
+  border: 1px solid var(--border-xg);
   font-weight: 700;
   font-size: 11px;
   padding: 0 4px;
@@ -599,7 +602,8 @@ body {
   height: 30px;
   border-radius: 6px;
   background: var(--box-xg);
-  color: #fff;
+  color: var(--text-xg);
+  border: 1px solid var(--border-xg);
   font-weight: 700;
   font-size: 11px;
   padding: 0 4px;
