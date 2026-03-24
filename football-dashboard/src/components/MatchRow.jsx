@@ -89,7 +89,7 @@ export default function MatchRow({ game }) {
         </div>
 
         {/* Expand chevron */}
-        <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: 11 }}>{open ? '▲' : '▼'}</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
 
         {/* 1X2 boxes */}
         <div className="stat-group">
