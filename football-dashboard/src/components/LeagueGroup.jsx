@@ -10,11 +10,8 @@ export default function LeagueGroup({ group, sport }) {
 
   return (
     <div>
-      {/* League header — 8-col grid for football, custom for basketball */}
-      <div 
-        className={`league-header ${!isFootball ? 'bball-grid' : ''}`}
-        style={!isFootball ? { gridTemplateColumns: '72px 1fr 44px 22px 116px 80px 100px' } : undefined}
-      >
+      {/* League header */}
+      <div className={`league-header ${sport}`}>
         <div className="league-name" style={{ gridColumn: '1 / 3', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span>{flagFor(country)}</span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
@@ -89,19 +86,19 @@ export default function LeagueGroup({ group, sport }) {
         {isFootball ? (
           <>
             <div className="col-label" style={{ textAlign: 'center' }}>TIP</div>
-            <div /> {/* chevron spacer */}
+            <div className="chevron-spacer" /> {/* chevron spacer */}
             <div className="col-label" style={{ textAlign: 'center' }}>1X2</div>
             <div className="col-label" style={{ textAlign: 'center' }}>BTTS</div>
-            <div className="col-label" style={{ textAlign: 'center' }}>xG</div>
+            <div className="col-label match-xg" style={{ textAlign: 'center' }}>xG</div>
             <div className="col-label" style={{ textAlign: 'center' }}>BTTS PLAY</div>
           </>
         ) : (
           <>
             <div className="col-label" style={{ textAlign: 'center' }}>TIP</div>
-            <div /> {/* chevron spacer */}
+            <div className="chevron-spacer" /> {/* chevron spacer */}
             <div className="col-label" style={{ textAlign: 'center' }}>12</div>
             <div className="col-label" style={{ textAlign: 'center' }}>MODEL</div>
-            <div className="col-label" style={{ textAlign: 'center' }}>xPTS</div>
+            <div className="col-label match-xpts" style={{ textAlign: 'center' }}>xPTS</div>
           </>
         )}
       </div>
@@ -115,3 +112,4 @@ export default function LeagueGroup({ group, sport }) {
     </div>
   )
 }
+

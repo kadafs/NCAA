@@ -81,9 +81,8 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
   return (
     <>
       <div
-        className={`match-row bball-grid ${open ? 'expanded' : ''}`}
+        className={`match-row basketball ${open ? 'expanded' : ''}`}
         onClick={() => setOpen(!open)}
-        style={{ gridTemplateColumns: '72px 1fr 44px 22px 116px 80px 100px' }}
       >
         {/* TIME / STATUS COLUMN */}
         <div className="match-time">
@@ -111,7 +110,7 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
         </div>
 
         {/* TEAMS COLUMN */}
-        <div className="match-teams">
+        <div className="teams">
           <div className="team-row">
             <span className="team-name" style={{ fontWeight: (isGraded && finalHomeScore > finalAwayScore) ? 700 : 400 }}>
               {home_team}
@@ -145,7 +144,7 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
         </div>
 
         {/* Expand chevron */}
-        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
+        <div className="match-chevron" style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
 
         {/* 12 COLUMN */}
         <div className="stat-col center">
@@ -183,7 +182,7 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
         </div>
 
         {/* xPTS COLUMN */}
-        <div className="stat-col center">
+        <div className="stat-col center match-xpts">
           <div className="bball-xpts-box" style={{ flexDirection: 'column', alignItems: 'center', gap: '2px', padding: '4px 12px' }}>
             <span style={{ fontWeight: tip === '1' ? 800 : 500, opacity: tip === '1' ? 1 : 0.7 }}>
               {xpts_h.toFixed(1)}

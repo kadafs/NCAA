@@ -87,6 +87,29 @@ export default function App() {
   const [filterCountry, setFilterCountry] = useState('all')
   const [filterDraw,    setFilterDraw]    = useState(0)    // min draw_prob_1x2 threshold
   const [filterMape,    setFilterMape]    = useState(100)  // max error percentage
+
+  const [compactMode, setCompactMode] = useState(() => {
+    const saved = localStorage.getItem('compactMode')
+    if (saved !== null) return saved === 'true'
+    return window.innerWidth < 1024
+  })
+
+  const [showCompactHint, setShowCompactHint] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem('compactMode', String(compactMode))
+  }, [compactMode])
+
+  useEffect(() => {
+    // Show hint only on very first auto-detect run
+    if (localStorage.getItem('compactMode') === null && window.innerWidth < 1024) {
+      setShowCompactHint(true)
+      const t = setTimeout(() => setShowCompactHint(false), 5000)
+      return () => clearTimeout(t)
+    }
+  }, [])
+
+  const toggleCompact = () => setCompactMode(prev => !prev)
   
   const [leaderboard,   setLeaderboard]   = useState([])
   const [showScrollTop, setShowScrollTop] = useState(false)
@@ -171,7 +194,7 @@ export default function App() {
   const hasGrading  = (dateInfo?.graded_count ?? 0) > 0
 
   return (
-    <div>
+    <div className={`app ${compactMode ? 'compact-mode' : ''}`}>
       <Header 
         dates={dates} 
         selected={selectedDate} 
@@ -191,8 +214,17 @@ export default function App() {
         filterDraw={filterDraw}
         setFilterDraw={setFilterDraw}
         setFilterCountry={setFilterCountry}
+        compactMode={compactMode}
+        toggleCompact={toggleCompact}
       />
       <div className="main-wrapper">
+
+        {/* First-time mobile hint */
+         showCompactHint && (
+          <div className="compact-hint fade-in-out">
+            ✨ Compact mode enabled for better viewing on your device.
+          </div>
+        )}
 
         {/* Scorecard (only shown if grading data exists) */}
         {hasGrading && data && <Scorecard data={data} sport={sport} />}

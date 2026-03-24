@@ -62,14 +62,14 @@ export default function MatchRow({ game }) {
   return (
     <>
       <div
-        className={`match-row ${open ? 'expanded' : ''} ${isGraded ? 'graded' : ''}`}
+        className={`match-row football ${open ? 'expanded' : ''} ${isGraded ? 'graded' : ''}`}
         onClick={() => setOpen(o => !o)}
       >
         {/* Time */}
         <div className="match-time">{kickoffTime(game)}</div>
 
         {/* Teams */}
-        <div className="teams-cell">
+        <div className="teams">
           <span className="team-name home" title={game.home_team}>{game.home_team}</span>
           {isGraded
             ? <span className="actual-score">{game.actual_home_goals} – {game.actual_away_goals}</span>
@@ -89,7 +89,7 @@ export default function MatchRow({ game }) {
         </div>
 
         {/* Expand chevron */}
-        <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
+        <div className="match-chevron" style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 11, cursor: 'pointer' }}>{open ? '▲' : '▼'}</div>
 
         {/* 1X2 boxes */}
         <div className="stat-group">
@@ -109,7 +109,7 @@ export default function MatchRow({ game }) {
         </div>
 
         {/* xG box */}
-        <div>
+        <div className="match-xg">
           <div className="xg-box">{fmt(game.xg_home, 1)} – {fmt(game.xg_away, 1)}<sub> xG</sub></div>
         </div>
 

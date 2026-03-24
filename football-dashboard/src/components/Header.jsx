@@ -3,7 +3,8 @@ export default function Header({
   sport, setSport,
   filterDecision, setFilterDecision,
   filterDraw, setFilterDraw,
-  setFilterCountry
+  setFilterCountry,
+  compactMode, toggleCompact
 }) {
   const selectedIdx = dates?.findIndex(d => d.date === selected) ?? -1
   const start = Math.max(0, selectedIdx - 2)
@@ -77,6 +78,13 @@ export default function Header({
             </>
           )}
           <button className={`header-badge ${isAllActive ? 'active' : ''}`} onClick={handleAll}>ALL</button>
+          <div style={{ width: 1, height: 16, background: '#e2e8f0', marginLeft: 4, marginRight: 2 }} />
+          <button
+            className="compact-toggle"
+            onClick={toggleCompact}
+          >
+            {compactMode ? '⊟ Compact' : '⊞ Full'}
+          </button>
         </div>
       </div>
     </header>

@@ -91,7 +91,6 @@ body {
   color: var(--text-primary);
   font-size: var(--text-base);
   min-height: 100vh;
-  min-width: 1200px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -348,10 +347,9 @@ body {
   grid-template-columns: var(--grid);
   align-items: center;
   background: var(--bg-league);
-  padding: 7px 12px;
+  padding: 7px 12px 7px 15px; /* padding-left 15px matches match-row (12px padding + 3px border-left) */
   border-top: 1px solid var(--border-soft);
   border-bottom: 2px solid var(--brand);
-  gap: 6px;
 }
 .league-header .league-name {
   font-size: 11px;
@@ -439,7 +437,7 @@ body {
 }
 
 /* Teams cell */
-.teams-cell {
+.teams {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1015,4 +1013,157 @@ body {
 .scroll-top-btn svg {
   width: 24px;
   height: 24px;
+}
+
+/* =======================================================
+   COMPACT MODE
+   Activated via .compact-mode on the root .app div
+   ======================================================= */
+.app {
+  transition: all 0.2s ease;
+}
+
+.compact-toggle {
+  border: 1px solid var(--border-soft);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #fff;
+  cursor: pointer;
+  color: #64748b;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.compact-toggle:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+/* 3. Keep Grid — Override It in Compact Mode */
+/* Desktop */
+.match-row.basketball,
+.league-header.basketball {
+  grid-template-columns: 72px 1fr 44px 22px 116px 80px 100px;
+}
+.match-row.football,
+.league-header.football {
+  grid-template-columns: var(--grid);
+}
+
+/* Compact Mode */
+.compact-mode .match-row.basketball,
+.compact-mode .league-header.basketball {
+  grid-template-columns: 56px 1fr 38px 100px 72px; 
+}
+.compact-mode .match-row.football,
+.compact-mode .league-header.football {
+  grid-template-columns: 56px 1fr 38px 100px 66px 110px;
+}
+
+/* 4. Stacked Teams */
+.compact-mode .teams {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+  gap: 2px;
+}
+
+.compact-mode .team-name {
+  text-align: left;
+  max-width: 100%;
+}
+
+.compact-mode .vs-sep {
+  display: none;
+}
+
+/* 5. Density Adjustments */
+.compact-mode .match-row {
+  min-height: 36px;
+  padding: 6px 10px;
+  margin: 3px 0;
+}
+.compact-mode .match-row + .match-row {
+  margin-top: 2px;
+}
+
+.compact-mode .league-header {
+  padding: 6px 10px 6px 13px; /* account for 3px left border on rows */
+}
+
+.compact-mode .teams {
+  font-size: 13px;
+}
+
+.compact-mode .actual-score {
+  font-size: 10px;
+  padding: 1px 4px;
+  align-self: flex-start;
+}
+
+.compact-mode .league-name {
+  font-size: 10px;
+}
+
+.compact-mode .stat-box {
+  width: 28px;
+  height: 24px;
+  font-size: 10px;
+}
+.compact-mode .btts-box,
+.compact-mode .bball-model-box {
+  height: 24px;
+  font-size: 11px;
+}
+.compact-mode .tip-badge {
+  width: 28px;
+  height: 24px;
+  font-size: 12px;
+}
+.compact-mode .decision-badge {
+  font-size: 9px;
+  padding: 3px 5px;
+}
+
+/* 6. Hide Secondary Columns Cleanly */
+.compact-mode .match-xpts { display: none; }
+.compact-mode .match-xg { display: none; }
+.compact-mode .match-chevron { display: none; }
+.compact-mode .chevron-spacer { display: none; }
+
+/* Filter bar compaction */
+.compact-mode .controls-bar {
+  padding: 8px 10px;
+  gap: 5px;
+}
+.compact-mode .filter-select,
+.compact-mode .control-btn {
+  font-size: 11px;
+  padding: 4px 9px;
+}
+
+/* First-time mobile hint */
+.compact-hint {
+  text-align: center;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+}
+
+.fade-in-out {
+  animation: fadeInOut 4.8s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-4px); }
+  10% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
 }
