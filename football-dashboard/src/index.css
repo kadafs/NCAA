@@ -42,11 +42,22 @@
   --neutral:      #9ca3af;
   --text-muted:   #6b7280;
 
-  /* Stat box colors (Reverted to specific bold values) */
+  /* Stat box colors (Legacy overrides) */
   --box-home:     #ef4444;
   --box-draw:     #94a3b8;
   --box-away:     #3b82f6;
   --box-btts:     var(--success);
+  
+  /* Probability Box Variants (Soft) */
+  --prob-home-bg: rgba(239, 68, 68, 0.12);
+  --prob-home-txt:#dc2626; /* Slightly darker than base for contrast */
+  
+  --prob-draw-bg: rgba(148, 163, 184, 0.15);
+  --prob-draw-txt:#475569;
+  
+  --prob-away-bg: rgba(59, 130, 246, 0.12);
+  --prob-away-txt:#2563eb; /* Aligned with brand blue */
+
   --box-xg:       var(--xpts-soft);
   --text-xg:      var(--xpts);
   --border-xg:    rgba(245, 158, 11, 0.2);
@@ -492,7 +503,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: 6px; /* consistent badge shape */
   margin: 0 auto;
   letter-spacing: -0.5px;
   box-shadow: 0 2px 6px rgba(79,70,229,0.28);
@@ -591,6 +602,7 @@ body {
   padding: 0 4px;
   white-space: nowrap;
   width: 100%;
+  opacity: 0.85; /* Reduce visual noise */
 }
 .bball-xpts-box sub {
   font-size: 7px;
@@ -607,7 +619,7 @@ body {
 }
 
 /* Stat boxes */
-.stat-group { display: flex; gap: 3px; justify-content: center; }
+.stat-group { display: flex; gap: 3px; justify-content: center; opacity: 0.9; }
 .stat-box {
   display: flex;
   flex-direction: column;
@@ -623,9 +635,9 @@ body {
   gap: 1px;
 }
 .stat-box sub { font-size: 7px; font-weight: 400; opacity: 0.85; }
-.stat-box.home-win { background: var(--box-home); }
-.stat-box.draw-box { background: var(--box-draw); }
-.stat-box.away-win { background: var(--box-away); }
+.stat-box.home-win { background: var(--prob-home-bg); color: var(--prob-home-txt); border: 1px solid rgba(239, 68, 68, 0.1); }
+.stat-box.draw-box { background: var(--prob-draw-bg); color: var(--prob-draw-txt); border: 1px solid rgba(148, 163, 184, 0.15); }
+.stat-box.away-win { background: var(--prob-away-bg); color: var(--prob-away-txt); border: 1px solid rgba(59, 130, 246, 0.1); }
 
 /* BTTS box */
 .btts-box {
@@ -661,6 +673,7 @@ body {
   padding: 0 4px;
   white-space: nowrap;
   width: 100%;
+  opacity: 0.85; /* Reduce visual noise */
 }
 .xg-box sub { font-size: 7px; opacity: 0.85; font-weight: 400; }
 
