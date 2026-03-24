@@ -287,20 +287,40 @@ export default function App() {
             {countries.map(c => <option key={c} value={c}>{c === 'all' ? 'All countries' : c}</option>)}
           </select>
 
-          {data && (
-            <div className="summary-pill">
-              <strong>{counts.total}</strong> games
-              {sport === 'football' && (
-                <>
-                  {' · '}
-                  <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} YES</span> ·{' '}
-                  <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO</span>
-                  {counts.strong > 0 && <span style={{ color: '#7f1d1d', fontWeight: 700 }}> ({counts.strong} ⚡)</span>} ·{' '}
-                  <span style={{ color: '#6b7280' }}>{counts.pass} PASS</span>
-                </>
-              )}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
+            {data && (
+              <div className="summary-pill">
+                <strong>{counts.total}</strong> games
+                {sport === 'football' && (
+                  <>
+                    {' · '}
+                    <span style={{ color: '#16a34a', fontWeight: 600 }}>{counts.yes} YES</span> ·{' '}
+                    <span style={{ color: '#dc2626', fontWeight: 600 }}>{counts.no} NO</span>
+                    {counts.strong > 0 && <span style={{ color: '#7f1d1d', fontWeight: 700 }}> ({counts.strong} ⚡)</span>} ·{' '}
+                    <span style={{ color: '#6b7280' }}>{counts.pass} PASS</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            <div className="compact-control">
+              <span className="label">Compact</span>
+              <button
+                className={`compact-toggle ${compactMode ? 'active' : ''}`}
+                onClick={toggleCompact}
+                title="Switch between full and compact layout"
+              >
+                <div className="toggle-track">
+                  <div className="toggle-knob">
+                    <span className="icon">
+                      {compactMode ? '⊟' : '⊞'}
+                    </span>
+                  </div>
+                </div>
+              </button>
             </div>
-          )}
+          </div>
+
         </div>
 
         {loading && <div className="loading">⚽ Loading predictions…</div>}
