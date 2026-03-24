@@ -10,49 +10,60 @@
   --font:        'Inter', -apple-system, sans-serif;
   --font-brand:  'Plus Jakarta Sans', 'Inter', sans-serif;
 
-  /* Brand */
-  --brand:       #6366f1;   /* indigo */
-  --brand-light: #818cf8;
-  --brand-dark:  #4f46e5;
+  /* Brand (Deep Blue) */
+  --brand:        #2563eb;
+  --brand-strong: #1d4ed8;
+  --brand-soft:   rgba(37, 99, 235, 0.12);
 
   /* Layout */
-  --bg-page:     #f1f5f9;
-  --bg-card:     #ffffff;
-  --bg-row:      #ffffff;
-  --bg-row-alt:  #fafbfd;
-  --border:      #e2e8f0;
-  --border-soft: #f1f5f9;
+  --bg-page:      #f9fafb; /* cleaner page bg */
+  --bg-card:      #ffffff;
+  --bg-row:       #ffffff;
+  --bg-row-alt:   #f8fafc;
+  --border:       #e5e7eb;
+  --border-soft:  #f1f5f9;
 
   /* Header */
-  --bg-header:   #ffffff;
-  --text-header: #1e293b;
+  --bg-header:    #ffffff;
+  --text-header:  #1e293b;
+  --bg-league:    #f8fafc;
+  --text-league:  #1e293b;
 
-  /* League header row */
-  --bg-league:   #f8fafc;
-  --text-league: #1e293b;
+  /* Semantic Colors */
+  --xpts:         #f59e0b;
+  --xpts-soft:    rgba(245, 158, 11, 0.12);
 
-  /* Stat box colors */
-  --box-home:    #ef4444;
-  --box-draw:    #94a3b8;
-  --box-away:    #3b82f6;
-  --box-btts:    #10b981;
-  --box-xg:      #fff9f2;   /* Muted orange background */
-  --text-xg:     #ea580c;   /* Muted orange text */
-  --border-xg:   #fed7aa;   /* Very subtle orange border */
+  --success:      #16a34a;
+  --success-soft: rgba(22, 163, 74, 0.12);
+
+  --danger:       #dc2626;
+  --danger-soft:  rgba(220, 38, 38, 0.12);
+
+  --neutral:      #9ca3af;
+  --text-muted:   #6b7280;
+
+  /* Stat box colors (Reverted to specific bold values) */
+  --box-home:     #ef4444;
+  --box-draw:     #94a3b8;
+  --box-away:     #3b82f6;
+  --box-btts:     var(--success);
+  --box-xg:       var(--xpts-soft);
+  --text-xg:      var(--xpts);
+  --border-xg:    rgba(245, 158, 11, 0.2);
 
   /* Decision badges */
-  --badge-yes:   #15803d;
-  --badge-no:    #dc2626;
-  --badge-pass:  #64748b;
-  --badge-strong:#7f1d1d;
+  --badge-yes:    var(--success);
+  --badge-no:     var(--danger);
+  --badge-pass:   var(--text-muted);
+  --badge-strong: #991b1b;
 
   /* TIP badge */
-  --tip-bg:      #4f46e5;
-  --tip-text:    #ffffff;
+  --tip-bg:       #4f46e5;
+  --tip-text:     #ffffff;
 
   /* Typography */
-  --text-primary:   #0f172a;
-  --text-secondary: #94a3b8;
+  --text-primary:   #111827;
+  --text-secondary: #4b5563;
   --text-xs:        10px;
   --text-sm:        11px;
   --text-base:      13px;
@@ -407,17 +418,17 @@ body {
   .match-row:hover {
     transform: translateY(-1px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
-    border-color: rgba(99, 102, 241, 0.35);
-    border-left: 3px solid rgba(99, 102, 241, 0.15); /* Subtle hint */
+    border-color: var(--brand-soft);
+    border-left: 3px solid rgba(37, 99, 235, 0.15); /* Subtle hint */
   }
 }
 
 /* Expanded — Primary Focus */
 .match-row.expanded {
   border-left: 3px solid var(--brand);
-  background: #fcfcff;
+  background: rgba(37, 99, 235, 0.03);
   box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-  outline: 1px solid rgba(99, 102, 241, 0.25);
+  outline: 1px solid rgba(37, 99, 235, 0.25);
   outline-offset: 0;
   
   /* Smoother state transition */
@@ -486,9 +497,11 @@ body {
   letter-spacing: -0.5px;
   box-shadow: 0 2px 6px rgba(79,70,229,0.28);
 }
-.tip-badge.home { background: var(--box-home); box-shadow: 0 2px 6px rgba(239,68,68,0.28); }
-.tip-badge.draw { background: var(--box-draw); box-shadow: none; }
-.tip-badge.away { background: var(--box-away); box-shadow: 0 2px 6px rgba(59,130,246,0.28); }
+.tip-badge.home { background: var(--box-home); box-shadow: 0 2px 6px rgba(239,68,68,0.28); color: #fff; border: none; }
+.tip-badge.draw { background: var(--box-draw); box-shadow: none; color: #fff; border: none; }
+.tip-badge.away { background: var(--box-away); box-shadow: 0 2px 6px rgba(59,130,246,0.28); color: #fff; border: none; }
+.tip-badge.over { background: var(--success); color: #fff; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.28); border: none; }
+.tip-badge.under { background: var(--danger); color: #fff; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.28); border: none; }
 
 /* Basketball Specific UI */
 .source-flag {
@@ -553,14 +566,14 @@ body {
   border: 1.5px solid var(--border);
 }
 .bball-model-box.over { 
-  background: #dcfce7; 
-  color: var(--badge-yes); 
-  border-color: #bbf7d0;
+  background: var(--success-soft); 
+  color: var(--success); 
+  border-color: var(--success-soft);
 }
 .bball-model-box.under { 
-  background: #fee2e2; 
-  color: var(--badge-no); 
-  border-color: #fecaca;
+  background: var(--danger-soft); 
+  color: var(--danger); 
+  border-color: var(--danger-soft);
 }
 
 .bball-xpts-box {
