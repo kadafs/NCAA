@@ -201,13 +201,8 @@ def get_or_calibrate_config(league_id, league_name, auto_calibrate=True):
                 print(f"      Failed to delete corrupted config: {e}")
 
     if auto_calibrate:
-        print(f"    No config found — auto-calibrating league {league_id}...")
-        try:
-            from calibrate_league import calibrate_one
-            cfg = calibrate_one(league_id=league_id, verbose=False)
-            return config_path, cfg
-        except Exception as e:
-            print(f"    Calibration failed: {e}")
+        print(f"    No config found for league {league_id}.")
+        print(f"    WARNING: LIVE API Calibration is permanently disabled. Please run calibrate_from_local.py to securely generate baselines.")
 
     return None, None
 
