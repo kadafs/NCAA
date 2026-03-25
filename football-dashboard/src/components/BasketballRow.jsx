@@ -11,22 +11,44 @@ function isMatch(t1, t2) {
   return l1.includes(l2) || l2.includes(l1)
 }
 
-const FINISHED_STATUSES = new Set(['FT', 'FINISHED', 'GAME FINISHED'])
+const FINISHED_STATUSES = new Set([
+  'FT', 'FINISHED', 'GAME FINISHED', 'AFTER OVERTIME',
+  'AFTER PENALTIES', 'AOT', 'AP'
+])
 function isFinishedStatus(s) {
   return s && FINISHED_STATUSES.has(s.trim().toUpperCase())
 }
 
+// All known API-basketball statuses → 2-char abbreviations
 function formatStatus(s) {
   if (!s) return s
-  const upper = s.toUpperCase()
-  if (upper === 'NOT STARTED') return 'NS'
-  if (upper === 'HALFTIME') return 'HT'
-  if (upper.startsWith('QUARTER 1')) return 'Q1'
-  if (upper.startsWith('QUARTER 2')) return 'Q2'
-  if (upper.startsWith('QUARTER 3')) return 'Q3'
-  if (upper.startsWith('QUARTER 4')) return 'Q4'
-  if (upper.startsWith('OVERTIME')) return 'OT'
-  return s
+  const upper = s.trim().toUpperCase()
+  // Pre-game
+  if (upper === 'NOT STARTED' || upper === 'SCHEDULED') return 'NS'
+  // Abandoned / special
+  if (upper.includes('POSTPONED'))   return 'PP'
+  if (upper.includes('CANCEL'))      return 'CN'
+  if (upper.includes('SUSPEND'))     return 'SU'
+  if (upper.includes('ABANDON'))     return 'AB'
+  if (upper.includes('INTERRUPT'))   return 'IN'
+  if (upper.includes('TECHNICAL'))   return 'TL'
+  if (upper.includes('WALKOVER') || upper.includes('WALK OVER')) return 'WO'
+  if (upper.includes('FORFEIT'))     return 'FF'
+  if (upper.includes('AWARDED'))     return 'AW'
+  // In-progress
+  if (upper === 'HALFTIME' || upper === 'HALF TIME' || upper === 'HT') return 'HT'
+  if (upper.startsWith('QUARTER 1') || upper === 'Q1') return 'Q1'
+  if (upper.startsWith('QUARTER 2') || upper === 'Q2') return 'Q2'
+  if (upper.startsWith('QUARTER 3') || upper === 'Q3') return 'Q3'
+  if (upper.startsWith('QUARTER 4') || upper === 'Q4') return 'Q4'
+  if (upper.startsWith('OVERTIME')  || upper === 'OT') return 'OT'
+  if (upper === 'BREAK TIME')        return 'BT'
+  // Finished
+  if (upper === 'FINISHED' || upper === 'GAME FINISHED' || upper === 'FT') return 'FT'
+  if (upper === 'AFTER OVERTIME'  || upper === 'AOT') return 'AO'
+  if (upper === 'AFTER PENALTIES' || upper === 'AP')  return 'AP'
+  // Fallback: truncate to 2 chars
+  return s.trim().substring(0, 2).toUpperCase()
 }
 
 export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = false }) {

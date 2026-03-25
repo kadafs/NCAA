@@ -170,6 +170,13 @@
     filter: contrast(1.02);
   }
 
+
+  /* screen blend: black bg becomes invisible, logo colors stay visible */
+  [data-theme="dark"] .logo-img {
+    mix-blend-mode: screen;
+    filter: none;
+  }
+
   .header-right {
     display: flex;
     align-items: center;
@@ -1893,3 +1900,316 @@
       transform: translateY(-4px);
     }
   }
+
+/* =====================================================
+   NIGHT SHIFT — Dark Theme
+   Activated via data-theme="dark" on <body>
+   Auto: ON at 19:00, OFF at 06:00 (with manual override)
+   ===================================================== */
+[data-theme="dark"] {
+  --bg-page:      #0f1117;
+  --bg-card:      #161b27;
+  --bg-row:       #161b27;
+  --bg-row-alt:   #1a2035;
+  --border:       #252d3d;
+  --border-soft:  #1e2638;
+
+  /* Header */
+  --bg-header:    #0f1117;
+  --text-header:  #e2e8f0;
+  --bg-league:    #161b27;
+  --text-league:  #e2e8f0;
+
+  /* Typography */
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+
+  /* Semantic */
+  --success-soft: rgba(22, 163, 74, 0.18);
+  --danger-soft:  rgba(220, 38, 38, 0.18);
+  --brand-soft:   rgba(37, 99, 235, 0.18);
+
+  /* Probability boxes */
+  --prob-home-bg:  rgba(239, 68, 68, 0.15);
+  --prob-home-txt: #f87171;
+  --prob-draw-bg:  rgba(148, 163, 184, 0.12);
+  --prob-draw-txt: #94a3b8;
+  --prob-away-bg:  rgba(59, 130, 246, 0.15);
+  --prob-away-txt: #60a5fa;
+
+  /* xPTS / xG */
+  --box-xg:    rgba(245, 158, 11, 0.15);
+  --text-xg:   #fbbf24;
+  --border-xg: rgba(245, 158, 11, 0.25);
+
+  /* Shadow — more visible on dark */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.35);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.45);
+}
+
+/* Component-level dark overrides */
+[data-theme="dark"] body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .site-header {
+  background: var(--bg-header);
+  color: var(--text-header);
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .sport-toggle {
+  background: #1a2035;
+}
+
+[data-theme="dark"] .sport-btn {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .sport-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .sport-btn.active {
+  background: #252d3d;
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+[data-theme="dark"] .header-badge {
+  background: #1a2035;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .header-badge:hover {
+  background: #252d3d;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .header-badge.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+[data-theme="dark"] .nav-date-tab {
+  background: #1a2035;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .nav-date-tab:hover {
+  background: #252d3d;
+  color: var(--text-primary);
+  border-color: #334155;
+}
+
+[data-theme="dark"] .nav-date-tab.active {
+  background: #e2e8f0;
+  color: #0f1117;
+  border-color: #e2e8f0;
+}
+
+[data-theme="dark"] .controls-bar {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .control-btn {
+  background: #1a2035;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .control-btn:hover {
+  background: #252d3d;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .control-btn.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+[data-theme="dark"] .filter-select {
+  background: #1a2035;
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .filter-select:focus {
+  border-color: var(--brand);
+}
+
+[data-theme="dark"] .summary-pill {
+  background: #1a2035;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .predictions-table {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .league-header {
+  background: #1a2035;
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .match-row {
+  background: var(--bg-row);
+  border-color: var(--border-soft);
+}
+
+[data-theme="dark"] .match-row:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  border-left-color: rgba(37, 99, 235, 0.3);
+  background: #1a2035;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .match-row.expanded {
+  border-left-color: var(--brand);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+[data-theme="dark"] .match-detail-container {
+  background: #1a2035;
+  border-top-color: var(--border);
+}
+
+[data-theme="dark"] .tab-nav {
+  background: #161b27;
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .tab-nav button {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .tab-nav button.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+[data-theme="dark"] .tab-content {
+  background: #1a2035;
+}
+
+[data-theme="dark"] .stats-header {
+  background: #161b27;
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .stat-row {
+  border-bottom-color: var(--border-soft);
+}
+
+[data-theme="dark"] .h2h-row {
+  border-bottom-color: var(--border-soft);
+}
+
+[data-theme="dark"] .standings-table th {
+  background: #161b27;
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .standings-table td {
+  border-bottom-color: var(--border-soft);
+}
+
+[data-theme="dark"] .standings-table tr.highlight {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+[data-theme="dark"] .graded-footer {
+  background: #161b27 !important;
+  border-top-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .bball-model-box {
+  background: #1a2035;
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .compact-control .label {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .compact-toggle {
+  background: #1a2035;
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .compact-toggle.active .toggle-track {
+  background: var(--brand);
+}
+
+[data-theme="dark"] .scorecard {
+  background: var(--bg-card);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .scroll-top-btn {
+  background: var(--brand);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+
+/* Night Shift Toggle Button */
+.night-shift-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--bg-page);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  font-family: var(--font);
+  letter-spacing: 0.2px;
+  outline: none;
+  white-space: nowrap;
+}
+
+.night-shift-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+.night-shift-btn.active {
+  background: #1e293b;
+  color: #fbbf24;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .night-shift-btn {
+  background: #252d3d;
+  color: #fbbf24;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .night-shift-btn:hover {
+  background: #2d3748;
+  border-color: #4a5568;
+}
+
+.night-shift-auto-label {
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.65;
+  margin-left: 2px;
+}

@@ -4,7 +4,8 @@ export default function Header({
   filterDecision, setFilterDecision,
   filterDraw, setFilterDraw,
   setFilterCountry,
-  compactMode, toggleCompact
+  compactMode, toggleCompact,
+  nightShift
 }) {
   const selectedIdx = dates?.findIndex(d => d.date === selected) ?? -1
   const start = Math.max(0, selectedIdx - 2)
@@ -29,7 +30,7 @@ export default function Header({
         <div className="header-left">
           <a href="/" className="logo">
             <img
-              src="/logo.png"
+              src={nightShift ? '/darklogo.png' : '/logo.png'}
               alt="blowrout — Advanced Analytics"
               className="logo-img"
             />
@@ -83,3 +84,4 @@ export default function Header({
     </header>
   )
 }
+
