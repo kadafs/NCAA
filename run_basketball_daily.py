@@ -361,17 +361,37 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
     cfg = config
     config_pace = cfg.get("pace_pivot", 76)
 
-    # FIX 13: Small-sample protection
-    # Teams with fewer than 8 games have noisy stats — fall back to league defaults
     MIN_GAMES_TRUST = 8
     a_gp = sA.get("games_played", 0)
     h_gp = sH.get("games_played", 0)
+
+    # STRICT GUARD: Skip completely identically empty games to prevent 108v108 identical loops
+    if a_gp == 0 and h_gp == 0:
+        return None, f"Both {away_name} and {home_name} have 0 games played. Skipping to prevent identical dummy baseline projections."
+
+    # FIX 13: Bayesian Smoothing for small samples (Replaces hard 108.0 overwrite)
+    def bayesian_blend(raw_value, gp, league_default):
+        if gp >= MIN_GAMES_TRUST:
+            return raw_value
+        if gp == 0:
+            return league_default
+        weight_team = gp / MIN_GAMES_TRUST
+        weight_league = 1.0 - weight_team
+        return (raw_value * weight_team) + (league_default * weight_league)
+
+    eff_pivot = cfg.get("eff_pivot", 108.0)
+
     if a_gp < MIN_GAMES_TRUST:
-        print(f"    ⚠ SMALL SAMPLE: {away_name} ({a_gp} games) — using league defaults")
-        sA = {"adj_off": cfg.get("eff_pivot", 108.0), "adj_def": cfg.get("eff_pivot", 108.0), "adj_t": config_pace, "games_played": a_gp}
+        print(f"    ⚠ SMALL SAMPLE: {away_name} ({a_gp} games) — Bayesian blending toward league average")
+        sA["adj_off"] = bayesian_blend(sA.get("adj_off", eff_pivot), a_gp, eff_pivot)
+        sA["adj_def"] = bayesian_blend(sA.get("adj_def", eff_pivot), a_gp, eff_pivot)
+        sA["adj_t"]   = bayesian_blend(sA.get("adj_t", config_pace), a_gp, config_pace)
+
     if h_gp < MIN_GAMES_TRUST:
-        print(f"    ⚠ SMALL SAMPLE: {home_name} ({h_gp} games) — using league defaults")
-        sH = {"adj_off": cfg.get("eff_pivot", 108.0), "adj_def": cfg.get("eff_pivot", 108.0), "adj_t": config_pace, "games_played": h_gp}
+        print(f"    ⚠ SMALL SAMPLE: {home_name} ({h_gp} games) — Bayesian blending toward league average")
+        sH["adj_off"] = bayesian_blend(sH.get("adj_off", eff_pivot), h_gp, eff_pivot)
+        sH["adj_def"] = bayesian_blend(sH.get("adj_def", eff_pivot), h_gp, eff_pivot)
+        sH["adj_t"]   = bayesian_blend(sH.get("adj_t", config_pace), h_gp, config_pace)
 
     raw_pace = (sA.get("adj_t", config_pace) + sH.get("adj_t", config_pace)) / 2
 
