@@ -22,13 +22,13 @@
     --brand-soft: rgba(37, 99, 235, 0.12);
 
     /* Layout */
-    --bg-page: #f9fafb;
+    --bg-page: #f8fafc;
     /* cleaner page bg */
     --bg-card: #ffffff;
     --bg-row: #ffffff;
     --bg-row-alt: #f8fafc;
     --border: #e5e7eb;
-    --border-soft: #f1f5f9;
+    --border-soft: #e5e7eb;
 
     /* Header */
     --bg-header: #ffffff;
@@ -66,6 +66,9 @@
     --prob-away-bg: rgba(59, 130, 246, 0.12);
     --prob-away-txt: #2563eb;
     /* Aligned with brand blue */
+
+    --prob-btts-bg: rgba(22, 163, 74, 0.12); /* Softer green */
+    --prob-btts-txt: #16a34a;
 
     --box-xg: var(--xpts-soft);
     --text-xg: var(--xpts);
@@ -407,7 +410,7 @@
     padding: 7px 12px 7px 15px;
     /* padding-left 15px matches match-row (12px padding + 3px border-left) */
     border-top: 1px solid var(--border-soft);
-    border-bottom: 2px solid var(--brand);
+    border-bottom: 2px solid rgba(37, 99, 235, 0.25);
   }
 
   .league-header .league-name {
@@ -780,8 +783,9 @@
     justify-content: center;
     height: 30px;
     border-radius: 6px;
-    background: var(--box-btts);
-    color: #fff;
+    background: var(--prob-btts-bg);
+    color: var(--prob-btts-txt);
+    border: 1px solid rgba(22, 163, 74, 0.1);
     font-weight: 700;
     font-size: 13px;
     padding: 0 4px;
@@ -837,24 +841,27 @@
   }
 
   .decision-badge.yes {
-    background: #dcfce7;
+    background: rgba(22, 163, 74, 0.12);
     color: var(--badge-yes);
+    border: 1px solid rgba(22, 163, 74, 0.1);
   }
 
   .decision-badge.no {
-    background: #fee2e2;
+    background: rgba(220, 38, 38, 0.12);
     color: var(--badge-no);
+    border: 1px solid rgba(220, 38, 38, 0.1);
   }
 
   .decision-badge.pass {
-    background: #f1f5f9;
+    background: var(--bg-page);
     color: var(--badge-pass);
+    border: 1px solid var(--border-soft);
   }
 
   .decision-badge.strong-no {
-    background: linear-gradient(135deg, #7f1d1d, #991b1b);
-    color: #ffffff;
-    box-shadow: 0 2px 6px rgba(127, 29, 29, 0.35);
+    background: rgba(153, 27, 27, 0.15);
+    color: #991b1b;
+    border: 1px solid rgba(153, 27, 27, 0.15);
     font-size: 10px;
   }
 
@@ -1751,7 +1758,7 @@
 
   .compact-mode .match-row.football,
   .compact-mode .league-header.football {
-    grid-template-columns: 56px 1fr 38px 100px 66px 110px;
+    grid-template-columns: 56px 1fr 38px 100px 66px;
   }
 
   /* 4. Stacked Teams */
@@ -1834,6 +1841,11 @@
   }
 
   .compact-mode .match-xg {
+    display: none;
+  }
+
+  .compact-mode .decision-badge,
+  .compact-mode .league-header .col-label:last-child {
     display: none;
   }
 
@@ -1937,6 +1949,9 @@
   --prob-draw-txt: #94a3b8;
   --prob-away-bg:  rgba(59, 130, 246, 0.15);
   --prob-away-txt: #60a5fa;
+
+  --prob-btts-bg:  rgba(22, 163, 74, 0.15);
+  --prob-btts-txt: #34d399; /* Brighter green for dark mode contrast */
 
   /* xPTS / xG */
   --box-xg:    rgba(245, 158, 11, 0.15);
@@ -2061,6 +2076,7 @@
 [data-theme="dark"] .league-header {
   background: #1a2035;
   border-top-color: var(--border);
+  border-bottom: 2px solid var(--brand);
 }
 
 [data-theme="dark"] .match-row {
