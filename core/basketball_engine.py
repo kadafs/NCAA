@@ -73,7 +73,7 @@ class UniversalBasketballEngine:
             stats_total += cb
             self._log(f"Step 3c: Conference Bias ({conf}) -> {cb:+.1f}")
 
-        # Step 4: REGRESSION -> v3.0 DYNAMIC for NBA, static for NCAA
+        # Step 4: REGRESSION → v4.0 Blend-to-mean for all leagues
         if c['name'] == "NBA":
             # Dynamic regression: stepped floors (Protection from under-pulls)
             if stats_total < 215:
@@ -84,11 +84,14 @@ class UniversalBasketballEngine:
                 reg_factor = 0.95
             else:
                 reg_factor = 0.94
+            stats_total *= reg_factor
             self._log(f"Step 4: Stepped Regression (NBA v3.5, total={stats_total:.1f}) -> factor={reg_factor}")
         else:
             reg_factor = c.get('regression_factor', 0.97)
-        stats_total *= reg_factor
-        self._log(f"Step 4: Regression Applied ({reg_factor}) -> {stats_total:.2f} (Stats Baseline)")
+            league_avg = c.get('_avg_total', market)
+            # Blend-to-mean: regress toward league average instead of multiplicative shrinkage
+            stats_total = stats_total * reg_factor + league_avg * (1 - reg_factor)
+            self._log(f"Step 4: Regression Applied ({reg_factor}) -> {stats_total:.2f} (blended toward {league_avg:.1f})")
         
         # --- PHASE 2: SHARP LAYER (BOOSTERS & INJURIES) ---
         sharp_total = stats_total
