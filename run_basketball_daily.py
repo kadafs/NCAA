@@ -160,6 +160,7 @@ def fetch_today_fixtures(date_str, refresh=False):
             "home_score": hs, "away_score": as_,
             "time": game.get("date", "")[:16].replace("T", " "),
             "status": game.get("status", {}).get("long", "Scheduled"),
+            "stage": game.get("stage") or game.get("week") or "",
         })
 
     leagues_summary = [
@@ -363,21 +364,50 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
 
     # Build game_data in the format the engine expects
     cfg = config
+    config_pace = cfg.get("pace_pivot", 76)
+
+    # FIX 13: Small-sample protection
+    # Teams with fewer than 8 games have noisy stats — fall back to league defaults
+    MIN_GAMES_TRUST = 8
+    a_gp = sA.get("games_played", 0)
+    h_gp = sH.get("games_played", 0)
+    if a_gp < MIN_GAMES_TRUST:
+        print(f"    ⚠ SMALL SAMPLE: {away_name} ({a_gp} games) — using league defaults")
+        sA = {"adj_off": cfg.get("eff_pivot", 108.0), "adj_def": cfg.get("eff_pivot", 108.0), "adj_t": config_pace, "games_played": a_gp}
+    if h_gp < MIN_GAMES_TRUST:
+        print(f"    ⚠ SMALL SAMPLE: {home_name} ({h_gp} games) — using league defaults")
+        sH = {"adj_off": cfg.get("eff_pivot", 108.0), "adj_def": cfg.get("eff_pivot", 108.0), "adj_t": config_pace, "games_played": h_gp}
+
+    raw_pace = (sA.get("adj_t", config_pace) + sH.get("adj_t", config_pace)) / 2
+
+    # SANITY CHECK: override adj_t if it deviates wildly from config pace_pivot
+    if abs(raw_pace - config_pace) > 20:
+        print(f"    ⚠ PACE OVERRIDE: adj_t ({raw_pace:.1f}) deviates from pace_pivot ({config_pace}). Using config value.")
+        raw_pace = config_pace
+
+    # FIX 2: KenPom-style crossmatch efficiency for ALL leagues
+    lg_avg_eff = cfg.get("eff_pivot", 108.0)
+    a_off = sA.get("adj_off", lg_avg_eff)
+    a_def = sA.get("adj_def", lg_avg_eff)
+    h_off = sH.get("adj_off", lg_avg_eff)
+    h_def = sH.get("adj_def", lg_avg_eff)
+
+    exp_a_eff = (a_off * h_def) / lg_avg_eff  # Away offense vs Home defense
+    exp_h_eff = (h_off * a_def) / lg_avg_eff  # Home offense vs Away defense
+    crossmatch_eff = (exp_a_eff + exp_h_eff) / 2
+
+    # FIX 4: Spread includes both offense AND defense
+    spread_est = ((h_off - a_def) - (a_off - h_def)) / 2
+
     game_data = {
         "team":       away_name,
         "opponent":   home_name,
         "statsA":     sA,
         "statsH":     sH,
-        # Pace: average of both teams (adj_t)
-        "pace_adjustment":      (sA.get("adj_t", cfg.get("pace_pivot", 76)) +
-                                 sH.get("adj_t", cfg.get("pace_pivot", 76))) / 2,
-        "efficiency_adjustment": (sA.get("adj_off", cfg.get("eff_pivot", 108)) +
-                                  sH.get("adj_off", cfg.get("eff_pivot", 108))) / 2,
-        # Spread estimate (simple, for sharp layer gates)
-        "projected_spread": abs(
-            sH.get("adj_off", 108) - sA.get("adj_off", 108)
-        ) / 2,
-        "market_total": None,  # No market line for most leagues
+        "pace_adjustment":      raw_pace,
+        "efficiency_adjustment": crossmatch_eff,
+        "projected_spread": abs(spread_est),
+        "market_total": None,
         "is_neutral": False,
     }
 
@@ -385,17 +415,24 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
         engine = UniversalBasketballEngine(config_path, mode=mode)
         engine.trace_enabled = trace
         result = engine.calculate_total(game_data, injury_notes=[])
-        # Calculate Spread and xPTS
-        spr = (game_data["statsH"].get("adj_off", 108) - game_data["statsA"].get("adj_off", 108)) / 2
+        # FIX 4: Spread uses both offense and defense
+        spr = spread_est  # Already computed above with crossmatch formula
         model_total = result.get("final_model_total", 0.0)
+
+        # HARD CEILING: Cap non-NBA model totals at 250 as a safety net
+        if model_total > 250 and cfg.get("name") != "NBA":
+            print(f"    ⚠ CEILING CAP: Inflated projection {model_total:.1f} -> 250.0")
+            model_total = 250.0
+            result["final_model_total"] = model_total
         
         xpts_h = (model_total / 2) + (spr / 2)
         xpts_a = (model_total / 2) - (spr / 2)
         result["xpts_h"] = round(xpts_h, 1)
         result["xpts_a"] = round(xpts_a, 1)
 
-        # Calculate Win Probabilities (12 style)
-        p_home = calculate_win_prob(spr)
+        # FIX 8: Configurable win probability std_dev
+        win_std = cfg.get("win_prob_std_dev", 12.0)
+        p_home = calculate_win_prob(spr, std_dev=win_std)
         p_away = 1.0 - p_home
         
         result["probs_1x2"] = {
@@ -428,6 +465,8 @@ def main():
                         help="Enrich with H2H, Standings, etc (costly API calls)")
     parser.add_argument("--no_match_center", action="store_false", dest="match_center",
                         help="Disable Match Center enrichment to save API credits")
+    parser.add_argument("--validate",   action="store_true",
+                        help="Print top 5 highest/lowest totals as sanity check")
     args = parser.parse_args()
 
     date_str = get_today_str(args.date)
@@ -508,6 +547,7 @@ def main():
             away = game["away"]
             home = game["home"]
             status = game.get("status", "")
+            stage = game.get("stage", "")
             
             passes = []
 
@@ -593,6 +633,7 @@ def main():
                     "away_team":    away,
                     "home_team":    home,
                     "status":       status,
+                    "stage":        stage,
                     "model_total":  model_total,
                     "xpts_h":       round(res.get("xpts_h", 0), 1),
                     "xpts_a":       round(res.get("xpts_a", 0), 1),
@@ -640,6 +681,17 @@ def main():
     print("=" * 70)
     print(f"  COMPLETE: {total_predicted} predictions  |  {total_skipped} skipped")
     print("=" * 70)
+
+    # FIX 16: --validate flag — sanity check top/bottom projections
+    if getattr(args, 'validate', False) and all_predictions:
+        scored = [(p.get('model_total', 0), f"{p.get('away', '?')} @ {p.get('home', '?')}", p.get('league', '?')) for p in all_predictions if p.get('model_total')]
+        scored.sort(key=lambda x: x[0], reverse=True)
+        print("\n  ── VALIDATION: Top 5 Highest ──")
+        for total, matchup, league in scored[:5]:
+            print(f"    {total:>6.1f}  {matchup}  ({league})")
+        print("  ── VALIDATION: Top 5 Lowest ──")
+        for total, matchup, league in scored[-5:]:
+            print(f"    {total:>6.1f}  {matchup}  ({league})")
 
     # Save
     if all_predictions:

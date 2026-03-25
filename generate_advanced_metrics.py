@@ -363,8 +363,17 @@ def process_leagues():
             raw_off = data["pts_for"] / data["games"]
             raw_def = data["pts_against"] / data["games"]
             
-            true_ppg_o = raw_off + (data["srs"] / 2)
-            true_ppg_d = raw_def - (data["srs"] / 2)
+            # FIX 3: Proportional SRS decomposition
+            # Weight SRS credit based on each team's offensive vs defensive contribution
+            # instead of naive 50/50 split
+            total_contribution = raw_off + raw_def
+            if total_contribution > 0 and data["srs"] != 0:
+                off_share = raw_off / total_contribution
+                true_ppg_o = raw_off + (data["srs"] * off_share)
+                true_ppg_d = raw_def - (data["srs"] * (1 - off_share))
+            else:
+                true_ppg_o = raw_off
+                true_ppg_d = raw_def
             
             adjO = round(true_ppg_o / (pace_pivot / 100), 1) if pace_pivot > 0 else 108.0
             adjD = round(true_ppg_d / (pace_pivot / 100), 1) if pace_pivot > 0 else 108.0

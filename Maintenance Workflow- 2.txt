@@ -1,10 +1,11 @@
-/ **[python grade_basketball.py]  --regrade
-python aggregate_basketball_stats.py)** 
+/ **[python grade_basketball.py  
+python grade_basketball.py --regrade
+python aggregate_basketball_stats.py** 
 
 
-# 1. Update the raw stats from Proballers (just the most recent 2 games)
+# 1. Update the raw stats from Proballers 
 python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
-python scrape_proballers.py --daily 2026-03-24 --cutoff_date 2026-03-01 
+python scrape_proballers.py --daily today --cutoff_date 2026-03-01 
   
   1b. # Update the raw stats from api python auto_update_historical.py
 
@@ -44,6 +45,54 @@ python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --result win --no-l
 ________________________________________________________________________________________________________________
 ________________________________________________________________________________________________________________
 ________________________________________________________________________________________________________________
+
+Calibration is handled by 
+
+calibrate_league.py
+ and can happen in two contexts:
+
+1. Automatic (During Prediction Runs)
+In 
+
+run_basketball_daily.py
+, when processing a league without an existing config, the script auto-calibrates on the fly:
+
+run_basketball_daily.py → detects no configs/leagues/{id}.json
+                        → calls calibrate_league.auto_calibrate(league_id)
+                        → fetches finished games from API
+                        → derives pace_pivot, eff_pivot, hca, regression_factor
+                        → writes configs/leagues/{id}.json
+                        → continues with prediction
+You can skip this with --no_calibrate to only use existing configs.
+
+2. Manual (Maintenance)
+Run directly to recalibrate one or all leagues:
+
+bash
+python calibrate_league.py --league_id 40      # Recalibrate BBL Germany
+python calibrate_league.py --all                # Recalibrate all leagues
+What Calibration Actually Does
+Fetches all finished games this season for the league from the API
+Computes avg_total (mean game total) and std_total (variance)
+Derives HCA from mean home margin, clamped to 0.5–8.0
+Uses the tier's pace as pace_pivot (e.g., 78 for top_domestic)
+Back-derives eff_pivot = (avg_total × 100) / (2 × pace_pivot) — this is the Fix 9 formula that ensures dimensional consistency with the engine
+Sets regression_factor based on sample size (more games → higher trust, capped at 0.96)
+Writes the config to configs/leagues/{id}.json
+When Should You Recalibrate?
+Start of season — When new leagues begin and have 15+ games
+If MAE drifts — Run python backtest_v4.py and if accuracy drops, recalibrate
+After league breaks — Mid-season breaks can shift team dynamics
+Never during playoffs — Small sample + different play style would corrupt calibration
+The calibration is essentially answering: "What does a typical game in this league look like?" — and the engine then adjusts from that baseline based on each specific matchup.
+
+
+
+
+
+
+
+
 python scrape_flashscore.py (Get-Content batch_failed_urls.txt)
 python scrape_flashscore.py (Get-Content all_427_flashscore_urls.txt) --force
 python run_basketball_daily.py

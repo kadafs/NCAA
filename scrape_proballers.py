@@ -176,8 +176,23 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
             matches = matches[:max_games]
             
         new_matches_added = 0
+        import re
         for i, match_url in enumerate(matches):
             print(f"      [{i+1}/{len(matches)}] Harvesting advanced stats: {match_url.split('/')[-1]}")
+            
+            # Fast-path URL date check
+            if cutoff_date:
+                match_dt_match = re.search(r'-(\d{4}-\d{2}-\d{2})/?$', match_url)
+                if match_dt_match:
+                    try:
+                        url_date = datetime.strptime(match_dt_match.group(1), "%Y-%m-%d").date()
+                        cutoff_dt = datetime.strptime(cutoff_date, "%Y-%m-%d").date()
+                        if url_date < cutoff_dt:
+                            print(f"        -> [!] URL date {url_date} is older than cutoff {cutoff_date}. Stopping extraction.")
+                            break
+                    except Exception:
+                        pass
+
             m_data = scrape_match(match_url, context)
             if m_data:
                 game_date_str = m_data.get('date', 'Unknown')
@@ -214,13 +229,70 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
         browser.close()
         return True
 
+def fetch_api_basketball_directly(date_str):
+    """
+    Standalone function to fetch ALL daily fixtures from api-basketball.com
+    without touching the prediction engine logic.
+    """
+    from dotenv import load_dotenv
+    import requests
+    load_dotenv()
+    
+    api_key = os.getenv("API_BASKETBALL_KEY")
+    if not api_key:
+        print("  [X] API_BASKETBALL_KEY missing from .env")
+        return []
+        
+    fixtures_file = f"data/api_basketball_today_{date_str}.json"
+    print(f"  Fetching all raw fixtures for {date_str} directly from api-basketball.com...")
+    
+    try:
+        r = requests.get(
+            "https://v1.basketball.api-sports.io/games",
+            headers={"x-apisports-key": api_key},
+            params={"date": date_str},
+            timeout=15,
+        )
+        all_games = r.json().get("response", [])
+        total = r.json().get("results", 0)
+        
+        from collections import defaultdict
+        by_league = defaultdict(list)
+        for game in all_games:
+            league = game.get("league", {})
+            lid = league.get("id")
+            lname = league.get("name", "Unknown")
+            country = game.get("country", {}).get("name", "")
+            by_league[(lid, lname, country)].append(game)
+
+        leagues_summary = []
+        for (lid, lname, country), games in by_league.items():
+            leagues_summary.append({
+                "league_id": lid, 
+                "league_name": lname,
+                "country": country,
+                "game_count": len(games)
+            })
+
+        out = {"date": date_str, "total_games": total, "leagues_summary": leagues_summary}
+        os.makedirs("data", exist_ok=True)
+        with open(fixtures_file, "w", encoding="utf-8") as f:
+            json.dump(out, f, indent=2)
+            
+        print(f"  -> Saved {total} raw games across {len(leagues_summary)} leagues.")
+        return leagues_summary
+    except Exception as e:
+        print(f"  [X] Direct fetch failed: {e}")
+        return []
+
 def get_daily_urls(date_str):
     """
-    Reads the daily fixtures JSON to find which leagues are actively playing,
-    then looks up their proballers_url. Only active leagues will be scraped.
+    Reads all daily fixtures JSON to find which leagues are actively playing today.
+    Only active leagues will be scraped.
+    No dependency on prediction engines.
     """
     if date_str == "today" or not date_str:
-        from datetime import timezone
+        from datetime import timezone, datetime
         ET_TZ = timezone.utc
         date_str = datetime.now(ET_TZ).strftime("%Y-%m-%d")
         
@@ -228,83 +300,73 @@ def get_daily_urls(date_str):
     
     if not os.path.exists(fixtures_file):
         print(f"  [!] Fixtures file not found: {fixtures_file}")
-        print(f"      Attempting to fetch fixtures for {date_str}...")
+        leagues_list = fetch_api_basketball_directly(date_str)
+    else:
         try:
-            # Reuses the exact fetcher logic from the daily runner
-            from run_basketball_daily import fetch_today_fixtures
-            fetch_today_fixtures(date_str)
+            with open(fixtures_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                leagues_list = data.get("leagues_summary", [])
         except Exception as e:
-            print(f"  [X] Failed to fetch fixtures: {e}")
-            return []
+            print(f"  [X] Failed reading fixtures file: {e}")
+            leagues_list = []
             
-    if not os.path.exists(fixtures_file):
+    if not leagues_list:
         return []
         
-    try:
-        with open(fixtures_file, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            
-        try:
-            from run_basketball_daily import EXCLUDED_LEAGUE_IDS, EXCLUDED_LEAGUE_NAMES
-        except ImportError:
-            EXCLUDED_LEAGUE_IDS = set()
-            EXCLUDED_LEAGUE_NAMES = set()
-            
-        valid_leagues = [
-            l for l in data.get("leagues_summary", [])
-            if l.get("league_id") not in EXCLUDED_LEAGUE_IDS
-            and l.get("league_name") not in EXCLUDED_LEAGUE_NAMES
-            and str(l.get("country") or "").strip().upper() != "USA"
-        ]
-        
-        leagues_today = [str(l.get("league_id")) for l in valid_leagues if l.get("league_id")]
-        
-        urls = []
-        for lid in leagues_today:
-            cfg_path = f"configs/leagues/{lid}.json"
-            if os.path.exists(cfg_path):
-                try:
-                    with open(cfg_path, "r", encoding="utf-8") as cf:
-                        cfg = json.load(cf)
-                        url = cfg.get("proballers_url")
-                        if url:
-                            if url not in urls:
-                                urls.append(url)
-                except Exception:
-                    pass
-        # 2. Legacy Method: Lookup via league_slug_map + proballers_schedule_links
-        map_file = "data/league_slug_map.json"
-        txt_files = ["proballers_schedule_links.txt", "proballers_priority_links.txt"]
-        
-        if os.path.exists(map_file):
+    # Standard Proballers exclusions: No strict USA leagues (NBA/NCAA), no fake leagues.
+    # We do NOT import from run_basketball_daily anymore.
+    valid_leagues = [
+        l for l in leagues_list
+        if str(l.get("country") or "").strip().upper() != "USA"
+    ]
+    
+    leagues_today = [str(l.get("league_id")) for l in valid_leagues if l.get("league_id")]
+    
+    urls = []
+    
+    # 1. Lookup via configs/leagues folder
+    for lid in leagues_today:
+        cfg_path = f"configs/leagues/{lid}.json"
+        if os.path.exists(cfg_path):
             try:
-                with open(map_file, "r", encoding="utf-8") as mf:
-                    slug_map = json.load(mf)
-                    
-                for tfile in txt_files:
-                    if os.path.exists(tfile):
-                        with open(tfile, "r", encoding="utf-8") as tf:
-                            for line in tf:
-                                url = line.strip()
-                                if not url or url.startswith("#"): continue
-                                
-                                parts = url.strip("/").split("/")
-                                if len(parts) >= 2:
-                                    slug = parts[-2]
-                                    api_id = slug_map.get(slug)
-                                    if not api_id:
-                                        api_id = slug_map.get(slug.replace("-", "_"))
-                                        
-                                    if api_id and str(api_id) in leagues_today:
-                                        if url not in urls:
-                                            urls.append(url)
-            except Exception as e:
-                print(f"  [X] Failed parsing legacy mapping: {e}")
+                with open(cfg_path, "r", encoding="utf-8") as cf:
+                    cfg = json.load(cf)
+                    url = cfg.get("proballers_url")
+                    if url and url not in urls:
+                        urls.append(url)
+            except Exception:
+                pass
+                
+    # 2. Legacy Method: Lookup via league_slug_map + proballers_schedule_links
+    map_file = "data/league_slug_map.json"
+    txt_files = ["proballers_schedule_links.txt", "proballers_priority_links.txt"]
+    
+    if os.path.exists(map_file):
+        try:
+            with open(map_file, "r", encoding="utf-8") as mf:
+                slug_map = json.load(mf)
+                
+            for tfile in txt_files:
+                if os.path.exists(tfile):
+                    with open(tfile, "r", encoding="utf-8") as tf:
+                        for line in tf:
+                            url = line.strip()
+                            if not url or url.startswith("#"): continue
+                            
+                            parts = url.strip("/").split("/")
+                            if len(parts) >= 2:
+                                slug = parts[-2]
+                                api_id = slug_map.get(slug)
+                                if not api_id:
+                                    api_id = slug_map.get(slug.replace("-", "_"))
+                                    
+                                if api_id and str(api_id) in leagues_today:
+                                    if url not in urls:
+                                        urls.append(url)
+        except Exception as e:
+            print(f"  [X] Failed parsing legacy mapping: {e}")
 
-        return urls
-    except Exception as e:
-        print(f"  [X] Error parsing daily leagues: {e}")
-        return []
+    return urls
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Proballers Advanced Metrics Mass Scraper")
@@ -322,6 +384,15 @@ if __name__ == "__main__":
         print(f"\n[DAILY OPTIMIZATION] Identifying active leagues for date: {args.daily}")
         target_urls = get_daily_urls(args.daily)
         print(f"-> Found {len(target_urls)} active Proballers leagues scheduled for {args.daily if args.daily != 'today' else 'today'}\n")
+        
+        if not args.cutoff_date:
+            from datetime import timedelta, timezone
+            if args.daily == "today" or args.daily == "":
+                d_obj = datetime.now(timezone.utc)
+            else:
+                d_obj = datetime.strptime(args.daily, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            args.cutoff_date = (d_obj - timedelta(days=2)).strftime("%Y-%m-%d")
+            print(f"-> Set automatic cutoff_date to {args.cutoff_date} for daily mode.\n")
     elif args.file:
         if not os.path.exists(args.file):
             print(f"Error: File {args.file} not found.")

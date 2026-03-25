@@ -30,7 +30,7 @@ class UniversalBasketballEngine:
         conf = game_data.get('conf', 'DEFAULT')
         market_val = game_data.get('market_total')
         if market_val is None:
-            market = 230.0 if c.get('name') == 'NBA' else 145.5
+            market = 230.0 if c.get('name') == 'NBA' else c.get('_avg_total', 145.5)
         else:
             market = float(market_val)
         
@@ -45,41 +45,15 @@ class UniversalBasketballEngine:
 
         eff_adj = game_data.get('efficiency_adjustment', c['eff_pivot'])
         
-        # Step 1: Base Total
-        if c['name'] == "NBA":
-            # v3.1 Matchup-Adjusted Efficiency (Professional Upgrade)
-            # Expects adj_off and adj_def in game_data stats
-            league_avg_eff = c.get('eff_pivot', 115.0)
-            
-            sA = game_data.get('statsA', {})
-            sB = game_data.get('statsH', {})
-            
-            a_off = sA.get('adj_off', league_avg_eff)
-            a_def = sA.get('adj_def', league_avg_eff)
-            b_off = sB.get('adj_off', league_avg_eff)
-            b_def = sB.get('adj_def', league_avg_eff)
-            
-            # KenPom-style Expected Efficiency per possession
-            exp_a_eff = (a_off * b_def) / league_avg_eff
-            exp_b_eff = (b_off * a_def) / league_avg_eff
-            
-            combined_eff = (exp_a_eff + exp_b_eff) / 2
-            stats_total = (combined_eff * pace_adj / 100) * 2
-            
-            self._log(f"Step 1: Matchup Efficiency Base (A:{exp_a_eff:.1f} + B:{exp_b_eff:.1f}) @ {pace_adj:.1f} Pace = {stats_total:.2f}")
-        else:
-            # Legacy/NCAA Simple Average
-            stats_total = ((eff_adj * pace_adj) / 100) * 2
-            self._log(f"Step 1: Raw Base ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {stats_total:.2f}")
+        # Step 1: Base Total (v4.0: crossmatch efficiency computed upstream for all leagues)
+        stats_total = ((eff_adj * pace_adj) / 100) * 2
+        self._log(f"Step 1: Base Total ({eff_adj:.1f} Eff @ {pace_adj:.1f} Pace) = {stats_total:.2f}")
 
         # Step 2: Pace Impact (v3.0: DISABLED for NBA to avoid double-counting)
-        if c['name'] != "NBA":
-            pace_delta = pace_adj - c['pace_pivot']
-            pace_impact = pace_delta * c['pace_delta_weight']
-            stats_total += pace_impact
-            self._log(f"Step 2: Pace Impact ({pace_adj:.1f} vs {c['pace_pivot']}) -> {pace_impact:+.2f}")
-        else:
-            self._log(f"Step 2: Pace Impact SKIPPED (v3.0 NBA: pace already in base formula)")
+        # Step 2: Pace Impact — DISABLED for all leagues (v4.0)
+        # Pace is already embedded multiplicatively in Step 1.
+        # Adding an additive delta on top causes systematic double-counting.
+        self._log(f"Step 2: Pace Impact DISABLED (v4.0: pace already in base formula)")
         
         # Step 3: Alignment (Conf & HCA) -> BEFORE Regression
         # HCA Gate: Disable if neutral

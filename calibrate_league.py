@@ -219,17 +219,18 @@ def derive_params(games, league_id, league_name="Unknown"):
     std_total = math.sqrt(sum((t - avg_total) ** 2 for t in totals) / n)
 
     # --- Pace estimation ---
-    # Standard basketball: ~1 point per possession, ~2 pts/poss on made baskets
-    # avg_total ≈ 2 × pace × (eff / 100)
-    # We assume eff_pivot from tier (~108 for top domestic), solve for pace:
-    # pace = avg_total / (2 × eff_pivot / 100)
-    # We'll derive a sensible eff_pivot from scoring first
-    eff_pivot = avg_total / 1.42  # empirical constant (pts_per_game ≈ 1.42 × adj_eff at avg pace)
-    eff_pivot = max(95.0, min(125.0, eff_pivot))
+    # Engine formula: avg_total = ((eff * pace) / 100) * 2
+    # Strategy: use tier template pace, back-derive eff from avg_total
+    # This ensures derived configs are dimensionally consistent with the engine
+    tier_name = KNOWN_TIER_MAP.get(league_id, "top_domestic")
+    tier_pace = TIER_TEMPLATES[tier_name]["pace_pivot"]
 
-    # pace_pivot = avg_total / (2 * eff_pivot / 100)
-    pace_pivot = avg_total / (2 * eff_pivot / 100)
-    pace_pivot = max(60.0, min(110.0, pace_pivot))
+    # eff = (avg_total * 100) / (2 * pace)
+    eff_pivot = (avg_total * 100) / (2 * tier_pace)
+    eff_pivot = max(90.0, min(140.0, eff_pivot))
+
+    # Use tier pace as pace_pivot
+    pace_pivot = tier_pace
 
     # --- Regression factor: more data → trust more ---
     regression_factor = min(0.96, 0.50 + 0.46 * (min(n, 100) / 100))

@@ -16,6 +16,19 @@ function isFinishedStatus(s) {
   return s && FINISHED_STATUSES.has(s.trim().toUpperCase())
 }
 
+function formatStatus(s) {
+  if (!s) return s
+  const upper = s.toUpperCase()
+  if (upper === 'NOT STARTED') return 'NS'
+  if (upper === 'HALFTIME') return 'HT'
+  if (upper.startsWith('QUARTER 1')) return 'Q1'
+  if (upper.startsWith('QUARTER 2')) return 'Q2'
+  if (upper.startsWith('QUARTER 3')) return 'Q3'
+  if (upper.startsWith('QUARTER 4')) return 'Q4'
+  if (upper.startsWith('OVERTIME')) return 'OT'
+  return s
+}
+
 export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = false }) {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('stats')
@@ -64,6 +77,11 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
   const hasSRSFlag = !!secondary && isAdvanced
 
   const { statsH = {}, statsA = {}, h2h = [], recentH = [], recentA = [], full_standings = [] } = match_center
+  
+  const gameStageRaw = consolidatedGame.stage || primary.stage || ''
+  // Strip out league prefixes (e.g., 'BLNO - Semi-finals' -> 'Semi-finals')
+  const gameStage = gameStageRaw.includes(' - ') ? gameStageRaw.split(' - ').pop().trim() : gameStageRaw
+  const showStageBadge = gameStageRaw && !gameStageRaw.toLowerCase().includes('regular season')
 
   const tip      = predicted_result === 'HOME' ? '1' : '2'
   const isGraded = finalResult != null
@@ -87,21 +105,27 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
         {/* TIME / STATUS COLUMN */}
         <div className="match-time">
           {time?.includes(' ') ? time.split(' ')[1] : time}
-          {finalStatus && !isFinishedStatus(finalStatus) && finalStatus !== 'Scheduled' && finalStatus !== 'Game Finished' && (
-            <div className="live-indicator">{finalStatus}</div>
+          {finalStatus && !isFinishedStatus(finalStatus) && finalStatus !== 'Scheduled' && (
+            <div className="live-indicator">{formatStatus(finalStatus)}</div>
+          )}
+          {isFinishedStatus(finalStatus) && (
+            <div className="live-indicator" style={{ color: '#94a3b8' }}>
+              FT
+            </div>
           )}
           {showBadge && (
             <div style={{
-              marginTop: 3,
-              fontSize: 9,
-              fontWeight: 700,
-              letterSpacing: '0.03em',
-              padding: '1px 5px',
-              borderRadius: 3,
+              marginTop: 2,
+              fontSize: 7,
+              fontWeight: 800,
+              padding: '1px 2px',
+              borderRadius: 2,
               display: 'inline-block',
               background: '#dc2626',
               color: '#fff',
               opacity: 0.9,
+              textAlign: 'center',
+              lineHeight: 1,
               title: 'ADV data missing for this team — using SRS fallback',
             }}>
               SRS ⚠
@@ -111,8 +135,14 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
 
         {/* TEAMS COLUMN */}
         <div className="teams">
-          <div className="team-row">
-            <span className="team-name" style={{ fontWeight: (isGraded && finalHomeScore > finalAwayScore) ? 700 : 400 }}>
+          <div className="team-row" style={{ display: 'flex', alignItems: 'center' }}>
+            <span className="team-name" style={{ 
+              fontWeight: (isGraded && finalHomeScore > finalAwayScore) ? 700 : 400,
+              flex: 'initial',
+              textAlign: 'left',
+              marginRight: 6
+            }}>
+              {showStageBadge && <span style={{ color: '#2563eb', width: 16, display: 'inline-block', textAlign: 'left' }}>★</span>}
               {home_team}
             </span>
             {finalHomeScore !== undefined && (
@@ -121,8 +151,14 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
               </span>
             )}
           </div>
-          <div className="team-row">
-            <span className="team-name" style={{ fontWeight: (isGraded && finalAwayScore > finalHomeScore) ? 700 : 400 }}>
+          <div className="team-row" style={{ display: 'flex', alignItems: 'center' }}>
+            <span className="team-name" style={{ 
+              fontWeight: (isGraded && finalAwayScore > finalHomeScore) ? 700 : 400,
+              flex: 'initial',
+              textAlign: 'left',
+              marginRight: 6
+            }}>
+              {showStageBadge && <span className="playoff-spacer"></span>}
               {away_team}
             </span>
             {finalAwayScore !== undefined && (
@@ -155,30 +191,17 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
         </div>
 
         {/* MODEL COLUMN — ADV total + optional SRS flag below */}
-        <div className="stat-col center" style={{ flexDirection: 'column', alignItems: 'center', gap: '0px' }}>
-          <div className={`bball-model-box ${decision === 'PLAY OVER' ? 'over' : decision === 'PLAY UNDER' ? 'under' : ''}`}>
-            {model_total > 0 ? model_total.toFixed(1) : '—'}
+        <div className="stat-col center">
+          <div className={`bball-model-box ${decision === 'PLAY OVER' ? 'over' : decision === 'PLAY UNDER' ? 'under' : ''}`} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1 }}>
+            <span style={{ fontSize: hasSRSFlag ? '0.9em' : 'inherit', marginTop: hasSRSFlag ? 1 : 0 }}>
+              {model_total > 0 ? model_total.toFixed(1) : '—'}
+            </span>
+            {hasSRSFlag && (
+              <span style={{ fontSize: 7, fontWeight: 800, marginTop: 2, opacity: 0.85 }}>
+                SRS {secondary.model_total?.toFixed(1)}
+              </span>
+            )}
           </div>
-          {hasSRSFlag && (
-            <div style={{
-              fontSize: 7,
-              fontWeight: 800,
-              color: '#64748b',
-              background: '#f8fafc',
-              padding: '1px 3px',
-              borderRadius: '0 0 4px 4px',
-              border: '1px solid var(--border-soft)',
-              borderTop: 'none',
-              marginTop: '-1px',
-              minWidth: '40px',
-              textAlign: 'center',
-              textTransform: 'uppercase',
-              lineHeight: 1.2,
-              boxShadow: '0 1px 1px rgba(0,0,0,0.03)',
-            }}>
-              SRS {secondary.model_total?.toFixed(1)}
-            </div>
-          )}
         </div>
 
         {/* xPTS COLUMN */}
@@ -211,6 +234,11 @@ export default function BasketballRow({ game: consolidatedGame, leagueHasAdv = f
                   <span className="sh-title">BY THE NUMBERS</span>
                   <span className="sh-team">{away_team}</span>
                 </div>
+                {gameStageRaw && (
+                  <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#3b82f6', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {gameStageRaw}
+                  </div>
+                )}
                 <div className="stats-body">
                   <StatRow label="Matches Played" home={statsH.played} away={statsA.played} />
                   <StatRow label="Win %" home={statsH.win_pct ? `${(statsH.win_pct * 100).toFixed(0)}%` : '-'} away={statsA.win_pct ? `${(statsA.win_pct * 100).toFixed(0)}%` : '-'} />
