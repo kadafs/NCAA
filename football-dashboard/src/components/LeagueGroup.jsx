@@ -62,11 +62,7 @@ export default function LeagueGroup({ group, sport }) {
                   <span title={tierTooltip || undefined} style={{ fontSize: 11, fontWeight: 700, color: mapeColor, whiteSpace: 'nowrap', cursor: 'default' }}>
                     MAPE {mape.toFixed(1)}% <span style={{ fontWeight: 400, fontSize: 10, color: '#94a3b8' }}>({mStats.graded_totals}g)</span>
                   </span>
-                  {(mStats.outcome_w + mStats.outcome_l > 0) && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: color, opacity: 0.8, paddingLeft: 4, borderLeft: `1px solid ${border}` }}>
-                      1X2: {mStats.outcome_w}W-{mStats.outcome_l}L ({mStats.outcome_hit_rate}%)
-                    </span>
-                  )}
+
                 </div>
               )
             }
