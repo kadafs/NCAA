@@ -42,6 +42,8 @@ export default function LeagueGroup({ group, sport }) {
             const renderStats = (modelName, mStats) => {
               if (!mStats || mStats.graded_totals === 0) return null
               const mape = mStats.mape ?? 0
+              const mae  = mStats.mae ?? null
+              const signed = mStats.avg_signed_delta ?? null
               const isAdv    = modelName === 'ADV'
               const bg       = isAdv ? '#eff6ff' : '#f0f9ff'
               const color    = isAdv ? '#1d4ed8' : '#0369a1'
@@ -62,7 +64,16 @@ export default function LeagueGroup({ group, sport }) {
                   <span title={tierTooltip || undefined} style={{ fontSize: 11, fontWeight: 700, color: mapeColor, whiteSpace: 'nowrap', cursor: 'default' }}>
                     MAPE {mape.toFixed(1)}% <span style={{ fontWeight: 400, fontSize: 10, color: '#94a3b8' }}>({mStats.graded_totals}g)</span>
                   </span>
-
+                  {mae !== null && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', borderLeft: `1px solid ${border}`, paddingLeft: 6 }}>
+                      MAE {mae.toFixed(1)}
+                    </span>
+                  )}
+                  {signed !== null && (
+                    <span title={signed > 0 ? "Model undershoots, game goes OVER" : "Model overshoots, game goes UNDER"} style={{ fontSize: 11, fontWeight: 600, color: signed > 0 ? '#b91c1c' : signed < 0 ? '#15803d' : '#475569', whiteSpace: 'nowrap', borderLeft: `1px solid ${border}`, paddingLeft: 6, cursor: 'help' }}>
+                      ±Δ {signed > 0 ? '+' : ''}{signed.toFixed(1)}
+                    </span>
+                  )}
                 </div>
               )
             }

@@ -44,3 +44,24 @@ export async function fetchLeaderboard(sport = 'football') {
   const d = await r.json()
   return d.leaderboard || []
 }
+
+export async function fetchTeamLeaderboard(sport = 'football') {
+  if (sport === 'football') return [] // Football does not have team tracking yet
+  
+  if (isDev) {
+    // Falls back to static fetch if dev API isn't built out for teams yet
+    try {
+      const r = await fetch(`${API}/team_leaderboard?sport=${sport}`)
+      if (r.ok) {
+        const d = await r.json()
+        return d.leaderboard || []
+      }
+    } catch (e) {}
+  }
+  
+  // Direct static fetch from the generated file we just created
+  const r = await fetch(`${DATA}/${sport}/basketball_leaderboard.json?t=${Date.now()}`)
+  if (!r.ok) return []
+  const d = await r.json()
+  return d.leaderboard || []
+}

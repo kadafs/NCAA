@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { fetchDates, fetchPredictions, fetchLeaderboard } from './api'
+import { fetchDates, fetchPredictions, fetchLeaderboard, fetchTeamLeaderboard } from './api'
 import Header from './components/Header'
 import Scorecard from './components/Scorecard'
 import LeagueGroup from './components/LeagueGroup'
+import TeamTracker from './components/TeamTracker'
 
 function groupByLeague(predictions, sport) {
   const map = new Map()
@@ -87,6 +88,9 @@ export default function App() {
   const [filterCountry, setFilterCountry] = useState('all')
   const [filterDraw,    setFilterDraw]    = useState(0)    // min draw_prob_1x2 threshold
   const [filterMape,    setFilterMape]    = useState(100)  // max error percentage
+  
+  // High-level App View Mode 
+  const [viewMode,      setViewMode]      = useState('matches') // 'matches' | 'teams'
 
   const [compactMode, setCompactMode] = useState(() => {
     const saved = localStorage.getItem('compactMode')
@@ -156,6 +160,7 @@ export default function App() {
   }
   
   const [leaderboard,   setLeaderboard]   = useState([])
+  const [teamLeaderboard, setTeamLeaderboard] = useState([])
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   useEffect(() => {
@@ -193,6 +198,11 @@ export default function App() {
     fetchLeaderboard(sport)
       .then(d => setLeaderboard(d))
       .catch(e => console.warn(`Could not fetch ${sport} leaderboard:`, e))
+      
+    fetchTeamLeaderboard(sport)
+      .then(d => setTeamLeaderboard(d))
+      .catch(e => console.warn(`Could not fetch ${sport} team leaderboard:`, e))
+      
   }, [sport])
 
   useEffect(() => {
@@ -252,6 +262,7 @@ export default function App() {
           setFilterCountry('all'); 
           setFilterDraw(0); 
           setFilterMape(100);
+          setViewMode('matches');
         }}
         filterDecision={filterDecision}
         setFilterDecision={setFilterDecision}
@@ -285,12 +296,33 @@ export default function App() {
 
         {/* Controls row */}
         <div className="controls-bar">
-          <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>Sort:</span>
-          {['competition', 'country', 'time'].map(s => (
-            <button key={s} className={`control-btn ${sortBy === s ? 'active' : ''}`} onClick={() => setSortBy(s)}>
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </button>
-          ))}
+          {sport === 'basketball' && (
+            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 8, padding: 4, marginRight: 16 }}>
+              <button 
+                onClick={() => setViewMode('matches')}
+                style={{ padding: '4px 12px', fontSize: 13, fontWeight: 700, borderRadius: 6, background: viewMode === 'matches' ? '#fff' : 'transparent', color: viewMode === 'matches' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'matches' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Daily Matches
+              </button>
+              <button 
+                onClick={() => setViewMode('teams')}
+                style={{ padding: '4px 12px', fontSize: 13, fontWeight: 700, borderRadius: 6, background: viewMode === 'teams' ? '#fff' : 'transparent', color: viewMode === 'teams' ? '#0f172a' : '#64748b', boxShadow: viewMode === 'teams' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Team Performance
+              </button>
+            </div>
+          )}
+          
+          {viewMode === 'matches' && (
+            <>
+              <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 600 }}>Sort:</span>
+              {['competition', 'country', 'time'].map(s => (
+                <button key={s} className={`control-btn ${sortBy === s ? 'active' : ''}`} onClick={() => setSortBy(s)}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </>
+          )}
 
           {sport === 'football' && (
             <>
@@ -318,7 +350,7 @@ export default function App() {
             </>
           )}
 
-          {sport === 'basketball' && (
+          {viewMode === 'matches' && sport === 'basketball' && (
             <>
               <select className="filter-select" style={{ marginLeft: 12, width: '130px' }} value={filterMape} onChange={e => setFilterMape(Number(e.target.value))}>
                 <option value={100}>MAPE</option>
@@ -335,7 +367,7 @@ export default function App() {
           </select>
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-            {data && (
+            {data && viewMode === 'matches' && (
               <div className="summary-pill">
                 <strong>{counts.total}</strong> games
                 {sport === 'football' && (
@@ -384,11 +416,15 @@ export default function App() {
 
         {loading && <div className="loading">⚽ Loading predictions…</div>}
         {error   && <div className="empty-state"><div className="icon">❌</div><p>{error}</p></div>}
-        {!loading && !error && groups.length === 0 && data && (
+        {!loading && !error && viewMode === 'matches' && groups.length === 0 && data && (
           <div className="empty-state"><div className="icon">📭</div><p>No predictions match your filters.</p></div>
         )}
 
-        {!loading && !error && groups.length > 0 && (
+        {!loading && !error && viewMode === 'teams' && (
+          <TeamTracker teamLeaderboard={teamLeaderboard} />
+        )}
+
+        {!loading && !error && viewMode === 'matches' && groups.length > 0 && (
           <div className="predictions-table">
             {groups.map(g => {
               const stats = leaderboard.find(x => (g.league_id && x.league_id === g.league_id) || x.name === `${g.country?.toUpperCase()} — ${g.league?.toUpperCase()}`)
