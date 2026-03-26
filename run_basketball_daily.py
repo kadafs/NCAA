@@ -411,8 +411,10 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
     exp_h_eff = (h_off * a_def) / lg_avg_eff  # Home offense vs Away defense
     crossmatch_eff = (exp_a_eff + exp_h_eff) / 2
 
-    # FIX 4: Spread includes both offense AND defense
-    spread_est = ((h_off - a_def) - (a_off - h_def)) / 2
+    # FIX 4 (REVISED): Multiplicative KenPom spread perfectly constrained by Game Pace & Home Court Advantage
+    raw_spread_eff = exp_h_eff - exp_a_eff
+    hca_spread = cfg.get("hca_spread_bump", 2.5) 
+    spread_est = (raw_spread_eff * (raw_pace / 100)) + hca_spread
 
     game_data = {
         "team":       away_name,
