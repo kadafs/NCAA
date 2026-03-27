@@ -214,6 +214,8 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
                     print(f"        -> [+] Appended new data!")
                 else:
                     print(f"        -> [~] Match already exists in dataset: {sig}")
+                    print(f"        -> [!] League up to date. Skipping remaining historical matches.")
+                    break
                 
             # Intelligent rate limit to avoid Cloudflare shadowbans
             time.sleep(random.uniform(2.1, 4.3))

@@ -19,11 +19,11 @@ function fmt(v, digits = 0) {
   return typeof v === 'number' ? v.toFixed(digits) : v
 }
 
-function kickoffTime(game) {
+function kickoffTime(game, showUTC = true) {
   if (!game.kickoff) return '—'
   try { 
     // game.kickoff is format "YYYY-MM-DD HH:MM" in UTC (from API)
-     return game.kickoff.split(' ')[1] + ' UTC'
+     return game.kickoff.split(' ')[1] + (showUTC ? ' UTC' : '')
   }
   catch { return '—' }
 }
@@ -65,8 +65,19 @@ export default function MatchRow({ game }) {
         className={`match-row football ${open ? 'expanded' : ''} ${isGraded ? 'graded' : ''}`}
         onClick={() => setOpen(o => !o)}
       >
-        {/* Time */}
-        <div className="match-time">{kickoffTime(game)}</div>
+        {/* Time / Status */}
+        <div className="match-time">
+          {kickoffTime(game, !isGraded && (!game.status || game.status === 'NS'))}
+          {isGraded ? (
+            <div className="live-indicator" style={{ color: '#94a3b8', fontSize: 10, fontWeight: 800 }}>
+              FT
+            </div>
+          ) : game.status && game.status !== 'NS' ? (
+            <div className="live-indicator" style={{ color: game.status === 'FT' || game.status === 'PEN' || game.status === 'AET' ? '#94a3b8' : '#eab308', fontSize: 10, fontWeight: 800 }}>
+              {game.status}
+            </div>
+          ) : null}
+        </div>
 
         {/* Teams */}
         <div className="teams">
@@ -362,6 +373,11 @@ export default function MatchRow({ game }) {
                <span><b>Final:</b> {game.actual_home_goals} - {game.actual_away_goals}</span>
                <span style={{ marginLeft: 16 }}><b>1X2:</b> {game.actual_result} {oGrade === 'WIN' ? '✅' : '❌'}</span>
                <span style={{ marginLeft: 16 }}><b>BTTS:</b> {game.actual_btts ? 'Yes' : 'No'} {bGrade === 'WIN' ? '✅' : bGrade === 'LOSS' ? '❌' : '➖'}</span>
+               {game.accuracy_tier && (
+                 <span style={{ marginLeft: 16 }}>
+                   <b>xG Grade:</b> {game.accuracy_tier} <span style={{ fontSize: '0.85em', opacity: 0.8 }}>(Δ {game.total_delta})</span>
+                 </span>
+               )}
              </div>
           )}
         </div>

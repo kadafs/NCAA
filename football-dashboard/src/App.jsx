@@ -296,7 +296,7 @@ export default function App() {
 
         {/* Controls row */}
         <div className="controls-bar">
-          {sport === 'basketball' && (
+          {true && (
             <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 8, padding: 4, marginRight: 16 }}>
               <button 
                 onClick={() => setViewMode('matches')}

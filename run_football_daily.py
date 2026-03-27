@@ -469,7 +469,15 @@ def calc_over_prob(xg_total, threshold):
         under_p += poisson_prob(xg_total, k)
     return round(1.0 - under_p, 4)
 
-def calc_xg(home_s, away_s, avg_home, avg_away, regression=0.88):
+def calc_xg(home_s, away_s, avg_home, avg_away):
+    # Dynamic Bayesian Regression: Trust scales with games played
+    # 1 game = 0.11 trust, 4 games = 0.44 trust, 8+ games = capped at 0.88.
+    def get_regression(played):
+        return min(0.88, max(0.10, played * 0.11))
+        
+    reg_home = get_regression(home_s.get("played_all", 1))
+    reg_away = get_regression(away_s.get("played_all", 1))
+
     ar_home = home_s.get("attack_rating_home", 1.0)
     dr_away = away_s.get("defense_rating_away", 1.0)
     xg_h_raw = ar_home * dr_away * avg_home
@@ -478,25 +486,62 @@ def calc_xg(home_s, away_s, avg_home, avg_away, regression=0.88):
     dr_home = home_s.get("defense_rating_home", 1.0)
     xg_a_raw = ar_away * dr_home * avg_away
 
-    xg_h = round(xg_h_raw * regression + avg_home * (1 - regression), 3)
-    xg_a = round(xg_a_raw * regression + avg_away * (1 - regression), 3)
+    xg_h = round(xg_h_raw * reg_home + avg_home * (1 - reg_home), 3)
+    xg_a = round(xg_a_raw * reg_away + avg_away * (1 - reg_away), 3)
     return xg_h, xg_a
+
+def calc_xg_elo(home_name, away_name):
+    elo_path = os.path.join(os.path.dirname(__file__), "data", "football", "elo_ratings.json")
+    try:
+        with open(elo_path, 'r', encoding='utf-8') as f:
+            elo_data = json.load(f).get("ratings", {})
+    except Exception:
+        elo_data = {}
+
+    # Fuzzy match Elo names
+    def get_elo(name):
+        c_name = name.lower().replace(" u23", "").replace(" u21", "").replace(" u20", "").replace(" u19", "").replace(" u18", "").replace(" u17", "").replace(" w", "").strip()
+        base = 1500
+        for k, v in elo_data.items():
+            if k.lower() == c_name or k.lower() in c_name or c_name in k.lower():
+                return v
+        return base
+
+    h_elo = get_elo(home_name)
+    a_elo = get_elo(away_name)
+    
+    # +50 Elo for Home Advantage
+    diff = (h_elo + 50) - a_elo
+    
+    # Conversion: 100 Elo points ~ 0.35 goals difference. Base Int Total ~ 2.45
+    base = 2.45 / 2.0
+    xg_diff = (diff / 100.0) * 0.35
+    
+    xg_h = round(base + (xg_diff / 2.0), 3)
+    xg_a = round(base - (xg_diff / 2.0), 3)
+    
+    return max(0.25, xg_h), max(0.25, xg_a)
 
 
 # ------------------------------------------------------------------
 # STEP 5: RUN ENGINE PER GAME
 # ------------------------------------------------------------------
 
-def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace):
+def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=""):
     from core.football_engine import FootballEngine
 
     home_name = game["home_team"]
     away_name = game["away_team"]
 
-    if home_s.get("played_all", 0) < MIN_GAMES_PLAYED or away_s.get("played_all", 0) < MIN_GAMES_PLAYED:
-        return None, f"Insufficient games played (need {MIN_GAMES_PLAYED}+)"
-
-    xg_h, xg_a = calc_xg(home_s, away_s, avg_home, avg_away)
+    # National teams often only play 1-2 games a year. Bypass the strict check.
+    min_req = 1 if country.lower() == "world" else MIN_GAMES_PLAYED
+    
+    if country.lower() == "world":
+        xg_h, xg_a = calc_xg_elo(home_name, away_name)
+    else:
+        if home_s.get("played_all", 0) < min_req or away_s.get("played_all", 0) < min_req:
+            return None, f"Insufficient games played (need {min_req}+)"
+        xg_h, xg_a = calc_xg(home_s, away_s, avg_home, avg_away)
     btts_prob   = calc_btts_prob(xg_h, xg_a)
     draw_prob   = calc_draw_prob(xg_h, xg_a)
 
@@ -555,7 +600,7 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace):
     # Default config — matches the shape FootballEngine.calculate() expects
     default_config = {
         "regression_factor":    0.88,
-        "min_games_played":     MIN_GAMES_PLAYED,
+        "min_games_played":     min_req,
         "btts_base_rate":       round((home_s.get("btts_rate", 0.5) + away_s.get("btts_rate", 0.5)) / 2, 3),
         "draw_base_rate":       0.27,
         "btts_edge_threshold":  0.04,   # minimum edge to trigger PLAY decision
@@ -577,9 +622,9 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace):
         },
     }
 
-
     try:
-        engine = FootballEngine(default_config, mode=mode, trace=trace)
+        engine_mode = "safe" if country.lower() == "world" else mode
+        engine = FootballEngine(default_config, mode=engine_mode, trace=trace)
         result = engine.calculate(game_row)
         return result, None
     except Exception as e:
@@ -676,7 +721,7 @@ def main():
                 total_skipped += 1
                 continue
 
-            result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace)
+            result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace, country)
             if err:
                 print(f"    {away:28} @ {home:28}  -- SKIP ({err})")
                 total_skipped += 1

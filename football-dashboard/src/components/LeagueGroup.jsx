@@ -38,6 +38,21 @@ export default function LeagueGroup({ group, sport }) {
               BTTS: {stats.btts_roi > 0 ? '+' : ''}{stats.btts_roi} U ({stats.btts_hit_rate}%)
             </span>
           )}
+          {isFootball && stats && (stats.graded_totals > 0) && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '2px 6px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, color: '#1d4ed8' }}>xG</span>
+              {stats.mae !== null && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#0369a1', whiteSpace: 'nowrap', cursor: 'default' }}>
+                  MAE {stats.mae.toFixed(2)} <span style={{ fontWeight: 400, fontSize: 10, color: '#94a3b8' }}>({stats.graded_totals}g)</span>
+                </span>
+              )}
+              {stats.avg_signed_delta !== null && (
+                <span title={stats.avg_signed_delta > 0 ? "Model undershoots, games go OVER" : "Model overshoots, games go UNDER"} style={{ fontSize: 11, fontWeight: 600, color: stats.avg_signed_delta > 0 ? '#b91c1c' : stats.avg_signed_delta < 0 ? '#15803d' : '#475569', whiteSpace: 'nowrap', borderLeft: '1px solid #bae6fd', paddingLeft: 6, cursor: 'help' }}>
+                  ±Δ {stats.avg_signed_delta > 0 ? '+' : ''}{stats.avg_signed_delta.toFixed(2)}
+                </span>
+              )}
+            </div>
+          )}
           {!isFootball && stats && (() => {
             const renderStats = (modelName, mStats) => {
               if (!mStats || mStats.graded_totals === 0) return null

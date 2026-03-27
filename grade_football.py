@@ -95,6 +95,24 @@ def grade_prediction(pred: dict, home_goals: int, away_goals: int) -> dict:
     p["actual_btts"]       = actual_btts
     p["actual_draw"]       = (actual_result == "DRAW")
     p["actual_result"]     = actual_result
+    
+    # Delta Grading Matrix
+    actual_total = home_goals + away_goals
+    xg_total = p.get("xg_total")
+    if xg_total is not None:
+        delta = abs(actual_total - xg_total)
+        signed_delta = actual_total - xg_total
+        
+        if delta <= 0.50: tier = "🎯 BULLSEYE"
+        elif delta <= 1.00: tier = "🟢 EXCELLENT"
+        elif delta <= 1.50: tier = "🟡 SOLID"
+        elif delta <= 2.00: tier = "🟠 MISS"
+        else: tier = "🔴 BUST"
+        
+        p["total_delta"] = round(delta, 2)
+        p["signed_delta"] = round(signed_delta, 2)
+        p["accuracy_tier"] = tier
+
     return p
 
 
@@ -181,11 +199,12 @@ def main():
 
             o_grade = outcome_grade(graded)
             b_grade = btts_grade(graded)
+            tier_str = graded.get("accuracy_tier", "")
             score_str   = f"{home_goals}-{away_goals}"
             outcome_str = f"  1X2: {graded['predicted_result']} -> {graded['actual_result']} [{o_grade}]"
             btts_str    = f"  BTTS: {graded['btts_decision']} [{b_grade}]" if b_grade else ""
             
-            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}")
+            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str} | {tier_str}")
         else:
             graded_predictions.append(pred)
             missed += 1

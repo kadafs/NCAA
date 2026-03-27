@@ -539,13 +539,17 @@
   .actual-score {
     font-size: 12px;
     font-weight: 700;
-    color: var(--text-primary);
     flex-shrink: 0;
     white-space: nowrap;
     background: #e0e7ff;
-    color: var(--brand-dark);
+    color: var(--brand-strong);
     border-radius: 5px;
     padding: 1px 6px;
+  }
+
+  [data-theme="dark"] .actual-score {
+    background: var(--brand-soft);
+    color: #60a5fa;
   }
 
   /* TIP */
