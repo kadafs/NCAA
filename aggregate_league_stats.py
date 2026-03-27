@@ -9,11 +9,10 @@ TEAM_OUTPUT_FILE = os.path.join(DATA_DIR, "football_leaderboard.json")
 
 # ==========================================
 # TRACKING EPOCH RESET
-# Define the date when the "V2" mathematical engine launched (Dynamic Regression + Elo).
-# The dashboard leaderboard will ONLY aggregate predictions from this date forward.
-# This prevents corrupted legacy baselines from polluting the current tracking.
+# Set back to 2020-01-01 to include all legacy/history graded data.
+# The dashboard leaderboard will aggregate predictions from this date forward.
 # ==========================================
-TRACKING_EPOCH = "2026-03-26"
+TRACKING_EPOCH = "2020-01-01"
 
 def _blank_stats():
     return {

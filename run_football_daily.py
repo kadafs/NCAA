@@ -501,7 +501,9 @@ def calc_xg_elo(home_name, away_name):
     # Fuzzy match Elo names
     def get_elo(name):
         c_name = name.lower().replace(" u23", "").replace(" u21", "").replace(" u20", "").replace(" u19", "").replace(" u18", "").replace(" u17", "").replace(" w", "").strip()
-        base = 1500
+        # Generate a small repeatable offset based on the name so unknowns aren't identically rated
+        hash_offset = sum(ord(c) for c in c_name) % 100
+        base = 1450 + hash_offset
         for k, v in elo_data.items():
             if k.lower() == c_name or k.lower() in c_name or c_name in k.lower():
                 return v
@@ -652,6 +654,13 @@ def main():
     print("\n" + "=" * 70)
     print(f"  UNIVERSAL FOOTBALL PREDICTIONS | {date_str} | {args.mode.upper()}")
     print("=" * 70)
+
+    # Check for stale international elo ratings and auto-update if strictly necessary
+    try:
+        from utils.update_international_elo import generate_elo_ratings
+        generate_elo_ratings(force=False)
+    except Exception as e:
+        print(f"  [ELO] Warning: Could not auto-check ratings: {e}")
 
     # Step 1: Fixtures
     leagues_map = fetch_all_fixtures(date_str, refresh=args.refresh)
