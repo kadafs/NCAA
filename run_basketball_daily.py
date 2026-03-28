@@ -28,7 +28,7 @@ import argparse
 import requests
 import math
 import glob
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from scipy.stats import norm
@@ -53,26 +53,15 @@ ET_TZ    = timezone.utc
 
 # ------------------------------------------------------------------
 # LEAGUES EXCLUDED FROM THIS RUNNER
-# These are covered by dedicated scripts with individually tuned models:
-#   NBA   -> run_universal.py --league nba
-#   NCAA  -> run_universal.py --league ncaa
-#   NBL   -> run_universal.py --league nbl
-#   NBL1  -> run_universal.py --league nbl1  (5 conference IDs)
+# ONLY USA Leagues are excluded, as they are covered by dedicated scripts.
 # ------------------------------------------------------------------
 EXCLUDED_LEAGUE_IDS = {
     12,    # NBA
     116,   # NCAA (api-basketball ID)
-    8,     # NBL Australia
-    207,   # NBL1 North
-    209,   # NBL1 South
-    212,   # NBL1 Central
-    214,   # NBL1 West
-    215,   # NBL1 East
 }
 
 EXCLUDED_LEAGUE_NAMES = {
-    "NBA", "NCAA", "NBL",
-    "NBL1 North", "NBL1 South", "NBL1 Central", "NBL1 West", "NBL1 East",
+    "NBA", "NCAA",
 }
 
 
@@ -82,6 +71,9 @@ EXCLUDED_LEAGUE_NAMES = {
 
 TEAM_NAME_OVERRIDES = {
     "Psychikou": "Psyhiko Athens",
+    "Trikala": "Am Ikaroi Trikalon",
+    "BK Zaporozhye": "Zaporizhye",
+    "Escolar Aleman": "Aleman",
 }
 
 def get_today_str(date_str=None):
@@ -177,6 +169,33 @@ def fetch_today_fixtures(date_str, refresh=False):
     save_json(cache_path, out)
     return leagues_summary
 
+
+def get_yesterday_teams(date_str, refresh=False):
+    """
+    Returns a set of team names and IDs that played on the day before date_str.
+    """
+    try:
+        target_date = datetime.strptime(date_str, "%Y-%m-%d")
+        yesterday_date = target_date - timedelta(days=1)
+        yesterday_str = yesterday_date.strftime("%Y-%m-%d")
+        
+        leagues_summary = fetch_today_fixtures(yesterday_str, refresh=False) # Always cache yesterday
+        
+        played_yesterday = set()
+        if not leagues_summary:
+            return played_yesterday
+            
+        for league in leagues_summary:
+            for game in league.get("games", []):
+                if game.get("home_id"): played_yesterday.add(game["home_id"])
+                if game.get("away_id"): played_yesterday.add(game["away_id"])
+                if game.get("home"): played_yesterday.add(game["home"])
+                if game.get("away"): played_yesterday.add(game["away"])
+                
+        return played_yesterday
+    except Exception as e:
+        print(f"  Warning: Fatigue schedule fetch failed: {e}")
+        return set()
 
 # ------------------------------------------------------------------
 # STEP 2: LOAD OR CALIBRATE CONFIG
@@ -341,7 +360,7 @@ def calculate_win_prob(spread, std_dev=12.0):
     # Using a simple approximation if scipy is not available, but norm.cdf is better
     return norm.cdf(spread / std_dev)
 
-def predict_game(away_name, home_name, team_stats, config, config_path, mode, trace):
+def predict_game(away_name, home_name, away_id, home_id, team_stats, config, config_path, mode, trace, yesterday_teams=None):
     """
     Run the UniversalBasketballEngine for a single matchup.
     Returns engine result dict or None if teams not found.
@@ -416,6 +435,12 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
     hca_spread = cfg.get("hca_spread_bump", 2.5) 
     spread_est = (raw_spread_eff * (raw_pace / 100)) + hca_spread
 
+    is_b2b_home = False
+    is_b2b_away = False
+    if yesterday_teams is not None:
+        is_b2b_home = (home_id in yesterday_teams) or (home_name in yesterday_teams)
+        is_b2b_away = (away_id in yesterday_teams) or (away_name in yesterday_teams)
+
     game_data = {
         "team":       away_name,
         "opponent":   home_name,
@@ -426,6 +451,8 @@ def predict_game(away_name, home_name, team_stats, config, config_path, mode, tr
         "projected_spread": abs(spread_est),
         "market_total": None,
         "is_neutral": False,
+        "is_b2b_home": is_b2b_home,
+        "is_b2b_away": is_b2b_away,
     }
 
     try:
@@ -498,6 +525,9 @@ def main():
         print("  No fixtures found. Check API key or try --refresh.")
         return
 
+    # Step 1.5: get yesterday's teams for Back-to-Back fatigue check
+    yesterday_fatigued_teams = get_yesterday_teams(date_str, refresh=False)
+
     # Filter — always exclude dedicated-model leagues
     leagues = [
         l for l in leagues
@@ -516,6 +546,7 @@ def main():
     all_predictions = []
     total_predicted = 0
     total_skipped   = 0
+    skipped_issues  = []
     
     # Load Global M.B.E.T Array
     mbet_matrix = load_json("configs/league_edge_thresholds.json") or {}
@@ -540,7 +571,9 @@ def main():
             lid, lname, auto_calibrate=not args.no_calibrate
         )
         if not config_path:
+            msg = f"[{lid}] {lname} - SKIP: no config available"
             print(f"    SKIP -- no config available\n")
+            skipped_issues.append(msg)
             total_skipped += len(games)
             continue
 
@@ -549,7 +582,9 @@ def main():
         stats_adv = get_advanced_stats(lid)
         
         if not stats_srs:
+            msg = f"[{lid}] {lname} - SKIP: no team stats available"
             print(f"    SKIP — no team stats available\n")
+            skipped_issues.append(msg)
             total_skipped += len(games)
             continue
 
@@ -568,9 +603,12 @@ def main():
             
             passes = []
 
+            away_id = game.get("away_id")
+            home_id = game.get("home_id")
+
             # PASS 1: SRS Model
             result_srs, err_srs = predict_game(
-                away, home, stats_srs, config, config_path, args.mode, args.trace
+                away, home, away_id, home_id, stats_srs, config, config_path, args.mode, args.trace, yesterday_fatigued_teams
             )
             if not err_srs:
                 passes.append( (result_srs, "[  SRS   ]", stats_srs) )
@@ -578,13 +616,15 @@ def main():
             # PASS 2: ADVANCED Model
             if stats_adv:
                 result_adv, err_adv = predict_game(
-                    away, home, stats_adv, config, config_path, args.mode, args.trace
+                    away, home, away_id, home_id, stats_adv, config, config_path, args.mode, args.trace, yesterday_fatigued_teams
                 )
                 if not err_adv:
                     passes.append( (result_adv, "[ADVANCED]", stats_adv) )
 
             if not passes:
+                msg = f"[{lid}] {lname} - {away} @ {home} - SKIP: {err_srs}"
                 print(f"    {away} @ {home}  -- SKIP ({err_srs})")
+                skipped_issues.append(msg)
                 total_skipped += 1
                 continue
                 
@@ -709,6 +749,16 @@ def main():
         print("  ── VALIDATION: Top 5 Lowest ──")
         for total, matchup, league in scored[-5:]:
             print(f"    {total:>6.1f}  {matchup}  ({league})")
+
+    # Save Skipped Issues Log
+    if skipped_issues:
+        error_log_path = f"data/basketball/errors_{date_str}.log"
+        os.makedirs(os.path.dirname(error_log_path), exist_ok=True)
+        with open(error_log_path, "w", encoding="utf-8") as f:
+            f.write(f"--- SKIPPED LEAGUES & ERRORS ({date_str}) ---\n")
+            for issue in skipped_issues:
+                f.write(f"{issue}\n")
+        print(f"\n  Logged {len(skipped_issues)} issue(s) to {error_log_path}")
 
     # Save
     if all_predictions:
