@@ -137,6 +137,8 @@ def fetch_all_fixtures(date_str, refresh=False):
 
         home_name  = teams.get("home", {}).get("name", "?")
         away_name  = teams.get("away", {}).get("name", "?")
+        home_id    = teams.get("home", {}).get("id")
+        away_id    = teams.get("away", {}).get("id")
         home_goals = goals.get("home")
         away_goals = goals.get("away")
         kickoff    = fixture.get("date", "")[:16].replace("T", " ")
@@ -147,6 +149,8 @@ def fetch_all_fixtures(date_str, refresh=False):
 
         game = {
             "fixture_id":  fixture.get("id"),
+            "home_id":     home_id,
+            "away_id":     away_id,
             "home_team":   home_name,
             "away_team":   away_name,
             "kickoff":     kickoff,
@@ -218,17 +222,17 @@ def fetch_stats_from_api(league_id, season, games):
             return {}, {}
 
     # Filter `teams` to only those playing in `games` to avoid massive API loops
-    playing_team_names = set()
+    playing_team_ids = set()
     for g in games:
-        playing_team_names.add(g.get("home_team", "").lower().strip())
-        playing_team_names.add(g.get("away_team", "").lower().strip())
+        if g.get("home_id"): playing_team_ids.add(g.get("home_id"))
+        if g.get("away_id"): playing_team_ids.add(g.get("away_id"))
         
     filtered_teams = []
     for t_entry in teams:
-        name = t_entry.get("team", {}).get("name", "").lower().strip()
-        # Basic matching: if any of the playing names is in the API name or vice-versa
-        is_playing = any(p in name or name in p for p in playing_team_names)
-        if is_playing:
+        tid = t_entry.get("team", {}).get("id")
+        
+        # Exact ID matching eliminates textual mismatches entirely
+        if tid in playing_team_ids:
             filtered_teams.append(t_entry)
             
     # If the filter is too tight, fallback to fetching all (capped at 80 to prevent total hangs)
