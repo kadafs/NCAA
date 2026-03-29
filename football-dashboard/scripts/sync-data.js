@@ -39,20 +39,24 @@ for (const sport of sports) {
     
     for (const file of files) {
       const dateStr = file.replace('universal_predictions_', '').replace('.json', '');
-      const content = JSON.parse(fs.readFileSync(path.join(destDataDir, file), 'utf-8'));
-      
-      let scored_count = 0;
-      if (content.predictions) {
-        scored_count = content.predictions.filter(p => p.actual_result != null).length;
+      try {
+        const content = JSON.parse(fs.readFileSync(path.join(destDataDir, file), 'utf-8'));
+        
+        let scored_count = 0;
+        if (content.predictions) {
+          scored_count = content.predictions.filter(p => p.actual_result != null).length;
+        }
+        
+        dates.push({
+          date: dateStr,
+          total: content.total_predictions || 0,
+          graded: content.grade_summary != null,
+          graded_count: scored_count,
+          grade_summary: content.grade_summary || null
+        });
+      } catch (parseError) {
+        console.warn(`⚠️ Skipping ${file} due to JSON parse error: ${parseError.message}`);
       }
-      
-      dates.push({
-        date: dateStr,
-        total: content.total_predictions || 0,
-        graded: content.grade_summary != null,
-        graded_count: scored_count,
-        grade_summary: content.grade_summary || null
-      });
     }
 
     // Sort descending by date
