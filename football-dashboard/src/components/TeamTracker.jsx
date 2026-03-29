@@ -27,6 +27,13 @@ export default function TeamTracker({ teamLeaderboard }) {
         return (b.outcome_hit_rate || 0) - (a.outcome_hit_rate || 0);
       }
       
+      if (sortBy === 'volatility') {
+        const vA = a.volatility_index != null ? a.volatility_index : 999;
+        const vB = b.volatility_index != null ? b.volatility_index : 999;
+        if (vA !== vB) return vA - vB; // Ascending (lower standard deviation is safer)
+        return (b.outcome_hit_rate || 0) - (a.outcome_hit_rate || 0);
+      }
+      
       // Default: hitRate
       const hrA = a.outcome_hit_rate || 0;
       const hrB = b.outcome_hit_rate || 0;
@@ -71,6 +78,7 @@ export default function TeamTracker({ teamLeaderboard }) {
           >
             <option value="hitRate">1. Model Hit Rate (%)</option>
             <option value="mae">1. Lowest Point Error (MAE)</option>
+            <option value="volatility">1. Lowest Volatility (Most Consistent)</option>
             <option value="games">1. Highest Sample Size</option>
           </select>
         </div>
@@ -82,12 +90,13 @@ export default function TeamTracker({ teamLeaderboard }) {
 
       {/* Table */}
       <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1.5fr) 1fr 1fr 1fr 1fr 1fr 1fr', background: '#f8fafc', padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontSize: 12, fontWeight: 800, color: '#64748b', letterSpacing: '0.5px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1.5fr) 1fr 1fr 1fr 1fr 1fr 1fr 1fr', background: '#f8fafc', padding: '14px 20px', borderBottom: '1px solid #e2e8f0', fontSize: 12, fontWeight: 800, color: '#64748b', letterSpacing: '0.5px' }}>
           <div>TEAM</div>
           <div style={{ textAlign: 'center' }}>RECORD</div>
           <div style={{ textAlign: 'center' }}>HIT RATE</div>
           <div style={{ textAlign: 'center' }}>AVG MAE</div>
           <div style={{ textAlign: 'center' }}>± BIAS</div>
+          <div style={{ textAlign: 'center' }}>VOLATILITY σ</div>
           <div style={{ textAlign: 'center' }}>🎯 BULLSEYE</div>
           <div style={{ textAlign: 'center' }}>🔴 BUST</div>
         </div>
@@ -105,7 +114,7 @@ export default function TeamTracker({ teamLeaderboard }) {
             return (
               <div key={`${t.name}-${idx}`} style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'minmax(200px, 1.5fr) 1fr 1fr 1fr 1fr 1fr 1fr', 
+                gridTemplateColumns: 'minmax(200px, 1.5fr) 1fr 1fr 1fr 1fr 1fr 1fr 1fr', 
                 padding: '16px 20px', 
                 borderBottom: '1px solid #f1f5f9',
                 background: isCashCow ? '#f0fdf4' : isProblem ? '#fef2f2' : '#ffffff',
@@ -152,6 +161,11 @@ export default function TeamTracker({ teamLeaderboard }) {
                 {/* Signed Bias */}
                 <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, color: (t.avg_signed_delta || 0) > 4 ? '#b91c1c' : (t.avg_signed_delta || 0) < -4 ? '#15803d' : '#64748b' }} title={(t.avg_signed_delta || 0) > 0 ? "Consistently goes OVER" : "Consistently goes UNDER"}>
                   {t.avg_signed_delta != null ? `${t.avg_signed_delta > 0 ? '+' : ''}${t.avg_signed_delta.toFixed(1)}` : '—'}
+                </div>
+
+                {/* Volatility */}
+                <div style={{ textAlign: 'center', fontSize: 15, fontWeight: 800, color: (t.volatility_index || 999) > 14.0 ? '#ef4444' : (t.volatility_index || 999) < 9.0 ? '#16a34a' : '#64748b' }} title="Standard Deviation of localized errors">
+                  {t.volatility_index != null ? t.volatility_index.toFixed(2) : '—'}
                 </div>
 
                 {/* Bullseyes */}

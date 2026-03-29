@@ -50,7 +50,7 @@ function sortGroups(groups, sortBy) {
   return [...groups].sort((a, b) => a.league.localeCompare(b.league))
 }
 
-function filterPredictions(predictions, decision, country, drawMin, sport, leaderboard = [], maxMape = 100) {
+function filterPredictions(predictions, decision, country, drawMin, sport, leaderboard = [], maxMape = 100, maxVolatility = 100) {
   return predictions.filter(p => {
     // Sport-specific decision mapping
     const pDecision = sport === 'football' ? p.btts_decision : p.decision
@@ -59,17 +59,17 @@ function filterPredictions(predictions, decision, country, drawMin, sport, leade
     if (country  !== 'all' && p.country        !== country)  return false
     if (sport === 'football' && drawMin !== 0 && (p.draw_prob_1x2 ?? 0) < drawMin) return false
     
-    // MAPE Filter (Basketball only)
-    if (sport === 'basketball' && maxMape < 100) {
+    // MAPE & Volatility Filter (Basketball only)
+    if (sport === 'basketball' && (maxMape < 100 || maxVolatility < 100)) {
       const stats = leaderboard.find(x => (p.league_id && x.league_id === p.league_id) || x.name === `${p.country?.toUpperCase()} — ${p.league?.toUpperCase()}`)
       if (!stats) return false
       
       const isAdv = p.model_architecture?.includes('ADVANCED')
       const targetStats = isAdv ? stats.adv : stats.srs
       
-      if (!targetStats || targetStats.graded_totals === 0 || targetStats.mape > maxMape) {
-        return false
-      }
+      if (!targetStats || targetStats.graded_totals === 0) return false
+      if (maxMape < 100 && targetStats.mape > maxMape) return false
+      if (maxVolatility < 100 && (targetStats.volatility_index == null || targetStats.volatility_index > maxVolatility)) return false
     }
     
     return true
@@ -88,6 +88,7 @@ export default function App() {
   const [filterCountry, setFilterCountry] = useState('all')
   const [filterDraw,    setFilterDraw]    = useState(0)    // min draw_prob_1x2 threshold
   const [filterMape,    setFilterMape]    = useState(100)  // max error percentage
+  const [filterVolatility, setFilterVolatility] = useState(100) // max standard deviation
   
   // High-level App View Mode 
   const [viewMode,      setViewMode]      = useState('matches') // 'matches' | 'teams'
@@ -220,8 +221,8 @@ export default function App() {
 
   const filtered = useMemo(() => {
     if (!data) return []
-    return filterPredictions(data.predictions, filterDecision, filterCountry, filterDraw, sport, leaderboard, filterMape)
-  }, [data, filterDecision, filterCountry, filterDraw, sport, leaderboard, filterMape])
+    return filterPredictions(data.predictions, filterDecision, filterCountry, filterDraw, sport, leaderboard, filterMape, filterVolatility)
+  }, [data, filterDecision, filterCountry, filterDraw, sport, leaderboard, filterMape, filterVolatility])
 
   const groups = useMemo(() => sortGroups(groupByLeague(filtered, sport), sortBy), [filtered, sortBy, sport])
 
@@ -262,6 +263,7 @@ export default function App() {
           setFilterCountry('all'); 
           setFilterDraw(0); 
           setFilterMape(100);
+          setFilterVolatility(100);
           setViewMode('matches');
         }}
         filterDecision={filterDecision}
@@ -358,6 +360,13 @@ export default function App() {
                 <option value={8.0}>&lt; 8.0% MAPE</option>
                 <option value={6.5}>&lt; 6.5% MAPE</option>
                 <option value={5.0}>&lt; 5.0% MAPE</option>
+              </select>
+
+              <select className="filter-select" style={{ marginLeft: 8, width: '130px' }} value={filterVolatility} onChange={e => setFilterVolatility(Number(e.target.value))}>
+                <option value={100}>Volatility</option>
+                <option value={14.0}>&lt; 14.0 σ</option>
+                <option value={10.0}>&lt; 10.0 σ</option>
+                <option value={9.0}>&lt; 9.0 σ (Elite)</option>
               </select>
             </>
           )}

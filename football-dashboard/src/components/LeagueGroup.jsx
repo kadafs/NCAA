@@ -89,6 +89,11 @@ export default function LeagueGroup({ group, sport }) {
                       ±Δ {signed > 0 ? '+' : ''}{signed.toFixed(1)}
                     </span>
                   )}
+                  {mStats.volatility_index !== null && mStats.volatility_index !== undefined && (
+                    <span title="Volatility (Standard Deviation). <9.0 is highly consistent!" style={{ fontSize: 11, fontWeight: 800, color: mStats.volatility_index > 14.0 ? '#ef4444' : mStats.volatility_index < 9.0 ? '#16a34a' : '#64748b', whiteSpace: 'nowrap', borderLeft: `1px solid ${border}`, paddingLeft: 6, cursor: 'help' }}>
+                      σ {mStats.volatility_index.toFixed(1)}
+                    </span>
+                  )}
                 </div>
               )
             }

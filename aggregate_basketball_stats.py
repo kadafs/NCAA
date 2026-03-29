@@ -22,7 +22,8 @@ def _blank_model_stats():
         "misses": 0, "busts": 0, "ots": 0,
         "sum_rpe": 0.0, "count_rpe": 0,
         "sum_delta": 0.0, "count_delta": 0,
-        "sum_signed_delta": 0.0, "count_signed_delta": 0
+        "sum_signed_delta": 0.0, "count_signed_delta": 0,
+        "signed_deltas": []
     }
 
 def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
@@ -45,6 +46,7 @@ def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
     if signed_delta is not None:
         bucket["sum_signed_delta"]   += signed_delta
         bucket["count_signed_delta"] += 1
+        bucket["signed_deltas"].append(signed_delta)
 
 def process_file(file_path, stats_dict, team_stats_dict):
     try:
@@ -164,6 +166,7 @@ def main():
     # Compile into array and calculate metrics
     leaderboard = []
 
+    import math
     def _compile_model(s):
         """Turn a raw stats bucket into display-ready metrics."""
         count_rpe    = s["count_rpe"]
@@ -171,9 +174,20 @@ def main():
         count_delta  = s.get("count_delta", 0)
         x_w, x_l    = s["1x2_w"], s["1x2_l"]
         x_total      = x_w + x_l
+        
+        # Calculate Volatility (Standard Deviation)
+        volatility = None
+        if count_signed > 1:
+            mean = s["sum_signed_delta"] / count_signed
+            variance = sum((x - mean) ** 2 for x in s["signed_deltas"]) / (count_signed - 1)
+            volatility = round(math.sqrt(variance), 2)
+        elif count_signed == 1:
+            volatility = 0.0
+
         return {
             "mape":              round(s["sum_rpe"] / count_rpe, 2) if count_rpe else 0.0,
             "mae":               round(s.get("sum_delta", 0) / count_delta, 2) if count_delta else None,
+            "volatility_index":  volatility,
             "graded_totals":     count_delta if count_delta > 0 else count_rpe,
             "bullseyes":         s["bullseyes"],
             "excellents":        s["excellents"],
@@ -208,6 +222,7 @@ def main():
             "busts":              primary["busts"],
             "ots":                primary["ots"],
             "avg_signed_delta":   primary["avg_signed_delta"],
+            "volatility_index":   primary["volatility_index"],
             "outcome_w":          primary["outcome_w"],
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
@@ -246,6 +261,7 @@ def main():
             "misses":             primary["misses"],
             "busts":              primary["busts"],
             "avg_signed_delta":   primary["avg_signed_delta"],
+            "volatility_index":   primary["volatility_index"],
             "outcome_w":          primary["outcome_w"],
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
