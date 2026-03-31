@@ -2,14 +2,21 @@ import os
 import glob
 import json
 import datetime
+import argparse
 
 # Import the core math and config builders from the original calibrator!
 from calibrate_league import derive_params, build_config, KNOWN_TIER_MAP
 from generate_advanced_metrics import parse_date
 
 def main():
+    parser = argparse.ArgumentParser(description="Local Offline Calibrator")
+    parser.add_argument("--league_id", type=int, help="Only calibrate this specific league ID")
+    args = parser.parse_args()
+
     print("======================================================")
     print("  LOCAL BASKETBALL CALIBRATION (Bypassing API Limits) ")
+    if args.league_id:
+        print(f"  TARGET: League ID {args.league_id} Only")
     print("======================================================")
 
     # 1. Load the slug map to identify leagues
@@ -93,11 +100,73 @@ def main():
         except Exception as e:
             print(f"Error reading {hf}: {e}")
 
+    # 3.5. Gather all daily API cache files
+    d_files = glob.glob("data/api_basketball_today_*.json")
+    for df in d_files:
+        try:
+            with open(df, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+            for entry in data.get("leagues_summary", []):
+                league_id = entry.get("league_id")
+                if not league_id:
+                    continue
+                    
+                if league_id not in games_by_league:
+                    games_by_league[league_id] = []
+                    
+                for g in entry.get("games", []):
+                    h_score = g.get("home_score")
+                    a_score = g.get("away_score")
+                    
+                    # Handle alternative string score format if needed
+                    if h_score is None and a_score is None and g.get("score") and "-" in str(g["score"]):
+                        parts = str(g["score"]).split("-")
+                        if len(parts) == 2:
+                            h_score = parts[0].strip()
+                            a_score = parts[1].strip()
+                            
+                    if h_score is None or a_score is None:
+                        continue
+                        
+                    try:
+                        h_score = int(h_score)
+                        a_score = int(a_score)
+                    except ValueError:
+                        continue
+                        
+                    total = h_score + a_score
+                    margin = h_score - a_score
+                    
+                    home = str(g.get("home", "")).strip()
+                    away = str(g.get("away", "")).strip()
+                    
+                    # Check for date or time
+                    date_str = str(g.get("time") or g.get("date") or data.get("date") or "")
+                    game_date = parse_date(date_str)
+                    
+                    # If game is scheduled but hasn't fully finished with a score we shouldn't have matched h_score
+                    if h_score == 0 and a_score == 0 and g.get("status") not in ("Game Finished", "Final", "AOT", "FT"):
+                        continue
+                    
+                    sig = f"{home}_{away}_{total}_{margin}"
+                    games_by_league[league_id].append({
+                        "total": total,
+                        "margin": margin,
+                        "sig": sig,
+                        "_parsed_date": game_date
+                    })
+        except Exception as e:
+            print(f"Error reading {df}: {e}")
+
     # 4. Process the math for every league and save the configs
     os.makedirs("configs/leagues", exist_ok=True)
     success_count = 0
     
     for lid, all_games in games_by_league.items():
+        if args.league_id and lid != args.league_id:
+            continue
+            
         # Clean out duplicates
         unique_games = {}
         for g in all_games:

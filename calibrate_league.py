@@ -189,7 +189,13 @@ def get_current_season(league_id):
             seasons = leagues[0].get("seasons", [])
             if seasons:
                 # Pick the most recent season
-                return sorted(seasons, key=lambda s: s.get("season", 0))[-1].get("season")
+                latest_season = sorted(seasons, key=lambda n: str(n.get("season", "0")))[-1].get("season")
+                if isinstance(latest_season, str) and "-" in latest_season:
+                    return int(latest_season.split("-")[0])
+                try:
+                    return int(latest_season)
+                except:
+                    pass
     except Exception:
         pass
     # Fallback: current year or year - 1
