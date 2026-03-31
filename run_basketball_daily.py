@@ -360,7 +360,7 @@ def calculate_win_prob(spread, std_dev=12.0):
     # Using a simple approximation if scipy is not available, but norm.cdf is better
     return norm.cdf(spread / std_dev)
 
-def predict_game(away_name, home_name, away_id, home_id, team_stats, config, config_path, mode, trace, yesterday_teams=None):
+def predict_game(away_name, home_name, away_id, home_id, team_stats, config, config_path, mode, trace, yesterday_teams=None, ghost_injuries=None):
     """
     Run the UniversalBasketballEngine for a single matchup.
     Returns engine result dict or None if teams not found.
@@ -458,7 +458,14 @@ def predict_game(away_name, home_name, away_id, home_id, team_stats, config, con
     try:
         engine = UniversalBasketballEngine(config_path, mode=mode)
         engine.trace_enabled = trace
-        result = engine.calculate_total(game_data, injury_notes=[])
+        
+        # Merge ghost injuries
+        game_injuries = []
+        if ghost_injuries:
+            game_injuries.extend(ghost_injuries.get(away_name, []))
+            game_injuries.extend(ghost_injuries.get(home_name, []))
+            
+        result = engine.calculate_total(game_data, injury_notes=game_injuries)
         # FIX 4: Spread uses both offense and defense
         spr = spread_est  # Already computed above with crossmatch formula
         model_total = result.get("final_model_total", 0.0)
@@ -581,6 +588,13 @@ def main():
         stats_srs = get_srs_stats(lid, season, refresh=args.refresh)
         stats_adv = get_advanced_stats(lid)
         
+        ghost_injuries = {}
+        try:
+            with open(f"data/ghost_injuries_{lid}.json", "r", encoding="utf-8") as f:
+                ghost_injuries = json.load(f)
+        except:
+            pass
+            
         if not stats_srs:
             msg = f"[{lid}] {lname} - SKIP: no team stats available"
             print(f"    SKIP — no team stats available\n")
@@ -608,7 +622,7 @@ def main():
 
             # PASS 1: SRS Model
             result_srs, err_srs = predict_game(
-                away, home, away_id, home_id, stats_srs, config, config_path, args.mode, args.trace, yesterday_fatigued_teams
+                away, home, away_id, home_id, stats_srs, config, config_path, args.mode, args.trace, yesterday_fatigued_teams, ghost_injuries
             )
             if not err_srs:
                 passes.append( (result_srs, "[  SRS   ]", stats_srs) )
@@ -616,7 +630,7 @@ def main():
             # PASS 2: ADVANCED Model
             if stats_adv:
                 result_adv, err_adv = predict_game(
-                    away, home, away_id, home_id, stats_adv, config, config_path, args.mode, args.trace, yesterday_fatigued_teams
+                    away, home, away_id, home_id, stats_adv, config, config_path, args.mode, args.trace, yesterday_fatigued_teams, ghost_injuries
                 )
                 if not err_adv:
                     passes.append( (result_adv, "[ADVANCED]", stats_adv) )

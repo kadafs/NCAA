@@ -33,6 +33,23 @@ def parse_boxscore(html):
         rows = table.find_all('tr')
         if len(rows) < 2: return None
         
+        active_players = []
+        for r in rows[1:-1]:
+            player_cells = r.find_all('td')
+            if len(player_cells) < 18: continue
+            
+            name = player_cells[0].text.strip()
+            if not name or name.lower() == "totals" or name.lower() == "team": continue
+            
+            pts_str = player_cells[1].text.strip()
+            pts = int(pts_str) if pts_str.isdigit() else 0
+            
+            min_str = player_cells[2].text.strip().upper()
+            
+            # Proballers denotes Did Not Play natively using blank rows, 'DNP', or '00:00'
+            if min_str not in ["", "DNP", "00:00", "0", "0:00"] or pts > 0:
+                active_players.append({"name": name, "pts": pts})
+        
         # The last row in a Proballers stats table embodies the composite team totals
         totals_row = rows[-1]
         cells = [td.text.strip() for td in totals_row.find_all('td')]
@@ -50,6 +67,7 @@ def parse_boxscore(html):
         
         return {
             "team_name": cells[0],
+            "players": active_players,
             "points": int(cells[1] or 0),
             "FGA": fga,
             "FTA": fta,
@@ -255,8 +273,14 @@ def fetch_api_basketball_directly(date_str):
             params={"date": date_str},
             timeout=15,
         )
-        all_games = r.json().get("response", [])
-        total = r.json().get("results", 0)
+        api_data = r.json()
+        
+        if api_data.get("errors"):
+            print(f"  [X] API Error: {api_data.get('errors')}. Will not cache empty results.")
+            return []
+            
+        all_games = api_data.get("response", [])
+        total = api_data.get("results", 0)
         
         from collections import defaultdict
         by_league = defaultdict(list)

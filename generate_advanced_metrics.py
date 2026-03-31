@@ -8,7 +8,16 @@ def calculate_iterative_srs(games):
     Computes a mathematically pure Simple Rating System (SRS) manually via recursive iteration.
     This safely avoids immense Python library overheads while guaranteeing perfect matrix calibration.
     """
+    import math
+    import datetime
     teams = {}
+    
+    if not games: return teams
+        
+    # Get the "current" date relative to the dataset
+    max_date = max((g.get("_parsed_date", datetime.datetime.min) for g in games), default=datetime.datetime.now())
+    if max_date == datetime.datetime.min:
+        max_date = datetime.datetime.now()
     
     # 1. Build Base Profiles
     for g in games:
@@ -20,32 +29,57 @@ def calculate_iterative_srs(games):
         if not ht or not at or hs == 0 or as_ == 0:
             continue
             
-        if ht not in teams:
-            teams[ht] = {"games": 0, "wins": 0, "pts_for": 0, "pts_against": 0, "opponents": []}
-        if at not in teams:
-            teams[at] = {"games": 0, "wins": 0, "pts_for": 0, "pts_against": 0, "opponents": []}
+        g_date = g.get("_parsed_date", max_date)
+        if g_date == datetime.datetime.min: 
+            g_date = max_date
             
-        margin = hs - as_
+        days_old = (max_date - g_date).days
         
-        # We cap massive blowout margins so a single 80-point anomaly doesn't inherently break the localized mathematical integrity
-        if margin > 35: margin = 35
-        if margin < -35: margin = -35
+        # Time Decay: 21-Day Plateau
+        weight = 1.0
+        if days_old > 21:
+            weight = math.exp(-0.015 * (days_old - 21))
+        
+        if ht not in teams:
+            teams[ht] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": []}
+        if at not in teams:
+            teams[at] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": []}
+            
+        raw_margin = hs - as_
+        
+        # True HCA Stripping: Subtract 2.5 from home team's margin
+        ht_margin = raw_margin - 2.5
+        at_margin = -raw_margin + 2.5
+        
+        # Logarithmic Blowout Scaling
+        def scale_margin(m):
+            sign = 1 if m >= 0 else -1
+            abs_m = abs(m)
+            if abs_m <= 12: return float(m)
+            return sign * (12.0 + 4.0 * math.log(abs_m - 11.0))
+            
+        ht_scaled_margin = scale_margin(ht_margin)
+        at_scaled_margin = scale_margin(at_margin)
         
         teams[ht]["games"] += 1
-        teams[ht]["pts_for"] += hs
-        teams[ht]["pts_against"] += as_
-        teams[ht]["opponents"].append(at)
+        teams[ht]["weight_sum"] += weight
+        teams[ht]["pts_for"] += (hs * weight)
+        teams[ht]["pts_against"] += (as_ * weight)
+        teams[ht]["scaled_margin_sum"] += (ht_scaled_margin * weight)
+        teams[ht]["opponents"].append((at, weight))
         if hs > as_: teams[ht]["wins"] += 1
         
         teams[at]["games"] += 1
-        teams[at]["pts_for"] += as_
-        teams[at]["pts_against"] += hs
-        teams[at]["opponents"].append(ht)
+        teams[at]["weight_sum"] += weight
+        teams[at]["pts_for"] += (as_ * weight)
+        teams[at]["pts_against"] += (hs * weight)
+        teams[at]["scaled_margin_sum"] += (at_scaled_margin * weight)
+        teams[at]["opponents"].append((ht, weight))
         if as_ > hs: teams[at]["wins"] += 1
         
     for t, data in teams.items():
-        if data["games"] > 0:
-            data["raw_margin"] = (data["pts_for"] - data["pts_against"]) / data["games"]
+        if data["weight_sum"] > 0:
+            data["raw_margin"] = data["scaled_margin_sum"] / data["weight_sum"]
             data["srs"] = data["raw_margin"]
         else:
             data["raw_margin"] = 0.0
@@ -55,15 +89,15 @@ def calculate_iterative_srs(games):
     for _ in range(1000):
         new_srs = {}
         for t, data in teams.items():
-            if data["games"] == 0:
+            if data["weight_sum"] == 0:
                 new_srs[t] = 0.0
                 continue
                 
             sos_sum = 0.0
-            for opp in data["opponents"]:
-                sos_sum += teams[opp]["srs"]
+            for opp_name, opp_weight in data["opponents"]:
+                sos_sum += (teams[opp_name]["srs"] * opp_weight)
             
-            avg_sos = sos_sum / data["games"]
+            avg_sos = sos_sum / data["weight_sum"]
             new_srs[t] = data["raw_margin"] + avg_sos
             
         for t in teams:
@@ -75,16 +109,15 @@ def calculate_iterative_srs(games):
 def calculate_advanced_ratings(games, pace_pivot=76.0):
     """
     Compute efficiency-adjusted ratings from Proballers box-score stats.
-
-    Uses True Shooting % (TS%), Turnover Rate, and Offensive Rebound %
-    all normalized to the LEAGUE AVERAGE so that adj_off/adj_def diverge
-    meaningfully from the pure score-margin SRS calculation.
-
-    Weights:
-      Offensive adj: 60% TS%, 30% TOV rate, 10% ORB%
-      Defensive adj: 70% opponent TS%, 30% opponent TOV rate
+    Integrates True Four Factors (eFG/TS%, TOV%, ORB/DRB%, FTR) + Time Decay Bias.
     """
+    import math
+    import datetime
     teams = {}
+    if not games: return []
+    
+    max_date = max((g.get("_parsed_date", datetime.datetime.min) for g in games), default=datetime.datetime.now())
+    if max_date == datetime.datetime.min: max_date = datetime.datetime.now()
 
     for g in games:
         stats = g.get("stats") or g.get("advanced_stats")
@@ -102,6 +135,13 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
         away_s = stats.get("away", {})
         if not home_s or not away_s:
             continue
+            
+        g_date = g.get("_parsed_date", max_date)
+        if g_date == datetime.datetime.min: g_date = max_date
+        days_old = (max_date - g_date).days
+        weight = 1.0
+        if days_old > 21:
+            weight = math.exp(-0.015 * (days_old - 21))
 
         for team, pts, opp_pts, t_s, o_s in [
             (home_team, hs, as_, home_s, away_s),
@@ -109,45 +149,53 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
         ]:
             if team not in teams:
                 teams[team] = {
-                    "games": 0, "wins": 0,
+                    "games": 0, "weight_sum": 0.0, "wins": 0,
                     "pts_for": 0, "pts_against": 0,
-                    "fga": 0, "fta": 0, "tov": 0, "orb": 0, "trb": 0,
+                    "fga": 0, "fta": 0, "tov": 0, "orb": 0, "drb": 0, "trb": 0,
                     "opp_fga": 0, "opp_fta": 0, "opp_pts": 0,
-                    "opp_tov": 0,
+                    "opp_tov": 0, "opp_orb": 0,
                 }
             td = teams[team]
             td["games"]       += 1
-            td["pts_for"]     += pts
-            td["pts_against"] += opp_pts
+            td["weight_sum"]  += weight
+            td["pts_for"]     += (pts * weight)
+            td["pts_against"] += (opp_pts * weight)
             if pts > opp_pts:
                 td["wins"] += 1
 
-            td["fga"] += t_s.get("FGA", 0)
-            td["fta"] += t_s.get("FTA", 0)
-            td["tov"] += t_s.get("TOV", 0)
-            td["orb"] += t_s.get("ORB", 0)
-            td["trb"] += t_s.get("TRB", 0)
+            td["fga"] += (t_s.get("FGA", 0) * weight)
+            td["fta"] += (t_s.get("FTA", 0) * weight)
+            td["tov"] += (t_s.get("TOV", 0) * weight)
+            td["orb"] += (t_s.get("ORB", 0) * weight)
+            td["drb"] += (t_s.get("DRB", (t_s.get("TRB", 0) - t_s.get("ORB", 0))) * weight)
+            td["trb"] += (t_s.get("TRB", 0) * weight)
 
-            td["opp_fga"] += o_s.get("FGA", 0)
-            td["opp_fta"] += o_s.get("FTA", 0)
-            td["opp_pts"] += opp_pts
-            td["opp_tov"] += o_s.get("TOV", 0)
+            td["opp_fga"] += (o_s.get("FGA", 0) * weight)
+            td["opp_fta"] += (o_s.get("FTA", 0) * weight)
+            td["opp_pts"] += (opp_pts * weight)
+            td["opp_tov"] += (o_s.get("TOV", 0) * weight)
+            td["opp_orb"] += (o_s.get("ORB", 0) * weight)
 
     if not teams:
         return []
 
     # Per-team efficiency metrics
     for td in teams.values():
-        fga  = max(td["fga"], 1)
-        ofga = max(td["opp_fga"], 1)
-        trb  = max(td["trb"], 1)
-        td["ts_pct"]      = td["pts_for"]  / (2 * (fga  + 0.44 * td["fta"]))
-        td["tov_rate"]    = td["tov"]  / fga
-        td["orb_rate"]    = td["orb"]  / trb
-        td["opp_ts_pct"]  = td["opp_pts"] / (2 * (ofga + 0.44 * td["opp_fta"]))
+        fga  = max(td["fga"], 0.001)
+        ofga = max(td["opp_fga"], 0.001)
+        drb_opp = td["drb"] + td["opp_orb"]
+        
+        td["ts_pct"]   = td["pts_for"]  / (2.0 * (fga  + 0.44 * td["fta"])) if (fga + 0.44 * td["fta"]) > 0 else 0
+        td["tov_rate"] = td["tov"]  / fga
+        td["orb_rate"] = td["orb"]  / (td["orb"] + max((td["trb"]-td["orb"]), 0.001))
+        td["ft_rate"]  = td["fta"] / fga
+        td["drb_rate"] = td["drb"] / drb_opp if drb_opp > 0 else 0.5
+        
+        td["opp_ts_pct"]  = td["opp_pts"] / (2.0 * (ofga + 0.44 * td["opp_fta"])) if (ofga + 0.44 * td["opp_fta"]) > 0 else 0
         td["opp_tov_rate"]= td["opp_tov"] / ofga
+        td["opp_ft_rate"] = td["opp_fta"] / ofga
 
-    valid = [td for td in teams.values() if td["games"] >= 2]
+    valid = [td for td in teams.values() if td["weight_sum"] >= 1.5]
     if not valid:
         return []
 
@@ -155,29 +203,36 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
     lg_ts      = sum(t["ts_pct"]       for t in valid) / len(valid)
     lg_tov     = sum(t["tov_rate"]     for t in valid) / len(valid)
     lg_orb     = sum(t["orb_rate"]     for t in valid) / len(valid)
+    lg_ftr     = sum(t["ft_rate"]      for t in valid) / len(valid)
+    
     lg_opp_ts  = sum(t["opp_ts_pct"]   for t in valid) / len(valid)
     lg_opp_tov = sum(t["opp_tov_rate"] for t in valid) / len(valid)
+    lg_drb     = sum(t["drb_rate"]     for t in valid) / len(valid)
+    lg_opp_ftr = sum(t["opp_ft_rate"]  for t in valid) / len(valid)
 
     output_stats = []
     for team_name, td in teams.items():
+        w = td["weight_sum"]
         g = td["games"]
-        if g < 2:
+        if w < 1.0:
             continue
 
-        raw_off = td["pts_for"]     / g
-        raw_def = td["pts_against"] / g
+        raw_off = td["pts_for"]     / w
+        raw_def = td["pts_against"] / w
 
-        # Offensive efficiency deltas (relative to league average)
-        # Scale factors: 1% TS = ~0.5 pts, 1% TOV = ~0.4 pts, 1% ORB = ~0.15 pts
-        ts_delta  = (td["ts_pct"]   - lg_ts)  * 50   # better shooting   → bonus
-        tov_delta = (lg_tov - td["tov_rate"]) * 40   # fewer turnovers   → bonus
-        orb_delta = (td["orb_rate"] - lg_orb) * 15   # more off rebounds → bonus
-        off_adj   = 0.6 * ts_delta + 0.3 * tov_delta + 0.1 * orb_delta
+        # True Four Factors Offensive Adjustment
+        ts_delta  = (td["ts_pct"]   - lg_ts)  * 60
+        tov_delta = (lg_tov - td["tov_rate"]) * 50
+        orb_delta = (td["orb_rate"] - lg_orb) * 20
+        ftr_delta = (td["ft_rate"]  - lg_ftr) * 15
+        off_adj   = 0.40 * ts_delta + 0.25 * tov_delta + 0.20 * orb_delta + 0.15 * ftr_delta
 
-        # Defensive efficiency deltas (how well you LIMIT opponents)
-        opp_ts_delta  = (lg_opp_ts  - td["opp_ts_pct"])   * 50  # opponents shoot worse → bonus
-        opp_tov_delta = (td["opp_tov_rate"] - lg_opp_tov) * 40  # opponents turn it over → bonus
-        def_adj       = 0.7 * opp_ts_delta + 0.3 * opp_tov_delta
+        # True Four Factors Defensive Adjustment
+        opp_ts_delta  = (lg_opp_ts  - td["opp_ts_pct"])   * 60
+        opp_tov_delta = (td["opp_tov_rate"] - lg_opp_tov) * 50
+        drb_delta     = (td["drb_rate"] - lg_drb)         * 20
+        opp_ftr_delta = (lg_opp_ftr - td["opp_ft_rate"])  * 15
+        def_adj       = 0.40 * opp_ts_delta + 0.25 * opp_tov_delta + 0.20 * drb_delta + 0.15 * opp_ftr_delta
 
         # Apply as PPG adjustments, then pace-scale (same convention as SRS output)
         adj_off = round((raw_off + off_adj) / (pace_pivot / 100), 1) if pace_pivot > 0 else round(raw_off + off_adj, 1)
@@ -360,14 +415,17 @@ def process_leagues():
         for team_name, data in srs_teams.items():
             if data["games"] < 2: continue
             
-            raw_off = data["pts_for"] / data["games"]
-            raw_def = data["pts_against"] / data["games"]
+            w = data.get("weight_sum", data["games"])
+            if w <= 0.001: continue
+            
+            raw_off = data["pts_for"] / w
+            raw_def = data["pts_against"] / w
             
             # FIX 3: Proportional SRS decomposition
             # Weight SRS credit based on each team's offensive vs defensive contribution
             # instead of naive 50/50 split
             total_contribution = raw_off + raw_def
-            if total_contribution > 0 and data["srs"] != 0:
+            if total_contribution > 0 and data.get("srs", 0) != 0:
                 off_share = raw_off / total_contribution
                 true_ppg_o = raw_off + (data["srs"] * off_share)
                 true_ppg_d = raw_def - (data["srs"] * (1 - off_share))
@@ -432,6 +490,70 @@ def process_leagues():
                 with open(f"data/bball_stats_{league_id}_adv.json", "w", encoding="utf-8") as f:
                     json.dump(payload_adv_fb, f, indent=4)
             
+            # --- ALGORITHMIC GHOST INJURY DETECTION ---
+            if advanced_eligible:
+                ghost_injuries = {}
+                team_histories = {} 
+                # chronologically ordered!
+                sorted_games = sorted(filtered_games, key=lambda x: x.get("_parsed_date", datetime.datetime.min))
+                
+                for g in sorted_games:
+                    ht = g.get("home_team")
+                    at = g.get("away_team")
+                    h_s = g.get("stats", {}).get("home", {})
+                    a_s = g.get("stats", {}).get("away", {})
+                    
+                    for team, stats in [(ht, h_s), (at, a_s)]:
+                        if team not in team_histories:
+                            team_histories[team] = {"players": {}, "games_total": 0, "last_2_rosters": []}
+                        
+                        th = team_histories[team]
+                        th["games_total"] += 1
+                        
+                        current_roster = set()
+                        players = stats.get("players", [])
+                        for p in players:
+                            name = p.get("name")
+                            pts = p.get("pts", 0)
+                            if not name: continue
+                            current_roster.add(name)
+                            if name not in th["players"]:
+                                th["players"][name] = {"games_played": 0, "total_pts": 0}
+                            th["players"][name]["games_played"] += 1
+                            th["players"][name]["total_pts"] += pts
+                            
+                        th["last_2_rosters"].append(current_roster)
+                        if len(th["last_2_rosters"]) > 2:
+                            th["last_2_rosters"].pop(0)
+                            
+                for team, th in team_histories.items():
+                    if th["games_total"] < 5: continue
+                    
+                    last_2_combined = set()
+                    for roster in th["last_2_rosters"]:
+                        last_2_combined = last_2_combined.union(roster)
+                        
+                    injuries = []
+                    for name, p in th["players"].items():
+                        gp = max(p["games_played"], 1)
+                        ppg = p["total_pts"] / gp
+                        # Active rotational threshold (played in 30% of season)
+                        if gp >= (th["games_total"] * 0.3):
+                            if name not in last_2_combined:
+                                # They missed the last 2 games!
+                                if ppg >= 15.0:
+                                    injuries.append({"player": name, "note": f"{name} (Ghost Injury All-Star - {ppg:.1f} PPG)", "status": "Out", "impact": "all_star_out"})
+                                elif ppg >= 10.0:
+                                    injuries.append({"player": name, "note": f"{name} (Ghost Injury Starter - {ppg:.1f} PPG)", "status": "Out", "impact": "starter_out"})
+                                elif ppg >= 6.0:
+                                    injuries.append({"player": name, "note": f"{name} (Ghost Injury Bench - {ppg:.1f} PPG)", "status": "Out", "impact": "bench_out"})
+                                    
+                    if injuries:
+                        ghost_injuries[team] = injuries
+                        
+                with open(f"data/ghost_injuries_{league_id}.json", "w", encoding="utf-8") as f:
+                    json.dump(ghost_injuries, f, indent=4)
+                    
         success_count += 1
 
     print(f"Generated Proprietary Predictive Mathematical Matrices for exactly {success_count} global leagues.")
