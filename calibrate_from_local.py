@@ -210,13 +210,7 @@ def main():
             new_config = build_config(lid, league_name, derived, tier_name)
             
             # Carry over explicit edge variables if they were manually set
-            # Also carry over bias correction fields (set by compute_bias_corrections.py)
-            carry_over_keys = [
-                "win_prob_std_dev", "situational", "thresholds",
-                "_bias_correction", "_bias_n_games", "_bias_avg_delta",
-                "_bias_std_delta", "_bias_computed_at"
-            ]
-            for key in carry_over_keys:
+            for key in ["win_prob_std_dev", "situational", "thresholds"]:
                 if key in existing_cfg:
                     new_config[key] = existing_cfg[key]
                     
