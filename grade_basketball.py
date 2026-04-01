@@ -55,12 +55,28 @@ def fetch_fixtures_for_date(date: str) -> list:
         r = requests.get(url, headers=HEADERS, params=params, timeout=20)
         r.raise_for_status()
         all_fixtures = r.json().get("response", [])
-        # Status "Game Finished" or "Final" or "AOT" (After Over Time)
         finished = [f for f in all_fixtures if f.get("status", {}).get("short") in ("FT", "AOT")]
         return finished
     except Exception as e:
-        print(f"  ⚠️  API error: {e}")
+        print(f"  [!] API error: {e}")
         return []
+
+
+def _normalize_name(name: str) -> str:
+    """Lowercase + strip common suffixes for fuzzy team matching."""
+    import re
+    name = name.lower().strip()
+    name = re.sub(r'\b(bc|bk|basketball|club|sporting|fc|ac|sc)\b', '', name)
+    return re.sub(r'\s+', ' ', name).strip()
+
+
+def _delta_tier(delta: float) -> str:
+    """Return ASCII accuracy tier string for a given absolute delta."""
+    if delta <= 4.0:    return "BULLSEYE"
+    elif delta <= 8.5:  return "EXCELLENT"
+    elif delta <= 14.5: return "SOLID"
+    elif delta <= 21.0: return "MISS"
+    else:               return "BUST"
 
 def main():
     parser = argparse.ArgumentParser(description="Grade basketball predictions")
@@ -111,7 +127,7 @@ def main():
                 mdl = p.get("model_architecture", "[  SRS   ]")
                 if h_s is not None and a_s is not None and model_total:
                     if status == "AOT":
-                        p["accuracy_tier"] = "🚨 OT WARP"
+                        p["accuracy_tier"] = "OT WARP"
                         p["total_delta"] = None
                         p["total_rpe"] = None
                     else:
@@ -119,15 +135,10 @@ def main():
                         delta = abs(actual_total - model_total)
                         signed_delta = actual_total - model_total
                         rpe = (delta / actual_total) * 100 if actual_total > 0 else 0
-                        if delta <= 4.0:   tier = "🎯 BULLSEYE"
-                        elif delta <= 8.5: tier = "🟢 EXCELLENT"
-                        elif delta <= 14.5: tier = "🟡 SOLID"
-                        elif delta <= 21.0: tier = "🟠 MISS"
-                        else:              tier = "🔴 BUST"
                         p["total_delta"] = round(delta, 2)
                         p["signed_delta"] = round(signed_delta, 2)
                         p["total_rpe"] = round(rpe, 2)
-                        p["accuracy_tier"] = tier
+                        p["accuracy_tier"] = _delta_tier(delta)
                     # Per-model outcome tracking
                     is_win = p.get("predicted_result") == p.get("actual_result")
                     wins_by_model[mdl]  = wins_by_model.get(mdl, 0)  + (1 if is_win else 0)
@@ -175,6 +186,14 @@ def main():
             continue
         
         key = (pred["league_id"], pred["home_team"], pred["away_team"])
+        # Bug 2: Fuzzy fallback if exact key not found
+        if key not in results_map:
+            pred_home_n = _normalize_name(pred["home_team"])
+            pred_away_n = _normalize_name(pred["away_team"])
+            for (lid, h, a), val in results_map.items():
+                if lid == pred["league_id"] and _normalize_name(h) == pred_home_n and _normalize_name(a) == pred_away_n:
+                    key = (lid, h, a)
+                    break
         if key in results_map:
             h_s, a_s, status = results_map[key]
             actual = "HOME" if h_s > a_s else "AWAY"
@@ -186,10 +205,11 @@ def main():
             p["status"]            = status
             
             # The Delta Grading Matrix
-            model_total = p.get("model", {}).get("total")
+            # Bug 1 Fix: read flat model_total key (set by run_basketball_daily.py)
+            model_total = p.get("model_total") or p.get("model", {}).get("total")
             if model_total:
                 if status == "AOT":
-                    p["accuracy_tier"] = "🚨 OT WARP"
+                    p["accuracy_tier"] = "OT WARP"
                     p["total_delta"] = None
                     p["total_rpe"] = None
                 else:
@@ -197,17 +217,10 @@ def main():
                     delta = abs(actual_total - model_total)
                     signed_delta = actual_total - model_total
                     rpe = (delta / actual_total) * 100 if actual_total > 0 else 0
-                    
-                    if delta <= 4.0: tier = "🎯 BULLSEYE"
-                    elif delta <= 8.5: tier = "🟢 EXCELLENT"
-                    elif delta <= 14.5: tier = "🟡 SOLID"
-                    elif delta <= 21.0: tier = "🟠 MISS"
-                    else: tier = "🔴 BUST"
-                    
                     p["total_delta"] = round(delta, 2)
                     p["signed_delta"] = round(signed_delta, 2)
                     p["total_rpe"] = round(rpe, 2)
-                    p["accuracy_tier"] = tier
+                    p["accuracy_tier"] = _delta_tier(delta)
             
             # Outcome grade
             mdl = p.get("model_architecture", "[  SRS   ]")

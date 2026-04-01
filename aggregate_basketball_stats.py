@@ -33,16 +33,16 @@ def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
             bucket["1x2_w"] += 1
         else:
             bucket["1x2_l"] += 1
-    if tier == "🎯 BULLSEYE":    bucket["bullseyes"]  += 1
-    elif tier == "🟢 EXCELLENT": bucket["excellents"] += 1
-    elif tier == "🟡 SOLID":    bucket["solids"]     += 1
-    elif tier == "🟠 MISS":     bucket["misses"]     += 1
-    elif tier == "🔴 BUST":     bucket["busts"]      += 1
-    elif tier == "🚨 OT WARP":  bucket["ots"]        += 1
+    # Support both legacy emoji strings and new ASCII strings (backward compat)
+    if tier in ("BULLSEYE", "\U0001f3af BULLSEYE"):    bucket["bullseyes"]  += 1
+    elif tier in ("EXCELLENT", "\U0001f7e2 EXCELLENT"): bucket["excellents"] += 1
+    elif tier in ("SOLID", "\U0001f7e1 SOLID"):         bucket["solids"]     += 1
+    elif tier in ("MISS", "\U0001f7e0 MISS"):          bucket["misses"]     += 1
+    elif tier in ("BUST", "\U0001f534 BUST"):          bucket["busts"]      += 1
+    elif tier in ("OT WARP", "\U0001f6a8 OT WARP"):   bucket["ots"]        += 1
     if rpe is not None:
         bucket["sum_rpe"]    += rpe
         bucket["count_rpe"]  += 1
-    # total_delta tracking (for MAE) goes here in process_file
     if signed_delta is not None:
         bucket["sum_signed_delta"]   += signed_delta
         bucket["count_signed_delta"] += 1
