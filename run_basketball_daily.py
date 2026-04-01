@@ -426,8 +426,14 @@ def predict_game(away_name, home_name, away_id, home_id, team_stats, config, con
     h_off = sH.get("adj_off", lg_avg_eff)
     h_def = sH.get("adj_def", lg_avg_eff)
 
-    exp_a_eff = (a_off * h_def) / lg_avg_eff  # Away offense vs Home defense
-    exp_h_eff = (h_off * a_def) / lg_avg_eff  # Home offense vs Away defense
+    # v4.2 Fix: Additive Model (eliminates exponential overshoot)
+    a_off_delta = a_off - lg_avg_eff
+    h_def_delta = h_def - lg_avg_eff
+    h_off_delta = h_off - lg_avg_eff
+    a_def_delta = a_def - lg_avg_eff
+
+    exp_a_eff = lg_avg_eff + a_off_delta + h_def_delta
+    exp_h_eff = lg_avg_eff + h_off_delta + a_def_delta
     crossmatch_eff = (exp_a_eff + exp_h_eff) / 2
 
     # FIX 4 (REVISED): Multiplicative KenPom spread perfectly constrained by Game Pace & Home Court Advantage
