@@ -239,7 +239,9 @@ def derive_params(games, league_id, league_name="Unknown"):
     pace_pivot = tier_pace
 
     # --- Regression factor: more data → trust more ---
-    regression_factor = min(0.96, 0.50 + 0.46 * (min(n, 100) / 100))
+    # v4.1: Ceiling lowered 0.96 → 0.90 to correct systematic +7.7pt crossmatch overshoot.
+    # At 0.96 only 4% blends toward league mean — insufficient. At 0.90 → 10% blend.
+    regression_factor = min(0.90, 0.50 + 0.40 * (min(n, 100) / 100))
     regression_factor = round(regression_factor, 3)
 
     return {

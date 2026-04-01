@@ -93,6 +93,14 @@ class UniversalBasketballEngine:
             stats_total = stats_total * reg_factor + league_avg * (1 - reg_factor)
             self._log(f"Step 4: Regression Applied ({reg_factor}) -> {stats_total:.2f} (blended toward {league_avg:.1f})")
         
+        # --- STEP 4.5: Data-driven Bias Correction ---
+        # _bias_correction = historical avg signed_delta (model - actual).
+        # Subtract it here to directly neutralise systematic overshoot/undershoot.
+        bias_correction = c.get("_bias_correction", 0.0)
+        if bias_correction != 0.0:
+            stats_total -= bias_correction
+            self._log(f"Step 4.5: Bias Correction ({bias_correction:+.2f} pts from {c.get('_bias_n_games',0)} graded games) -> {stats_total:.2f}")
+
         # --- PHASE 2: SHARP LAYER (BOOSTERS & INJURIES) ---
         sharp_total = stats_total
         notes = []
