@@ -344,6 +344,46 @@ def process_leagues():
         except Exception as e:
             print(f"Error reading {hf}: {e}")
 
+    # Also ingest modern daily cache files (data/api_basketball_today_*.json)
+    # These contain finalized scores that auto_update_historical.py may not have
+    # processed yet, ensuring the SRS matrix is always fully up to date.
+    d_files = glob.glob("data/api_basketball_today_*.json")
+    for df in d_files:
+        try:
+            with open(df, encoding="utf-8") as f:
+                day_data = json.load(f)
+            for entry in day_data.get("leagues_summary", []):
+                lid = entry.get("league_id")
+                if not lid:
+                    continue
+                for g in entry.get("games", []):
+                    hs = g.get("home_score")
+                    as_ = g.get("away_score")
+                    if hs is None or as_ is None:
+                        continue
+                    try:
+                        hs = int(hs)
+                        as_ = int(as_)
+                    except (TypeError, ValueError):
+                        continue
+                    if hs == 0 and as_ == 0:
+                        continue
+                    if g.get("status") not in ("Game Finished", "Final", "AOT", "FT") and hs == 0 and as_ == 0:
+                        continue
+                    clean = {
+                        "date": str(g.get("time", "") or day_data.get("date", ""))[:10],
+                        "home_team": g.get("home", ""),
+                        "away_team": g.get("away", ""),
+                        "home_score": hs,
+                        "away_score": as_,
+                        "game_id": f"daily_{g.get('home','')}_{g.get('away','')}_{hs}_{as_}"
+                    }
+                    if lid not in games_by_league:
+                        games_by_league[lid] = []
+                    games_by_league[lid].append(clean)
+        except Exception as e:
+            print(f"Error reading daily cache {df}: {e}")
+
     success_count = 0
     
     for league_id, all_games in games_by_league.items():
