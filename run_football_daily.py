@@ -435,8 +435,13 @@ def fetch_h2h(home_id, away_id, refresh=False):
 # STEP 4: FUZZY TEAM MATCHING & MATH LOGIC
 # ------------------------------------------------------------------
 
-def find_team(name, teams):
-    if not name or not teams: return None, None
+def find_team(team_id, name, teams):
+    if not teams: return None, None
+    if team_id:
+        for k, v in teams.items():
+            if v.get("team_id") == team_id:
+                return k, v
+    if not name: return None, None
     nl = name.lower().strip()
     if name in teams: return name, teams[name]
     for k in teams:
@@ -722,8 +727,8 @@ def main():
             home = game["home_team"]
             away = game["away_team"]
 
-            hk, home_s = find_team(home, teams)
-            ak, away_s = find_team(away, teams)
+            hk, home_s = find_team(game.get("home_id"), home, teams)
+            ak, away_s = find_team(game.get("away_id"), away, teams)
 
 
             if not home_s or not away_s:

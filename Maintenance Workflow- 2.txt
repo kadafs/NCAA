@@ -20,6 +20,11 @@ python run_basketball_daily.py --mode full --no_match_center --date 2026-03-21
 
 python push_to_dashboard.py --sport all
 
+Every 2 weeks:
+  python auto_update_historical.py      ← pull latest game results
+  python calibrate_from_local.py        ← rebuild pace/eff pivots
+  python generate_advanced_metrics.py   ← rebuild SRS matrix
+
 
 #4 Update match centre 
 cd football-dashboard
@@ -52,7 +57,10 @@ ________________________________________________________________________________
 
 Calibration is handled by 
 
-calibrate_league.py NOW python calibrate_from_local.py
+calibrate_league.py NOW python calibrate_from_local.py after run python compute_bias_corrections.py
+
+
+
  and can happen in two contexts:
 
 1. Automatic (During Prediction Runs)

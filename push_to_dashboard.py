@@ -73,8 +73,8 @@ def copy_sport_data(sport: str, date_filter: str | None = None):
             print(f"  ⚠️ No file found for date {date_filter} in {src_dir}")
             return []
     else:
-        # Copy only the most recent file
-        files_to_copy = [all_files[0]]
+        # Copy up to 14 recent files to ensure graded past games sync over
+        files_to_copy = all_files[:14]
 
     copied = []
     for src_file in files_to_copy:
@@ -84,7 +84,7 @@ def copy_sport_data(sport: str, date_filter: str | None = None):
         copied.append(src_file.name)
 
     # Also copy leaderboard files if they exist
-    for lb_pattern in ["leaderboard.json", "team_leaderboard.json"]:
+    for lb_pattern in ["league_leaderboard.json", f"{sport}_leaderboard.json"]:
         lb_src = src_dir / lb_pattern
         if lb_src.exists():
             shutil.copy2(lb_src, dest_dir / lb_pattern)
