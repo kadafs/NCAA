@@ -182,6 +182,20 @@ def fetch_all_fixtures(date_str, refresh=False):
 # STEP 2: FETCH / CACHE TEAM STATS FOR A LEAGUE
 # ------------------------------------------------------------------
 
+def check_cache_valid_for_games(cached_data, games):
+    """Ensure all teams playing in the given games are actually present in the cache."""
+    if not cached_data: return False
+    teams_dict = cached_data.get("teams", {})
+    cached_ids = {v.get("team_id") for v in teams_dict.values() if v.get("team_id")}
+    
+    for g in games:
+        h_id = g.get("home_id")
+        a_id = g.get("away_id")
+        if h_id and h_id not in cached_ids: return False
+        if a_id and a_id not in cached_ids: return False
+    return True
+
+
 def get_or_fetch_stats(league_id, season, games, refresh=False):
     """
     Returns {team_name: stats_dict} for a league.
@@ -191,13 +205,14 @@ def get_or_fetch_stats(league_id, season, games, refresh=False):
         for stats_file in glob("data/football/*_stats.json"):
             cached = load_json(stats_file)
             if cached and cached.get("league_id") == league_id and is_cache_fresh(stats_file):
-                return cached.get("teams", {}), cached.get("league_averages", {})
+                if check_cache_valid_for_games(cached, games):
+                    return cached.get("teams", {}), cached.get("league_averages", {})
 
     # Priority 2: Universal cache
     universal_cache = f"data/football/universal_{league_id}_stats.json"
     if not refresh and is_cache_fresh(universal_cache):
         cached = load_json(universal_cache)
-        if cached:
+        if cached and check_cache_valid_for_games(cached, games):
             return cached.get("teams", {}), cached.get("league_averages", {})
 
     # Priority 3: Fetch from API
