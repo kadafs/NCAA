@@ -23,6 +23,12 @@ import argparse
 from datetime import date
 from pathlib import Path
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except AttributeError:
+        pass
+
 # ── Configuration ──────────────────────────────────────────────────────────────
 # Paths — adjust if your folders are in a different location
 NCAA_API_ROOT   = Path(__file__).parent

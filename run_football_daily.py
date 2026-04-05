@@ -111,7 +111,13 @@ def fetch_all_fixtures(date_str, refresh=False):
     """
     cache_path = f"data/football/universal_fixtures_{date_str}.json"
 
-    if not refresh and os.path.exists(cache_path):
+    # For today's date, use a short 4-hour cache so completed game scores
+    # get picked up when the script re-runs later in the evening.
+    # For past/future dates the file is effectively permanent.
+    today_str = datetime.now(ET_TZ).strftime("%Y-%m-%d")
+    fixture_cache_max_age = 4 * 3600 if (date_str == today_str) else 365 * 24 * 3600
+
+    if not refresh and is_cache_fresh(cache_path, max_age=fixture_cache_max_age):
         print(f"  Using cached fixtures: {cache_path}")
         return load_json(cache_path)
 
