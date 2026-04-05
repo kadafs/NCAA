@@ -390,26 +390,65 @@ def process_leagues():
         if len(all_games) < 5:
             continue
             
-        # Deduplicate
-        unique_games = {}
+        # 1. Parse dates and filter invalid games
+        valid_games = []
         for g in all_games:
-            # Prefer game_id or match_id. If missing, use date+teams
-            gid = g.get("game_id") or g.get("match_id") or f'{g.get("date")}_{g.get("home_team")}_{g.get("away_team")}'
+            pd = parse_date(g.get("date", ""))
+            if pd > datetime.datetime.min:
+                g["_parsed_date"] = pd
+                valid_games.append(g)
+                
+        # 2. Normalize team names across all data sources (e.g. "Monaco" vs "AS Monaco")
+        team_name_map = {}
+        all_names = set()
+        for g in valid_games:
+            if g.get("home_team"): all_names.add(g.get("home_team"))
+            if g.get("away_team"): all_names.add(g.get("away_team"))
+            
+        # Sort descending by length ensures "AS Monaco" becomes the primary key over "Monaco"
+        sorted_names = sorted(list(all_names), key=len, reverse=True)
+        for name in sorted_names:
+            matched = False
+            name_lower = name.lower()
+            for primary in set(team_name_map.values()):
+                pri_lower = primary.lower()
+                # Substring overlap
+                if name_lower in pri_lower or pri_lower in name_lower:
+                    team_name_map[name] = primary
+                    matched = True
+                    break
+                # Word-level overlap for tokens >= 4 chars
+                nw = set(w for w in name_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
+                pw = set(w for w in pri_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
+                if nw & pw:
+                    team_name_map[name] = primary
+                    matched = True
+                    break
+            if not matched:
+                team_name_map[name] = name
+
+        # Apply normalized names
+        for g in valid_games:
+            g["home_team"] = team_name_map.get(g.get("home_team"), g.get("home_team"))
+            g["away_team"] = team_name_map.get(g.get("away_team"), g.get("away_team"))
+            
+        # 3. Deduplicate using normalized identifiers
+        unique_games = {}
+        for g in valid_games:
+            # Semantic dedupe key: Date + Standardized Home vs Away
+            gid = f"{g['_parsed_date'].strftime('%Y-%m-%d')}_{g['home_team']}_{g['away_team']}"
+            
             if gid not in unique_games:
                 unique_games[gid] = g
             else:
-                # If the new game object has advanced_stats but the old one didn't, overwrite with the better payload
-                if g.get("advanced_stats") and not unique_games[gid].get("advanced_stats"):
+                old_adv = unique_games[gid].get("advanced_stats") or unique_games[gid].get("stats")
+                new_adv = g.get("advanced_stats") or g.get("stats")
+                if new_adv and not old_adv:
                     unique_games[gid] = g
                     
         merged_games = list(unique_games.values())
         
-        # Sort by date for proper chronological math and gap detection
-        for g in merged_games:
-            g["_parsed_date"] = parse_date(g.get("date", ""))
-        
-        # Remove games with unparseable dates before sorting
-        merged_games = [g for g in merged_games if g["_parsed_date"] > datetime.datetime.min]
+        # Sort by date for chronological math
         merged_games.sort(key=lambda x: x["_parsed_date"])
         
         # Season Gap Filter: find the LAST contiguous block of games (separated by > 75 days)

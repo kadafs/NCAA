@@ -93,7 +93,8 @@ def main():
                 games_by_league[league_id].append({
                     "total": total,
                     "margin": margin,
-                    "sig": sig,
+                    "home": home,
+                    "away": away,
                     "_parsed_date": game_date
                 })
 
@@ -149,11 +150,11 @@ def main():
                     if h_score == 0 and a_score == 0 and g.get("status") not in ("Game Finished", "Final", "AOT", "FT"):
                         continue
                     
-                    sig = f"{home}_{away}_{total}_{margin}"
                     games_by_league[league_id].append({
                         "total": total,
                         "margin": margin,
-                        "sig": sig,
+                        "home": home,
+                        "away": away,
                         "_parsed_date": game_date
                     })
         except Exception as e:
@@ -167,15 +168,44 @@ def main():
         if args.league_id and lid != args.league_id:
             continue
             
-        # Clean out duplicates
+        valid_games = [g for g in all_games if g["_parsed_date"] > datetime.datetime.min]
+        if not valid_games:
+            continue
+            
+        team_name_map = {}
+        all_names = set()
+        for g in valid_games:
+            if g.get("home"): all_names.add(g.get("home"))
+            if g.get("away"): all_names.add(g.get("away"))
+            
+        sorted_names = sorted(list(all_names), key=len, reverse=True)
+        for name in sorted_names:
+            matched = False
+            name_lower = name.lower()
+            for primary in set(team_name_map.values()):
+                pri_lower = primary.lower()
+                if name_lower in pri_lower or pri_lower in name_lower:
+                    team_name_map[name] = primary
+                    matched = True
+                    break
+                nw = set(w for w in name_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
+                pw = set(w for w in pri_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
+                if nw & pw:
+                    team_name_map[name] = primary
+                    matched = True
+                    break
+            if not matched:
+                team_name_map[name] = name
+                
+        # Clean out duplicates using normalized names
         unique_games = {}
-        for g in all_games:
-            unique_games[g["sig"]] = g
+        for g in valid_games:
+            norm_home = team_name_map.get(g["home"], g["home"])
+            norm_away = team_name_map.get(g["away"], g["away"])
+            gid = f"{g['_parsed_date'].strftime('%Y-%m-%d')}_{norm_home}_{norm_away}_{g['total']}_{g['margin']}"
+            unique_games[gid] = g
             
         merged_games = list(unique_games.values())
-        
-        # EXACT MATCH TO generate_advanced_metrics.py: Filter out unparseable dates
-        merged_games = [g for g in merged_games if g["_parsed_date"] > datetime.datetime.min]
         merged_games.sort(key=lambda x: x["_parsed_date"])
         
         # Season Gap Filter: find LAST contiguous block of games (separated by > 75 days)
