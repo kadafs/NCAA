@@ -46,10 +46,16 @@ def calculate_iterative_srs(games):
             
         days_old = (max_date - g_date).days
         
-        # Time Decay: 21-Day Plateau
+        # Time Decay: 14-day plateau, λ=0.030, hard cutoff at ~168 days.
+        # Games within 14 days = full weight (authoritative recent form).
+        # Exponential decay after that: Jan game in April ≈ 9%, Oct game ≈ 1%.
+        # Games older than ~168 days (weight < 1%) are excluded entirely —
+        # they pre-date the current season and have zero predictive value.
         weight = 1.0
-        if days_old > 21:
-            weight = math.exp(-0.015 * (days_old - 21))
+        if days_old > 14:
+            weight = math.exp(-0.030 * (days_old - 14))
+        if weight < 0.01:
+            continue  # Hard cutoff — game too old to contribute meaningfully
         
         if ht not in teams:
             teams[ht] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": []}
