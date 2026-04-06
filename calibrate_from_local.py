@@ -194,7 +194,7 @@ def main():
                     
                 # Rule 2: High character overlap ratio via difflib
                 similarity = difflib.SequenceMatcher(None, name_lower, pri_lower).ratio()
-                if similarity >= 0.76:
+                if similarity >= 0.85:
                     team_name_map[name] = primary
                     matched = True
                     break

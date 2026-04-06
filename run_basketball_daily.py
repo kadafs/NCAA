@@ -68,12 +68,31 @@ TEAM_NAME_OVERRIDES = {
     "Trikala": "Am Ikaroi Trikalon",
     "BK Zaporozhye": "Zaporizhye",
     "Escolar Aleman": "Aleman",
+    # --- Austria Superliga (217) ---
     "Graz UBSC": "UBSC Raiffeisen Graz",
     "BBC Nord": "Eisenstadt Dragonz",
     "Furstenfeld": "Panthers Fürstenfeld",
     "Vienna Basket": "BC Vienna",
     "Klosterneuburg Dukes": "BK Dukes",
     "Wels": "Raiffeisen Flyers Wels",
+    "Oberwart Gunners": "Unger Steel Gunners Oberwart",
+    # --- Iceland Premier League (48) ---
+    "KR Basket": "KR Reykjavik",
+    # --- Belarus Premier League (111) ---
+    "Borisfen 2": "Borisfen Mogilev Youth",
+    "SDUSHOR Minsk": "RCOP-SDUSHOR",
+    # --- China CBA (31) ---
+    "Zhejiang Guangsha": "Zhejiang Golden Bulls",
+    # --- Poland Energa Basket Liga (72) ---
+    "Ostrow Wielkopolski": "Stal Ostrów Wielkopolski",
+    # --- Puerto Rico BSN (76) ---
+    "Aguada Santeros": "Santeros de Aguada",
+    # --- Europe ABA League (198) ---
+    "FMP Beograd": "FMP SoccerBet",
+    "Spartak Subotica": "Spartak Office Shoes",
+    "Mega Basket": "Mega MIS",
+    # --- Europe BNXT League (368) ---
+    "Zwolle": "Landstede Hammers",
 }
 
 def get_today_str(date_str=None):
@@ -344,7 +363,7 @@ def find_team(name, stats_dict):
         if similarity > best_score:
             best_key, best_score = k, similarity
             
-    if best_score >= 0.70:
+    if best_score >= 0.85:
         return best_key, stats_dict[best_key]
 
     return None, None
