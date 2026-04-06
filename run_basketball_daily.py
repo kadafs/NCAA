@@ -68,6 +68,12 @@ TEAM_NAME_OVERRIDES = {
     "Trikala": "Am Ikaroi Trikalon",
     "BK Zaporozhye": "Zaporizhye",
     "Escolar Aleman": "Aleman",
+    "Graz UBSC": "UBSC Raiffeisen Graz",
+    "BBC Nord": "Eisenstadt Dragonz",
+    "Furstenfeld": "Panthers Fürstenfeld",
+    "Vienna Basket": "BC Vienna",
+    "Klosterneuburg Dukes": "BK Dukes",
+    "Wels": "Raiffeisen Flyers Wels",
 }
 
 def get_today_str(date_str=None):
