@@ -55,14 +55,8 @@ ET_TZ    = timezone.utc
 # LEAGUES EXCLUDED FROM THIS RUNNER
 # ONLY USA Leagues are excluded, as they are covered by dedicated scripts.
 # ------------------------------------------------------------------
-EXCLUDED_LEAGUE_IDS = {
-    12,    # NBA
-    116,   # NCAA (api-basketball ID)
-}
-
-EXCLUDED_LEAGUE_NAMES = {
-    "NBA", "NCAA",
-}
+EXCLUDED_LEAGUE_IDS = set()
+EXCLUDED_LEAGUE_NAMES = set()
 
 
 # ------------------------------------------------------------------
@@ -545,8 +539,6 @@ def main():
     leagues = [
         l for l in leagues
         if l["league_id"] not in EXCLUDED_LEAGUE_IDS
-        and l["league_name"] not in EXCLUDED_LEAGUE_NAMES
-        and str(l.get("country") or "").strip().upper() != "USA"
     ]
     if args.league_id:
         leagues = [l for l in leagues if l["league_id"] == args.league_id]
