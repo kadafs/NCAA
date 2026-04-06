@@ -398,34 +398,37 @@ def process_leagues():
                 g["_parsed_date"] = pd
                 valid_games.append(g)
                 
-        # 2. Normalize team names across all data sources (e.g. "Monaco" vs "AS Monaco")
+        # 2. Normalize team names across all data sources
+        import difflib
         team_name_map = {}
         all_names = set()
         for g in valid_games:
             if g.get("home_team"): all_names.add(g.get("home_team"))
             if g.get("away_team"): all_names.add(g.get("away_team"))
             
-        # Sort descending by length ensures "AS Monaco" becomes the primary key over "Monaco"
         sorted_names = sorted(list(all_names), key=len, reverse=True)
         for name in sorted_names:
             matched = False
             name_lower = name.lower()
             for primary in set(team_name_map.values()):
                 pri_lower = primary.lower()
-                # Substring overlap
+                
+                # Rule 1: Exact substring overlap (e.g. 'AS Monaco' and 'Monaco')
                 if name_lower in pri_lower or pri_lower in name_lower:
                     team_name_map[name] = primary
                     matched = True
                     break
-                # Word-level overlap for tokens >= 4 chars
-                nw = set(w for w in name_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
-                pw = set(w for w in pri_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
-                if nw & pw:
+                
+                # Rule 2: High character overlap ratio (prevents 'Zhejiang Lions' merging with 'Zhejiang Bulls')
+                similarity = difflib.SequenceMatcher(None, name_lower, pri_lower).ratio()
+                if similarity >= 0.76:
                     team_name_map[name] = primary
                     matched = True
                     break
+                    
             if not matched:
                 team_name_map[name] = name
+
 
         # Apply normalized names
         for g in valid_games:
@@ -451,14 +454,24 @@ def process_leagues():
         # Sort by date for chronological math
         merged_games.sort(key=lambda x: x["_parsed_date"])
         
-        # Season Gap Filter: find the LAST contiguous block of games (separated by > 75 days)
-        # This correctly handles: inter-season breaks, new season detection
-        last_gap_idx = 0
-        for i in range(1, len(merged_games)):
-            delta = (merged_games[i]["_parsed_date"] - merged_games[i-1]["_parsed_date"]).days
-            if delta > 75:
-                last_gap_idx = i  # Start fresh season block from this game
-        filtered_games = merged_games[last_gap_idx:]
+        # Hard Date Cutoff Filter
+        now = datetime.datetime.now()
+        cur_year = now.year
+        cur_month = now.month
+        
+        summer_league_ids = {"13", "66", "76", "222", "207", "208", "209", "210", "211", "212", "213", "214", "215", "216"}
+        lid_str = str(league_id)
+        
+        if lid_str in summer_league_ids:
+            cutoff_date = datetime.datetime(cur_year, 1, 1)
+        else:
+            # Global Winter Leagues default
+            if cur_month >= 8:
+                cutoff_date = datetime.datetime(cur_year, 8, 1)
+            else:
+                cutoff_date = datetime.datetime(cur_year - 1, 8, 1)
+                
+        filtered_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
             
         if len(filtered_games) < 5:
             continue

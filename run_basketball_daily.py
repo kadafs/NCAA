@@ -330,15 +330,15 @@ def find_team(name, stats_dict):
         if k_lower in name_lower or name_lower in k_lower:
             return k, stats_dict[k]
 
-    # Word overlap
-    name_words = set(name_lower.split())
-    best_key, best_score = None, 0
+    # High character overlap via difflib (Safer than single word overlaps)
+    import difflib
+    best_key, best_score = None, 0.0
     for k in stats_dict:
-        k_words = set(k.lower().split())
-        overlap = len(name_words & k_words)
-        if overlap > best_score:
-            best_key, best_score = k, overlap
-    if best_score >= 1:
+        similarity = difflib.SequenceMatcher(None, name_lower, k.lower()).ratio()
+        if similarity > best_score:
+            best_key, best_score = k, similarity
+            
+    if best_score >= 0.70:
         return best_key, stats_dict[best_key]
 
     return None, None

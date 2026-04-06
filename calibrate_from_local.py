@@ -178,22 +178,27 @@ def main():
             if g.get("home"): all_names.add(g.get("home"))
             if g.get("away"): all_names.add(g.get("away"))
             
+        import difflib
         sorted_names = sorted(list(all_names), key=len, reverse=True)
         for name in sorted_names:
             matched = False
             name_lower = name.lower()
             for primary in set(team_name_map.values()):
                 pri_lower = primary.lower()
+                
+                # Rule 1: Exact substring overlap
                 if name_lower in pri_lower or pri_lower in name_lower:
                     team_name_map[name] = primary
                     matched = True
                     break
-                nw = set(w for w in name_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
-                pw = set(w for w in pri_lower.replace("-"," ").replace("/"," ").split() if len(w) >= 4)
-                if nw & pw:
+                    
+                # Rule 2: High character overlap ratio via difflib
+                similarity = difflib.SequenceMatcher(None, name_lower, pri_lower).ratio()
+                if similarity >= 0.76:
                     team_name_map[name] = primary
                     matched = True
                     break
+                    
             if not matched:
                 team_name_map[name] = name
                 
@@ -208,14 +213,23 @@ def main():
         merged_games = list(unique_games.values())
         merged_games.sort(key=lambda x: x["_parsed_date"])
         
-        # Season Gap Filter: find LAST contiguous block of games (separated by > 75 days)
-        last_gap_idx = 0
-        for i in range(1, len(merged_games)):
-            delta = (merged_games[i]["_parsed_date"] - merged_games[i-1]["_parsed_date"]).days
-            if delta > 75:
-                last_gap_idx = i
+        # Hard Date Cutoff Filter
+        now = datetime.datetime.now()
+        cur_year = now.year
+        cur_month = now.month
+        
+        summer_league_ids = {"13", "66", "76", "222", "207", "208", "209", "210", "211", "212", "213", "214", "215", "216"}
+        lid_str = str(lid)
+        
+        if lid_str in summer_league_ids:
+            cutoff_date = datetime.datetime(cur_year, 1, 1)
+        else:
+            if cur_month >= 8:
+                cutoff_date = datetime.datetime(cur_year, 8, 1)
+            else:
+                cutoff_date = datetime.datetime(cur_year - 1, 8, 1)
                 
-        final_games = merged_games[last_gap_idx:]
+        final_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
         
         # Load existing config for the league name if available
         league_name = f"League {lid}"
