@@ -3,6 +3,17 @@ import os
 import glob
 import datetime
 
+# Cross-source canonical name map — applied BEFORE fuzzy normalization.
+# Resolves cases where API and Proballers use different names for the same club,
+# which would otherwise create two separate ghost entries in the matrix.
+# Key = API name, Value = Proballers (canonical) name.
+CROSS_SOURCE_CANONICAL_MAP = {
+    # Iceland Premier League
+    "KR Basket":           "KR Reykjavik",
+    # Add more cross-source discrepancies here as they are discovered, e.g.:
+    # "Team API Name":    "Team Canonical Name",
+}
+
 def calculate_iterative_srs(games):
     """
     Computes a mathematically pure Simple Rating System (SRS) manually via recursive iteration.
@@ -397,7 +408,16 @@ def process_leagues():
             if pd > datetime.datetime.min:
                 g["_parsed_date"] = pd
                 valid_games.append(g)
-                
+
+        # 1.5. Apply cross-source canonical name mapping BEFORE fuzzy normalization.
+        # This ensures games labelled with API names get merged with Proballers games
+        # under the canonical (Proballers) name, preventing duplicate ghost entries.
+        for g in valid_games:
+            if g.get("home_team") in CROSS_SOURCE_CANONICAL_MAP:
+                g["home_team"] = CROSS_SOURCE_CANONICAL_MAP[g["home_team"]]
+            if g.get("away_team") in CROSS_SOURCE_CANONICAL_MAP:
+                g["away_team"] = CROSS_SOURCE_CANONICAL_MAP[g["away_team"]]
+
         # 2. Normalize team names across all data sources
         import difflib
         team_name_map = {}

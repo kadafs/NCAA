@@ -6,7 +6,7 @@ import argparse
 
 # Import the core math and config builders from the original calibrator!
 from calibrate_league import derive_params, build_config, KNOWN_TIER_MAP
-from generate_advanced_metrics import parse_date
+from generate_advanced_metrics import parse_date, CROSS_SOURCE_CANONICAL_MAP
 
 def main():
     parser = argparse.ArgumentParser(description="Local Offline Calibrator")
@@ -171,7 +171,16 @@ def main():
         valid_games = [g for g in all_games if g["_parsed_date"] > datetime.datetime.min]
         if not valid_games:
             continue
-            
+
+        # Apply cross-source canonical name mapping BEFORE fuzzy normalization.
+        # Mirrors the same step in generate_advanced_metrics.py so the calibration
+        # baseline is not inflated by the same game appearing under two different names.
+        for g in valid_games:
+            if g.get("home") in CROSS_SOURCE_CANONICAL_MAP:
+                g["home"] = CROSS_SOURCE_CANONICAL_MAP[g["home"]]
+            if g.get("away") in CROSS_SOURCE_CANONICAL_MAP:
+                g["away"] = CROSS_SOURCE_CANONICAL_MAP[g["away"]]
+
         team_name_map = {}
         all_names = set()
         for g in valid_games:
