@@ -113,6 +113,30 @@ TEAM_NAME_OVERRIDES = {
     # --- Romania Divizia A (78) ---
     "Municipal Galati": "CSM Galati",
     "CSM Oradea": "CSM CSU Oradea",
+    # --- Poland 1 Liga (71) ---
+    "R. Rzeszow": "Resovia",
+    "Lancut": "Solvera Sokół Łańcut",
+    "Poli. Opolska": "Weegree AZS Politechnika Opolska",
+    "Starogard Gdanski": "SKS Starogard Gdanski",
+    # --- ABA League 2 (203) ---
+    "Siroki Brijeg": "Široki TT Kabeli",
+    "Helios Domzale": "Kansai Helios Domžale",
+    # --- Japan B League (56) ---
+    "Hiroshima D.": "Hiroshima Dragonflies",
+    # --- Denmark Basketligaen (34) ---
+    "Herlev Wolfpack": "BMS Herlev",
+    # --- Argentina Liga A (18) ---
+    "Ferro": "Ferro Carril Oeste",
+    "Obera TC": "Obera Tennis Club",
+    # --- Italy Serie A2 (242) ---
+    "Urania Milano": "Wegreenit Urania Milano",
+    "Blu Basket Bergamo": "Gruppo Mascio Bergamo",
+    "Basket Torino": "Reale Mutua Torino",
+    "Pesaro": "Victoria Libertas Pesaro",
+    # --- Turkey TBL (102) ---
+    "Konya BBSK": "Konyaspor",
+    "CO Basket": "Cedi Osman Spor Kulubu",
+    "Ankara Kolejliler": "TED Kolejliler",
 }
 
 def get_today_str(date_str=None):
