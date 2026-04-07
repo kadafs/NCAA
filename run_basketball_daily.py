@@ -93,6 +93,26 @@ TEAM_NAME_OVERRIDES = {
     "Mega Basket": "Mega MIS",
     # --- Europe BNXT League (368) ---
     "Zwolle": "Landstede Hammers",
+    # --- Europe Euroleague (120) ---
+    "Crvena Zvezda Meridianbet": "Crvena Zvezda Belgrade",
+    "Olimpia Milano": "EA7 Emporio Armani Milan",
+    "Valencia": "Valencia Basket",
+    "Virtus Bologna": "Virtus Segafredo Bologna",
+    "Bayern": "FC Bayern Munich",
+    "Baskonia": "Baskonia Vitoria-Gasteiz",
+    "Maccabi Tel Aviv": "Maccabi Playtika Tel Aviv",
+    "Panathinaikos":  "Panathinaikos Athens",
+    "Barcelona": "FC Barcelona",
+    "Olympiacos": "Olympiacos Piraeus",
+    # --- Lithuania NKL (61) ---
+    "Neptunas 2": "Klaipėdos Neptūnas-Akvaservis",
+    "Zalgiris Kaunas 2": "Zalgiris Kaunas II",
+    # --- Puerto Rico BSN (76) ---
+    "Piratas de Quebradillas": "Quebradillas Pirates",
+    "Mets de Guaynabo": "Mets Guaynabo",
+    # --- Romania Divizia A (78) ---
+    "Municipal Galati": "CSM Galati",
+    "CSM Oradea": "CSM CSU Oradea",
 }
 
 def get_today_str(date_str=None):
@@ -638,32 +658,34 @@ def main():
             status = game.get("status", "")
             stage = game.get("stage", "")
             
-            passes = []
-
             away_id = game.get("away_id")
             home_id = game.get("home_id")
 
-            # PASS 1: SRS Model
-            result_srs, err_srs = predict_game(
-                away, home, away_id, home_id, stats_srs, config, config_path, args.mode, args.trace, yesterday_fatigued_teams, ghost_injuries
-            )
-            if not err_srs:
-                passes.append( (result_srs, "[  SRS   ]", stats_srs) )
-                
-            # PASS 2: ADVANCED Model
+            best_pass = None
+
+            # PASS 1: Try ADVANCED Model first if matrix exists
             if stats_adv:
                 result_adv, err_adv = predict_game(
                     away, home, away_id, home_id, stats_adv, config, config_path, args.mode, args.trace, yesterday_fatigued_teams, ghost_injuries
                 )
                 if not err_adv:
-                    passes.append( (result_adv, "[ADVANCED]", stats_adv) )
+                    best_pass = (result_adv, "[ADVANCED]", stats_adv)
 
-            if not passes:
-                msg = f"[{lid}] {lname} - {away} @ {home} - SKIP: {err_srs}"
-                print(f"    {away} @ {home}  -- SKIP ({err_srs})")
-                skipped_issues.append(msg)
-                total_skipped += 1
-                continue
+            # PASS 2: Fallback to SRS if ADVANCED failed or doesn't exist
+            if not best_pass:
+                result_srs, err_srs = predict_game(
+                    away, home, away_id, home_id, stats_srs, config, config_path, args.mode, args.trace, yesterday_fatigued_teams, ghost_injuries
+                )
+                if not err_srs:
+                    best_pass = (result_srs, "[  SRS   ]", stats_srs)
+                else:
+                    msg = f"[{lid}] {lname} - {away} @ {home} - SKIP: {err_srs}"
+                    print(f"    {away} @ {home}  -- SKIP ({err_srs})")
+                    skipped_issues.append(msg)
+                    total_skipped += 1
+                    continue
+                    
+            passes = [best_pass]
                 
             for res, matrix_type, active_stats in passes:
                 model_total = res.get("final_model_total", 0.0)
