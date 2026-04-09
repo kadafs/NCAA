@@ -137,6 +137,20 @@ TEAM_NAME_OVERRIDES = {
     "Konya BBSK": "Konyaspor",
     "CO Basket": "Cedi Osman Spor Kulubu",
     "Ankara Kolejliler": "TED Kolejliler",
+    "Kipas Istiklal": "Kahramanmaras Belediye",
+    "Fenerbahce 2": "Fenerbahce II",
+    # --- China CBA (31) ---
+    "Zhejiang Chouzhou": "Zhejiang Golden Bulls",
+    # --- Czech NBL (32) ---
+    "Slavia Prague": "Slavia Praha",
+    # --- Europe Euroleague (120) ---
+    "Partizan Mozzart Bet": "Partizan Belgrade",
+    "Lyon-Villeurbanne": "LDLC ASVEL",
+    # --- Slovakia Extraliga (87) ---
+    "Levice": "Levickí Patrioti",
+    "Spisski Rytieri": "Spišskí Rytieri",
+    # --- Bulgaria NBL (113) ---
+    "Lok. Plovdiv": "Lokomotiv Plovdiv",
 }
 
 def get_today_str(date_str=None):
