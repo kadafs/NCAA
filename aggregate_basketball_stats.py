@@ -174,20 +174,10 @@ def main():
         count_delta  = s.get("count_delta", 0)
         x_w, x_l    = s["1x2_w"], s["1x2_l"]
         x_total      = x_w + x_l
-        
-        # Calculate Volatility (Standard Deviation)
-        volatility = None
-        if count_signed > 1:
-            mean = s["sum_signed_delta"] / count_signed
-            variance = sum((x - mean) ** 2 for x in s["signed_deltas"]) / (count_signed - 1)
-            volatility = round(math.sqrt(variance), 2)
-        elif count_signed == 1:
-            volatility = 0.0
 
         return {
             "mape":              round(s["sum_rpe"] / count_rpe, 2) if count_rpe else 0.0,
             "mae":               round(s.get("sum_delta", 0) / count_delta, 2) if count_delta else None,
-            "volatility_index":  volatility,
             "graded_totals":     count_delta if count_delta > 0 else count_rpe,
             "bullseyes":         s["bullseyes"],
             "excellents":        s["excellents"],
@@ -222,7 +212,6 @@ def main():
             "busts":              primary["busts"],
             "ots":                primary["ots"],
             "avg_signed_delta":   primary["avg_signed_delta"],
-            "volatility_index":   primary["volatility_index"],
             "outcome_w":          primary["outcome_w"],
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
@@ -261,7 +250,6 @@ def main():
             "misses":             primary["misses"],
             "busts":              primary["busts"],
             "avg_signed_delta":   primary["avg_signed_delta"],
-            "volatility_index":   primary["volatility_index"],
             "outcome_w":          primary["outcome_w"],
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
