@@ -58,6 +58,49 @@ MIN_GAMES_PLAYED = 4
 # HELPERS
 # ------------------------------------------------------------------
 
+
+# The curated list of High-Priority "Tier 1 and Tier 2" global leagues.
+# Limits the engine to pull /teams/statistics only for these leagues
+# to prevent busting the 100 API Request/day Free Tier limit.
+PRIORITY_LEAGUES = {
+    # Top 5 Europe + 2nd Divisions
+    39, 40,   # English Premier League, Championship
+    140, 141, # Spain La Liga, Segunda
+    135, 136, # Italy Serie A, Serie B
+    78, 79,   # Germany Bundesliga, 2. Bundesliga
+    61, 62,   # France Ligue 1, Ligue 2
+    
+    # European Tournaments
+    2, 3, 848, # UCL, Europa, Conference Leagues
+    
+    # Americas
+    253, 254, # MLS, USL
+    71,       # Brazil Serie A
+    262,      # Liga MX
+    128,      # Argentina Liga Profesional
+    
+    # Top European Tier 2
+    88,       # Netherlands Eredivisie
+    94,       # Portugal Primeira Liga
+    61,       # France Ligue 1
+    119,      # Denmark Superliga
+    144,      # Belgium Pro League
+    203,      # Turkey Super Lig
+    103,      # Norway Eliteserien
+    113,      # Sweden Allsvenskan
+    
+    # Asia / RoW
+    307,      # Saudi Pro League
+    98,       # Japan J1 League
+    292,      # South Korea K League 1
+    
+    # Domestic Cups (Late Stage usually)
+    45, 48,   # FA Cup, League Cup
+    143,      # Copa del Rey
+    137,      # Coppa Italia
+    81,       # DFB Pokal
+}
+
 def get_today_str(date_str=None):
     if date_str:
         return date_str
@@ -676,6 +719,7 @@ def main():
                         help="Skip leagues with fewer than this many fixtures today")
     parser.add_argument("--refresh",    action="store_true", help="Re-fetch fixtures and stats")
     parser.add_argument("--trace",      action="store_true", help="Show engine math trace")
+    parser.add_argument("--all-leagues",action="store_true", help="DISABLE Priority Filter and run EVERY league (WILL BURN API CREDITS!)")
     parser.add_argument("--low-data",   action="store_true", help="Skip expensive H2H/Recent for Match Center")
     args = parser.parse_args()
 
@@ -702,6 +746,10 @@ def main():
     leagues = list(leagues_map.values())
     if args.league_id:
         leagues = [l for l in leagues if l["league_id"] == args.league_id]
+    elif not args.all_leagues:
+        # Enforce API priority filter!
+        leagues = [l for l in leagues if l["league_id"] in PRIORITY_LEAGUES]
+        
     if args.min_games > 1:
         leagues = [l for l in leagues if len(l["games"]) >= args.min_games]
 
