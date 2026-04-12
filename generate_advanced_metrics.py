@@ -58,9 +58,9 @@ def calculate_iterative_srs(games):
             continue  # Hard cutoff — game too old to contribute meaningfully
         
         if ht not in teams:
-            teams[ht] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": []}
+            teams[ht] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": [], "game_totals": []}
         if at not in teams:
-            teams[at] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": []}
+            teams[at] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": [], "game_totals": []}
             
         raw_margin = hs - as_
         
@@ -84,6 +84,7 @@ def calculate_iterative_srs(games):
         teams[ht]["pts_against"] += (as_ * weight)
         teams[ht]["scaled_margin_sum"] += (ht_scaled_margin * weight)
         teams[ht]["opponents"].append((at, weight))
+        teams[ht]["game_totals"].append(hs + as_)
         if hs > as_: teams[ht]["wins"] += 1
         
         teams[at]["games"] += 1
@@ -92,6 +93,7 @@ def calculate_iterative_srs(games):
         teams[at]["pts_against"] += (hs * weight)
         teams[at]["scaled_margin_sum"] += (at_scaled_margin * weight)
         teams[at]["opponents"].append((ht, weight))
+        teams[at]["game_totals"].append(hs + as_)
         if as_ > hs: teams[at]["wins"] += 1
         
     for t, data in teams.items():
@@ -566,12 +568,21 @@ def process_leagues():
             
             win_pct = round(data["wins"] / data["games"], 3) if data["games"] > 0 else 0.0
             
+            std_dev_totals = 15.0
+            n_totals = len(data.get("game_totals", []))
+            if n_totals > 1:
+                mean_tot = sum(data["game_totals"]) / n_totals
+                variance = sum((x - mean_tot) ** 2 for x in data["game_totals"]) / (n_totals - 1)
+                import math
+                std_dev_totals = round(math.sqrt(variance), 2)
+            
             team_obj = {
                 "team_name": team_name,
                 "team_id": 0,
                 "adj_off": adjO,
                 "adj_def": adjD,
                 "adj_t": round(pace_pivot, 1),
+                "std_dev_totals": std_dev_totals,
                 "games_played": data["games"],
                 "wins": data["wins"],
                 "win_pct": win_pct,
