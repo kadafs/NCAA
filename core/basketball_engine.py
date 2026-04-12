@@ -151,21 +151,21 @@ class UniversalBasketballEngine:
                     notes.append(f"Sharp Adjustment: Blowout Volatility Correction (+{penalty:.1f} pts)")
 
                 # Sharp v2.1 Change #1: Soft Foul Layer
-                # Trigger: competitive (Spread <= 7), mid-tempo range (138-155), non-static pace (>= 67)
-                # v2.5 Low-Total Protection Gate: Disable for model_total < 138
-                if sharp_total >= 138.0 and projected_spread <= 7.0 and 138.0 <= sharp_total <= 155.0 and pace_adj >= 67.0:
+                # Converted from hardcoded 138-155 band to dynamic relative anchor via league avg total.
+                lg_avg_total = c.get('_avg_total', 145.0)
+                lg_pace      = c.get('pace_pivot', 67.0)
+                if sharp_total >= (lg_avg_total - 7.0) and projected_spread <= 7.0 and (lg_avg_total - 7.0) <= sharp_total <= (lg_avg_total + 10.0) and pace_adj >= lg_pace:
                     soft_foul_bonus = 1.2
                     sharp_total += soft_foul_bonus
-                    self._log(f"Sharp v2.1: Soft Foul Layer Applied -> +{soft_foul_bonus}")
+                    self._log(f"Sharp v2.1: Soft Foul Layer Applied ({sharp_total:.1f} in dynamically bound range) -> +{soft_foul_bonus}")
                     notes.append(f"Sharp Adjustment: Soft Foul Probability Correction (+{soft_foul_bonus} pts)")
-                elif sharp_total < 138.0 and projected_spread <= 7.0:
-                    self._log(f"Sharp v2.5: Low-Total Protection Gate -> Soft Foul Layer DISABLED (model_total {sharp_total:.1f} < 138)")
+                elif sharp_total < (lg_avg_total - 7.0) and projected_spread <= 7.0:
+                    self._log(f"Sharp v2.5: Low-Total Protection Gate -> Soft Foul Layer DISABLED (model_total {sharp_total:.1f} < base {lg_avg_total - 7.0:.1f})")
 
                 # Sharp v2.1 Change #2: Mid-range Volatility Boost
-                # Trigger: high-chaos band (145-155), high volatility context (NRE >= 50)
-                # v2.5 Low-Total Protection Gate: Disable for model_total < 138
+                # Trigger: high-chaos band tied to avg point span, high volatility context (NRE >= 50)
                 nre_val = game_data.get('nre', 50) # Fallback to mid
-                if sharp_total >= 138.0 and 145.0 <= sharp_total <= 155.0 and nre_val >= 50:
+                if sharp_total >= (lg_avg_total - 7.0) and lg_avg_total <= sharp_total <= (lg_avg_total + 10.0) and nre_val >= 50:
                     mid_vol_boost = 1.0
                     sharp_total += mid_vol_boost
                     self._log(f"Sharp v2.1: Mid-range Volatility Boost -> +{mid_vol_boost}")
@@ -217,8 +217,11 @@ class UniversalBasketballEngine:
 
                     # Sharp 4.5: Form Momentum Bonus (NBL1-only)
                     # Uses the form string (e.g. "WWLWW") from standings endpoint
-                    home_form_wins = game_data.get('home_form_wins', 2)
-                    away_form_wins = game_data.get('away_form_wins', 2)
+                    # Dynamic Fallback: Proportional expected wins over a 5-game stretch rather than fixed 2
+                    sH_wp = game_data.get('statsH', {}).get('win_pct', 0.5)
+                    sA_wp = game_data.get('statsA', {}).get('win_pct', 0.5)
+                    home_form_wins = game_data.get('home_form_wins', sH_wp * 5.0)
+                    away_form_wins = game_data.get('away_form_wins', sA_wp * 5.0)
                     combined_form  = home_form_wins + away_form_wins
                     hot_threshold  = sp.get('form_hot_streak_threshold', 8)
                     cold_threshold = sp.get('form_cold_streak_threshold', 2)
@@ -413,10 +416,18 @@ class UniversalBasketballEngine:
         # --- PHASE 3: FINALIZATION & CLAMPING ---
         legacy_total = stats_total # SAFE Result (Baseline only)
         
-        # v3.1 Stricter Volatility Clamp
-        # Use new config params if available (NBA), else fallback (NCAA)
-        clamp_thr = sp.get('volatility_clamp_threshold', c.get('volatility_threshold', 15.0))
+        # v4.0 Dynamic Volatility Clamp
+        # Migrated from static league threshold (15.0) to individual team scoring standard deviations.
+        sA_vol = game_data.get('statsA', {}).get('std_dev_totals', 15.0)
+        sH_vol = game_data.get('statsH', {}).get('std_dev_totals', 15.0)
+        dynamic_clamp = (sA_vol + sH_vol) / 2
+        # Ensure minimum breathing room so we don't over-clamp natively tight teams
+        clamp_thr = max(10.0, dynamic_clamp)
+
+        # Dampener Factor
         dampener = sp.get('volatility_dampener_factor', c.get('volatility_dampener', 0.7))
+
+        self._log(f"Phase 3: Volatility Clamp derived from Teams (Away:{sA_vol:.1f}, Home:{sH_vol:.1f}) -> Threshold: {clamp_thr:.1f}")
 
         def clamp_total(val, mkt):
             edge = val - mkt
@@ -433,8 +444,9 @@ class UniversalBasketballEngine:
         final_total = clamped_sharp if self.mode == "full" else clamped_legacy
 
         # v3.5 High-Total Protection Rule (NBA)
-        # Cap UNDER edge at 6 points if market >= 232 and teams are elite offensive/pace
-        if c['name'] == "NBA" and market >= 232.0 and self.mode == "full":
+        # Dynamic: Cap UNDER edge at 6 points if market is +7 above the extreme league average baseline
+        nba_extreme_baseline = c.get('_avg_total', 225.0) + 7.0
+        if c['name'] == "NBA" and market >= nba_extreme_baseline and self.mode == "full":
             sA = game_data.get('statsA', {})
             sH = game_data.get('statsH', {})
             rank_off_A = sA.get('rank_off', 99)

@@ -167,7 +167,7 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
             if team not in teams:
                 teams[team] = {
                     "games": 0, "weight_sum": 0.0, "wins": 0,
-                    "pts_for": 0, "pts_against": 0,
+                    "pts_for": 0, "pts_against": 0, "game_totals": [],
                     "fga": 0, "fta": 0, "tov": 0, "orb": 0, "drb": 0, "trb": 0,
                     "opp_fga": 0, "opp_fta": 0, "opp_pts": 0,
                     "opp_tov": 0, "opp_orb": 0,
@@ -177,6 +177,7 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
             td["weight_sum"]  += weight
             td["pts_for"]     += (pts * weight)
             td["pts_against"] += (opp_pts * weight)
+            td["game_totals"].append(pts + opp_pts)
             if pts > opp_pts:
                 td["wins"] += 1
 
@@ -255,12 +256,21 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
         adj_off = round((raw_off + off_adj) / (pace_pivot / 100), 1) if pace_pivot > 0 else round(raw_off + off_adj, 1)
         adj_def = round((raw_def - def_adj) / (pace_pivot / 100), 1) if pace_pivot > 0 else round(raw_def - def_adj, 1)
 
+        std_dev_totals = 15.0
+        n_totals = len(td["game_totals"])
+        if n_totals > 1:
+            mean_tot = sum(td["game_totals"]) / n_totals
+            variance = sum((x - mean_tot) ** 2 for x in td["game_totals"]) / (n_totals - 1)
+            import math
+            std_dev_totals = round(math.sqrt(variance), 2)
+
         output_stats.append({
             "team_name":   team_name,
             "team_id":     0,
             "adj_off":     adj_off,
             "adj_def":     adj_def,
             "adj_t":       round(pace_pivot, 1),
+            "std_dev_totals": std_dev_totals,
             "games_played": g,
             "wins":        td["wins"],
             "win_pct":     round(td["wins"] / g, 3),

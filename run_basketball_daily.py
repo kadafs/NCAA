@@ -868,6 +868,8 @@ def main():
                     "predicted_result": res.get("predicted_result"),
                     "home_source":  sH.get("source", "SRS") if sH else "SRS",
                     "away_source":  sA.get("source", "SRS") if sA else "SRS",
+                    "home_team_volatility": sH.get("std_dev_totals", None) if sH else None,
+                    "away_team_volatility": sA.get("std_dev_totals", None) if sA else None,
                     "market_total": market if (market and market not in (145.5, 230.0)) else None,
                     "edge":         edge if (market and market not in (145.5, 230.0)) else None,
                     "side":         side if (market and market not in (145.5, 230.0)) else None,
