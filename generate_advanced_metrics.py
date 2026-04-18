@@ -395,6 +395,9 @@ def process_leagues():
                         as_ = int(as_)
                     except (TypeError, ValueError):
                         continue
+                    # Skip awarded/forfeited matches — not real game totals
+                    if g.get("status") == "Game Awarded":
+                        continue
                     if hs == 0 and as_ == 0:
                         continue
                     if g.get("status") not in ("Game Finished", "Final", "AOT", "FT") and hs == 0 and as_ == 0:
@@ -609,25 +612,24 @@ def process_leagues():
             json.dump(payload_srs, f, indent=4)
 
         # Write [ADVANCED] — uses GENUINE efficiency ratings, not SRS clone
-        if advanced_eligible:
-            adv_stats = calculate_advanced_ratings(filtered_games, pace_pivot=pace_pivot)
-            if adv_stats:
-                payload_adv = {
-                    "league_id": league_id,
-                    "season": season,
-                    "model_architecture": "[ADVANCED]",
-                    "calculated_at": datetime.datetime.now().isoformat(),
-                    "teams": adv_stats
-                }
-                with open(f"data/bball_stats_{league_id}_adv.json", "w", encoding="utf-8") as f:
-                    json.dump(payload_adv, f, indent=4)
-            else:
-                # Not enough box-score games — fall back to SRS payload
-                payload_adv_fb = dict(payload_srs)
-                payload_adv_fb["model_architecture"] = "[ADVANCED]"
-                payload_adv_fb["note"] = "Insufficient box-score coverage; using SRS fallback"
-                with open(f"data/bball_stats_{league_id}_adv.json", "w", encoding="utf-8") as f:
-                    json.dump(payload_adv_fb, f, indent=4)
+        adv_stats = calculate_advanced_ratings(filtered_games, pace_pivot=pace_pivot) if advanced_eligible else []
+        if adv_stats:
+            payload_adv = {
+                "league_id": league_id,
+                "season": season,
+                "model_architecture": "[ADVANCED]",
+                "calculated_at": datetime.datetime.now().isoformat(),
+                "teams": adv_stats
+            }
+            with open(f"data/bball_stats_{league_id}_adv.json", "w", encoding="utf-8") as f:
+                json.dump(payload_adv, f, indent=4)
+        else:
+            # Not enough box-score games — fall back to SRS payload
+            payload_adv_fb = dict(payload_srs)
+            payload_adv_fb["model_architecture"] = "[ADVANCED]"
+            payload_adv_fb["note"] = "Insufficient box-score coverage; using SRS fallback"
+            with open(f"data/bball_stats_{league_id}_adv.json", "w", encoding="utf-8") as f:
+                json.dump(payload_adv_fb, f, indent=4)
             
             # --- ALGORITHMIC GHOST INJURY DETECTION ---
             if advanced_eligible:

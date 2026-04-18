@@ -98,7 +98,7 @@ def main():
         return
 
     predictions = data.get("predictions", [])
-    ungraded = [p for p in predictions if p.get("actual_result") is None]
+    ungraded = [p for p in predictions if p.get("actual_result") is None and not p.get("awarded_match")]
     missing_delta = [
         p for p in predictions
         if p.get("actual_result")
@@ -196,6 +196,19 @@ def main():
                     break
         if key in results_map:
             h_s, a_s, status = results_map[key]
+
+            # Skip awarded/forfeited matches — 0-20 or 20-0 scores are not real game totals.
+            # API short codes for awarded: 'FT:AW', 'AWD', 'WO' (walkover).
+            # Also catch the unmistakable 0-20 / 20-0 score pattern as a fallback.
+            is_awarded_status = status in ('FT:AW', 'AWD', 'WO', 'AWARDED')
+            is_awarded_score  = (h_s == 0 and a_s == 20) or (h_s == 20 and a_s == 0)
+            if is_awarded_status or is_awarded_score:
+                p = pred.copy()
+                p['awarded_match'] = True
+                graded_list.append(p)
+                print(f"  ⚠️  Skipping awarded match: {pred.get('home_team')} vs {pred.get('away_team')} ({h_s}-{a_s}, status={status})")
+                continue
+
             actual = "HOME" if h_s > a_s else "AWAY"
             
             p = pred.copy()

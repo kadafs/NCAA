@@ -15,6 +15,16 @@ TEAM_OUTPUT_FILE = os.path.join(DATA_DIR, "basketball_leaderboard.json")
 # ==========================================
 TRACKING_EPOCH = "2026-03-25"
 
+# ==========================================
+# LEAGUE-SPECIFIC EPOCH OVERRIDES
+# Key: league_id (int). Value: Start date (YYYY-MM-DD).
+# Predictions for this league before this date will be ignored,
+# resetting its leaderboard stats to 0 from this date.
+# ==========================================
+LEAGUE_EPOCHS = {
+    # 211: "2026-10-01",  # Example: reset NBL1 Central Women on Oct 1
+}
+
 def _blank_model_stats():
     return {
         "1x2_w": 0, "1x2_l": 0,
@@ -48,7 +58,7 @@ def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
         bucket["count_signed_delta"] += 1
         bucket["signed_deltas"].append(signed_delta)
 
-def process_file(file_path, stats_dict, team_stats_dict):
+def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -60,6 +70,12 @@ def process_file(file_path, stats_dict, team_stats_dict):
                 continue
 
             league_id    = p.get("league_id")
+            
+            # Enforce League-Specific Epoch overrides
+            league_epoch = LEAGUE_EPOCHS.get(league_id)
+            if league_epoch and file_date_str < league_epoch:
+                continue
+                
             league_name  = p.get("league", "Unknown")
             country      = p.get("country", "")
             
@@ -159,9 +175,10 @@ def main():
     team_stats = {}
     
     for f in sorted(files):
+        file_date_str = os.path.basename(f).replace("universal_predictions_", "").replace(".json", "")
         if args.verbose:
             print(f" - Processing {os.path.basename(f)}...")
-        process_file(f, league_stats, team_stats)
+        process_file(f, file_date_str, league_stats, team_stats)
         
     # Compile into array and calculate metrics
     leaderboard = []

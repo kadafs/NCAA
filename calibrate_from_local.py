@@ -146,6 +146,10 @@ def main():
                     date_str = str(g.get("time") or g.get("date") or data.get("date") or "")
                     game_date = parse_date(date_str)
                     
+                    # Skip awarded/forfeited matches — scores like 20-0 are not real game totals
+                    if g.get("status") == "Game Awarded":
+                        continue
+
                     # If game is scheduled but hasn't fully finished with a score we shouldn't have matched h_score
                     if h_score == 0 and a_score == 0 and g.get("status") not in ("Game Finished", "Final", "AOT", "FT"):
                         continue
@@ -269,7 +273,34 @@ def main():
                     
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(new_config, f, indent=2)
-                
+
+            # Compute and store _xpts_correction: bridges the gap between adj_off-derived
+            # xPTS and the true calibrated league average scoring level.
+            stats_file = f"data/bball_stats_{lid}_adv.json"
+            if not os.path.exists(stats_file):
+                stats_file = f"data/bball_stats_{lid}_srs.json"
+            if os.path.exists(stats_file):
+                try:
+                    with open(stats_file, "r", encoding="utf-8") as sf:
+                        stats_data = json.load(sf)
+                    teams = stats_data.get("teams", [])
+                    if len(teams) >= 2:
+                        avg_adj_off = sum(t.get("adj_off", 0) for t in teams) / len(teams)
+                        avg_adj_t   = sum(t.get("adj_t", derived.get("pace_pivot", 76.0)) for t in teams) / len(teams)
+                        derived_avg_per_team = (avg_adj_off * avg_adj_t) / 100
+                        target_per_team = derived["avg_total"] / 2
+                        if derived_avg_per_team > 0:
+                            correction = target_per_team / derived_avg_per_team
+                            # Cap at ±25% to prevent over-correction
+                            correction = max(0.75, min(1.25, correction))
+                            if abs(correction - 1.0) > 0.02:
+                                new_config["_xpts_correction"] = round(correction, 4)
+                                with open(config_path, "w", encoding="utf-8") as f:
+                                    json.dump(new_config, f, indent=2)
+                                print(f"       xPTS Correction: {correction:.4f} (team avg xPts/team: {derived_avg_per_team:.1f}, target: {target_per_team:.1f})")
+                except Exception as e:
+                    print(f"       Warning: xPTS correction skipped for {lid}: {e}")
+
             success_count += 1
             print(f"  [+] Calibrated {lid:4d} ({league_name[:20]:20}) | {derived['n_games']:4d} games | Avg Tot: {derived['avg_total']:.1f}")
 

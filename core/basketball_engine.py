@@ -93,6 +93,15 @@ class UniversalBasketballEngine:
             stats_total = stats_total * reg_factor + league_avg * (1 - reg_factor)
             self._log(f"Step 4: Regression Applied ({reg_factor}) -> {stats_total:.2f} (blended toward {league_avg:.1f})")
         
+        # Step 4b: xPTS League Correction
+        # Anchors absolute scoring level to the calibrated league baseline without
+        # touching adj_off values or distorting relative team rankings/spreads.
+        # Computed and stored by calibrate_from_local.py each time calibration runs.
+        xpts_correction = c.get('_xpts_correction', 1.0)
+        if xpts_correction != 1.0:
+            stats_total *= xpts_correction
+            self._log(f"Step 4b: xPTS Correction ({xpts_correction:.4f}) -> {stats_total:.2f}")
+
         # --- PHASE 2: SHARP LAYER (BOOSTERS & INJURIES) ---
         sharp_total = stats_total
         notes = []
