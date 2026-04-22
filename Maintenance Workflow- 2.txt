@@ -3,11 +3,13 @@ python audit_team_names.py - check team names
 / **[python grade_basketball.py  
 python grade_basketball.py --regrade
 python aggregate_basketball_stats.py*** 
+python run_custom_audit.py
+
 
 
 # 1. Update the raw stats from Proballers 
 python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
-python scrape_proballers.py --daily today --cutoff_date 2026-04-01 
+python scrape_proballers.py --daily today --cutoff_date 2026-04-7 
   
   1b. # Update the raw stats from api python auto_update_historical.py
 
