@@ -30,12 +30,11 @@ def run_audit(search_term):
     all_files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')))
     files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= TRACKING_EPOCH]
     
-    # stats[tier] = {'total': 0, 'wins_flat': 0, 'wins_5': 0, 'wins_10': 0}
-    stats = defaultdict(lambda: {'total': 0, 'wins_flat': 0, 'wins_5': 0, 'wins_10': 0})
+    # stats[league_name][tier]
+    stats = defaultdict(lambda: defaultdict(lambda: {'total': 0, 'wins_flat': 0, 'wins_5': 0, 'wins_10': 0}))
     
     search_lower = search_term.lower().strip()
     games_found = 0
-    matched_names = set()
     
     for p_file in files:
         if not os.path.exists(p_file): continue
@@ -52,18 +51,13 @@ def run_audit(search_term):
             
             # Check if search term matches league, home team, or away team
             is_match = False
-            if search_lower in league_str:
+            if search_lower in league_str or search_lower in home_str or search_lower in away_str:
                 is_match = True
-                matched_names.add(f"{p.get('country', '')} - {p.get('league', '')}".upper())
-            elif search_lower in home_str:
-                is_match = True
-                matched_names.add(p.get('home_team'))
-            elif search_lower in away_str:
-                is_match = True
-                matched_names.add(p.get('away_team'))
                 
             if not is_match:
                 continue
+                
+            exact_league_name = f"{p.get('country', '')} - {p.get('league', '')}".upper()
                 
             act_h = p.get('actual_home_score')
             act_a = p.get('actual_away_score')
@@ -88,24 +82,19 @@ def run_audit(search_term):
                 
             actual_total = act_h + act_a
             
-            stats[tier]['total'] += 1
+            stats[exact_league_name][tier]['total'] += 1
             if actual_total >= model_total:
-                stats[tier]['wins_flat'] += 1
+                stats[exact_league_name][tier]['wins_flat'] += 1
             if actual_total >= (model_total - 5):
-                stats[tier]['wins_5'] += 1
+                stats[exact_league_name][tier]['wins_5'] += 1
             if actual_total >= (model_total - 10):
-                stats[tier]['wins_10'] += 1
+                stats[exact_league_name][tier]['wins_10'] += 1
                 
             games_found += 1
             
     # --- OUTPUT ---
     print("\n" + "="*80)
-    print(f" AUDIT REPORT: '{search_term.upper()}'")
-    if matched_names:
-        matches_list = list(matched_names)[:5]
-        if len(matched_names) > 5:
-            matches_list.append(f"...and {len(matched_names)-5} more")
-        print(f" Matched entities: {', '.join(matches_list)}")
+    print(f" SEARCH RESULTS FOR: '{search_term.upper()}'")
     print("="*80)
     
     if games_found == 0:
@@ -120,49 +109,51 @@ def run_audit(search_term):
         4: 'Tier 4 (Both Unstable)'
     }
     
-    print(f'\n{"Stability Tier":<24} | {"Games":>5} | {"Flat Floor":>15} | {"-5 Points":>15} | {"-10 Points":>15}')
-    print('-' * 82)
-    
-    total_games = 0
-    total_flat = 0
-    total_5 = 0
-    total_10 = 0
-    
-    for t in range(1, 5):
-        d = stats[t]
-        tot = d['total']
-        total_games += tot
-        total_flat += d['wins_flat']
-        total_5 += d['wins_5']
-        total_10 += d['wins_10']
+    for league_name, league_stats in sorted(stats.items()):
+        print(f"\n>> LEAGUE: {league_name}")
+        print(f'{"Stability Tier":<24} | {"Games":>5} | {"Flat Floor":>15} | {"-5 Points":>15} | {"-10 Points":>15}')
+        print('-' * 82)
         
-        if tot == 0:
-            print(f'{tier_names[t]:<24} | {tot:>5} | {"-":>15} | {"-":>15} | {"-":>15}')
-            continue
+        total_games = 0
+        total_flat = 0
+        total_5 = 0
+        total_10 = 0
+        
+        for t in range(1, 5):
+            d = league_stats.get(t, {'total': 0, 'wins_flat': 0, 'wins_5': 0, 'wins_10': 0})
+            tot = d['total']
+            total_games += tot
+            total_flat += d['wins_flat']
+            total_5 += d['wins_5']
+            total_10 += d['wins_10']
             
-        pct_flat = (d['wins_flat'] / tot) * 100
-        pct_5 = (d['wins_5'] / tot) * 100
-        pct_10 = (d['wins_10'] / tot) * 100
+            if tot == 0:
+                print(f'{tier_names[t]:<24} | {tot:>5} | {"-":>15} | {"-":>15} | {"-":>15}')
+                continue
+                
+            pct_flat = (d['wins_flat'] / tot) * 100
+            pct_5 = (d['wins_5'] / tot) * 100
+            pct_10 = (d['wins_10'] / tot) * 100
+            
+            flat_str = f"{d['wins_flat']}/{tot} ({pct_flat:.0f}%)"
+            str_5 = f"{d['wins_5']}/{tot} ({pct_5:.0f}%)"
+            str_10 = f"{d['wins_10']}/{tot} ({pct_10:.0f}%)"
+            
+            print(f'{tier_names[t]:<24} | {tot:>5} | {flat_str:>15} | {str_5:>15} | {str_10:>15}')
+            
+        print('-' * 82)
         
-        flat_str = f"{d['wins_flat']}/{tot} ({pct_flat:.0f}%)"
-        str_5 = f"{d['wins_5']}/{tot} ({pct_5:.0f}%)"
-        str_10 = f"{d['wins_10']}/{tot} ({pct_10:.0f}%)"
-        
-        print(f'{tier_names[t]:<24} | {tot:>5} | {flat_str:>15} | {str_5:>15} | {str_10:>15}')
-        
-    print('-' * 82)
-    
-    # Print Totals
-    if total_games > 0:
-        pct_flat = (total_flat / total_games) * 100
-        pct_5 = (total_5 / total_games) * 100
-        pct_10 = (total_10 / total_games) * 100
-        
-        flat_str = f"{total_flat}/{total_games} ({pct_flat:.0f}%)"
-        str_5 = f"{total_5}/{total_games} ({pct_5:.0f}%)"
-        str_10 = f"{total_10}/{total_games} ({pct_10:.0f}%)"
-        
-        print(f'{"OVERALL":<24} | {total_games:>5} | {flat_str:>15} | {str_5:>15} | {str_10:>15}')
+        # Print Totals
+        if total_games > 0:
+            pct_flat = (total_flat / total_games) * 100
+            pct_5 = (total_5 / total_games) * 100
+            pct_10 = (total_10 / total_games) * 100
+            
+            flat_str = f"{total_flat}/{total_games} ({pct_flat:.0f}%)"
+            str_5 = f"{total_5}/{total_games} ({pct_5:.0f}%)"
+            str_10 = f"{total_10}/{total_games} ({pct_10:.0f}%)"
+            
+            print(f'{"OVERALL":<24} | {total_games:>5} | {flat_str:>15} | {str_5:>15} | {str_10:>15}')
     print("\n")
 
 def main():
