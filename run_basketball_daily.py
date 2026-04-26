@@ -86,7 +86,7 @@ TEAM_NAME_OVERRIDES = {
     # --- Poland Energa Basket Liga (72) ---
     "Ostrow Wielkopolski": "Stal Ostrów Wielkopolski",
     # --- Puerto Rico BSN (76) ---
-    "Aguada Santeros": "Santeros de Aguada",
+    # Note: Leaderboard now stores API-native names. No overrides needed.
     # --- Europe ABA League (198) ---
     "FMP Beograd": "FMP SoccerBet",
     "Spartak Subotica": "Spartak Office Shoes",
@@ -107,9 +107,6 @@ TEAM_NAME_OVERRIDES = {
     # --- Lithuania NKL (61) ---
     "Neptunas 2": "Klaipėdos Neptūnas-Akvaservis",
     "Zalgiris Kaunas 2": "Zalgiris Kaunas II",
-    # --- Puerto Rico BSN (76) ---
-    "Piratas de Quebradillas": "Quebradillas Pirates",
-    "Mets de Guaynabo": "Mets Guaynabo",
     # --- Romania Divizia A (78) ---
     "Municipal Galati": "CSM Galati",
     "CSM Oradea": "CSM CSU Oradea",

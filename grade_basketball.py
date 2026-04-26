@@ -163,17 +163,26 @@ def main():
 
     if not fixtures: return
 
-    # Map (league_id, home, away) -> (home_score, away_score)
+    # Map (league_id, home, away) -> (home_score, away_score, status, ht_home, ht_away)
     results_map = {}
     for fix in fixtures:
         lid = fix["league"]["id"]
         h_name = fix["teams"]["home"]["name"]
         a_name = fix["teams"]["away"]["name"]
         status = fix.get("status", {}).get("short")
-        h_score = fix.get("scores", {}).get("home", {}).get("total")
-        a_score = fix.get("scores", {}).get("away", {}).get("total")
+        h_scores = fix.get("scores", {}).get("home", {})
+        a_scores = fix.get("scores", {}).get("away", {})
+        h_score = h_scores.get("total")
+        a_score = a_scores.get("total")
+        # Halftime = Q1 + Q2 (may be None if API didn't return quarters)
+        h_q1 = h_scores.get("quarter_1") or 0
+        h_q2 = h_scores.get("quarter_2") or 0
+        a_q1 = a_scores.get("quarter_1") or 0
+        a_q2 = a_scores.get("quarter_2") or 0
+        ht_home = (h_q1 + h_q2) if (h_scores.get("quarter_1") is not None) else None
+        ht_away = (a_q1 + a_q2) if (a_scores.get("quarter_1") is not None) else None
         if h_score is not None and a_score is not None:
-            results_map[(lid, h_name, a_name)] = (int(h_score), int(a_score), status)
+            results_map[(lid, h_name, a_name)] = (int(h_score), int(a_score), status, ht_home, ht_away)
 
     matched = 0
     graded_list = []
@@ -195,7 +204,7 @@ def main():
                     key = (lid, h, a)
                     break
         if key in results_map:
-            h_s, a_s, status = results_map[key]
+            h_s, a_s, status, ht_home, ht_away = results_map[key]
 
             # Skip awarded/forfeited matches — 0-20 or 20-0 scores are not real game totals.
             # API short codes for awarded: 'FT:AW', 'AWD', 'WO' (walkover).
@@ -206,7 +215,7 @@ def main():
                 p = pred.copy()
                 p['awarded_match'] = True
                 graded_list.append(p)
-                print(f"  ⚠️  Skipping awarded match: {pred.get('home_team')} vs {pred.get('away_team')} ({h_s}-{a_s}, status={status})")
+                print(f"  Skipping awarded match: {pred.get('home_team')} vs {pred.get('away_team')} ({h_s}-{a_s}, status={status})")
                 continue
 
             actual = "HOME" if h_s > a_s else "AWAY"
@@ -216,6 +225,16 @@ def main():
             p["actual_away_score"] = a_s
             p["actual_result"]     = actual
             p["status"]            = status
+
+            # Store halftime scores if available from the API
+            if ht_home is not None and ht_away is not None:
+                ht_total = ht_home + ht_away
+                model_total_for_ht = p.get("model_total") or p.get("model", {}).get("total")
+                p["halftime_home_score"] = ht_home
+                p["halftime_away_score"] = ht_away
+                p["halftime_total"]      = ht_total
+                if model_total_for_ht:
+                    p["halftime_pct_of_model"] = round((ht_total / model_total_for_ht) * 100, 1)
             
             # The Delta Grading Matrix
             # Bug 1 Fix: read flat model_total key (set by run_basketball_daily.py)

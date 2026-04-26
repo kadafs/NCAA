@@ -5,8 +5,6 @@ python grade_basketball.py --regrade
 python aggregate_basketball_stats.py*** 
 python run_custom_audit.py
 
-
-
 # 1. Update the raw stats from Proballers 
 python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
 python scrape_proballers.py --daily today --cutoff_date 2026-04-7 
@@ -442,4 +440,3 @@ The mean of all `±Δ` values for a league. This reveals **systematic bias**:
 | ✅ Neutral | −3 to +3 | No significant directional lean |
 
 The threshold of ±3 points is deliberate — anything smaller is statistical noise for basketball games averaging 150+ points.
-

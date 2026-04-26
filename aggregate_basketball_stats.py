@@ -33,7 +33,9 @@ def _blank_model_stats():
         "sum_rpe": 0.0, "count_rpe": 0,
         "sum_delta": 0.0, "count_delta": 0,
         "sum_signed_delta": 0.0, "count_signed_delta": 0,
-        "signed_deltas": []
+        "signed_deltas": [],
+        # Halftime tracking
+        "ht_count": 0, "ht_pct_sum": 0.0, "ht_on_pace": 0
     }
 
 def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
@@ -131,6 +133,19 @@ def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
                 _tally(team_stats_dict[t_name][model_key],
                        pred_1x2, actual_1x2, tier, rpe, signed_delta)
 
+            # Halftime tracking
+            ht_pct = p.get("halftime_pct_of_model")
+            if ht_pct is not None:
+                stats_dict[key][model_key]["ht_count"]   += 1
+                stats_dict[key][model_key]["ht_pct_sum"] += ht_pct
+                if ht_pct >= 50.0:
+                    stats_dict[key][model_key]["ht_on_pace"] += 1
+                for t_name in [home_team, away_team]:
+                    team_stats_dict[t_name][model_key]["ht_count"]   += 1
+                    team_stats_dict[t_name][model_key]["ht_pct_sum"] += ht_pct
+                    if ht_pct >= 50.0:
+                        team_stats_dict[t_name][model_key]["ht_on_pace"] += 1
+
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")
 
@@ -206,6 +221,10 @@ def main():
             "outcome_w":         x_w,
             "outcome_l":         x_l,
             "outcome_hit_rate":  round(x_w / x_total * 100, 1) if x_total else 0.0,
+            # Halftime metrics (None until grader starts populating halftime fields)
+            "avg_ht_pace":       round(s["ht_pct_sum"] / s["ht_count"], 1) if s.get("ht_count", 0) > 0 else None,
+            "ht_on_pace_rate":   round(s["ht_on_pace"] / s["ht_count"] * 100, 1) if s.get("ht_count", 0) > 0 else None,
+            "ht_graded_count":   s.get("ht_count", 0),
         }
 
     for key, models in league_stats.items():
