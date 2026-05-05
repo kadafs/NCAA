@@ -4,12 +4,16 @@ python audit_team_names.py - check team names
 python grade_basketball.py --regrade
 python aggregate_basketball_stats.py*** 
 python run_custom_audit.py
+python run_daily_sdi_report.py
+
 
 # 1. Update the raw stats from Proballers 
 python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
 python scrape_proballers.py --daily today --cutoff_date 2026-02-02 
+python scrape_nbl1.py - For NBL 1 games only 
   
   1b. # Update the raw stats from api python auto_update_historical.py
+  # 1c. Update the SDI index python calculate_sdi.py
 
 # 2. Convert raw stats into the True Offense/Defense Matrix
 python generate_advanced_metrics.py
