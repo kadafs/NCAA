@@ -7,7 +7,7 @@ python run_custom_audit.py
 
 # 1. Update the raw stats from Proballers 
 python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
-python scrape_proballers.py --daily today --cutoff_date 2026-04-7 
+python scrape_proballers.py --daily today --cutoff_date 2026-02-02 
   
   1b. # Update the raw stats from api python auto_update_historical.py
 
@@ -25,6 +25,18 @@ Every 2 weeks:
   python auto_update_historical.py      ← pull latest game results
   python calibrate_from_local.py        ← rebuild pace/eff pivots
   python generate_advanced_metrics.py   ← rebuild SRS matrix
+  python calculate_sdi.py               ← rebuild Star Dependency Index (SDI)
+
+Monthly (off-peak / overnight) — ADV upgrades for registered leagues:
+  python scrape_proballers_batch.py --cutoff_date 2025-10-01
+  python generate_advanced_metrics.py   ← re-run AFTER batch scrape
+  python aggregate_basketball_stats.py  ← rebuild leaderboard with ADV stats
+  python push_to_dashboard.py --sport basketball
+
+  Leagues covered by scrape_proballers_batch.py:
+    NBA (12), UK SLB (no API ID), Venezuela Superliga (275),
+    Uruguay Liga Uruguaya (110), Turkey TBL (102),
+    Russia VTB United League (82), WNBA (13), Puerto Rico BSN (76)
 
 
 #4 Update match centre 

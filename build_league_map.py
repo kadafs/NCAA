@@ -23,7 +23,7 @@ def build_map():
         lid = l.get("id")
         
         # Omit generic World friendlies and USA (NBA/NCAA are handled by specialized standalone models)
-        if c and lname and c.lower() not in ["world", "usa"]:
+        if c and lname and c.lower() not in ["world"]:
             country_slug = c.lower().strip().replace(" ", "-")
             league_slug = lname.lower().strip().replace(" ", "-")
             

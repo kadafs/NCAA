@@ -161,16 +161,24 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
     
     existing_data = []
     seen_sigs = set()
+    has_gaps = False
     
     # Intelligent resume logic: Load existing data to append strictly new games
     if os.path.exists(out_file) and os.path.getsize(out_file) > 1024:
         try:
             with open(out_file, 'r', encoding='utf-8') as f:
-                existing_data = json.load(f)
-                for item in existing_data:
-                    sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
-                    seen_sigs.add(sig)
-            print(f"  [~] Loaded {len(existing_data)} existing historical records.")
+                raw_data = json.load(f)
+                for item in raw_data:
+                    # Only retain games that successfully captured player data
+                    has_players = bool(item.get("stats", {}).get("home", {}).get("players"))
+                    if has_players:
+                        sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
+                        seen_sigs.add(sig)
+                        existing_data.append(item)
+            
+            discarded = len(raw_data) - len(existing_data)
+            has_gaps = discarded > 0
+            print(f"  [~] Loaded {len(existing_data)} existing valid historical records ({discarded} discarded for missing player data).")
         except Exception as e:
             print(f"  [!] Failed to load existing payload: {str(e)}. Starting fresh.")
 
@@ -232,8 +240,12 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
                     print(f"        -> [+] Appended new data!")
                 else:
                     print(f"        -> [~] Match already exists in dataset: {sig}")
-                    print(f"        -> [!] League up to date. Skipping remaining historical matches.")
-                    break
+                    if has_gaps:
+                        print(f"        -> [!] Gap detected in historical data. Continuing scan...")
+                        continue
+                    else:
+                        print(f"        -> [!] League up to date. Skipping remaining historical matches.")
+                        break
                 
             # Intelligent rate limit to avoid Cloudflare shadowbans
             time.sleep(random.uniform(2.1, 4.3))
@@ -339,12 +351,7 @@ def get_daily_urls(date_str):
     if not leagues_list:
         return []
         
-    # Standard Proballers exclusions: No strict USA leagues (NBA/NCAA), no fake leagues.
-    # We do NOT import from run_basketball_daily anymore.
-    valid_leagues = [
-        l for l in leagues_list
-        if str(l.get("country") or "").strip().upper() != "USA"
-    ]
+    valid_leagues = leagues_list
     
     leagues_today = [str(l.get("league_id")) for l in valid_leagues if l.get("league_id")]
     

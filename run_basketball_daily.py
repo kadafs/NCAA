@@ -382,6 +382,9 @@ def get_advanced_stats(league_id):
     matrix_path = f"data/bball_stats_{league_id}_adv.json"
     if os.path.exists(matrix_path):
         data = load_json(matrix_path)
+        # Verify it's a REAL advanced matrix, not an SRS fallback
+        if data.get("note") == "Insufficient box-score coverage; using SRS fallback":
+            return None
         teams_list = data.get("teams", [])
         if teams_list:
             return {t["team_name"]: t for t in teams_list}

@@ -10,6 +10,42 @@ import argparse
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data', 'basketball')
 TRACKING_EPOCH = '2026-03-25'
 
+def load_sdi_index():
+    """Load the Star Dependency Index lookup dict {team_name_lower: sdi_record}.
+    Also creates first-word and all-word aliases so short names (e.g. 'Cocodrilos',
+    'Heidelberg') match full names (e.g. 'Cocodrilos de Caracas',
+    'MLP Academics Heidelberg').
+    """
+    sdi_path = os.path.join(DATA_DIR, 'team_sdi.json')
+    if not os.path.exists(sdi_path):
+        return {}
+    try:
+        data = json.load(open(sdi_path, 'r', encoding='utf-8'))
+        index = {}
+        word_index = {}  # maps single significant words -> sdi_record
+        STOP_WORDS = {'de', 'del', 'la', 'le', 'los', 'las', 'el', 'en', 'of', 'and',
+                      'the', 'bc', 'bk', 'sk', 'fc', 'ac', 'sc', 'club', 'basket',
+                      'basketball', 'sport', 'sports'}
+        for t in data.get('teams', []):
+            full_key = t['team'].lower()
+            index[full_key] = t
+            # First-word alias (e.g. 'cocodrilos' -> 'Cocodrilos de Caracas')
+            words = full_key.split()
+            first_word = words[0]
+            if first_word not in index:
+                index[first_word] = t
+            # All significant word aliases (e.g. 'heidelberg' -> 'MLP Academics Heidelberg')
+            for word in words:
+                if len(word) >= 4 and word not in STOP_WORDS and word not in word_index:
+                    word_index[word] = t
+        # Merge word_index into main index as lower-priority fallback
+        for word, rec in word_index.items():
+            if word not in index:
+                index[word] = rec
+        return index
+    except Exception:
+        return {}
+
 def load_valid_leagues():
     """Load leagues that have at least 5 graded games to filter out noise/exhibitions."""
     valid_leagues = set()
@@ -26,6 +62,7 @@ def load_valid_leagues():
 def run_audit(search_term):
     """Run an audit for a specific league or team name."""
     valid_leagues = load_valid_leagues()
+    sdi_index = load_sdi_index()
     
     all_files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')))
     files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= TRACKING_EPOCH]
@@ -61,6 +98,11 @@ def run_audit(search_term):
                 continue
                 
             exact_league_name = f"{p.get('country', '')} - {p.get('league', '')}".upper()
+            
+            # Track all team names seen for SDI lookup later
+            if exact_league_name not in ["- "]:
+                home_t = p.get('home_team', '')
+                away_t = p.get('away_team', '')
                 
             act_h = p.get('actual_home_score')
             act_a = p.get('actual_away_score')
@@ -116,6 +158,20 @@ def run_audit(search_term):
         print("\n  [X] No graded games found matching this search term since the tracking epoch.")
         print("  Check the spelling or try a broader search.\n")
         return
+
+    # Collect all unique team names seen for SDI display
+    all_team_names = set()
+    for p_file in files:
+        if not os.path.exists(p_file): continue
+        with open(p_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        for p in data.get('predictions', []):
+            league_str = f"{p.get('country', '')} - {p.get('league', '')}".lower().replace('\u2014', '-')
+            home_str = p.get('home_team', '').lower()
+            away_str = p.get('away_team', '').lower()
+            if search_lower in league_str or search_lower in home_str or search_lower in away_str:
+                if p.get('home_team'): all_team_names.add(p.get('home_team'))
+                if p.get('away_team'): all_team_names.add(p.get('away_team'))
         
     tier_names = {
         1: 'Tier 1 (Both Green)',
@@ -219,6 +275,45 @@ def run_audit(search_term):
                 on_pace_overall = (total_ht_on_pace / total_ht_count) * 100
                 row += f' | {avg_ht_overall:>9.1f}% | {total_ht_on_pace}/{total_ht_count} ({on_pace_overall:.0f}%)'
             print(row)
+    
+    # --- SDI SECTION ---
+    if sdi_index:
+        sdi_matches = []
+        for team_name in all_team_names:
+            t_lower = team_name.lower()
+            rec = sdi_index.get(t_lower)
+            if not rec and t_lower.split():
+                words = t_lower.split()
+                if t_lower.endswith(' w') or t_lower.endswith(' (w)'):
+                    rec = sdi_index.get(words[0] + ' w')
+                if not rec:
+                    rec = sdi_index.get(words[0])
+            
+            if rec and rec not in sdi_matches:
+                sdi_matches.append(rec)
+        
+        if sdi_matches:
+            sdi_matches.sort(key=lambda x: x['avg_sdi'], reverse=True)
+            print("\n" + "-"*70)
+            print(" STAR DEPENDENCY INDEX (SDI) — Based on Proballers box score data")
+            print("-"*70)
+            print(f" {'Team':<35} {'SDI':>6} {'Top1':>5} {'Risk':<16} {'Key Stars'}")
+            print(" " + "-"*90)
+            for rec in sdi_matches:
+                stars = ", ".join(
+                    f"{p['name']} (top-2 in {p['times_top2']} games)"
+                    for p in rec.get('top_players', [])[:2]
+                )
+                risk_col = rec['risk_label']
+                print(f" {rec['team']:<35} {rec['avg_sdi']:>5}% {rec['avg_top1_pct']:>4}% {risk_col:<16} {stars}")
+            print()
+        else:
+            if search_lower not in [''] and len(all_team_names) > 0:
+                print("\n  [SDI] No player box-score data for this league in Proballers.")
+                print("  SDI requires per-game player scoring — either this league has")
+                print("  never been scraped, or was scraped before player data was captured.")
+                print("  Fix: python scrape_proballers_batch.py  (then re-run calculate_sdi.py)\n")
+
     print("\n")
 
 def main():

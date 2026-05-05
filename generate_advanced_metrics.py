@@ -37,7 +37,7 @@ def calculate_iterative_srs(games):
         hs = g.get("home_score", 0)
         as_ = g.get("away_score", 0)
         
-        if not ht or not at or hs == 0 or as_ == 0:
+        if not ht or not at or not hs or not as_:
             continue
             
         g_date = g.get("_parsed_date", max_date)
@@ -338,7 +338,8 @@ def process_leagues():
     f_files = glob.glob("data/historical/flashscore_*.json")
     p_files = glob.glob("data/historical/proballers_*.json")
     a_files = glob.glob("data/historical/api_basketball_*.json")
-    historical_files = f_files + p_files + a_files
+    n_files = glob.glob("data/historical/nbl1_official_*.json")
+    historical_files = f_files + p_files + a_files + n_files
     os.makedirs("data/team_stats", exist_ok=True)
     
     season = datetime.datetime.now().year
@@ -348,7 +349,7 @@ def process_leagues():
     
     for hf in historical_files:
         basename = os.path.basename(hf) 
-        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace("api_basketball_", "").replace(".json", "")
+        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace("api_basketball_", "").replace("nbl1_official_", "").replace(".json", "")
         
         if slug.isdigit():
             league_id = int(slug)
@@ -419,6 +420,7 @@ def process_leagues():
     success_count = 0
     
     for league_id, all_games in games_by_league.items():
+        league_id = re.sub(r'[^a-zA-Z0-9_-]', '', str(league_id))
         if len(all_games) < 5:
             continue
             
