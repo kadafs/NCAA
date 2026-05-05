@@ -12,23 +12,46 @@ def load_sdi_index():
     try:
         data = json.load(open(sdi_path, 'r', encoding='utf-8'))
         index = {}
-        word_index = {}
         STOP_WORDS = {'de', 'del', 'la', 'le', 'los', 'las', 'el', 'en', 'of', 'and',
                       'the', 'bc', 'bk', 'sk', 'fc', 'ac', 'sc', 'club', 'basket',
                       'basketball', 'sport', 'sports'}
-        for t in data.get('teams', []):
+
+        teams = data.get('teams', [])
+
+        # FIX: Track which first-words are shared by multiple teams.
+        # A first-word shortcut is only safe when it is UNIQUE across the entire
+        # SDI dataset. Common prefixes like 'maccabi', 'hapoel', 'slovan', etc.
+        # must never be used as shortcut keys or they will produce false matches.
+        from collections import Counter
+        first_word_counts = Counter(t['team'].lower().split()[0] for t in teams if t.get('team'))
+        unique_first_words = {w for w, count in first_word_counts.items() if count == 1}
+
+        # Also track which individual meaningful words are unique
+        word_index = {}   # word -> team record (only unique words)
+        word_counts = Counter()
+        for t in teams:
+            full_key = t['team'].lower()
+            for word in full_key.split():
+                if len(word) >= 4 and word not in STOP_WORDS:
+                    word_counts[word] += 1
+        unique_words = {w for w, count in word_counts.items() if count == 1}
+
+        for t in teams:
             full_key = t['team'].lower()
             index[full_key] = t
             words = full_key.split()
+
+            # Only register first-word shortcut if it is unique across all teams
             first_word = words[0]
-            if first_word not in index:
+            if first_word in unique_first_words and first_word not in index:
                 index[first_word] = t
+
+            # Only register individual-word shortcuts for words unique to one team
             for word in words:
-                if len(word) >= 4 and word not in STOP_WORDS and word not in word_index:
-                    word_index[word] = t
-        for word, rec in word_index.items():
-            if word not in index:
-                index[word] = rec
+                if len(word) >= 4 and word not in STOP_WORDS and word in unique_words:
+                    if word not in index:
+                        index[word] = t
+
         return index
     except Exception:
         return {}
@@ -36,13 +59,27 @@ def load_sdi_index():
 def get_sdi_record(team_name, sdi_index):
     if not team_name: return None
     t_lower = team_name.lower().strip()
+
+    # 1. Exact full-name match
     rec = sdi_index.get(t_lower)
-    if not rec and t_lower.split():
-        words = t_lower.split()
-        if t_lower.endswith(' w') or t_lower.endswith(' (w)'):
-            rec = sdi_index.get(words[0] + ' w')
-        if not rec:
-            rec = sdi_index.get(words[0])
+    if rec:
+        return rec
+
+    # 2. Women's suffix variant (e.g. 'Team W' -> try 'team w' key)
+    words = t_lower.split()
+    if t_lower.endswith(' w') or t_lower.endswith(' (w)'):
+        rec = sdi_index.get(words[0] + ' w')
+        if rec:
+            return rec
+
+    # 3. Unique first-word shortcut ONLY — deliberately NOT falling back to
+    #    words[0] alone for multi-word names, since that causes false matches
+    #    for teams sharing a common prefix (e.g. all 'Maccabi *' teams).
+    #    The unique-word shortcut was already registered in load_sdi_index,
+    #    so individual unique meaningful words will already resolve via key lookup.
+    if len(words) == 1:
+        rec = sdi_index.get(words[0])
+
     return rec
 
 def main():
