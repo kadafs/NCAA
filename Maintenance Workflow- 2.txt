@@ -25,11 +25,28 @@ python run_basketball_daily.py --mode full --no_match_center --date 2026-03-21
 
 python push_to_dashboard.py --sport basketball
 
+# Daily Confidence Report:
+      # All fixtures today
+        python run_confidence_report.py
+
+      # Specific date
+        python run_confidence_report.py --date 2026-05-06
+
+      # Only show high-confidence games
+        python run_confidence_report.py --min_score 60
+
+      # Show component breakdown (V/M/B/S pts)
+      python run_confidence_report.py --date 2026-05-06 --components
+
+      # Filter by tier or league
+        python run_confidence_report.py --tier top_domestic
+        python run_confidence_report.py --league_id 72 
+
+
 Every 2 weeks:
   python auto_update_historical.py      ← pull latest game results
   python calibrate_from_local.py        ← rebuild pace/eff pivots
   python generate_advanced_metrics.py   ← rebuild SRS matrix
-  python calculate_sdi.py               ← rebuild Star Dependency Index (SDI)
 
 Monthly (off-peak / overnight) — ADV upgrades for registered leagues:
   python scrape_proballers_batch.py --cutoff_date 2025-10-01

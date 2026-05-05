@@ -85,6 +85,10 @@ TEAM_NAME_OVERRIDES = {
     "Zhejiang Guangsha": "Zhejiang Golden Bulls",
     # --- Poland Energa Basket Liga (72) ---
     "Ostrow Wielkopolski": "Stal Ostrów Wielkopolski",
+    "Dabrowa Gornicza": "MKS Dąbrowa Górnicza",
+    "Zielona Gora": "Enea Zastal Zielona Góra",
+    "Torun": "Twarde Pierniki Toruń",
+    "Gornik Walbrzych": "Górnik Trans.eu Walbrzych",
     # --- Puerto Rico BSN (76) ---
     # Note: Leaderboard now stores API-native names. No overrides needed.
     # --- Europe ABA League (198) ---

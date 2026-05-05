@@ -10,8 +10,12 @@ import datetime
 CROSS_SOURCE_CANONICAL_MAP = {
     # Iceland Premier League
     "KR Basket":           "KR Reykjavik",
-    # Add more cross-source discrepancies here as they are discovered, e.g.:
-    # "Team API Name":    "Team Canonical Name",
+    # Poland Energa Basket Liga (72)
+    "Dabrowa Gornicza":    "MKS Dąbrowa Górnicza",
+    "Zielona Gora":        "Enea Zastal Zielona Góra",
+    "Torun":               "Twarde Pierniki Toruń",
+    "Gornik Walbrzych":    "Górnik Trans.eu Walbrzych",
+    "Ostrow Wielkopolski": "Stal Ostrów Wielkopolski",
 }
 
 def calculate_iterative_srs(games):

@@ -168,17 +168,18 @@ def run_proballers_scraper(target_url, max_games=None, cutoff_date=None):
         try:
             with open(out_file, 'r', encoding='utf-8') as f:
                 raw_data = json.load(f)
+                no_player_count = 0
                 for item in raw_data:
-                    # Only retain games that successfully captured player data
+                    sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
+                    seen_sigs.add(sig)
+                    existing_data.append(item)
+                    # Track gap count for informational purposes only
                     has_players = bool(item.get("stats", {}).get("home", {}).get("players"))
-                    if has_players:
-                        sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
-                        seen_sigs.add(sig)
-                        existing_data.append(item)
-            
-            discarded = len(raw_data) - len(existing_data)
-            has_gaps = discarded > 0
-            print(f"  [~] Loaded {len(existing_data)} existing valid historical records ({discarded} discarded for missing player data).")
+                    if not has_players:
+                        no_player_count += 1
+                        has_gaps = True
+
+            print(f"  [~] Loaded {len(existing_data)} historical records ({no_player_count} without player stats — retained for score history, skipped by SDI).")
         except Exception as e:
             print(f"  [!] Failed to load existing payload: {str(e)}. Starting fresh.")
 
