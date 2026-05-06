@@ -106,19 +106,19 @@ def score_spread(spread: float) -> int:
     Rewards tighter projected spreads — closer games reduce variance in totals.
 
     Thresholds (absolute projected point spread):
-        ≤ 5  pts → 15  (coin-flip game — totals tend to be cleaner)
-        ≤ 8  pts → 10
-        ≤ 12 pts → 5
-         > 12 pts → 0  (blowout risk inflates totals unpredictably)
+        < 5  pts → 10  (slight penalty for foul-fest/OT risk)
+        ≤ 11 pts → 15  (best zone: competitive, no late fouls)
+        ≤ 15 pts → 10  (minor blowout risk)
+         > 15 pts → 5   (severe blowout risk, garbage time chaos)
     """
-    if spread <= 5:
-        return 15
-    elif spread <= 8:
+    if spread < 5:
         return 10
-    elif spread <= 12:
-        return 5
+    elif spread <= 11:
+        return 15
+    elif spread <= 15:
+        return 10
     else:
-        return 0
+        return 5
 
 
 # ---------------------------------------------------------------------------

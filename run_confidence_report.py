@@ -146,7 +146,7 @@ def band_sort_key(band_label: str) -> int:
 
 def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
                league_id_filter: int = None, show_components: bool = False,
-               min_graded: int = 0):
+               min_graded: int = 0, hidden_gems: bool = False):
 
     pred_path = os.path.join(PREDICTIONS_DIR, f"universal_predictions_{date_str}.json")
     if not os.path.exists(pred_path):
@@ -219,6 +219,11 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
 
         if score < min_score:
             continue
+
+        if hidden_gems:
+            # Hidden gems are Moderate/Low games (< 60.0 score) that have High Stability (vol_score >= 15)
+            if score >= 60.0 or result["vol_score"] < 15:
+                continue
 
         rows.append({
             "league":     league,
@@ -395,6 +400,8 @@ def main():
     parser.add_argument("--league_id",  type=int, help="Filter to a single league")
     parser.add_argument("--min_graded", type=int, default=0,
                         help="Only show games where BOTH teams have at least this many graded games in the tracking epoch")
+    parser.add_argument("--hidden_gems", action="store_true",
+                        help="Only show Moderate/Low games with High Stability (Vol Score >= 15)")
     parser.add_argument("--components", action="store_true",
                         help="Show individual score components (vol/mae/bias/spread pts)")
     parser.add_argument("--no_csv",     action="store_true",
@@ -410,6 +417,7 @@ def main():
         league_id_filter = args.league_id,
         show_components  = args.components,
         min_graded       = args.min_graded,
+        hidden_gems      = args.hidden_gems,
     )
 
     if rows and not args.no_csv:
@@ -419,6 +427,7 @@ def main():
         if args.league_id:  suffix_parts.append(f"lid{args.league_id}")
         if args.min_score:  suffix_parts.append(f"min{int(args.min_score)}")
         if args.min_graded: suffix_parts.append(f"graded{args.min_graded}")
+        if args.hidden_gems: suffix_parts.append("hidden_gems")
         suffix = ("_" + "_".join(suffix_parts)) if suffix_parts else ""
 
         csv_path = save_csv(rows, date_str, suffix=suffix)

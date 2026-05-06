@@ -45,6 +45,11 @@ python push_to_dashboard.py --sport basketball
       # Only show games where BOTH teams have at least 7 graded games:
         python run_confidence_report.py --min_graded 7
 
+        Pro Tip: If you run the script with the --components flag (python run_confidence_report.py --min_graded 7 --components), 
+        it will print out the exact points the game scored in Volatility, MAE, Bias, and Spread. 
+        This makes it instantly obvious if a game is being penalized for Bias (which you can adjust for) vs Volatility (which you should run away from).
+        
+       Just use:  python run_confidence_report.py --hidden_gems
 
 
 Every 2 weeks:
@@ -52,17 +57,24 @@ Every 2 weeks:
   python calibrate_from_local.py        ← rebuild pace/eff pivots
   python generate_advanced_metrics.py   ← rebuild SRS matrix
 
-Monthly (off-peak / overnight) — ADV upgrades for registered leagues:
-  python scrape_proballers_batch.py --cutoff_date 2025-10-01
-  python generate_advanced_metrics.py   ← re-run AFTER batch scrape
-  python aggregate_basketball_stats.py  ← rebuild leaderboard with ADV stats
-  python push_to_dashboard.py --sport basketball
 
-  Leagues covered by scrape_proballers_batch.py:
-    NBA (12), UK SLB (no API ID), Venezuela Superliga (275),
-    Uruguay Liga Uruguaya (110), Turkey TBL (102),
-    Russia VTB United League (82), WNBA (13), Puerto Rico BSN (76)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Discontinued workflows -- All workflow from here is not needed anymore 
 
 #4 Update match centre 
 cd football-dashboard
@@ -138,15 +150,6 @@ The calibration is essentially answering: "What does a typical game in this leag
 
 
 
-
-
-
-
-
-python scrape_flashscore.py (Get-Content batch_failed_urls.txt)
-python scrape_flashscore.py (Get-Content all_427_flashscore_urls.txt) --force
-python run_basketball_daily.py
-and python explore_api_basketball_today.py
 
 ________________________________________________________________________________________________________________
 ________________________________________________________________________________________________________________
