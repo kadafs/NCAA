@@ -42,6 +42,10 @@ python push_to_dashboard.py --sport basketball
         python run_confidence_report.py --tier top_domestic
         python run_confidence_report.py --league_id 72 
 
+      # Only show games where BOTH teams have at least 7 graded games:
+        python run_confidence_report.py --min_graded 7
+
+
 
 Every 2 weeks:
   python auto_update_historical.py      ← pull latest game results
