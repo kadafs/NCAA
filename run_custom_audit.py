@@ -1,8 +1,13 @@
 import json
 import os
 import glob
+import sys
 from collections import defaultdict
 import argparse
+
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # ==========================================
 # CONFIGURATION

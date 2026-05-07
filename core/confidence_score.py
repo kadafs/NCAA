@@ -36,20 +36,20 @@ def score_volatility(avg_vol: float) -> int:
     Rewards low game-total volatility (std_dev across both teams' histories).
 
     Thresholds (avg std_dev of combined game totals):
-        ≤ 14 pts → 20  (very stable — model loves this)
-        ≤ 16 pts → 15
-        ≤ 18 pts → 10
-        ≤ 20 pts → 5
+        ≤ 14 pts → 27  (very stable — model loves this)
+        ≤ 16 pts → 20
+        ≤ 18 pts → 13
+        ≤ 20 pts → 6
          > 20 pts → 0  (too chaotic to trust)
     """
     if avg_vol <= 14:
-        return 20
+        return 27
     elif avg_vol <= 16:
-        return 15
+        return 20
     elif avg_vol <= 18:
-        return 10
+        return 13
     elif avg_vol <= 20:
-        return 5
+        return 6
     else:
         return 0
 
@@ -103,22 +103,26 @@ def score_bias(avg_bias_abs: float) -> int:
 
 def score_spread(spread: float) -> int:
     """
-    Rewards tighter projected spreads — closer games reduce variance in totals.
+    Precision-tuned spread scoring derived from stable-team audit data (4,840 graded games).
+    Compressed to act as a secondary filter (max 8 points) rather than a co-primary filter.
 
-    Thresholds (absolute projected point spread):
-        < 5  pts → 10  (slight penalty for foul-fest/OT risk)
-        ≤ 11 pts → 15  (best zone: competitive, no late fouls)
-        ≤ 15 pts → 10  (minor blowout risk)
-         > 15 pts → 5   (severe blowout risk, garbage time chaos)
+    Stable team performance by spread band:
+        < 2  pts → 45.0% Over-Flat, -5.0 delta  → Worst zone (foul-fest / OT trap)
+        2-5  pts → 45.2% Over-Flat, -1.8 delta  → Below average
+        5-11 pts → 51-61% Over-Flat, +0.6/+3.6  → Sweet spot (model most accurate)
+        11-15    → 34.5% Over-Flat, -1.7 delta  → Surprise performance drop
+        > 15 pts → 56.9% Over-Flat, +3.9 delta  → Blowout recovery
     """
-    if spread < 5:
-        return 10
+    if spread < 2:
+        return 2    # Worst zone — foul-fest / OT trap
+    elif spread <= 5:
+        return 5    # Below average
     elif spread <= 11:
-        return 15
+        return 8    # Sweet spot — model is most accurate here
     elif spread <= 15:
-        return 10
+        return 2    # Surprise drop — penalise
     else:
-        return 5
+        return 5    # Blowouts: model undershoots, stable teams still hit
 
 
 # ---------------------------------------------------------------------------
@@ -170,10 +174,10 @@ def compute_confidence(game: dict) -> dict:
         avg_vol          — average volatility used in scoring
         avg_mae          — average MAE used in scoring
         avg_bias_abs     — absolute average bias used in scoring
-        vol_score        — points from volatility  (0-20)
+        vol_score        — points from volatility  (0-27)
         mae_score        — points from MAE          (0-20)
         bias_score       — points from bias         (0-20)
-        spread_score     — points from spread       (0-15)
+        spread_score     — points from spread       (2-8)
         raw_score        — total raw points          (0-75)
         confidence_score — normalized 0-100
         band             — confidence band label + description
