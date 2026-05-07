@@ -68,6 +68,10 @@ TEAM_NAME_OVERRIDES = {
     "Trikala": "Am Ikaroi Trikalon",
     "BK Zaporozhye": "Zaporizhye",
     "Escolar Aleman": "Aleman",
+    "Beeliar Boodjar": "Cockburn",
+    "Mandurah Magic": "Mandurah",
+    "Cockburn Cougars": "Cockburn",
+    "Turan Turkistan": "Turan",
     # --- Austria Superliga (217) ---
     "Graz UBSC": "UBSC Raiffeisen Graz",
     "BBC Nord": "Eisenstadt Dragonz",

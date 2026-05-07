@@ -32,7 +32,8 @@ def main():
     f_files = glob.glob("data/historical/flashscore_*.json")
     p_files = glob.glob("data/historical/proballers_*.json")
     a_files = glob.glob("data/historical/api_basketball_*.json")
-    historical_files = f_files + p_files + a_files
+    n_files = glob.glob("data/historical/nbl1_official_*.json")
+    historical_files = f_files + p_files + a_files + n_files
 
     # 3. Use dynamic season detection per league based on schedule gaps (>75 days)
     # Removed the hardcoded August cutoff to support global summer/winter leagues
@@ -42,7 +43,7 @@ def main():
 
     for hf in historical_files:
         basename = os.path.basename(hf) 
-        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace("api_basketball_", "").replace(".json", "")
+        slug = basename.replace("flashscore_", "").replace("proballers_", "").replace("api_basketball_", "").replace("nbl1_official_", "").replace(".json", "")
         
         if slug.isdigit():
             league_id = int(slug)

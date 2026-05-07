@@ -16,6 +16,50 @@ CROSS_SOURCE_CANONICAL_MAP = {
     "Torun":               "Twarde Pierniki Toruń",
     "Gornik Walbrzych":    "Górnik Trans.eu Walbrzych",
     "Ostrow Wielkopolski": "Stal Ostrów Wielkopolski",
+    # European / International
+    "Unicaja":             "Unicaja Malaga",
+    "Unics Kazan":         "UNICS Kazan",
+    "Ulm":                 "Ratiopharm Ulm",
+    "Utsunomiya Brex":     "Utsunomiya",
+    "Vaerlose":            "Vaerlose Blue Hawks",
+    # Australia NBL1 (Official Sportradar -> API Basketball)
+    "Hobart":                      "Hobart Chargers",
+    "Southern Districts":          "Southern District Spartans",
+    "SW Slammers":                 "South West Slammers",
+    "SW Metro":                    "South West Metro Pirates",
+    "Albury Wodonga":              "Albury-Wodonga Bandits",
+    "Manly Warringah":             "Manly Warringah Sea Eagles",
+    "Hornsby KuRingGai":           "Hornsby Ku-Ring-Gai Spiders",
+    "Northern Force":              "Northern Tasmania",
+    "Eastern Suns":                "Kalamunda Eastern Suns",
+    "Brisbane":                    "Brisbane Capitals",
+    "North Adelaide":              "North Adelaide Rockets",
+    "Central Districts":           "Central District Lions",
+    "Sunshine Coast":              "Sunshine Coast Phoenix",
+    "North Gold Coast":            "North Gold Coast Seahawks",
+    "Beeliar Boodjar":             "Cockburn",
+    "Cockburn Cougars":            "Cockburn",
+    "Mandurah Magic":              "Mandurah",
+    "Warwick Senators":            "Warwick",
+    "Willetton Tigers":            "Willetton",
+    "Lakeside Lightning":          "Lakeside",
+    "Perry Lakes Hawks":           "Perry Lakes",
+    "Rockingham Flames":           "Rockingham",
+    "Joondalup Wolves":            "Joondalup",
+    "Geraldton Buccaneers":        "Geraldton",
+    "Goldfields Giants":           "Goldfields",
+    "Perth Redbacks":              "Perth",
+    "East Perth Eagles":           "East Perth",
+    "Kalamunda Eastern Suns":      "Eastern Suns",
+    "Forestville":                 "Forestville Eagles",
+    "Sturt":                       "Sturt Sabres",
+    "Mavericks":                   "Eastern Mavericks",
+    "Norths":                      "Norths Bears",
+    "Sutherland":                  "Sutherland Sharks",
+    "Sydney":                      "Sydney Comets",
+    "Penrith":                     "Penrith Panthers",
+    "Maitland":                    "Maitland Mustangs",
+    "Hills":                       "Hills Hornets",
 }
 
 def calculate_iterative_srs(games):
@@ -187,18 +231,29 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
             if pts > opp_pts:
                 td["wins"] += 1
 
-            td["fga"] += (t_s.get("FGA", 0) * weight)
-            td["fta"] += (t_s.get("FTA", 0) * weight)
-            td["tov"] += (t_s.get("TOV", 0) * weight)
-            td["orb"] += (t_s.get("ORB", 0) * weight)
-            td["drb"] += (t_s.get("DRB", (t_s.get("TRB", 0) - t_s.get("ORB", 0))) * weight)
-            td["trb"] += (t_s.get("TRB", 0) * weight)
+            def get_stat(s_dict, key):
+                # Try uppercase first (Proballers), then lowercase (NBL1)
+                return s_dict.get(key.upper(), s_dict.get(key.lower(), 0))
 
-            td["opp_fga"] += (o_s.get("FGA", 0) * weight)
-            td["opp_fta"] += (o_s.get("FTA", 0) * weight)
+            td["fga"] += (get_stat(t_s, "FGA") * weight)
+            td["fta"] += (get_stat(t_s, "FTA") * weight)
+            td["tov"] += (get_stat(t_s, "TOV") * weight)
+            td["orb"] += (get_stat(t_s, "ORB") * weight)
+            
+            # Handle DRB/TRB logic with case-insensitivity
+            t_drb = get_stat(t_s, "DRB")
+            t_trb = get_stat(t_s, "TRB")
+            t_orb = get_stat(t_s, "ORB")
+            if not t_drb and t_trb:
+                t_drb = max(0, t_trb - t_orb)
+            td["drb"] += (t_drb * weight)
+            td["trb"] += (t_trb * weight)
+
+            td["opp_fga"] += (get_stat(o_s, "FGA") * weight)
+            td["opp_fta"] += (get_stat(o_s, "FTA") * weight)
             td["opp_pts"] += (opp_pts * weight)
-            td["opp_tov"] += (o_s.get("TOV", 0) * weight)
-            td["opp_orb"] += (o_s.get("ORB", 0) * weight)
+            td["opp_tov"] += (get_stat(o_s, "TOV") * weight)
+            td["opp_orb"] += (get_stat(o_s, "ORB") * weight)
 
     if not teams:
         return []

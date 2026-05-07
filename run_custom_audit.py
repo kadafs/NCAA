@@ -64,7 +64,7 @@ def load_valid_leagues():
                     valid_leagues.add(str(entry.get('league_id')))
     return valid_leagues
 
-def run_audit(search_term):
+def run_audit(search_term, limit=None):
     """Run an audit for a specific league or team name."""
     valid_leagues = load_valid_leagues()
     sdi_index = load_sdi_index()
@@ -79,7 +79,7 @@ def run_audit(search_term):
     }))
     
     search_lower = search_term.lower().strip()
-    games_found = 0
+    all_matching_graded = []
     
     for p_file in files:
         if not os.path.exists(p_file): continue
@@ -95,68 +95,78 @@ def run_audit(search_term):
             away_str = p.get('away_team', '').lower().replace('\u2014', '-')
             
             # Check if search term matches league, home team, or away team
-            is_match = False
             if search_lower in league_str or search_lower in home_str or search_lower in away_str:
-                is_match = True
+                act_h = p.get('actual_home_score')
+                act_a = p.get('actual_away_score')
+                model_total = p.get('model_total')
+                h_vol = p.get('home_team_volatility')
+                a_vol = p.get('away_team_volatility')
                 
-            if not is_match:
-                continue
-                
-            exact_league_name = f"{p.get('country', '')} - {p.get('league', '')}".upper()
-            
-            # Track all team names seen for SDI lookup later
-            if exact_league_name not in ["- "]:
-                home_t = p.get('home_team', '')
-                away_t = p.get('away_team', '')
-                
-            act_h = p.get('actual_home_score')
-            act_a = p.get('actual_away_score')
-            model_total = p.get('model_total')
-            
-            # Require graded games
-            if act_h is None or act_a is None or not model_total: continue
-            
-            h_vol = p.get('home_team_volatility')
-            a_vol = p.get('away_team_volatility')
-            if h_vol is None or a_vol is None: continue
-            
-            # Determine Tier
-            if h_vol < 14.8 and a_vol < 14.8:
-                tier = 1
-            elif h_vol <= 16.6 and a_vol <= 16.6:
-                tier = 2
-            elif h_vol > 16.6 and a_vol > 16.6:
-                tier = 4
-            else:
-                tier = 3
-                
-            actual_total = act_h + act_a
-            
-            stats[exact_league_name][tier]['total'] += 1
-            if actual_total >= model_total:
-                stats[exact_league_name][tier]['wins_flat'] += 1
-            if actual_total >= (model_total - 5):
-                stats[exact_league_name][tier]['wins_5'] += 1
-            if actual_total >= (model_total - 10):
-                stats[exact_league_name][tier]['wins_10'] += 1
-            if actual_total >= (model_total - 15):
-                stats[exact_league_name][tier]['wins_15'] += 1
-            if actual_total >= (model_total - 20):
-                stats[exact_league_name][tier]['wins_20'] += 1
+                # Require graded games and volatility data
+                if act_h is not None and act_a is not None and model_total and h_vol is not None and a_vol is not None:
+                    all_matching_graded.append(p)
 
-            # Halftime tracking (only if data was captured by grader)
-            ht_pct = p.get('halftime_pct_of_model')
-            if ht_pct is not None:
-                stats[exact_league_name][tier]['ht_count'] += 1
-                stats[exact_league_name][tier]['ht_pct_sum'] += ht_pct
-                if ht_pct >= 50.0:  # on pace or ahead at halftime
-                    stats[exact_league_name][tier]['ht_on_pace'] += 1
-                
-            games_found += 1
+    if limit and len(all_matching_graded) > limit:
+        # Take the last N (most recent)
+        all_matching_graded = all_matching_graded[-limit:]
+
+    games_found = len(all_matching_graded)
+    all_team_names = set()
+
+    for p in all_matching_graded:
+        exact_league_name = f"{p.get('country', '')} - {p.get('league', '')}".upper()
+        if exact_league_name == "- ": exact_league_name = "UNKNOWN LEAGUE"
+        
+        home_t = p.get('home_team', '')
+        away_t = p.get('away_team', '')
+        if home_t: all_team_names.add(home_t)
+        if away_t: all_team_names.add(away_t)
+            
+        act_h = p.get('actual_home_score')
+        act_a = p.get('actual_away_score')
+        model_total = p.get('model_total')
+        
+        h_vol = p.get('home_team_volatility')
+        a_vol = p.get('away_team_volatility')
+        
+        # Determine Tier
+        if h_vol is None or a_vol is None:
+            tier = 3 # fallback
+        elif h_vol < 14.8 and a_vol < 14.8:
+            tier = 1
+        elif h_vol <= 16.6 and a_vol <= 16.6:
+            tier = 2
+        elif h_vol > 16.6 and a_vol > 16.6:
+            tier = 4
+        else:
+            tier = 3
+            
+        actual_total = act_h + act_a
+        
+        stats[exact_league_name][tier]['total'] += 1
+        if actual_total >= model_total:
+            stats[exact_league_name][tier]['wins_flat'] += 1
+        if actual_total >= (model_total - 5):
+            stats[exact_league_name][tier]['wins_5'] += 1
+        if actual_total >= (model_total - 10):
+            stats[exact_league_name][tier]['wins_10'] += 1
+        if actual_total >= (model_total - 15):
+            stats[exact_league_name][tier]['wins_15'] += 1
+        if actual_total >= (model_total - 20):
+            stats[exact_league_name][tier]['wins_20'] += 1
+
+        # Halftime tracking
+        ht_pct = p.get('halftime_pct_of_model')
+        if ht_pct is not None:
+            stats[exact_league_name][tier]['ht_count'] += 1
+            stats[exact_league_name][tier]['ht_pct_sum'] += ht_pct
+            if ht_pct >= 50.0:
+                stats[exact_league_name][tier]['ht_on_pace'] += 1
             
     # --- OUTPUT ---
     print("\n" + "="*80)
-    print(f" SEARCH RESULTS FOR: '{search_term.upper()}'")
+    limit_suffix = f" (LIMIT: Last {limit} games)" if limit else ""
+    print(f" SEARCH RESULTS FOR: '{search_term.upper()}'{limit_suffix}")
     print("="*80)
     
     if games_found == 0:
@@ -164,20 +174,6 @@ def run_audit(search_term):
         print("  Check the spelling or try a broader search.\n")
         return
 
-    # Collect all unique team names seen for SDI display
-    all_team_names = set()
-    for p_file in files:
-        if not os.path.exists(p_file): continue
-        with open(p_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        for p in data.get('predictions', []):
-            league_str = f"{p.get('country', '')} - {p.get('league', '')}".lower().replace('\u2014', '-')
-            home_str = p.get('home_team', '').lower()
-            away_str = p.get('away_team', '').lower()
-            if search_lower in league_str or search_lower in home_str or search_lower in away_str:
-                if p.get('home_team'): all_team_names.add(p.get('home_team'))
-                if p.get('away_team'): all_team_names.add(p.get('away_team'))
-        
     tier_names = {
         1: 'Tier 1 (Both Green)',
         2: 'Tier 2 (Both Colored)',
@@ -324,18 +320,22 @@ def run_audit(search_term):
 def main():
     parser = argparse.ArgumentParser(description="Run a custom audit for a specific team or league.")
     parser.add_argument("query", nargs="*", help="The name of the league or team to search for.")
+    parser.add_argument("-l", "--limit", type=int, help="Limit results to the most recent N graded games.")
     args = parser.parse_args()
     
     # If passed as an argument, run it and exit
     if args.query:
         search_term = " ".join(args.query)
-        run_audit(search_term)
+        run_audit(search_term, limit=args.limit)
         return
         
     # Interactive mode
     print("\n🏀 NCAA-API Custom Audit Tool")
     print("Type a League Name (e.g. 'Spain Primera') or Team Name (e.g. 'Zalgiris')")
+    print("You can also limit results with ':N' (e.g. 'Lakers :10')")
     print("Type 'exit' or 'quit' to close.\n")
+    
+    current_limit = args.limit
     
     while True:
         try:
@@ -344,7 +344,19 @@ def main():
                 break
             if not search_term.strip():
                 continue
-            run_audit(search_term)
+            
+            # Support ":N" syntax in search term
+            temp_limit = current_limit
+            if ":" in search_term:
+                parts = search_term.split(":")
+                search_term = parts[0].strip()
+                try:
+                    temp_limit = int(parts[1].strip())
+                except ValueError:
+                    print(f"Invalid limit: {parts[1]}")
+                    continue
+            
+            run_audit(search_term, limit=temp_limit)
         except KeyboardInterrupt:
             break
         except Exception as e:
