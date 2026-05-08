@@ -74,6 +74,36 @@ TEAM_NAME_OVERRIDES = {
     "Mandurah Magic": "Mandurah",
     "Cockburn Cougars": "Cockburn",
     "Turan Turkistan": "Turan",
+    # --- Australia NBL1 (Multiple Regions) ---
+    "Penrith P.":                  "Penrith Panthers",
+    "Penrith P. W":                "Penrith Panthers",
+    "Hornsby S.":                  "Hornsby Ku-Ring-Gai Spiders",
+    "Hornsby S. W":                "Hornsby Ku-Ring-Gai Spiders",
+    "Manly W.":                    "Manly Warringah Sea Eagles",
+    "Manly W. W":                  "Manly Warringah Sea Eagles",
+    "Maitland M.":                 "Maitland Mustangs",
+    "Albury W":                    "Albury-Wodonga Bandits",
+    "Southern District":           "Southern District Spartans",
+    "Warwick Senators":            "Warwick Senators",
+    "Willetton Tigers":            "Willetton Tigers",
+    "Lakeside Lightning":          "Lakeside Lightning",
+    "Perry Lakes Hawks":           "Perry Lakes Hawks",
+    "Rockingham Flames":           "Rockingham Flames",
+    "Joondalup Wolves":            "Joondalup Wolves",
+    "Geraldton Buccaneers":        "Geraldton Buccaneers",
+    "Goldfields Giants":           "Goldfields Giants",
+    "Nunawading Spectres":         "Nunawading Spectres",
+    "Frankston Blues":             "Frankston Blues",
+    "Geelong United":              "Geelong United",
+    "Kilsyth Cobras":              "Kilsyth Cobras",
+    "Ballarat Miners":             "Ballarat Miners",
+    "Dandenong Rangers":           "Dandenong Rangers",
+    "Diamond Valley Eagles":       "Diamond Valley Eagles",
+    "Eltham Wildcats":             "Eltham Wildcats",
+    "Knox Raiders":                "Knox Raiders",
+    "Ringwood Hawks":              "Ringwood Hawks",
+    "Waverley Falcons":            "Waverley Falcons",
+
     # --- Austria Superliga (217) ---
     "Graz UBSC": "UBSC Raiffeisen Graz",
     "BBC Nord": "Eisenstadt Dragonz",
@@ -108,12 +138,17 @@ TEAM_NAME_OVERRIDES = {
     "Olimpia Milano": "EA7 Emporio Armani Milan",
     "Valencia": "Valencia Basket",
     "Virtus Bologna": "Virtus Segafredo Bologna",
+    "Virtus Bologna": "Virtus Segafredo Bologna",
     "Bayern": "FC Bayern Munich",
     "Baskonia": "Baskonia Vitoria-Gasteiz",
     "Maccabi Tel Aviv": "Maccabi Playtika Tel Aviv",
     "Panathinaikos":  "Panathinaikos Athens",
     "Barcelona": "FC Barcelona",
     "Olympiacos": "Olympiacos Piraeus",
+    # --- USA NBA W (13) ---
+    "Golden State Valkyries W": "Golden State Valkyries",
+    "Las Vegas Aces W": "Las Vegas Aces",
+    "Phoenix Mercury W": "Phoenix Mercury",
     # --- Lithuania NKL (61) ---
     "Neptunas 2": "Klaipėdos Neptūnas-Akvaservis",
     "Zalgiris Kaunas 2": "Zalgiris Kaunas II",
@@ -508,6 +543,35 @@ def find_team(name, stats_dict):
         return best_key, stats_dict[best_key]
 
     return None, None
+    
+def global_find_team(name):
+    """
+    Last resort fallback: Search ALL available bball_stats_*.json files for this team.
+    Useful for teams that play in multiple leagues (e.g. Cedevita Olimpija in Slovenia vs ABA).
+    """
+    search_pattern = "data/bball_stats_*_adv.json"
+    files = glob.glob(search_pattern)
+    
+    # Try exact overrides first
+    canonical_name = TEAM_NAME_OVERRIDES.get(name, name)
+    
+    for fpath in files:
+        try:
+            with open(fpath, encoding="utf-8") as f:
+                data = json.load(f)
+                teams = {t["team_name"]: t for t in data.get("teams", [])}
+                
+                # Try exact canonical
+                if canonical_name in teams:
+                    return teams[canonical_name], fpath
+                
+                # Try fuzzy in this file
+                best_k, best_s = find_team(name, teams)
+                if best_k:
+                    return best_s, fpath
+        except: continue
+        
+    return None, None
 
 
 # ------------------------------------------------------------------
@@ -529,6 +593,18 @@ def predict_game(away_name, home_name, away_id, home_id, team_stats, config, con
 
     away_key, sA = find_team(away_name, team_stats)
     home_key, sH = find_team(home_name, team_stats)
+
+    # GLOBAL FALLBACK
+    if not sA:
+        sA, src = global_find_team(away_name)
+        if sA:
+            sA = dict(sA)
+            sA["source"] = f"GLOBAL ({os.path.basename(src)})"
+    if not sH:
+        sH, src = global_find_team(home_name)
+        if sH:
+            sH = dict(sH)
+            sH["source"] = f"GLOBAL ({os.path.basename(src)})"
 
     if not sA or not sH:
         missing = []
