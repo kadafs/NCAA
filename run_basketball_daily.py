@@ -34,6 +34,8 @@ from dotenv import load_dotenv
 from scipy.stats import norm
 
 from core.offline_match_center import compile_offline_match_center
+from core.confidence_score import compute_confidence
+from run_confidence_report import load_leaderboard, get_team_stats
 
 if sys.platform == "win32":
     try:
@@ -719,6 +721,10 @@ def main():
     
     # Load Global M.B.E.T Array
     mbet_matrix = load_json("configs/league_edge_thresholds.json") or {}
+    
+    # Load Leaderboard for Confidence Scoring snapshot
+    print(f"  Loading leaderboard for runtime confidence scoring...")
+    lb_index = load_leaderboard()
 
     for league_entry in leagues:
         lid      = league_entry["league_id"]
@@ -859,6 +865,26 @@ def main():
                 _, sA = find_team(away, active_stats)
                 _, sH = find_team(home, active_stats)
 
+                # Snapshot Confidence Score at Runtime
+                DEFAULT_MAE = 12.0
+                xpts_h = res.get("xpts_h", model_total / 2)
+                xpts_a = res.get("xpts_a", model_total / 2)
+                spread = abs(xpts_h - xpts_a)
+                
+                vol_h = sH.get("std_dev_totals", DEFAULT_MAE) if sH else DEFAULT_MAE
+                vol_a = sA.get("std_dev_totals", DEFAULT_MAE) if sA else DEFAULT_MAE
+                
+                mae_h, bias_h, graded_h = get_team_stats(home, lid, lb_index)
+                mae_a, bias_a, graded_a = get_team_stats(away, lid, lb_index)
+                
+                conf_input = {
+                    "vol_a": vol_a, "vol_b": vol_h,
+                    "mae_a": mae_a, "mae_b": mae_h,
+                    "bias_a": bias_a, "bias_b": bias_h,
+                    "spread": spread
+                }
+                conf_res = compute_confidence(conf_input)
+
                 # Build record
                 all_predictions.append({
                     "league_id":    lid,
@@ -883,6 +909,14 @@ def main():
                     "side":         side if (market and market not in (145.5, 230.0)) else None,
                     "decision":     decision if (market and market not in (145.5, 230.0)) else "MODEL ONLY",
                     "confidence":   confidence,
+                    "confidence_score_band": conf_res["band"]["label"].strip(),
+                    "confidence_score": conf_res["confidence_score"],
+                    "mae_h": mae_h,
+                    "mae_a": mae_a,
+                    "bias_h": bias_h,
+                    "bias_a": bias_a,
+                    "graded_h": graded_h,
+                    "graded_a": graded_a,
                     "mbet_threshold": mbet,
                     "model_architecture": matrix_type.strip(),
                     "mode":         args.mode,
