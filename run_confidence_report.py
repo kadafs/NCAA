@@ -146,7 +146,7 @@ def band_sort_key(band_label: str) -> int:
 
 def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
                league_id_filter: int = None, show_components: bool = False,
-               min_graded: int = 0, hidden_gems: bool = False):
+               min_graded: int = 0, hidden_gems: bool = False, no_playoffs: bool = False):
 
     pred_path = os.path.join(PREDICTIONS_DIR, f"universal_predictions_{date_str}.json")
     if not os.path.exists(pred_path):
@@ -181,6 +181,13 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             continue
         if league_id_filter and league_id != league_id_filter:
             continue
+
+        # Playoff filtering
+        if no_playoffs:
+            stage = p.get("stage", "").lower()
+            playoff_keywords = ["final", "semi", "quarter", "playoff", "3rd place", "relegation"]
+            if any(k in stage for k in playoff_keywords):
+                continue
 
         # Spread from projected pts
         spread = abs((xpts_h or 0) - (xpts_a or 0))
@@ -406,6 +413,8 @@ def main():
                         help="Show individual score components (vol/mae/bias/spread pts)")
     parser.add_argument("--no_csv",     action="store_true",
                         help="Skip CSV export (console output only)")
+    parser.add_argument("--no_playoffs", action="store_true",
+                        help="Exclude playoff/post-season games")
     args = parser.parse_args()
 
     date_str = args.date or datetime.now().strftime("%Y-%m-%d")
@@ -418,6 +427,7 @@ def main():
         show_components  = args.components,
         min_graded       = args.min_graded,
         hidden_gems      = args.hidden_gems,
+        no_playoffs      = args.no_playoffs,
     )
 
     if rows and not args.no_csv:
@@ -428,6 +438,7 @@ def main():
         if args.min_score:  suffix_parts.append(f"min{int(args.min_score)}")
         if args.min_graded: suffix_parts.append(f"graded{args.min_graded}")
         if args.hidden_gems: suffix_parts.append("hidden_gems")
+        if args.no_playoffs: suffix_parts.append("no_playoffs")
         suffix = ("_" + "_".join(suffix_parts)) if suffix_parts else ""
 
         csv_path = save_csv(rows, date_str, suffix=suffix)
