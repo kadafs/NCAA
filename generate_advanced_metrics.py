@@ -39,6 +39,7 @@ CROSS_SOURCE_CANONICAL_MAP = {
     "Northern Force":              "Northern Tasmania",
     "Eastern Suns":                "Kalamunda Eastern Suns",
     "Brisbane":                    "Brisbane Capitals",
+    "Gold Coast":                  "Gold Coast Rollers",
     "North Adelaide":              "North Adelaide Rockets",
     "Central Districts":           "Central District Lions",
     "Sunshine Coast":              "Sunshine Coast Phoenix",
@@ -80,6 +81,21 @@ CROSS_SOURCE_CANONICAL_MAP = {
     "Knox Raiders":                "Knox Raiders",
     "Ringwood Hawks":              "Ringwood Hawks",
     "Waverley Falcons":            "Waverley Falcons",
+    # --- Australia NBL1 West (214) ---
+    "Cockburn":                    "Cockburn Cougars",
+    "East Perth":                  "East Perth Eagles",
+    "Eastern Suns":                "Kalamunda Eastern Suns",
+    "Geraldton":                   "Geraldton Buccaneers",
+    "Goldfields":                  "Goldfields Giants",
+    "Joondalup":                   "Joondalup Wolves",
+    "Lakeside":                    "Lakeside Lightning",
+    "Mandurah":                    "Mandurah Magic",
+    "Perry Lakes":                 "Perry Lakes Hawks",
+    "Perth":                       "Perth Redbacks",
+    "Rockingham":                  "Rockingham Flames",
+    "SW Slammers":                 "South West Slammers",
+    "Warwick":                     "Warwick Senators",
+    "Willetton":                   "Willetton Tigers",
 }
 
 def calculate_iterative_srs(games):
