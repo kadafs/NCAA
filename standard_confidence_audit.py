@@ -87,9 +87,9 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                     
                     # 2. League Filter
                     if league_filter:
-                        lid = str(p.get("league_id", ""))
-                        lname = str(p.get("league", "")).lower()
-                        lf = str(league_filter).lower()
+                        lid = str(p.get("league_id") if p.get("league_id") is not None else "").strip()
+                        lname = str(p.get("league") if p.get("league") is not None else "").lower()
+                        lf = str(league_filter).strip().lower()
                         if lf != lid and lf not in lname:
                             continue
                             
@@ -220,7 +220,7 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--days", type=int, default=3, help="Number of recent days to audit")
-    parser.add_argument("--buffer", type=int, default=10, help="Point buffer to evaluate (default: 10)")
+    parser.add_argument("--buffer", type=int, default=0, help="Point buffer to evaluate (default: 0)")
     parser.add_argument("--halftime", action="store_true", help="Audit halftime performance instead of full time")
     parser.add_argument("--no_playoffs", action="store_true", help="Exclude playoff games from the audit")
     parser.add_argument("--league", type=str, default=None, help="Filter by league ID or league name substring")
@@ -228,5 +228,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     import datetime
-    dates = [(datetime.datetime.now() - datetime.timedelta(days=i)).strftime("%Y-%m-%d") for i in range(1, args.days + 1)]
+    # Start from 0 (today) to include today's already-finished/graded games
+    dates = [(datetime.datetime.now() - datetime.timedelta(days=i)).strftime("%Y-%m-%d") for i in range(0, args.days)]
     run_audit(dates, args.buffer, args.halftime, args.no_playoffs, args.league, args.exclude)

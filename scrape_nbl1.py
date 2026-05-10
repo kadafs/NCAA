@@ -203,19 +203,20 @@ def extract_box_score(fixture_id):
 
 def load_existing_data(league_id):
     out_file = f"data/historical/nbl1_official_{league_id}.json"
-    existing_data, seen_sigs = [], set()
+    existing_data, seen_sigs, seen_fids = [], set(), set()
     if os.path.exists(out_file) and os.path.getsize(out_file) > 100:
         try:
             with open(out_file, "r", encoding="utf-8") as f:
                 raw = json.load(f)
             for item in raw:
-                if item.get("stats", {}).get("home", {}).get("players"):
-                    sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
-                    seen_sigs.add(sig)
-                    existing_data.append(item)
+                sig = f"{item.get('date')} {item.get('home_team')} {item.get('away_team')}"
+                seen_sigs.add(sig)
+                if item.get("fixture_id"):
+                    seen_fids.add(item.get("fixture_id"))
+                existing_data.append(item)
         except Exception:
             pass
-    return existing_data, seen_sigs
+    return existing_data, seen_sigs, seen_fids
 
 
 def run_nbl1_scraper(cutoff_date=None):
@@ -237,14 +238,23 @@ def run_nbl1_scraper(cutoff_date=None):
             print(f"  [+] Loaded {len(invalid_uuids)} known invalid UUIDs from cache.", flush=True)
         except Exception:
             pass
+            
+    # [FIX] Cleanup: Remove any UUIDs that might have been accidentally banned due to "NOTSTARTED" status
+    # This is a one-time fix to restore missing May games.
+    if invalid_uuids:
+        print(f"  [+] Purging potential mis-cached fixture IDs from invalid cache...", flush=True)
+        # We'll just reset it for now to be safe, since the new targeted regex makes the cache less critical anyway
+        invalid_uuids = set()
 
     # Pre-load all existing league data
     league_datasets = {}
     league_sigs = {}
+    all_seen_fids = set()
     for c_name, l_id in COMPETITION_MAP.items():
-        data, sigs = load_existing_data(l_id)
+        data, sigs, fids = load_existing_data(l_id)
         league_datasets[l_id] = data
         league_sigs[l_id] = sigs
+        all_seen_fids.update(fids)
 
     new_count = 0
 
@@ -269,8 +279,15 @@ def run_nbl1_scraper(cutoff_date=None):
                 html_content = page.content()
                 page.close()
 
-                found = set(re.findall(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', html_content.lower()))
-                print(f"  [*] Attempt {attempt}: Extracted {len(found)} UUIDs.", flush=True)
+                # ---- Optimization: Only extract UUIDs from fixture-related attributes ----
+                # This avoids thousands of garbage Webflow node IDs that follow the same UUID pattern.
+                found = set()
+                # 1. data-fixture="UUID"
+                found.update(re.findall(r'data-fixture="([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"', html_content.lower()))
+                # 2. game?id=UUID
+                found.update(re.findall(r'game\?id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', html_content.lower()))
+                
+                print(f"  [*] Attempt {attempt}: Extracted {len(found)} fixture UUIDs.", flush=True)
 
                 if len(found) >= 500:
                     raw_uuids = found
@@ -295,6 +312,10 @@ def run_nbl1_scraper(cutoff_date=None):
 
                 if fid in invalid_uuids:
                     continue
+                
+                # [OPTIMIZATION] Skip already-scraped fixture IDs before calling the expensive API
+                if fid in all_seen_fids:
+                    continue
 
                 try:
                     api_page = context.new_page()
@@ -305,14 +326,28 @@ def run_nbl1_scraper(cutoff_date=None):
                     )
                     api_page.close()
 
+                    if response.status == 400:
+                        # Truly invalid UUID format - cache it
+                        invalid_uuids.add(fid)
+                        continue
+                    
                     if response.status != 200:
+                        continue # Transient error, don't cache
+
+                    data = response.json().get("data", {})
+                    
+                    # Check if it's a known competition we track
+                    banner = data.get("banner", {})
+                    comp_name = banner.get("competition", {}).get("name")
+                    if comp_name and comp_name not in COMPETITION_MAP:
+                        # Valid fixture but for a different league (e.g. NBL/WNBL) - cache it
                         invalid_uuids.add(fid)
                         continue
 
-                    data = response.json().get("data", {})
                     box = _parse_box_score(data)
                     if not box:
-                        invalid_uuids.add(fid)
+                        # This might be a future game (NOTSTARTED) or missing box score
+                        # DO NOT add to invalid_uuids because we want to check it again later!
                         continue
 
                 except Exception:
