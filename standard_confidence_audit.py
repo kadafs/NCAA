@@ -44,6 +44,10 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
     tier_stats = {}
     # tier -> bias_group -> { games, hits, errors }
     tier_bias_stats = {}
+    # tier -> total_range -> { games, hits, errors }
+    tier_range_stats = {}
+    # tier -> spread_range -> { games, hits, errors }
+    tier_spread_stats = {}
 
     total_graded = 0
 
@@ -64,7 +68,8 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                             csv_metrics[key] = {
                                 "band": row.get("band", "").strip(),
                                 "model_total": row.get("model_total"),
-                                "avg_bias": row.get("avg_bias")
+                                "avg_bias": row.get("avg_bias"),
+                                "spread": row.get("spread")
                             }
                 except Exception:
                     pass
@@ -139,6 +144,18 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                         bias_a = float(bias_a) if bias_a is not None else 0.0
                         avg_bias_raw = (bias_h + bias_a) / 2
                     
+                    # Prefer dated CSV spread
+                    spread_str = csv_data.get("spread")
+                    if spread_str:
+                        spread_val = abs(float(spread_str))
+                    else:
+                        x_h = p.get("xpts_h")
+                        x_a = p.get("xpts_a")
+                        if x_h is not None and x_a is not None:
+                            spread_val = abs(float(x_h) - float(x_a))
+                        else:
+                            spread_val = 0.0
+                    
                     actual_total = h_s + a_s
                     
                     if halftime:
@@ -157,6 +174,8 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                     if band not in tier_stats:
                         tier_stats[band] = {"games": 0, "hits": 0, "errors": []}
                         tier_bias_stats[band] = {b: {"games": 0, "hits": 0, "errors": []} for b in ["Positive", "Neutral", "Negative"]}
+                        tier_range_stats[band] = {r: {"games": 0, "hits": 0, "errors": []} for r in ["< 130", "130-139.5", "140-149.5", "150-159.5", "160-169.5", "170-179.5", ">= 180"]}
+                        tier_spread_stats[band] = {s: {"games": 0, "hits": 0, "errors": []} for s in ["0-5", "5-10", "10-15", "15-20", "20+"]}
                     
                     tier_stats[band]["games"] += 1
                     tier_stats[band]["errors"].append(error)
@@ -172,6 +191,35 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                     tier_bias_stats[band][b_grp]["errors"].append(error)
                     if actual_score >= (target_score - buffer):
                         tier_bias_stats[band][b_grp]["hits"] += 1
+                        
+                    # Model Total Range Tracking
+                    total_grp = "Unknown"
+                    if model_total < 130: total_grp = "< 130"
+                    elif model_total < 140: total_grp = "130-139.5"
+                    elif model_total < 150: total_grp = "140-149.5"
+                    elif model_total < 160: total_grp = "150-159.5"
+                    elif model_total < 170: total_grp = "160-169.5"
+                    elif model_total < 180: total_grp = "170-179.5"
+                    else: total_grp = ">= 180"
+                    
+                    
+                    tier_range_stats[band][total_grp]["games"] += 1
+                    tier_range_stats[band][total_grp]["errors"].append(error)
+                    if actual_score >= (target_score - buffer):
+                        tier_range_stats[band][total_grp]["hits"] += 1
+                        
+                    # Spread Range Tracking
+                    spread_grp = "20+"
+                    if spread_val < 5: spread_grp = "0-5"
+                    elif spread_val < 10: spread_grp = "5-10"
+                    elif spread_val < 15: spread_grp = "10-15"
+                    elif spread_val < 20: spread_grp = "15-20"
+                    
+                    tier_spread_stats[band][spread_grp]["games"] += 1
+                    tier_spread_stats[band][spread_grp]["errors"].append(error)
+                    if actual_score >= (target_score - buffer):
+                        tier_spread_stats[band][spread_grp]["hits"] += 1
+                        
                         
                 except Exception as inner_e:
                     # Skip individual malformed games but continue the file
@@ -211,6 +259,45 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
             avg_err = sum(s["errors"]) / s["games"]
             rate = (s["hits"] / s["games"]) * 100
             print(f"  {b:<18} | {s['games']:>5} | {avg_err:>+15.2f} | {s['hits']:>6}/{s['games']:<3} ({rate:>5.1f}%)")
+
+    # Print Summary 3: Model Total Ranges by Tier
+    print(f"\n[SECTION 3: HISTORICAL PERFORMANCE BY TIER AND TOTAL RANGE]")
+    print(f"{'Tier / Total Range':<20} | {'Games':>5} | {'Avg Bias Error':>15} | {'Hit Rate':>18}")
+    print("-" * 70)
+    range_order = ["< 130", "130-139.5", "140-149.5", "150-159.5", "160-169.5", "170-179.5", ">= 180"]
+    for t in tier_order:
+        matched_key = next((k for k in tier_range_stats.keys() if t in k), None)
+        if not matched_key: continue
+        
+        # Check if tier has any games in any range
+        if sum(tier_range_stats[matched_key][r]["games"] for r in range_order) == 0: continue
+        
+        print(f"{matched_key}")
+        for r in range_order:
+            s = tier_range_stats[matched_key][r]
+            if s["games"] == 0: continue
+            avg_err = sum(s["errors"]) / s["games"]
+            rate = (s["hits"] / s["games"]) * 100
+            print(f"  {r:<18} | {s['games']:>5} | {avg_err:>+15.2f} | {s['hits']:>6}/{s['games']:<3} ({rate:>5.1f}%)")
+            
+    # Print Summary 4: Spread Ranges by Tier
+    print(f"\n[SECTION 4: HISTORICAL PERFORMANCE BY TIER AND XPTS SPREAD]")
+    print(f"{'Tier / Spread Range':<20} | {'Games':>5} | {'Avg Bias Error':>15} | {'Hit Rate':>18}")
+    print("-" * 70)
+    spread_order = ["0-5", "5-10", "10-15", "15-20", "20+"]
+    for t in tier_order:
+        matched_key = next((k for k in tier_spread_stats.keys() if t in k), None)
+        if not matched_key: continue
+        
+        if sum(tier_spread_stats[matched_key][s]["games"] for s in spread_order) == 0: continue
+        
+        print(f"{matched_key}")
+        for spr in spread_order:
+            s = tier_spread_stats[matched_key][spr]
+            if s["games"] == 0: continue
+            avg_err = sum(s["errors"]) / s["games"]
+            rate = (s["hits"] / s["games"]) * 100
+            print(f"  {spr:<18} | {s['games']:>5} | {avg_err:>+15.2f} | {s['hits']:>6}/{s['games']:<3} ({rate:>5.1f}%)")
 
     print(f"\n{'='*110}")
     print(f"  TOTAL GRADED GAMES: {total_graded}")
