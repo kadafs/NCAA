@@ -104,7 +104,8 @@ def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
                     "league_id": league_id,
                     "name": display_name,
                     "srs": _blank_model_stats(),
-                    "adv": _blank_model_stats()
+                    "adv": _blank_model_stats(),
+                    "system": _blank_model_stats()
                 }
 
             for t_name in [home_team, away_team]:
@@ -114,37 +115,60 @@ def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
                         "league_id": league_id,
                         "league_name": display_name,
                         "srs": _blank_model_stats(),
-                        "adv": _blank_model_stats()
+                        "adv": _blank_model_stats(),
+                        "system": _blank_model_stats()
                     }
                 
             # MAE Tracking
             total_delta = p.get("total_delta")
             if total_delta is not None and tier != "🚨 OT WARP":
+                # Specific model
                 stats_dict[key][model_key]["sum_delta"] += total_delta
                 stats_dict[key][model_key]["count_delta"] += 1
+                # Unified system
+                stats_dict[key]["system"]["sum_delta"] += total_delta
+                stats_dict[key]["system"]["count_delta"] += 1
                 for t_name in [home_team, away_team]:
                     team_stats_dict[t_name][model_key]["sum_delta"] += total_delta
                     team_stats_dict[t_name][model_key]["count_delta"] += 1
+                    team_stats_dict[t_name]["system"]["sum_delta"] += total_delta
+                    team_stats_dict[t_name]["system"]["count_delta"] += 1
 
             _tally(stats_dict[key][model_key],
+                   pred_1x2, actual_1x2, tier, rpe, signed_delta)
+            _tally(stats_dict[key]["system"],
                    pred_1x2, actual_1x2, tier, rpe, signed_delta)
                    
             for t_name in [home_team, away_team]:
                 _tally(team_stats_dict[t_name][model_key],
                        pred_1x2, actual_1x2, tier, rpe, signed_delta)
+                _tally(team_stats_dict[t_name]["system"],
+                       pred_1x2, actual_1x2, tier, rpe, signed_delta)
 
             # Halftime tracking
             ht_pct = p.get("halftime_pct_of_model")
             if ht_pct is not None:
+                # Specific model
                 stats_dict[key][model_key]["ht_count"]   += 1
                 stats_dict[key][model_key]["ht_pct_sum"] += ht_pct
                 if ht_pct >= 50.0:
                     stats_dict[key][model_key]["ht_on_pace"] += 1
+                # Unified system
+                stats_dict[key]["system"]["ht_count"]   += 1
+                stats_dict[key]["system"]["ht_pct_sum"] += ht_pct
+                if ht_pct >= 50.0:
+                    stats_dict[key]["system"]["ht_on_pace"] += 1
+
                 for t_name in [home_team, away_team]:
                     team_stats_dict[t_name][model_key]["ht_count"]   += 1
                     team_stats_dict[t_name][model_key]["ht_pct_sum"] += ht_pct
                     if ht_pct >= 50.0:
                         team_stats_dict[t_name][model_key]["ht_on_pace"] += 1
+                    # Unified system
+                    team_stats_dict[t_name]["system"]["ht_count"]   += 1
+                    team_stats_dict[t_name]["system"]["ht_pct_sum"] += ht_pct
+                    if ht_pct >= 50.0:
+                        team_stats_dict[t_name]["system"]["ht_on_pace"] += 1
 
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")
@@ -230,10 +254,10 @@ def main():
     for key, models in league_stats.items():
         srs = _compile_model(models["srs"])
         adv = _compile_model(models["adv"])
-        has_adv = adv["graded_totals"] > 0
-
-        # ADV is primary when available; fall back to SRS
-        primary = adv if has_adv else srs
+        sys_m = _compile_model(models["system"])
+        
+        # System is now primary for overall reliability tracking
+        primary = sys_m
 
         entry = {
             "name": models["name"],
@@ -252,7 +276,7 @@ def main():
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
             "srs":  srs if srs["graded_totals"] > 0 else None,
-            "adv":  adv if has_adv else None,
+            "adv":  adv if adv["graded_totals"] > 0 else None,
         }
         leaderboard.append(entry)
 
@@ -270,8 +294,8 @@ def main():
     for key, models in team_stats.items():
         srs = _compile_model(models["srs"])
         adv = _compile_model(models["adv"])
-        has_adv = adv["graded_totals"] > 0
-        primary = adv if has_adv else srs
+        sys_m = _compile_model(models["system"])
+        primary = sys_m
 
         entry = {
             "name": models["name"],
@@ -290,7 +314,7 @@ def main():
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
             "srs":  srs if srs["graded_totals"] > 0 else None,
-            "adv":  adv if has_adv else None,
+            "adv":  adv if adv["graded_totals"] > 0 else None,
         }
         team_leaderboard.append(entry)
 

@@ -112,15 +112,10 @@ def get_team_stats(name: str, league_id: int, index: dict) -> tuple[float, float
     """
     entry = lookup_team(name, league_id, index)
     if entry:
+        # Use the root entry (Unified System stats)
         mae  = entry.get("mae",               DEFAULT_MAE)
         bias = entry.get("avg_signed_delta",  DEFAULT_BIAS)
         graded = entry.get("graded_totals", 0)
-        # Use ADV stats if available, fall back to base stats
-        adv = entry.get("adv")
-        if adv and isinstance(adv, dict) and adv.get("graded_totals", 0) > 0:
-            mae  = adv.get("mae",              mae)
-            bias = adv.get("avg_signed_delta", bias)
-            graded = adv.get("graded_totals", graded)
         return float(mae or DEFAULT_MAE), float(bias or DEFAULT_BIAS), int(graded)
     return DEFAULT_MAE, DEFAULT_BIAS, 0
 
