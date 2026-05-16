@@ -25,6 +25,27 @@ LEAGUE_EPOCHS = {
     # 211: "2026-10-01",  # Example: reset NBL1 Central Women on Oct 1
 }
 
+# ==========================================
+# LEAGUE ID MERGES (MIGRATIONS)
+# Mapping historical/alternative league IDs to a single canonical ID
+# to preserve grading history across API name/ID changes.
+# ==========================================
+LEAGUE_ID_MERGES = {
+    368: [374, 65],  # BNXT League -> Pro Basketball League (Belgium) AND DBL (Netherlands)
+    24:  [374],       # Euromillions -> Pro Basketball League (Belgium)
+}
+
+# ==========================================
+# SRS TO ADVANCED PROMOTION
+# Force historical SRS data to be attributed to the ADV bucket
+# for leagues that have fully migrated to the efficiency engine.
+# This ensures the [ADV] badge appears on the dashboard immediately.
+# ==========================================
+PROMOTE_SRS_TO_ADV = {
+    13,  # USA - WNBA
+    207, 208, 209, 210, 211, 212, 213, 214, 215, 216 # Australia - NBL1
+}
+
 def _blank_model_stats():
     return {
         "1x2_w": 0, "1x2_l": 0,
@@ -71,104 +92,115 @@ def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
             if p.get("actual_result") is None:
                 continue
 
-            league_id    = p.get("league_id")
+            orig_id = p.get("league_id")
+            target_ids = LEAGUE_ID_MERGES.get(orig_id, [orig_id])
             
-            # Enforce League-Specific Epoch overrides
-            league_epoch = LEAGUE_EPOCHS.get(league_id)
-            if league_epoch and file_date_str < league_epoch:
-                continue
+            for league_id in target_ids:
+                # Enforce League-Specific Epoch overrides
+                league_epoch = LEAGUE_EPOCHS.get(league_id)
+                if league_epoch and file_date_str < league_epoch:
+                    continue
+                    
+                league_name  = p.get("league", "Unknown")
+                country      = p.get("country", "")
                 
-            league_name  = p.get("league", "Unknown")
-            country      = p.get("country", "")
-            
-            # Key by league_id if available, fallback to unique composite string
-            key = str(league_id) if league_id else f"{country}_{league_name}".upper()
-            display_name = f"{country.upper()} — {league_name.upper()}" if country else league_name.upper()
+                # Key by league_id if available, fallback to unique composite string
+                key = str(league_id) if league_id else f"{country}_{league_name}".upper()
+                display_name = f"{country.upper()} — {league_name.upper()}" if country else league_name.upper()
 
-            model_arch   = p.get("model_architecture", "[  SRS   ]")
-            is_adv       = "ADVANCED" in (model_arch or "")
-            model_key    = "adv" if is_adv else "srs"
+                model_arch   = p.get("model_architecture", "[  SRS   ]")
+                is_adv       = "ADVANCED" in (model_arch or "")
+                
+                # Apply Promotion logic
+                if league_id in PROMOTE_SRS_TO_ADV:
+                    model_key = "adv"
+                else:
+                    model_key = "adv" if is_adv else "srs"
 
-            pred_1x2     = p.get("predicted_result")
-            actual_1x2   = p.get("actual_result")
-            tier         = p.get("accuracy_tier")
-            rpe          = p.get("total_rpe")
-            signed_delta = p.get("signed_delta")
+                pred_1x2     = p.get("predicted_result")
+                actual_1x2   = p.get("actual_result")
+                tier         = p.get("accuracy_tier")
+                rpe          = p.get("total_rpe")
+                signed_delta = p.get("signed_delta")
 
-            # Create team keys
-            home_team = p.get("home_team", "Unknown")
-            away_team = p.get("away_team", "Unknown")
+                # Create team keys
+                home_team = p.get("home_team", "Unknown")
+                away_team = p.get("away_team", "Unknown")
 
-            if key not in stats_dict:
-                stats_dict[key] = {
-                    "league_id": league_id,
-                    "name": display_name,
-                    "srs": _blank_model_stats(),
-                    "adv": _blank_model_stats(),
-                    "system": _blank_model_stats()
-                }
-
-            for t_name in [home_team, away_team]:
-                if t_name not in team_stats_dict:
-                    team_stats_dict[t_name] = {
-                        "name": t_name,
+                if key not in stats_dict:
+                    stats_dict[key] = {
                         "league_id": league_id,
-                        "league_name": display_name,
+                        "name": display_name,
                         "srs": _blank_model_stats(),
                         "adv": _blank_model_stats(),
                         "system": _blank_model_stats()
                     }
-                
-            # MAE Tracking
-            total_delta = p.get("total_delta")
-            if total_delta is not None and tier != "🚨 OT WARP":
-                # Specific model
-                stats_dict[key][model_key]["sum_delta"] += total_delta
-                stats_dict[key][model_key]["count_delta"] += 1
-                # Unified system
-                stats_dict[key]["system"]["sum_delta"] += total_delta
-                stats_dict[key]["system"]["count_delta"] += 1
-                for t_name in [home_team, away_team]:
-                    team_stats_dict[t_name][model_key]["sum_delta"] += total_delta
-                    team_stats_dict[t_name][model_key]["count_delta"] += 1
-                    team_stats_dict[t_name]["system"]["sum_delta"] += total_delta
-                    team_stats_dict[t_name]["system"]["count_delta"] += 1
-
-            _tally(stats_dict[key][model_key],
-                   pred_1x2, actual_1x2, tier, rpe, signed_delta)
-            _tally(stats_dict[key]["system"],
-                   pred_1x2, actual_1x2, tier, rpe, signed_delta)
-                   
-            for t_name in [home_team, away_team]:
-                _tally(team_stats_dict[t_name][model_key],
-                       pred_1x2, actual_1x2, tier, rpe, signed_delta)
-                _tally(team_stats_dict[t_name]["system"],
-                       pred_1x2, actual_1x2, tier, rpe, signed_delta)
-
-            # Halftime tracking
-            ht_pct = p.get("halftime_pct_of_model")
-            if ht_pct is not None:
-                # Specific model
-                stats_dict[key][model_key]["ht_count"]   += 1
-                stats_dict[key][model_key]["ht_pct_sum"] += ht_pct
-                if ht_pct >= 50.0:
-                    stats_dict[key][model_key]["ht_on_pace"] += 1
-                # Unified system
-                stats_dict[key]["system"]["ht_count"]   += 1
-                stats_dict[key]["system"]["ht_pct_sum"] += ht_pct
-                if ht_pct >= 50.0:
-                    stats_dict[key]["system"]["ht_on_pace"] += 1
 
                 for t_name in [home_team, away_team]:
-                    team_stats_dict[t_name][model_key]["ht_count"]   += 1
-                    team_stats_dict[t_name][model_key]["ht_pct_sum"] += ht_pct
-                    if ht_pct >= 50.0:
-                        team_stats_dict[t_name][model_key]["ht_on_pace"] += 1
+                    t_key = (t_name, str(league_id))
+                    if t_key not in team_stats_dict:
+                        team_stats_dict[t_key] = {
+                            "name": t_name,
+                            "league_id": league_id,
+                            "league_name": display_name,
+                            "srs": _blank_model_stats(),
+                            "adv": _blank_model_stats(),
+                            "system": _blank_model_stats()
+                        }
+                    
+                # MAE Tracking
+                total_delta = p.get("total_delta")
+                if total_delta is not None and tier != "🚨 OT WARP":
+                    # Specific model
+                    stats_dict[key][model_key]["sum_delta"] += total_delta
+                    stats_dict[key][model_key]["count_delta"] += 1
                     # Unified system
-                    team_stats_dict[t_name]["system"]["ht_count"]   += 1
-                    team_stats_dict[t_name]["system"]["ht_pct_sum"] += ht_pct
+                    stats_dict[key]["system"]["sum_delta"] += total_delta
+                    stats_dict[key]["system"]["count_delta"] += 1
+                    for t_name in [home_team, away_team]:
+                        t_key = (t_name, str(league_id))
+                        team_stats_dict[t_key][model_key]["sum_delta"] += total_delta
+                        team_stats_dict[t_key][model_key]["count_delta"] += 1
+                        team_stats_dict[t_key]["system"]["sum_delta"] += total_delta
+                        team_stats_dict[t_key]["system"]["count_delta"] += 1
+
+                _tally(stats_dict[key][model_key],
+                       pred_1x2, actual_1x2, tier, rpe, signed_delta)
+                _tally(stats_dict[key]["system"],
+                       pred_1x2, actual_1x2, tier, rpe, signed_delta)
+                       
+                for t_name in [home_team, away_team]:
+                    t_key = (t_name, str(league_id))
+                    _tally(team_stats_dict[t_key][model_key],
+                           pred_1x2, actual_1x2, tier, rpe, signed_delta)
+                    _tally(team_stats_dict[t_key]["system"],
+                           pred_1x2, actual_1x2, tier, rpe, signed_delta)
+
+                # Halftime tracking
+                ht_pct = p.get("halftime_pct_of_model")
+                if ht_pct is not None:
+                    # Specific model
+                    stats_dict[key][model_key]["ht_count"]   += 1
+                    stats_dict[key][model_key]["ht_pct_sum"] += ht_pct
                     if ht_pct >= 50.0:
-                        team_stats_dict[t_name]["system"]["ht_on_pace"] += 1
+                        stats_dict[key][model_key]["ht_on_pace"] += 1
+                    # Unified system
+                    stats_dict[key]["system"]["ht_count"]   += 1
+                    stats_dict[key]["system"]["ht_pct_sum"] += ht_pct
+                    if ht_pct >= 50.0:
+                        stats_dict[key]["system"]["ht_on_pace"] += 1
+
+                    for t_name in [home_team, away_team]:
+                        t_key = (t_name, str(league_id))
+                        team_stats_dict[t_key][model_key]["ht_count"]   += 1
+                        team_stats_dict[t_key][model_key]["ht_pct_sum"] += ht_pct
+                        if ht_pct >= 50.0:
+                            team_stats_dict[t_key][model_key]["ht_on_pace"] += 1
+                        # Unified system
+                        team_stats_dict[t_key]["system"]["ht_count"]   += 1
+                        team_stats_dict[t_key]["system"]["ht_pct_sum"] += ht_pct
+                        if ht_pct >= 50.0:
+                            team_stats_dict[t_key]["system"]["ht_on_pace"] += 1
 
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")

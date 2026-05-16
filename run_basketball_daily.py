@@ -198,6 +198,23 @@ TEAM_NAME_OVERRIDES = {
     "Hiroshima D.": "Hiroshima Dragonflies",
     # --- Denmark Basketligaen (34) ---
     "Herlev Wolfpack": "BMS Herlev",
+    # --- Belgium Pro Basketball League (374) ---
+    "Antwerp Giants":              "Windrose Giants Antwerp",
+    "Spirou Charleroi":            "Spirou Basket",
+    "Oostende":                    "Filou Oostende",
+    "Mechelen":                    "Kangoeroes",
+    "Okapi Aalst":                 "Okapi Aalstar",
+    "Limburg":                     "Limburg United",
+    "Kortrijk":                    "Kortrijk Spurs",
+    "Mons-Hainaut":                "Union Mons-Hainaut",
+    "Liege":                       "Liege Basket",
+    # --- Netherlands DBL (65) ---
+    "Den Helder":                  "Den Helder Suns",
+    "Zwolle":                      "Landstede Hammers",
+    "Leiden":                      "ZZ Leiden",
+    "BAL Weert":                   "PrismaWorx BAL",
+    "Rotterdam":                   "Rotterdam City Basketball",
+    "Den Bosch":                   "Heroes Den Bosch",
     # --- Argentina Liga A (18) ---
     "Ferro": "Ferro Carril Oeste",
     "Obera TC": "Obera Tennis Club",

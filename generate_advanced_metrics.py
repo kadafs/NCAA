@@ -96,6 +96,22 @@ CROSS_SOURCE_CANONICAL_MAP = {
     "SW Slammers":                 "South West Slammers",
     "Warwick":                     "Warwick Senators",
     "Willetton":                   "Willetton Tigers",
+    # --- Belgium Pro Basketball League (374) ---
+    "Antwerp Giants":              "Windrose Giants Antwerp",
+    "Spirou Charleroi":            "Spirou Basket",
+    "Oostende":                    "Filou Oostende",
+    "Mechelen":                    "Kangoeroes",
+    "Okapi Aalst":                 "Okapi Aalstar",
+    "Limburg":                     "Limburg United",
+    "Mons-Hainaut":                "Union Mons-Hainaut",
+    "Liege":                       "Liege Basket",
+    # --- Netherlands DBL (65) ---
+    "Den Helder":                  "Den Helder Suns",
+    "Zwolle":                      "Landstede Hammers",
+    "Leiden":                      "ZZ Leiden",
+    "BAL Weert":                   "PrismaWorx BAL",
+    "Rotterdam":                   "Rotterdam City Basketball",
+    "Den Bosch":                   "Heroes Den Bosch",
 }
 
 def calculate_iterative_srs(games):
@@ -437,6 +453,13 @@ def process_leagues():
     historical_files = f_files + p_files + a_files + n_files
     os.makedirs("data/team_stats", exist_ok=True)
     
+    # League Aliases: Ensure specific IDs inherit data from related slugs/IDs
+    # (e.g. Belgium Pro League 374 inherits from BNXT 368 and legacy 24)
+    LEAGUE_ALIASES = {
+        374: [368, 24],
+        65:  [368]
+    }
+    
     season = datetime.datetime.now().year
     
     # Group games by league
@@ -466,6 +489,13 @@ def process_leagues():
             if league_id not in games_by_league:
                 games_by_league[league_id] = []
             games_by_league[league_id].extend(games)
+            
+            # Check if this ID should also contribute to an alias (e.g. 368 contributes to 374)
+            for target_id, source_ids in LEAGUE_ALIASES.items():
+                if league_id in source_ids:
+                    if target_id not in games_by_league:
+                        games_by_league[target_id] = []
+                    games_by_league[target_id].extend(games)
         except Exception as e:
             print(f"Error reading {hf}: {e}")
 
@@ -509,6 +539,13 @@ def process_leagues():
                     if lid not in games_by_league:
                         games_by_league[lid] = []
                     games_by_league[lid].append(clean)
+                    
+                    # Also contribute to aliases
+                    for target_id, source_ids in LEAGUE_ALIASES.items():
+                        if lid in source_ids:
+                            if target_id not in games_by_league:
+                                games_by_league[target_id] = []
+                            games_by_league[target_id].append(clean)
         except Exception as e:
             print(f"Error reading daily cache {df}: {e}")
 

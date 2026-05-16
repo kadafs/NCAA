@@ -76,8 +76,11 @@ def lookup_team(name: str, league_id: int, index: dict) -> dict | None:
     Find leaderboard entry for a team.
     Priority:
       1. Exact name match within same league_id
-      2. Fuzzy name match (≥ 0.80 similarity) within same league_id
-      3. Fuzzy name match across any league (last resort)
+      2. Fuzzy name match (>= 0.80 similarity) within same league_id
+
+    NOTE: Cross-league fallback intentionally removed. Borrowing stats from
+    a different competition produces misleading confidence scores.
+    Teams with no league-specific history will use DEFAULT_MAE / DEFAULT_BIAS.
     """
     name_lower = name.lower().strip()
 
@@ -85,7 +88,7 @@ def lookup_team(name: str, league_id: int, index: dict) -> dict | None:
     if (name_lower, league_id) in index:
         return index[(name_lower, league_id)]
 
-    # 2. Fuzzy match in league
+    # 2. Fuzzy match within same league only
     league_names = [(k[0], k[1]) for k in index if k[1] == league_id]
     if league_names:
         names_only = [k[0] for k in league_names]
@@ -93,31 +96,23 @@ def lookup_team(name: str, league_id: int, index: dict) -> dict | None:
         if matches:
             return index[(matches[0], league_id)]
 
-    # 3. Fuzzy match across all leagues
-    all_names = [k[0] for k in index]
-    matches = difflib.get_close_matches(name_lower, all_names, n=1, cutoff=0.80)
-    if matches:
-        # pick entry with highest graded_totals if multiple leagues have this name
-        candidates = [v for k, v in index.items() if k[0] == matches[0]]
-        candidates.sort(key=lambda x: x.get("graded_totals", 0), reverse=True)
-        return candidates[0] if candidates else None
-
+    # No cross-league fallback — return None, caller will use defaults
     return None
 
 
-def get_team_stats(name: str, league_id: int, index: dict) -> tuple[float, float, int]:
+def get_team_stats(name: str, league_id: int, index: dict) -> tuple:
     """
-    Returns (mae, bias, graded_totals) for a team from the leaderboard.
-    Falls back to defaults when team is not found.
+    Returns (mae, bias, graded_totals, source) for a team from the leaderboard.
+    source is "leaderboard" when real data found, "defaults" when not.
+    Falls back to defaults when team has no league-specific history.
     """
     entry = lookup_team(name, league_id, index)
     if entry:
-        # Use the root entry (Unified System stats)
-        mae  = entry.get("mae",               DEFAULT_MAE)
-        bias = entry.get("avg_signed_delta",  DEFAULT_BIAS)
+        mae    = entry.get("mae",               DEFAULT_MAE)
+        bias   = entry.get("avg_signed_delta",  DEFAULT_BIAS)
         graded = entry.get("graded_totals", 0)
-        return float(mae or DEFAULT_MAE), float(bias or DEFAULT_BIAS), int(graded)
-    return DEFAULT_MAE, DEFAULT_BIAS, 0
+        return float(mae or DEFAULT_MAE), float(bias or DEFAULT_BIAS), int(graded), "leaderboard"
+    return DEFAULT_MAE, DEFAULT_BIAS, 0, "defaults"
 
 
 # ---------------------------------------------------------------------------
@@ -192,8 +187,9 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
         vol_a = p.get("away_team_volatility") or DEFAULT_MAE
 
         # MAE + Bias — from leaderboard
-        mae_h, bias_h, graded_h = get_team_stats(home, league_id, lb_index)
-        mae_a, bias_a, graded_a = get_team_stats(away, league_id, lb_index)
+        mae_h, bias_h, graded_h, src_h = get_team_stats(home, league_id, lb_index)
+        mae_a, bias_a, graded_a, src_a = get_team_stats(away, league_id, lb_index)
+        using_defaults = (src_h == "defaults" or src_a == "defaults")
 
         # Filter by minimum graded games
         min_game_count = min(graded_h, graded_a)
@@ -256,6 +252,7 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             "mae_score":  result["mae_score"],
             "bias_score": result["bias_score"],
             "sprd_score": result["spread_score"],
+            "using_defaults": using_defaults,
         })
 
     if not rows:
@@ -273,13 +270,15 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
     print(f"{'=' * 120}")
 
     if show_components:
-        print(f"  {'Score':>6}  {'Band':<11}  {'Vol':>5}  {'MAE':>5}  {'Bias':>5}  {'Sprd':>5}  "
+        print(f"  {'Score':>6}  {'Band':<11}  {'D':<2}  {'Vol':>5}  {'MAE':>5}  {'Bias':>5}  {'Sprd':>5}  "
               f"{'V':>3}  {'M':>3}  {'B':>3}  {'S':>3}  {'xH':>6}  {'xA':>6}  {'Model':>7}  {'TrueTot':>7}  Matchup")
-        print(f"  {'-' * 118}")
+        print(f"  {'-' * 122}")
     else:
-        print(f"  {'Score':>6}  {'Band':<11}  {'Vol':>5}  {'MAE':>5}  {'Bias':>5}  {'Sprd':>5}  "
+        print(f"  {'Score':>6}  {'Band':<11}  {'D':<2}  {'Vol':>5}  {'MAE':>5}  {'Bias':>5}  {'Sprd':>5}  "
               f"{'xH':>6}  {'xA':>6}  {'Model':>7}  {'TrueTot':>7}  Matchup")
-        print(f"  {'-' * 106}")
+        print(f"  {'-' * 110}")
+
+    defaults_count = sum(1 for r in rows if r.get("using_defaults"))
 
     last_league = None
     for r in rows:
@@ -288,10 +287,11 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             last_league = r["league"]
 
         band_str = r["band"].strip()
+        d_flag   = "~" if r.get("using_defaults") else " "
 
         if show_components:
             print(
-                f"  {r['score']:>6.1f}  {band_str:<11}  "
+                f"  {r['score']:>6.1f}  {band_str:<11}  {d_flag:<2}  "
                 f"{r['avg_vol']:>5.1f}  {r['avg_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
                 f"{r['vol_score']:>3}  {r['mae_score']:>3}  {r['bias_score']:>3}  {r['sprd_score']:>3}  "
                 f"{r['xpts_h']:>6.1f}  {r['xpts_a']:>6.1f}  {r['model_total']:>7.1f}  {r['bias_adjusted_total']:>7.1f}  "
@@ -299,7 +299,7 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             )
         else:
             print(
-                f"  {r['score']:>6.1f}  {band_str:<11}  "
+                f"  {r['score']:>6.1f}  {band_str:<11}  {d_flag:<2}  "
                 f"{r['avg_vol']:>5.1f}  {r['avg_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
                 f"{r['xpts_h']:>6.1f}  {r['xpts_a']:>6.1f}  {r['model_total']:>7.1f}  {r['bias_adjusted_total']:>7.1f}  "
                 f"{r['away'][:22]} @ {r['home'][:22]}"
@@ -319,6 +319,9 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             print(f"  {bk:<12}  {band_counts[bk]}")
     print(f"  {'-' * 25}")
     print(f"  {'TOTAL':<12}  {len(rows)}")
+    if defaults_count > 0:
+        print(f"\n  ~ {defaults_count} game(s) using DEFAULT stats (no league-specific team history)")
+        print(f"  ~ These scores may be unreliable. Run aggregate_basketball_stats.py to refresh.")
     print()
 
     # Top 5 highest confidence

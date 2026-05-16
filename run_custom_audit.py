@@ -64,7 +64,7 @@ def load_valid_leagues():
                     valid_leagues.add(str(entry.get('league_id')))
     return valid_leagues
 
-def run_audit(search_term, limit=None):
+def run_audit(search_term, limit=None, league_id_filter=None):
     """Run an audit for a specific league or team name."""
     valid_leagues = load_valid_leagues()
     sdi_index = load_sdi_index()
@@ -96,6 +96,8 @@ def run_audit(search_term, limit=None):
             
             # Check if search term matches league, home team, or away team
             if search_lower in league_str or search_lower in home_str or search_lower in away_str:
+                if league_id_filter is not None and str(p.get('league_id')) != str(league_id_filter):
+                    continue
                 act_h = p.get('actual_home_score')
                 act_a = p.get('actual_away_score')
                 model_total = p.get('model_total')
@@ -166,7 +168,8 @@ def run_audit(search_term, limit=None):
     # --- OUTPUT ---
     print("\n" + "="*80)
     limit_suffix = f" (LIMIT: Last {limit} games)" if limit else ""
-    print(f" SEARCH RESULTS FOR: '{search_term.upper()}'{limit_suffix}")
+    league_suffix = f" | League ID: {league_id_filter}" if league_id_filter else ""
+    print(f" SEARCH RESULTS FOR: '{search_term.upper()}'{limit_suffix}{league_suffix}")
     print("="*80)
     
     if games_found == 0:
@@ -181,6 +184,11 @@ def run_audit(search_term, limit=None):
         4: 'Tier 4 (Both Unstable)'
     }
     
+    # Check if we have results from multiple leagues
+    if len(stats.keys()) > 1 and not league_id_filter:
+        print(f"\n  [!] Note: '{search_term}' returned games across {len(stats.keys())} different leagues.")
+        print("      To isolate performance, run with: --league_id <ID>\n")
+
     for league_name, league_stats in sorted(stats.items()):
         # Check if any halftime data exists for this league
         has_ht = any(d.get('ht_count', 0) > 0 for d in league_stats.values())
@@ -321,12 +329,13 @@ def main():
     parser = argparse.ArgumentParser(description="Run a custom audit for a specific team or league.")
     parser.add_argument("query", nargs="*", help="The name of the league or team to search for.")
     parser.add_argument("-l", "--limit", type=int, help="Limit results to the most recent N graded games.")
+    parser.add_argument("--league_id", type=int, help="Filter results by a specific league ID.")
     args = parser.parse_args()
     
     # If passed as an argument, run it and exit
     if args.query:
         search_term = " ".join(args.query)
-        run_audit(search_term, limit=args.limit)
+        run_audit(search_term, limit=args.limit, league_id_filter=args.league_id)
         return
         
     # Interactive mode
@@ -347,6 +356,7 @@ def main():
             
             # Support ":N" syntax in search term
             temp_limit = current_limit
+            temp_league = args.league_id
             if ":" in search_term:
                 parts = search_term.split(":")
                 search_term = parts[0].strip()
@@ -356,7 +366,7 @@ def main():
                     print(f"Invalid limit: {parts[1]}")
                     continue
             
-            run_audit(search_term, limit=temp_limit)
+            run_audit(search_term, limit=temp_limit, league_id_filter=temp_league)
         except KeyboardInterrupt:
             break
         except Exception as e:

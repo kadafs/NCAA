@@ -104,14 +104,18 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                         if str(exclude_filter).lower() in lname:
                             continue
                             
-                    # 3. Skip Playoffs
-                    if no_playoffs:
-                        stage = p.get("stage", "")
-                        if stage is None: stage = ""
-                        stage = stage.lower()
-                        playoff_keywords = ["final", "semi", "quarter", "playoff", "3rd place", "relegation"]
-                        if any(k in stage for k in playoff_keywords):
-                            continue
+                    # 3. Playoff Filter
+                    stage = str(p.get("stage") or "").lower()
+                    lname = str(p.get("league") or "").lower()
+                    
+                    is_playoff = "playoff" in stage or "play-off" in stage or "postseason" in stage
+                    
+                    # Heuristic: If stage is empty but league is known to be in playoffs (Taiwan ID 403)
+                    if not stage and p.get("league_id") == 403:
+                        is_playoff = True
+                        
+                    if no_playoffs and is_playoff:
+                        continue
 
                     # 4. Extract Metrics — Prefer CSV (authoritative), fallback to JSON
                     home = p.get("home_team", "").strip()
