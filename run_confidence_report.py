@@ -102,7 +102,7 @@ def lookup_team(name: str, league_id: int, index: dict) -> dict | None:
 
 def get_team_stats(name: str, league_id: int, index: dict) -> tuple:
     """
-    Returns (mae, bias, graded_totals, source) for a team from the leaderboard.
+    Returns (mae, bias, graded_totals, flat_floor_rate, flat_floor_total, source) for a team.
     source is "leaderboard" when real data found, "defaults" when not.
     Falls back to defaults when team has no league-specific history.
     """
@@ -111,8 +111,10 @@ def get_team_stats(name: str, league_id: int, index: dict) -> tuple:
         mae    = entry.get("mae",               DEFAULT_MAE)
         bias   = entry.get("avg_signed_delta",  DEFAULT_BIAS)
         graded = entry.get("graded_totals", 0)
-        return float(mae or DEFAULT_MAE), float(bias or DEFAULT_BIAS), int(graded), "leaderboard"
-    return DEFAULT_MAE, DEFAULT_BIAS, 0, "defaults"
+        ff_rate  = entry.get("flat_floor_rate")   # 0.0-1.0 or None
+        ff_total = entry.get("flat_floor_total", 0)
+        return float(mae or DEFAULT_MAE), float(bias or DEFAULT_BIAS), int(graded), ff_rate, int(ff_total), "leaderboard"
+    return DEFAULT_MAE, DEFAULT_BIAS, 0, None, 0, "defaults"
 
 
 # ---------------------------------------------------------------------------
@@ -187,8 +189,8 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
         vol_a = p.get("away_team_volatility") or DEFAULT_MAE
 
         # MAE + Bias — from leaderboard
-        mae_h, bias_h, graded_h, src_h = get_team_stats(home, league_id, lb_index)
-        mae_a, bias_a, graded_a, src_a = get_team_stats(away, league_id, lb_index)
+        mae_h, bias_h, graded_h, ff_rate_h, ff_total_h, src_h = get_team_stats(home, league_id, lb_index)
+        mae_a, bias_a, graded_a, ff_rate_a, ff_total_a, src_a = get_team_stats(away, league_id, lb_index)
         using_defaults = (src_h == "defaults" or src_a == "defaults")
 
         # Filter by minimum graded games
@@ -204,6 +206,10 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             "bias_a": bias_a,
             "bias_b": bias_h,
             "spread": spread,
+            "hit_rate_a":    ff_rate_a,
+            "hit_rate_b":    ff_rate_h,
+            "hit_rate_games_a": ff_total_a,
+            "hit_rate_games_b": ff_total_h,
         }
 
         # Calculate the raw signed average bias for the game (not absolute)
@@ -243,8 +249,8 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             "mae_h":      mae_h,
             "bias_a":     bias_a,
             "bias_h":     bias_h,
-            "avg_vol":    result["avg_vol"],
-            "avg_mae":    result["avg_mae"],
+            "max_vol":    result["max_vol"],
+            "max_mae":    result["max_mae"],
             "avg_bias_abs": result["avg_bias_abs"],
             "avg_bias_raw": avg_bias_raw,
             "min_graded_games": min_game_count,
@@ -252,6 +258,8 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             "mae_score":  result["mae_score"],
             "bias_score": result["bias_score"],
             "sprd_score": result["spread_score"],
+            "hr_score":   result["hit_rate_score"],
+            "weighted_hit_rate": result["weighted_hit_rate"],
             "using_defaults": using_defaults,
         })
 
@@ -271,8 +279,8 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
 
     if show_components:
         print(f"  {'Score':>6}  {'Band':<11}  {'D':<2}  {'Vol':>5}  {'MAE':>5}  {'Bias':>5}  {'Sprd':>5}  "
-              f"{'V':>3}  {'M':>3}  {'B':>3}  {'S':>3}  {'xH':>6}  {'xA':>6}  {'Model':>7}  {'TrueTot':>7}  Matchup")
-        print(f"  {'-' * 122}")
+              f"{'V':>3}  {'M':>3}  {'B':>3}  {'S':>3}  {'HR':>3}  {'wHR%':>5}  {'xH':>6}  {'xA':>6}  {'Model':>7}  {'TrueTot':>7}  Matchup")
+        print(f"  {'-' * 135}")
     else:
         print(f"  {'Score':>6}  {'Band':<11}  {'D':<2}  {'Vol':>5}  {'MAE':>5}  {'Bias':>5}  {'Sprd':>5}  "
               f"{'xH':>6}  {'xA':>6}  {'Model':>7}  {'TrueTot':>7}  Matchup")
@@ -288,19 +296,21 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
 
         band_str = r["band"].strip()
         d_flag   = "~" if r.get("using_defaults") else " "
+        whr_str  = f"{r['weighted_hit_rate']*100:.1f}" if r.get("weighted_hit_rate") is not None else "N/A"
 
         if show_components:
             print(
                 f"  {r['score']:>6.1f}  {band_str:<11}  {d_flag:<2}  "
-                f"{r['avg_vol']:>5.1f}  {r['avg_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
+                f"{r['max_vol']:>5.1f}  {r['max_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
                 f"{r['vol_score']:>3}  {r['mae_score']:>3}  {r['bias_score']:>3}  {r['sprd_score']:>3}  "
+                f"{r['hr_score']:>3}  {whr_str:>5}  "
                 f"{r['xpts_h']:>6.1f}  {r['xpts_a']:>6.1f}  {r['model_total']:>7.1f}  {r['bias_adjusted_total']:>7.1f}  "
                 f"{r['away'][:22]} @ {r['home'][:22]}"
             )
         else:
             print(
                 f"  {r['score']:>6.1f}  {band_str:<11}  {d_flag:<2}  "
-                f"{r['avg_vol']:>5.1f}  {r['avg_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
+                f"{r['max_vol']:>5.1f}  {r['max_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
                 f"{r['xpts_h']:>6.1f}  {r['xpts_a']:>6.1f}  {r['model_total']:>7.1f}  {r['bias_adjusted_total']:>7.1f}  "
                 f"{r['away'][:22]} @ {r['home'][:22]}"
             )
@@ -345,7 +355,7 @@ CSV_COLUMNS = [
     "away_team", "home_team",
     "model_total", "bias_adjusted_total", "xpts_away", "xpts_home", "spread",
     "vol_away", "vol_home", "mae_away", "mae_home", "bias_away", "bias_home",
-    "avg_vol", "avg_mae", "avg_bias", "min_graded_games",
+    "max_vol", "max_mae", "avg_bias", "min_graded_games",
     "vol_score", "mae_score", "bias_score", "spread_score", "raw_score",
 ]
 
@@ -382,8 +392,8 @@ def save_csv(rows: list, date_str: str, suffix: str = "") -> str:
                 "mae_home":         round(r["mae_h"], 2),
                 "bias_away":        round(r["bias_a"], 2),
                 "bias_home":        round(r["bias_h"], 2),
-                "avg_vol":          r["avg_vol"],
-                "avg_mae":          r["avg_mae"],
+                "max_vol":          r["max_vol"],
+                "max_mae":          r["max_mae"],
                 "avg_bias":         round(r["avg_bias_raw"], 2),
                 "min_graded_games": r["min_graded_games"],
                 "vol_score":        r["vol_score"],

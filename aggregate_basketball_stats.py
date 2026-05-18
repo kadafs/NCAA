@@ -56,7 +56,9 @@ def _blank_model_stats():
         "sum_signed_delta": 0.0, "count_signed_delta": 0,
         "signed_deltas": [],
         # Halftime tracking
-        "ht_count": 0, "ht_pct_sum": 0.0, "ht_on_pace": 0
+        "ht_count": 0, "ht_pct_sum": 0.0, "ht_on_pace": 0,
+        # Hit Rate tracking (-5 pt buffer floor)
+        "flat_floor_hits": 0, "flat_floor_total": 0,
     }
 
 def _tally(bucket, pred_1x2, actual_1x2, tier, rpe, signed_delta):
@@ -202,6 +204,26 @@ def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
                         if ht_pct >= 50.0:
                             team_stats_dict[t_key]["system"]["ht_on_pace"] += 1
 
+                # Hit Rate tracking (-5 pt buffer floor)
+                act_h = p.get("actual_home_score")
+                act_a = p.get("actual_away_score")
+                model_total = p.get("model_total")
+                if act_h is not None and act_a is not None and model_total:
+                    actual_total = act_h + act_a
+                    hit = 1 if actual_total >= (model_total - 5.0) else 0
+                    # League level
+                    stats_dict[key][model_key]["flat_floor_hits"]  += hit
+                    stats_dict[key][model_key]["flat_floor_total"] += 1
+                    stats_dict[key]["system"]["flat_floor_hits"]   += hit
+                    stats_dict[key]["system"]["flat_floor_total"]  += 1
+                    # Team level
+                    for t_name in [home_team, away_team]:
+                        t_key = (t_name, str(league_id))
+                        team_stats_dict[t_key][model_key]["flat_floor_hits"]  += hit
+                        team_stats_dict[t_key][model_key]["flat_floor_total"] += 1
+                        team_stats_dict[t_key]["system"]["flat_floor_hits"]   += hit
+                        team_stats_dict[t_key]["system"]["flat_floor_total"]  += 1
+
     except Exception as e:
         print(f"Error processing {os.path.basename(file_path)}: {e}")
 
@@ -277,6 +299,10 @@ def main():
             "outcome_w":         x_w,
             "outcome_l":         x_l,
             "outcome_hit_rate":  round(x_w / x_total * 100, 1) if x_total else 0.0,
+            # Hit Rate (-5 pt buffer)
+            "flat_floor_hits":   s.get("flat_floor_hits", 0),
+            "flat_floor_total":  s.get("flat_floor_total", 0),
+            "flat_floor_rate":   round(s["flat_floor_hits"] / s["flat_floor_total"], 4) if s.get("flat_floor_total", 0) > 0 else None,
             # Halftime metrics (None until grader starts populating halftime fields)
             "avg_ht_pace":       round(s["ht_pct_sum"] / s["ht_count"], 1) if s.get("ht_count", 0) > 0 else None,
             "ht_on_pace_rate":   round(s["ht_on_pace"] / s["ht_count"] * 100, 1) if s.get("ht_count", 0) > 0 else None,
@@ -345,6 +371,10 @@ def main():
             "outcome_w":          primary["outcome_w"],
             "outcome_l":          primary["outcome_l"],
             "outcome_hit_rate":   primary["outcome_hit_rate"],
+            # Hit Rate (-5 pt buffer, primary scoring input for confidence engine)
+            "flat_floor_hits":    primary.get("flat_floor_hits", 0),
+            "flat_floor_total":   primary.get("flat_floor_total", 0),
+            "flat_floor_rate":    primary.get("flat_floor_rate"),
             "srs":  srs if srs["graded_totals"] > 0 else None,
             "adv":  adv if adv["graded_totals"] > 0 else None,
         }

@@ -559,9 +559,21 @@ def find_team(name, stats_dict):
     if not name or not stats_dict:
         return None, None
 
-    # Step 0: Manual Overrides
+    original_name = name
     name = TEAM_NAME_OVERRIDES.get(name, name)
 
+    # First try with the override name
+    best_key, stats = _fuzzy_match(name, stats_dict)
+    if best_key:
+        return best_key, stats
+
+    # Fallback to the original name if the override broke the match
+    if name != original_name:
+        return _fuzzy_match(original_name, stats_dict)
+        
+    return None, None
+
+def _fuzzy_match(name, stats_dict):
     name_lower = name.lower().strip()
 
     # Exact match
@@ -998,14 +1010,16 @@ def main():
                 vol_h = sH.get("std_dev_totals", DEFAULT_MAE) if sH else DEFAULT_MAE
                 vol_a = sA.get("std_dev_totals", DEFAULT_MAE) if sA else DEFAULT_MAE
                 
-                mae_h, bias_h, graded_h = get_team_stats(home, lid, lb_index)
-                mae_a, bias_a, graded_a = get_team_stats(away, lid, lb_index)
+                mae_h, bias_h, graded_h, hr_h, hr_total_h, _ = get_team_stats(home, lid, lb_index)
+                mae_a, bias_a, graded_a, hr_a, hr_total_a, _ = get_team_stats(away, lid, lb_index)
                 
                 conf_input = {
                     "vol_a": vol_a, "vol_b": vol_h,
                     "mae_a": mae_a, "mae_b": mae_h,
                     "bias_a": bias_a, "bias_b": bias_h,
-                    "spread": spread
+                    "spread": spread,
+                    "hit_rate_a": hr_a, "hit_rate_b": hr_h,
+                    "hit_rate_games_a": hr_total_a, "hit_rate_games_b": hr_total_h
                 }
                 conf_res = compute_confidence(conf_input)
 
