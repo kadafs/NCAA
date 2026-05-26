@@ -1023,8 +1023,26 @@ def main():
                 }
                 conf_res = compute_confidence(conf_input)
 
+                # Clash of Inefficient Detection
+                is_clash = False
+                clash_trigger = ""
+                if sH and sA:
+                    eff_pivot = config.get("eff_pivot", 108.0)
+                    h_off, h_def = sH.get("adj_off"), sH.get("adj_def")
+                    a_off, a_def = sA.get("adj_off"), sA.get("adj_def")
+                    if h_off is not None and h_def is not None and a_off is not None and a_def is not None:
+                        if h_off < eff_pivot and a_off < eff_pivot and h_def > eff_pivot and a_def > eff_pivot:
+                            is_clash = True
+                            clash_mkt = market if (market and market not in (145.5, 230.0)) else None
+                            if clash_mkt is not None and (model_total - clash_mkt) >= 7.0:
+                                clash_trigger = "SHARP OVER"
+                            else:
+                                clash_trigger = "CLASH"
+
                 # Build record
                 all_predictions.append({
+                    "is_clash":      is_clash,
+                    "clash_trigger": clash_trigger,
                     "league_id":    lid,
                     "league":       lname,
                     "country":      country,

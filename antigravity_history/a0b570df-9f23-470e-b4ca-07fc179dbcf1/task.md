@@ -1,0 +1,8 @@
+- [x] Create `run_daily_sdi_report.py`
+  - [x] Implement CLI argument parsing for `--date` (default today)
+  - [x] Implement SDI Index loading logic (including ' W' suffix and first-word fallback)
+  - [x] Parse daily matches from `universal_predictions_{DATE}.json`
+  - [x] Calculate individual team and combined match SDI
+  - [x] Generate terminal report sorted by combined SDI and flag highest individual dependencies
+- [x] Test the script locally on today's matches
+- [x] Create walkthrough artifact

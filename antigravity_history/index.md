@@ -1,0 +1,49 @@
+# 🧠 Antigravity Chat & Task History Dashboard
+
+> **Welcome to your personal Antigravity Brain navigator.** This index compiles all imported design plans, tasks, transcripts, and walkthroughs from your past development sessions. You can jump directly to any document by clicking the links below.
+
+## 📊 Summary of Imported Sessions
+
+- **Total Conversations Found:** 59
+- **Conversations with Active Artifacts:** 32
+- **Last Updated:** 2026-05-22 10:20:33
+
+## 🗺️ Conversation Navigator
+
+| Date & Time | Goal / User Request | Available Artifacts & Logs |
+| :--- | :--- | :--- |
+| **2026-05-22 10:20 AM** | `import chat history from antigravity brain` <br> <small>ID: `6b05cdf7-ab14-4b9a-b026-2629a6b60418`</small> | [Transcript](./6b05cdf7-ab14-4b9a-b026-2629a6b60418/transcript.jsonl) |
+| **2026-05-20 08:55 PM** | `RESTORE CHAT HISTORY FROM ANTIGRAVITY BRAIN` <br> <small>ID: `2f5f8268-52b6-44ee-a7df-38387ccf3e00`</small> | [Transcript](./2f5f8268-52b6-44ee-a7df-38387ccf3e00/transcript.jsonl) |
+| **2026-05-18 06:27 AM** | `Incorporating Empirical Hit Rate Into the Confidence Engine` <br> <small>ID: `3589d2bd-822c-47a7-bec2-3298591257b3`</small> | [Plan](./3589d2bd-822c-47a7-bec2-3298591257b3/implementation_plan.md) • [Tasks](./3589d2bd-822c-47a7-bec2-3298591257b3/task.md) • [Walkthrough](./3589d2bd-822c-47a7-bec2-3298591257b3/walkthrough.md) • [Overview Log](./3589d2bd-822c-47a7-bec2-3298591257b3/overview.txt) |
+| **2026-05-07 06:35 AM** | `No title found (Planning session or background run)` <br> <small>ID: `aca8e669-d68e-47cc-b949-51bc56222480`</small> | [Overview Log](./aca8e669-d68e-47cc-b949-51bc56222480/overview.txt) |
+| **2026-05-05 06:34 AM** | `Daily SDI Report Tool` <br> <small>ID: `a0b570df-9f23-470e-b4ca-07fc179dbcf1`</small> | [Plan](./a0b570df-9f23-470e-b4ca-07fc179dbcf1/implementation_plan.md) • [Tasks](./a0b570df-9f23-470e-b4ca-07fc179dbcf1/task.md) • [Walkthrough](./a0b570df-9f23-470e-b4ca-07fc179dbcf1/walkthrough.md) • [Overview Log](./a0b570df-9f23-470e-b4ca-07fc179dbcf1/overview.txt) |
+| **2026-03-31 03:58 AM** | `Historical Basketball Grading Plan (March 26-29)` <br> <small>ID: `e1cf06df-9386-4246-a498-8b11e894ab7a`</small> | [Plan](./e1cf06df-9386-4246-a498-8b11e894ab7a/implementation_plan.md) • [Tasks](./e1cf06df-9386-4246-a498-8b11e894ab7a/task.md) • [Walkthrough](./e1cf06df-9386-4246-a498-8b11e894ab7a/walkthrough.md) |
+| **2026-03-30 02:14 PM** | `Change Git Author from "Mark K" to "kadafs"` <br> <small>ID: `4c415904-4ff0-47a0-b3b4-a9bdf0455690`</small> | [Plan](./4c415904-4ff0-47a0-b3b4-a9bdf0455690/implementation_plan.md) • [Tasks](./4c415904-4ff0-47a0-b3b4-a9bdf0455690/task.md) • [Walkthrough](./4c415904-4ff0-47a0-b3b4-a9bdf0455690/walkthrough.md) |
+| **2026-03-27 08:41 AM** | `Football V2: Predictive Engine & Grading Upgrade` <br> <small>ID: `bf8c5fd0-4559-4cfa-88c2-611baa740bcd`</small> | [Plan](./bf8c5fd0-4559-4cfa-88c2-611baa740bcd/implementation_plan.md) • [Tasks](./bf8c5fd0-4559-4cfa-88c2-611baa740bcd/task.md) • [Walkthrough](./bf8c5fd0-4559-4cfa-88c2-611baa740bcd/walkthrough.md) |
+| **2026-03-26 12:03 AM** | `Remove 1X2 Grading from Basketball Headers` <br> <small>ID: `b0299502-5338-4342-a927-ae82c2a31452`</small> | [Plan](./b0299502-5338-4342-a927-ae82c2a31452/implementation_plan.md) • [Tasks](./b0299502-5338-4342-a927-ae82c2a31452/task.md) • [Walkthrough](./b0299502-5338-4342-a927-ae82c2a31452/walkthrough.md) |
+| **2026-03-25 12:11 PM** | `No title found (Planning session or background run)` <br> <small>ID: `42d39890-4c3f-45ac-8ae2-5bd4f805a0df`</small> | [Tasks](./42d39890-4c3f-45ac-8ae2-5bd4f805a0df/task.md) |
+| **2026-03-25 10:06 AM** | `Two UI Improvements: Status Abbreviations + Night Shift Toggle` <br> <small>ID: `f5b5631e-8516-4ad3-babf-c2eb21ca1581`</small> | [Plan](./f5b5631e-8516-4ad3-babf-c2eb21ca1581/implementation_plan.md) • [Tasks](./f5b5631e-8516-4ad3-babf-c2eb21ca1581/task.md) • [Walkthrough](./f5b5631e-8516-4ad3-babf-c2eb21ca1581/walkthrough.md) |
+| **2026-03-24 12:19 PM** | `Repository Restoration Walkthrough` <br> <small>ID: `3e95133e-80a0-45f7-8e95-18615def090e`</small> | [Tasks](./3e95133e-80a0-45f7-8e95-18615def090e/task.md) • [Walkthrough](./3e95133e-80a0-45f7-8e95-18615def090e/walkthrough.md) |
+| **2026-03-24 11:21 AM** | `Implementation Plan: Model v2.1 Architecture Refinement` <br> <small>ID: `9429de7b-9d8d-4662-88e3-f65d91b51294`</small> | [Plan](./9429de7b-9d8d-4662-88e3-f65d91b51294/implementation_plan.md) • [Tasks](./9429de7b-9d8d-4662-88e3-f65d91b51294/task.md) • [Walkthrough](./9429de7b-9d8d-4662-88e3-f65d91b51294/walkthrough.md) |
+| **2026-03-24 09:35 AM** | `Implementing Compact Dashboard Mode` <br> <small>ID: `35e68ced-5fd2-429b-8b75-b65ae1ac4d23`</small> | [Plan](./35e68ced-5fd2-429b-8b75-b65ae1ac4d23/implementation_plan.md) • [Tasks](./35e68ced-5fd2-429b-8b75-b65ae1ac4d23/task.md) • [Walkthrough](./35e68ced-5fd2-429b-8b75-b65ae1ac4d23/walkthrough.md) |
+| **2026-03-24 04:29 AM** | `Adaptive Grid Implementation` <br> <small>ID: `a13177a0-444f-45a1-bbb5-e2f2cb2fbee9`</small> | [Plan](./a13177a0-444f-45a1-bbb5-e2f2cb2fbee9/implementation_plan.md) • [Tasks](./a13177a0-444f-45a1-bbb5-e2f2cb2fbee9/task.md) • [Walkthrough](./a13177a0-444f-45a1-bbb5-e2f2cb2fbee9/walkthrough.md) |
+| **2026-03-24 12:10 AM** | `No title found (Planning session or background run)` <br> <small>ID: `56d7408a-de16-4fc7-aa51-203ea8e464e8`</small> | [Tasks](./56d7408a-de16-4fc7-aa51-203ea8e464e8/task.md) |
+| **2026-03-22 08:57 PM** | `No title found (Planning session or background run)` <br> <small>ID: `0c6bdd29-c874-41cb-bec9-d687c64d3e73`</small> | [Tasks](./0c6bdd29-c874-41cb-bec9-d687c64d3e73/task.md) |
+| **2026-03-22 08:54 PM** | `Fix Dual Model Architecture: Eliminate Redundant SRS Duplication` <br> <small>ID: `0a479f50-45bd-412d-993d-60f275dc267e`</small> | [Plan](./0a479f50-45bd-412d-993d-60f275dc267e/implementation_plan.md) • [Tasks](./0a479f50-45bd-412d-993d-60f275dc267e/task.md) • [Walkthrough](./0a479f50-45bd-412d-993d-60f275dc267e/walkthrough.md) |
+| **2026-03-19 06:11 PM** | `Extract Links from Proballers Sitemap` <br> <small>ID: `45435693-8e67-4750-b837-7ecfc388361a`</small> | [Plan](./45435693-8e67-4750-b837-7ecfc388361a/implementation_plan.md) • [Tasks](./45435693-8e67-4750-b837-7ecfc388361a/task.md) • [Walkthrough](./45435693-8e67-4750-b837-7ecfc388361a/walkthrough.md) |
+| **2026-03-08 10:16 AM** | `No title found (Planning session or background run)` <br> <small>ID: `48b149db-af73-4e89-8808-1d86b86e5b4a`</small> | [Tasks](./48b149db-af73-4e89-8808-1d86b86e5b4a/task.md) |
+| **2026-03-03 10:18 AM** | `Implementation Plan: Tenant Application PDF Generation` <br> <small>ID: `eee4e3c6-f890-4f32-b30d-1924d7c0d7c2`</small> | [Plan](./eee4e3c6-f890-4f32-b30d-1924d7c0d7c2/implementation_plan.md) • [Tasks](./eee4e3c6-f890-4f32-b30d-1924d7c0d7c2/task.md) • [Walkthrough](./eee4e3c6-f890-4f32-b30d-1924d7c0d7c2/walkthrough.md) |
+| **2026-02-28 07:19 AM** | `Debug Camera Functionality` <br> <small>ID: `a595c2d6-a05e-4d05-88f9-7facd0311f23`</small> | [Plan](./a595c2d6-a05e-4d05-88f9-7facd0311f23/implementation_plan.md) • [Tasks](./a595c2d6-a05e-4d05-88f9-7facd0311f23/task.md) • [Walkthrough](./a595c2d6-a05e-4d05-88f9-7facd0311f23/walkthrough.md) |
+| **2026-02-28 04:17 AM** | `Plan: Rename Project to multicam` <br> <small>ID: `2f73fd00-baa9-4677-8838-f96b3fb47b89`</small> | [Plan](./2f73fd00-baa9-4677-8838-f96b3fb47b89/implementation_plan.md) • [Tasks](./2f73fd00-baa9-4677-8838-f96b3fb47b89/task.md) • [Walkthrough](./2f73fd00-baa9-4677-8838-f96b3fb47b89/walkthrough.md) |
+| **2026-02-21 02:41 PM** | `Fix: 145.5 Fallback Odds — NCAA Team Name Mismatch` <br> <small>ID: `261e3169-068e-42e7-a593-3376d1cab5a7`</small> | [Plan](./261e3169-068e-42e7-a593-3376d1cab5a7/implementation_plan.md) • [Tasks](./261e3169-068e-42e7-a593-3376d1cab5a7/task.md) • [Walkthrough](./261e3169-068e-42e7-a593-3376d1cab5a7/walkthrough.md) |
+| **2026-02-20 09:27 AM** | `Push to GitHub Walkthrough` <br> <small>ID: `49bc052a-aaaf-4ba8-ab53-db22d6e07fa4`</small> | [Tasks](./49bc052a-aaaf-4ba8-ab53-db22d6e07fa4/task.md) • [Walkthrough](./49bc052a-aaaf-4ba8-ab53-db22d6e07fa4/walkthrough.md) |
+| **2026-02-17 10:54 AM** | `D1 Hybrid Model Implementation Plan` <br> <small>ID: `f3dccbc8-349c-4304-b959-4067d121a0e4`</small> | [Plan](./f3dccbc8-349c-4304-b959-4067d121a0e4/implementation_plan.md) • [Tasks](./f3dccbc8-349c-4304-b959-4067d121a0e4/task.md) • [Walkthrough](./f3dccbc8-349c-4304-b959-4067d121a0e4/walkthrough.md) |
+| **2026-02-17 10:19 AM** | `No title found (Planning session or background run)` <br> <small>ID: `4df34f91-7a05-457e-9919-e9c81ff539e2`</small> | [Tasks](./4df34f91-7a05-457e-9919-e9c81ff539e2/task.md) |
+| **2026-02-16 06:12 AM** | `No title found (Planning session or background run)` <br> <small>ID: `bf372b6c-a83e-456b-9cf4-670efdc9c8a9`</small> | [Tasks](./bf372b6c-a83e-456b-9cf4-670efdc9c8a9/task.md) |
+| **2026-02-15 09:30 AM** | `No title found (Planning session or background run)` <br> <small>ID: `8096d78a-547d-42d7-861a-6415c0c33c8b`</small> | [Tasks](./8096d78a-547d-42d7-861a-6415c0c33c8b/task.md) |
+| **2026-02-15 06:45 AM** | `Conference-Only Stats Models - Implementation Complete` <br> <small>ID: `991f96ab-eb60-4984-af63-cf265af85e55`</small> | [Tasks](./991f96ab-eb60-4984-af63-cf265af85e55/task.md) • [Walkthrough](./991f96ab-eb60-4984-af63-cf265af85e55/walkthrough.md) |
+| **2026-02-15 06:44 AM** | `No title found (Planning session or background run)` <br> <small>ID: `55765447-4c79-41ca-b13b-fe3e0e631542`</small> | [Tasks](./55765447-4c79-41ca-b13b-fe3e0e631542/task.md) |
+| **2026-02-13 01:58 PM** | `No title found (Planning session or background run)` <br> <small>ID: `c8ebdd62-391e-4131-bd26-723dc25dcc8e`</small> | [Tasks](./c8ebdd62-391e-4131-bd26-723dc25dcc8e/task.md) |
+
+---
+*Dashboard generated automatically by Antigravity.*

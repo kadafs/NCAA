@@ -117,11 +117,70 @@ def get_team_stats(name: str, league_id: int, index: dict) -> tuple:
     return DEFAULT_MAE, DEFAULT_BIAS, 0, None, 0, "defaults"
 
 
-# ---------------------------------------------------------------------------
-# Band label helpers (ASCII-safe)
-# ---------------------------------------------------------------------------
+
+def check_clash_profile(home: str, away: str, league_id: int) -> bool:
+    """
+    Check if both teams have below-average offensive ratings
+    and above-average (worse) defensive ratings.
+    """
+    if not league_id:
+        return False
+    cfg_path = os.path.join("configs", "leagues", f"{league_id}.json")
+    if not os.path.exists(cfg_path):
+        return False
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as cf:
+            cfg = json.load(cf)
+        eff_pivot = cfg.get("eff_pivot", 108.0)
+    except:
+        return False
+
+    stats_map = {}
+    for suffix in ["adv", "srs"]:
+        spath = os.path.join("data", f"bball_stats_{league_id}_{suffix}.json")
+        if os.path.exists(spath):
+            try:
+                with open(spath, "r", encoding="utf-8") as sf:
+                    sdata = json.load(sf)
+                    for t in sdata.get("teams", []):
+                        name = t["team_name"]
+                        if name not in stats_map:
+                            stats_map[name] = t
+            except:
+                pass
+
+    def find_stats(team_name: str) -> dict | None:
+        if not team_name:
+            return None
+        # 1. Exact match
+        if team_name in stats_map:
+            return stats_map[team_name]
+        # 2. Case-insensitive match
+        for name, stats in stats_map.items():
+            if name.lower() == team_name.lower():
+                return stats
+        # 3. Substring match (e.g. "Leiden" inside "ZZ Leiden")
+        for name, stats in stats_map.items():
+            if team_name.lower() in name.lower() or name.lower() in team_name.lower():
+                return stats
+        # 4. Fuzzy match
+        names = list(stats_map.keys())
+        matches = difflib.get_close_matches(team_name, names, n=1, cutoff=0.60)
+        if matches:
+            return stats_map[matches[0]]
+        return None
+
+    sh = find_stats(home)
+    sa = find_stats(away)
+    if sh and sa:
+        h_off, h_def = sh.get("adj_off"), sh.get("adj_def")
+        a_off, a_def = sa.get("adj_off"), sa.get("adj_def")
+        if h_off is not None and h_def is not None and a_off is not None and a_def is not None:
+            return h_off < eff_pivot and a_off < eff_pivot and h_def > eff_pivot and a_def > eff_pivot
+    return False
 
 BAND_ORDER = ["[ELITE]   ", "[HIGH]    ", "[SOLID]   ", "[MODERATE]", "[LOW]     ", "[AVOID]   "]
+
 
 
 def band_sort_key(band_label: str) -> int:
@@ -229,6 +288,21 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             if score >= 60.0 or result["vol_score"] < 15:
                 continue
 
+        is_clash = check_clash_profile(home, away, league_id)
+        # Fallback to already computed JSON values if manual match failed
+        if not is_clash and p.get("is_clash"):
+            is_clash = True
+
+        clash_trigger = ""
+        if is_clash:
+            clash_trigger = p.get("clash_trigger") or ""
+            if not clash_trigger:
+                mkt_tot = p.get("market_total")
+                if mkt_tot is not None and (model_total - mkt_tot) >= 7.0:
+                    clash_trigger = "SHARP OVER"
+                else:
+                    clash_trigger = "CLASH"
+
         rows.append({
             "league":     league,
             "league_id":  league_id,
@@ -261,6 +335,8 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
             "hr_score":   result["hit_rate_score"],
             "weighted_hit_rate": result["weighted_hit_rate"],
             "using_defaults": using_defaults,
+            "is_clash": is_clash,
+            "clash_trigger": clash_trigger,
         })
 
     if not rows:
@@ -298,6 +374,13 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
         d_flag   = "~" if r.get("using_defaults") else " "
         whr_str  = f"{r['weighted_hit_rate']*100:.1f}" if r.get("weighted_hit_rate") is not None else "N/A"
 
+        matchup = f"{r['away'][:22]} @ {r['home'][:22]}"
+        if r.get("is_clash"):
+            if r.get("clash_trigger") == "SHARP OVER":
+                matchup += " [CLASH! SHARP OVER]"
+            else:
+                matchup += " [CLASH]"
+
         if show_components:
             print(
                 f"  {r['score']:>6.1f}  {band_str:<11}  {d_flag:<2}  "
@@ -305,14 +388,14 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
                 f"{r['vol_score']:>3}  {r['mae_score']:>3}  {r['bias_score']:>3}  {r['sprd_score']:>3}  "
                 f"{r['hr_score']:>3}  {whr_str:>5}  "
                 f"{r['xpts_h']:>6.1f}  {r['xpts_a']:>6.1f}  {r['model_total']:>7.1f}  {r['bias_adjusted_total']:>7.1f}  "
-                f"{r['away'][:22]} @ {r['home'][:22]}"
+                f"{matchup}"
             )
         else:
             print(
                 f"  {r['score']:>6.1f}  {band_str:<11}  {d_flag:<2}  "
                 f"{r['max_vol']:>5.1f}  {r['max_mae']:>5.1f}  {r['avg_bias_raw']:>5.1f}  {r['spread']:>5.1f}  "
                 f"{r['xpts_h']:>6.1f}  {r['xpts_a']:>6.1f}  {r['model_total']:>7.1f}  {r['bias_adjusted_total']:>7.1f}  "
-                f"{r['away'][:22]} @ {r['home'][:22]}"
+                f"{matchup}"
             )
 
     print(f"\n{'=' * 120}")
@@ -338,8 +421,14 @@ def run_report(date_str: str, min_score: float = 0.0, tier_filter: str = None,
     top5 = rows[:5]
     print(f"  TOP 5 HIGHEST CONFIDENCE:")
     for r in top5:
+        matchup = f"{r['away'][:22]} @ {r['home'][:22]}"
+        if r.get("is_clash"):
+            if r.get("clash_trigger") == "SHARP OVER":
+                matchup += " [CLASH! SHARP OVER]"
+            else:
+                matchup += " [CLASH]"
         print(f"    {r['score']:>5.1f}  {r['band'].strip():<11}  "
-              f"{r['away'][:22]} @ {r['home'][:22]}  |  {r['league']}  "
+              f"{matchup}  |  {r['league']}  "
               f"|  TrueTot:{r['bias_adjusted_total']:.1f}  (Model:{r['model_total']:.1f}  Bias:{r['avg_bias_raw']:+.1f})")
     print()
 
@@ -357,6 +446,7 @@ CSV_COLUMNS = [
     "vol_away", "vol_home", "mae_away", "mae_home", "bias_away", "bias_home",
     "max_vol", "max_mae", "avg_bias", "min_graded_games",
     "vol_score", "mae_score", "bias_score", "spread_score", "raw_score",
+    "is_clash", "clash_trigger"
 ]
 
 def save_csv(rows: list, date_str: str, suffix: str = "") -> str:
@@ -401,6 +491,8 @@ def save_csv(rows: list, date_str: str, suffix: str = "") -> str:
                 "bias_score":       r["bias_score"],
                 "spread_score":     r["sprd_score"],
                 "raw_score":        r["raw"],
+                "is_clash":         1 if r.get("is_clash") else 0,
+                "clash_trigger":    r.get("clash_trigger", ""),
             })
 
     return path

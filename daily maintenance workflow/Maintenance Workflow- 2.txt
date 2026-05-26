@@ -1,7 +1,172 @@
-python run_basketball_daily.py
-and python explore_api_basketball_today.py
+TRACKING_EPOCH = "2026-03-26"
+python audit_team_names.py - check team names
+/ **[python grade_basketball.py  
+python grade_basketball.py --regrade
+python aggregate_basketball_stats.py*** 
+python run_daily_sdi_report.py
+
+# CLI Custom Audit
+python run_custom_audit.py (-l or --limit flag)
+
+# 🖥️ Interactive Dashboard for Custom Audit:
+python -m streamlit run audit_dashboard.py
+
+python audit_volatility_tiers.py
 
 
+
+# 1. Update the raw stats from Proballers 
+python scrape_proballers.py --file configs/proballers_leagues.txt --cutoff_date 2026-03-01 
+python scrape_proballers.py --daily today --cutoff_date 2026-02-02 
+python scrape_nbl1.py - For NBL 1 games only 
+  
+  1b. # Update the raw stats from api python auto_update_historical.py
+  # 1c. Update the SDI index python calculate_sdi.py
+
+# 2. Convert raw stats into the True Offense/Defense Matrix
+python generate_advanced_metrics.py
+
+# 3. Finally, run today's predictions using those updated matrices
+python run_basketball_daily.py --mode full --date 2026-04-19 --refresh
+python run_basketball_daily.py --date 2026-03-19 --no_match_center
+python run_basketball_daily.py --mode full --no_match_center --date 2026-03-21
+
+python push_to_dashboard.py --sport basketball
+
+# Daily Confidence Report:
+      # All fixtures today
+        python run_confidence_report.py
+        
+      # Skip playoffs:
+        python run_confidence_report.py --no_playoffs
+      # Specific date
+        python run_confidence_report.py --date 2026-05-06
+
+      # Only show high-confidence games
+        python run_confidence_report.py --min_score 60
+
+      # Show component breakdown (V/M/B/S pts)
+      python run_confidence_report.py --date 2026-05-06 --components
+
+      # Filter by tier or league
+        python run_confidence_report.py --tier top_domestic
+        python run_confidence_report.py --league_id 72 
+
+      # Only show games where BOTH teams have at least 7 graded games:
+        python run_confidence_report.py --min_graded 7
+
+        Pro Tip: If you run the script with the --components flag (python run_confidence_report.py --min_graded 7 --components), 
+        it will print out the exact points the game scored in Volatility, MAE, Bias, and Spread. 
+        This makes it instantly obvious if a game is being penalized for Bias (which you can adjust for) vs Volatility (which you should run away from).
+        
+       Just use:  python run_confidence_report.py --hidden_gems
+
+      # confidence report audit 
+         python standard_confidence_audit.py 
+
+
+Every 2 weeks:
+  python auto_update_historical.py      ← pull latest game results
+  python calibrate_from_local.py        ← rebuild pace/eff pivots
+  python generate_advanced_metrics.py   ← rebuild SRS matrix
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Discontinued workflows -- All workflow from here is not needed anymore 
+
+#4 Update match centre 
+cd football-dashboard
+node scripts/sync-data.js
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+Audit Summary Script -- backend only --Explanation of the metrics at the end of this page 
+# Python audit_basketball.py
+
+**Single day:**
+python audit_basketball.py --date 2026-03-21
+
+**Weekend audit (Fri → Sun):**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21
+
+**Filter by league:**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --league "NBA"
+
+**Show only busts, sorted by delta:**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --tier BUST --sort delta
+
+**Just wins, no game log (summary only):**
+python audit_basketball.py --from 2026-03-19 --to 2026-03-21 --result win --no-log
+
+
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+
+Calibration is handled by 
+
+calibrate_league.py NOW python calibrate_from_local.py after run python compute_bias_corrections.py
+
+
+
+ and can happen in two contexts:
+
+1. Automatic (During Prediction Runs)
+In 
+
+run_basketball_daily.py
+, when processing a league without an existing config, the script auto-calibrates on the fly:
+
+run_basketball_daily.py → detects no configs/leagues/{id}.json
+                        → calls calibrate_league.auto_calibrate(league_id)
+                        → fetches finished games from API
+                        → derives pace_pivot, eff_pivot, hca, regression_factor
+                        → writes configs/leagues/{id}.json
+                        → continues with prediction
+You can skip this with --no_calibrate to only use existing configs.
+
+2. Manual (Maintenance)
+Run directly to recalibrate one or all leagues:
+
+bash
+python calibrate_league.py --league_id 40      # Recalibrate BBL Germany
+python calibrate_league.py --all                # Recalibrate all leagues
+What Calibration Actually Does
+Fetches all finished games this season for the league from the API
+Computes avg_total (mean game total) and std_total (variance)
+Derives HCA from mean home margin, clamped to 0.5–8.0
+Uses the tier's pace as pace_pivot (e.g., 78 for top_domestic)
+Back-derives eff_pivot = (avg_total × 100) / (2 × pace_pivot) — this is the Fix 9 formula that ensures dimensional consistency with the engine
+Sets regression_factor based on sample size (more games → higher trust, capped at 0.96)
+Writes the config to configs/leagues/{id}.json
+When Should You Recalibrate?
+Start of season — When new leagues begin and have 15+ games
+If MAE drifts — Run python backtest_v4.py and if accuracy drops, recalibrate
+After league breaks — Mid-season breaks can shift team dynamics
+Never during playoffs — Small sample + different play style would corrupt calibration
+The calibration is essentially answering: "What does a typical game in this league look like?" — and the engine then adjusts from that baseline based on each specific matchup.
+
+
+
+
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
 
 #D1
 Step 1: Copy the Data
@@ -265,3 +430,66 @@ Go to your GitHub Repository -> Actions tab.
 Click on the latest "NBA/NCAA Data Update" run.
 Check the "Generate Predictions" step. The echo statements now clearly show success or failure for each league.
 
+
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+________________________________________________________________________________________________________________
+## Glossary of Audit Metrics
+
+### `Δ` — Absolute Delta *(per game, in the game log)*
+> **"How far off was the model, regardless of direction?"**
+
+```
+Δ = |Actual Game Total − Model Projected Total|
+```
+Always a positive number. A Δ of `8.0` means the model was 8 points off — whether the game went higher or lower than projected. This is what drives the **Tier** (BULLSEYE/SOLID/BUST etc).
+
+---
+
+### `±Δ` — Signed Delta *(per game, in the game log)*
+> **"Which way did the model miss?"**
+
+```
+±Δ = Actual Game Total − Model Projected Total
+```
+- **`+8.0` (green)** → game scored **8 more points** than the model expected *(game went OVER)*
+- **`−8.0` (red)** → game scored **8 fewer points** than the model expected *(game went UNDER)*
+
+Same magnitude as `Δ`, but tells you the direction of the error.
+
+---
+
+### `AVG Δ` — Average Absolute Delta *(league breakdown)*
+> **"On average, how many points does the model miss by in this league?"**
+
+The mean of all `Δ` values for a league. Lower is better. This is your **accuracy score** for the league — equivalent to MAPE but in raw points.
+
+| AVG Δ | Meaning |
+|---|---|
+| ≤ 8.5 | 🟢 Very accurate |
+| ≤ 14.5 | 🟡 Respectable |
+| > 14.5 | 🔴 Struggling |
+
+---
+
+### `SIGNED Δ` — Average Signed Delta *(league breakdown)*
+> **"Does the model consistently overshoot or undershoot this league?"**
+
+The mean of all `±Δ` values for a league. This reveals **systematic bias**:
+
+- **`+4.2` (red)** → model consistently underestimates scoring in this league — games tend to go **Over** the model's projection
+- **`−4.2` (green)** → model consistently overestimates scoring — games tend to go **Under** the model's projection
+- **Near 0** → no systematic bias, errors are random noise
+
+---
+
+### `BIAS` *(league breakdown)*
+> **"Plain-English label for the signed delta direction"**
+
+| BIAS | Signed Δ | Meaning |
+|---|---|---|
+| 📈 Over | < −3 | Model overshoots — back Unders in this league |
+| 📉 Under | > +3 | Model undershoots — back Overs in this league |
+| ✅ Neutral | −3 to +3 | No significant directional lean |
+
+The threshold of ±3 points is deliberate — anything smaller is statistical noise for basketball games averaging 150+ points.

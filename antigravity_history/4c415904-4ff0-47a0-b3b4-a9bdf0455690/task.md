@@ -1,0 +1,5 @@
+- [x] Configure local git `user.name` and `user.email`
+- [x] Write and execute a Python script to rewrite the commit history via `git filter-branch`
+- [x] Push the updated history to the origin (`git push --force`)
+- [x] Clean up temporary script
+- [x] Create walkthrough artifact

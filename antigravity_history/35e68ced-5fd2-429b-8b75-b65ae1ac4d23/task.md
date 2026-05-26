@@ -1,0 +1,29 @@
+# Compact Mode Task List
+
+- [x] State Management (App.jsx)
+  - [x] Initial device detection (< 1024px)
+  - [x] LocalStorage persistence
+  - [x] Single-run auto-detection (no resize forced overrides)
+- [x] Refined Header (Header.jsx)
+  - [x] Compact/Full toggle button
+  - [x] Polished label/icon switching
+- [x] Row Refactoring (MatchRow.jsx / BasketballRow.jsx)
+  - [x] Removed inline conditional logic
+  - [x] Added structural classes (football, basketball, teams, xG, xPTS)
+- [x] CSS Layout (index.css)
+  - [x] Removed body min-width
+  - [x] Implemented .compact-mode overrides
+  - [x] Fixed Header/Row grid alignment (removed gap)
+- [x] User Experience (UX)
+  - [x] Added first-time mobile hint toast
+  - [x] Smooth CSS transitions for layout changes
+  - [x] Hidden scroll-to-top button in compact mode
+  - [x] Relocated & redesigned toggle as a pill-switch in filters
+- [x] Finalize
+  - [x] Deep Blue brand hierarchy system
+  - [x] Retained bold initial colors for TIP and 1X2 boxes
+  - [x] Softened probability backgrounds and secondary metrics (xPTS/xG)
+  - [x] Ensured consistent 6px badge radius
+  - [x] Applied visual hierarchy noise-reduction rules to Basketball dashboard
+  - [x] Documented changes in Walkthrough
+  - [x] Pushed to GitHub
