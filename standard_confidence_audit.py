@@ -21,7 +21,7 @@ from datetime import datetime
 CONFIDENCE_DIR = "data/confidence_reports"
 PREDICTIONS_DIR = "data/basketball"
 
-def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter=None, exclude_filter=None):
+def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter=None, exclude_filter=None, league_id_filter=None):
     print(f"\n{'='*110}")
     print(f"  BASKETBALL CONFIDENCE AUDIT REPORT (Source: JSON Predictions)")
     
@@ -29,6 +29,7 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
     filters = []
     if no_playoffs: filters.append("No Playoffs")
     if league_filter: filters.append(f"League: {league_filter}")
+    if league_id_filter: filters.append(f"League ID: {league_id_filter}")
     if exclude_filter: filters.append(f"Exclude: {exclude_filter}")
     filter_str = f" | Filters: {', '.join(filters)}" if filters else ""
     
@@ -96,6 +97,13 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                         lname = str(p.get("league") if p.get("league") is not None else "").lower()
                         lf = str(league_filter).strip().lower()
                         if lf != lid and lf not in lname:
+                            continue
+                            
+                    # 2.1 League ID Filter
+                    if league_id_filter:
+                        lid = str(p.get("league_id") if p.get("league_id") is not None else "").strip()
+                        lf_id = str(league_id_filter).strip()
+                        if lf_id != lid:
                             continue
                             
                     # 2.5 Exclude Filter
@@ -315,10 +323,11 @@ if __name__ == "__main__":
     parser.add_argument("--halftime", action="store_true", help="Audit halftime performance instead of full time")
     parser.add_argument("--no_playoffs", action="store_true", help="Exclude playoff games from the audit")
     parser.add_argument("--league", type=str, default=None, help="Filter by league ID or league name substring")
+    parser.add_argument("--league-id", "--league_id", "-l", type=str, default=None, help="Filter by exact league ID")
     parser.add_argument("--exclude", type=str, default=None, help="Exclude leagues matching this name substring")
     args = parser.parse_args()
     
     import datetime
     # Start from 0 (today) to include today's already-finished/graded games
     dates = [(datetime.datetime.now() - datetime.timedelta(days=i)).strftime("%Y-%m-%d") for i in range(0, args.days)]
-    run_audit(dates, args.buffer, args.halftime, args.no_playoffs, args.league, args.exclude)
+    run_audit(dates, args.buffer, args.halftime, args.no_playoffs, args.league, args.exclude, args.league_id)
