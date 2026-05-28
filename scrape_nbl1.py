@@ -178,9 +178,14 @@ def extract_box_score(fixture_id):
     away_players = get_players(away_data)
 
     if home_score is None:
-        home_score = home_data.get("entity", {}).get("points", 0)
+        home_score = home_data.get("entity", {}).get("points")
     if away_score is None:
-        away_score = away_data.get("entity", {}).get("points", 0)
+        away_score = away_data.get("entity", {}).get("points")
+
+    if not home_score:
+        home_score = sum(p.get("pts", 0) for p in home_players)
+    if not away_score:
+        away_score = sum(p.get("pts", 0) for p in away_players)
 
     if not home_players or not away_players:
         return None
@@ -489,6 +494,16 @@ def _parse_box_score(data):
     away_data = stats_base.get("away", {})
     home_players = get_players(home_data)
     away_players = get_players(away_data)
+
+    if home_score is None:
+        home_score = home_data.get("entity", {}).get("points")
+    if away_score is None:
+        away_score = away_data.get("entity", {}).get("points")
+
+    if not home_score:
+        home_score = sum(p.get("pts", 0) for p in home_players)
+    if not away_score:
+        away_score = sum(p.get("pts", 0) for p in away_players)
 
     if not home_players or not away_players:
         return None
