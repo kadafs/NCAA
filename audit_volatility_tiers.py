@@ -5,14 +5,14 @@ import sys
 import numpy as np
 
 # Ensure project root is in path
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from utils.epoch_config import get_earliest_epoch, is_game_valid
 
 DATA_DIR = "data/basketball"
-TRACKING_EPOCH = "2026-03-25"
 
 def analyze_volatility():
     all_files = sorted(glob.glob(os.path.join(DATA_DIR, "universal_predictions_*.json")))
-    files = [f for f in all_files if os.path.basename(f).replace("universal_predictions_", "").replace(".json", "") >= TRACKING_EPOCH]
+    files = [f for f in all_files if os.path.basename(f).replace("universal_predictions_", "").replace(".json", "") >= get_earliest_epoch()]
     
     print(f"\n  Running Volatility-Only Audit (Data-Leakage Free)...")
     
@@ -28,10 +28,13 @@ def analyze_volatility():
     
     for f_path in files:
         try:
+            file_date_str = os.path.basename(f_path).replace("universal_predictions_", "").replace(".json", "")
             with open(f_path, encoding="utf-8") as f:
                 data = json.load(f)
             preds = data.get("predictions", [])
             for p in preds:
+                if not is_game_valid(p.get("league_id"), file_date_str):
+                    continue
                 h_s = p.get("actual_home_score")
                 a_s = p.get("actual_away_score")
                 model_total = p.get("model_total")
@@ -65,7 +68,7 @@ def analyze_volatility():
         except Exception as e:
             continue
 
-    print(f"\nPURE VOLATILITY TIER AUDIT (Epoch: {TRACKING_EPOCH}+)")
+    print(f"\nPURE VOLATILITY TIER AUDIT (Epoch: {get_earliest_epoch()}+)")
     print(f"Total Graded Games: {total_graded}")
     print("=" * 105)
     print(f"{'Tier':<40} | {'Games':>5} | {'MAE':>6} | {'Bias':>6} | {'Floor Coverage (-10)':>20}")

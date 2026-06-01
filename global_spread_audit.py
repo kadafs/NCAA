@@ -15,8 +15,10 @@ if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-DATA_DIR       = os.path.join(os.path.dirname(__file__), 'data', 'basketball')
-TRACKING_EPOCH = '2026-03-25'
+sys.path.insert(0, os.path.dirname(__file__))
+from utils.epoch_config import get_earliest_epoch, is_game_valid
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), 'data', 'basketball')
 
 # ---- Spread buckets ----
 BANDS = [
@@ -87,7 +89,7 @@ def main():
     all_files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')))
     files = [
         f for f in all_files
-        if os.path.basename(f).replace('universal_predictions_', '').replace('.json', '') >= TRACKING_EPOCH
+        if os.path.basename(f).replace('universal_predictions_', '').replace('.json', '') >= get_earliest_epoch()
     ]
 
     VOL_TIERS = ["STABLE   (both < 14.8)", "MODERATE (both ≤ 16.6)",
@@ -100,11 +102,14 @@ def main():
 
     skipped = 0
     for pf in files:
+        file_date_str = os.path.basename(pf).replace('universal_predictions_', '').replace('.json', '')
         with open(pf, 'r', encoding='utf-8') as f:
             preds = json.load(f)
         for p in preds.get('predictions', []):
             if str(p.get('league_id')) not in valid_leagues:
                 continue
+            if not is_game_valid(p.get('league_id'), file_date_str):
+                skipped += 1; continue
             act_h      = p.get('actual_home_score')
             act_a      = p.get('actual_away_score')
             model_total = p.get('model_total')
@@ -136,7 +141,7 @@ def main():
 
     print()
     print("=" * 92)
-    print("  GLOBAL SPREAD AUDIT — Cross-tabbed by Volatility Tier  |  Epoch:", TRACKING_EPOCH)
+    print("  GLOBAL SPREAD AUDIT — Cross-tabbed by Volatility Tier  |  Epoch:", get_earliest_epoch())
     print("=" * 92)
 
     print_section("ALL GAMES (combined)", combined)

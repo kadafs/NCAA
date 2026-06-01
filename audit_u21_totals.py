@@ -1,16 +1,21 @@
-import json, os, glob
+import json, os, glob, sys
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from utils.epoch_config import get_earliest_epoch, is_game_valid
 
 DATA_DIR = os.path.join('data', 'basketball')
-TRACKING_EPOCH = '2026-03-25'
 
 all_files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')))
-files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= TRACKING_EPOCH]
+files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= get_earliest_epoch()]
 
 u21_totals = []
 for f in files:
+    file_date_str = os.path.basename(f).replace('universal_predictions_','').replace('.json','')
     data = json.load(open(f, encoding='utf-8'))
     for p in data.get('predictions', []):
         if p.get('league_id') != 233:
+            continue
+        if not is_game_valid(233, file_date_str):
             continue
         act_h = p.get('actual_home_score')
         act_a = p.get('actual_away_score')
@@ -22,7 +27,7 @@ for f in files:
             u21_totals.append((actual, model, f"{away} @ {home}"))
 
 u21_totals.sort(key=lambda x: x[0], reverse=True)
-print(f"Espoirs U21 (League 233) — {len(u21_totals)} graded games since epoch")
+print(f"Espoirs U21 (League 233) — {len(u21_totals)} graded games since epoch ({get_earliest_epoch()})")
 print(f"{'Actual':<8} {'Model':<8} Matchup")
 print("-" * 70)
 for actual, model, matchup in u21_totals:

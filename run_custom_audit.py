@@ -9,11 +9,13 @@ if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
+sys.path.insert(0, os.path.dirname(__file__))
+from utils.epoch_config import get_earliest_epoch, is_game_valid
+
 # ==========================================
 # CONFIGURATION
 # ==========================================
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data', 'basketball')
-TRACKING_EPOCH = '2026-03-25'
 
 def load_sdi_index():
     """Load the Star Dependency Index lookup dict {team_name_lower: sdi_record}.
@@ -70,7 +72,7 @@ def get_audit_data(search_term, limit=None, league_id_filter=None):
     sdi_index = load_sdi_index()
     
     all_files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')))
-    files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= TRACKING_EPOCH]
+    files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= get_earliest_epoch()]
     
     # stats[league_name][tier]
     stats = defaultdict(lambda: defaultdict(lambda: {
@@ -86,8 +88,10 @@ def get_audit_data(search_term, limit=None, league_id_filter=None):
         with open(p_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             
+        file_date_str = os.path.basename(p_file).replace('universal_predictions_','').replace('.json','')
         for p in data.get('predictions', []):
             if str(p.get('league_id')) not in valid_leagues: continue
+            if not is_game_valid(p.get('league_id'), file_date_str): continue
             
             # Format strings for searching, normalizing dashes
             league_str = f"{p.get('country', '')} - {p.get('league', '')}".lower().replace('\u2014', '-')

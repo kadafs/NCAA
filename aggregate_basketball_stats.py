@@ -1,7 +1,11 @@
 import json
 import os
 import glob
+import sys
 from datetime import datetime
+
+sys.path.insert(0, os.path.dirname(__file__))
+from utils.epoch_config import get_earliest_epoch, is_game_valid
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "basketball")
 OUTPUT_FILE = os.path.join(DATA_DIR, "league_leaderboard.json")
@@ -9,21 +13,11 @@ TEAM_OUTPUT_FILE = os.path.join(DATA_DIR, "basketball_leaderboard.json")
 
 # ==========================================
 # TRACKING EPOCH RESET
-# Define the date when the "V2" mathematical engine launched.
-# The dashboard leaderboard will ONLY aggregate predictions from this date forward.
-# This prevents corrupted legacy baselines from polluting the current MAPE tracking.
+# Epoch configuration is centralised in configs/tracking_epochs.json.
+# Use get_earliest_epoch() for file-level filtering and is_game_valid()
+# inside prediction loops for per-league epoch enforcement.
+# To add a league-specific epoch override, edit that JSON file.
 # ==========================================
-TRACKING_EPOCH = "2026-03-25"
-
-# ==========================================
-# LEAGUE-SPECIFIC EPOCH OVERRIDES
-# Key: league_id (int). Value: Start date (YYYY-MM-DD).
-# Predictions for this league before this date will be ignored,
-# resetting its leaderboard stats to 0 from this date.
-# ==========================================
-LEAGUE_EPOCHS = {
-    # 211: "2026-10-01",  # Example: reset NBL1 Central Women on Oct 1
-}
 
 # ==========================================
 # LEAGUE ID MERGES (MIGRATIONS)
@@ -98,9 +92,8 @@ def process_file(file_path, file_date_str, stats_dict, team_stats_dict):
             target_ids = LEAGUE_ID_MERGES.get(orig_id, [orig_id])
             
             for league_id in target_ids:
-                # Enforce League-Specific Epoch overrides
-                league_epoch = LEAGUE_EPOCHS.get(league_id)
-                if league_epoch and file_date_str < league_epoch:
+                # Enforce per-league epoch overrides (from configs/tracking_epochs.json)
+                if not is_game_valid(league_id, file_date_str):
                     continue
                     
                 league_name  = p.get("league", "Unknown")
@@ -241,7 +234,7 @@ def main():
     # Filter files by Tracking Epoch and explicit user flags
     files = []
     
-    start_dt = datetime.strptime(TRACKING_EPOCH, "%Y-%m-%d")
+    start_dt = datetime.strptime(get_earliest_epoch(), "%Y-%m-%d")
     end_dt   = datetime.strptime(args.date, "%Y-%m-%d") if args.date else None
     
     for f in all_files:

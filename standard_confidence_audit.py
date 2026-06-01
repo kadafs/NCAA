@@ -185,7 +185,7 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                     # Tier Tracking
                     if band not in tier_stats:
                         tier_stats[band] = {"games": 0, "hits": 0, "errors": []}
-                        tier_bias_stats[band] = {b: {"games": 0, "hits": 0, "errors": []} for b in ["Positive", "Neutral", "Negative"]}
+                        tier_bias_stats[band] = {b: {"games": 0, "hits": 0, "errors": []} for b in ["Negative", "0 - 0.99", "1 - 4.99", "5 - 9.99", "10 - 14.99", "15 - 19.99", "20+"]}
                         tier_range_stats[band] = {r: {"games": 0, "hits": 0, "errors": []} for r in ["< 130", "130-139.5", "140-149.5", "150-159.5", "160-169.5", "170-179.5", ">= 180"]}
                         tier_spread_stats[band] = {s: {"games": 0, "hits": 0, "errors": []} for s in ["0-5", "5-10", "10-15", "15-20", "20+"]}
                     
@@ -195,9 +195,13 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
                         tier_stats[band]["hits"] += 1
                         
                     # Bias Tracking by Tier
-                    b_grp = "Neutral"
-                    if avg_bias_raw > 1.0: b_grp = "Positive"
-                    elif avg_bias_raw < -1.0: b_grp = "Negative"
+                    if avg_bias_raw < 0: b_grp = "Negative"
+                    elif avg_bias_raw < 1.0: b_grp = "0 - 0.99"
+                    elif avg_bias_raw < 5.0: b_grp = "1 - 4.99"
+                    elif avg_bias_raw < 10.0: b_grp = "5 - 9.99"
+                    elif avg_bias_raw < 15.0: b_grp = "10 - 14.99"
+                    elif avg_bias_raw < 20.0: b_grp = "15 - 19.99"
+                    else: b_grp = "20+"
                     
                     tier_bias_stats[band][b_grp]["games"] += 1
                     tier_bias_stats[band][b_grp]["errors"].append(error)
@@ -265,7 +269,7 @@ def run_audit(dates, buffer=10, halftime=False, no_playoffs=False, league_filter
         if not matched_key: continue
         
         print(f"{matched_key}")
-        for b in ["Positive", "Neutral", "Negative"]:
+        for b in ["Negative", "0 - 0.99", "1 - 4.99", "5 - 9.99", "10 - 14.99", "15 - 19.99", "20+"]:
             s = tier_bias_stats[matched_key][b]
             if s["games"] == 0: continue
             avg_err = sum(s["errors"]) / s["games"]

@@ -1,10 +1,12 @@
-import json, os, glob
+import json, os, glob, sys
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from utils.epoch_config import get_earliest_epoch, is_game_valid
 
 DATA_DIR = os.path.join('data', 'basketball')
-TRACKING_EPOCH = '2026-03-25'
 
 all_files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')))
-files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= TRACKING_EPOCH]
+files = [f for f in all_files if os.path.basename(f).replace('universal_predictions_','').replace('.json','') >= get_earliest_epoch()]
 
 nancy_games = []
 sq_games = []
@@ -14,6 +16,8 @@ for f in files:
     date = os.path.basename(f).replace('universal_predictions_','').replace('.json','')
     data = json.load(open(f, encoding='utf-8'))
     for p in data.get('predictions', []):
+        if not is_game_valid(p.get('league_id'), date):
+            continue
         home = p.get('home_team', '')
         away = p.get('away_team', '')
         act_h = p.get('actual_home_score')
