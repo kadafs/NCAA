@@ -18,7 +18,13 @@ from grade_f5 import grade_matchup
 SEASON_WEIGHTS = {
     2026: 1.0,
 }
-LEAGUE_AVG_OPS  = 0.720   # rough MLB average, used to convert OPS -> wRC+ proxy
+LEAGUE_AVG_OPS = {
+    1: 0.720,   # MLB
+    11: 0.760,  # AAA (PCL is very hitter friendly)
+    12: 0.740,  # AA
+    13: 0.730,  # High-A
+    14: 0.730,  # Single-A
+}
 FIP_CONSTANT    = 3.20    # standard FIP constant
 FALLBACK_FIP    = 4.50    # league-average fallback when data is missing
 FALLBACK_WRC    = 100.0   # league-average wRC+ fallback
@@ -58,11 +64,19 @@ def _calc_ops(stat_dict):
     except Exception:
         return None
 
-def get_today_games():
-    today = datetime.datetime.now().strftime("%m/%d/%Y")
-    print(f"Fetching MLB schedule for {today}...")
+def get_today_games(sport_id=1, date_str=None):
+    """
+    Fetches games for the specified sportId.
+    date_str: optional MM/DD/YYYY string. Defaults to today.
+    Returns a list of dicts: {away_team, home_team, away_pitcher, home_pitcher, game_id, venue_name}
+    """
+    if date_str:
+        today = date_str
+    else:
+        today = datetime.datetime.now().strftime("%m/%d/%Y")
+    print(f"Fetching schedule for {today} (sportId={sport_id})...")
     try:
-        schedule = statsapi.schedule(date=today)
+        schedule = statsapi.schedule(sportId=sport_id, date=today)
         games = []
         for game in schedule:
             if game.get('status') in ['Postponed', 'Cancelled']:
@@ -73,7 +87,8 @@ def get_today_games():
                 'away_team': game['away_name'],
                 'home_team': game['home_name'],
                 'away_pitcher': game.get('away_probable_pitcher', 'TBD'),
-                'home_pitcher': game.get('home_probable_pitcher', 'TBD')
+                'home_pitcher': game.get('home_probable_pitcher', 'TBD'),
+                'venue_name': game.get('venue_name', 'Unknown Venue')
             })
         return games
     except Exception as e:
@@ -178,7 +193,13 @@ def _get_team_ops_single_season(team_id, season):
         _team_cache[key] = None
         return None
 
-def get_team_wrc_proxy(team_name):
+def _calc_wrc_proxy(ops, sport_id=1):
+    """Simple proxy: (Team OPS / League OPS) * 100"""
+    avg_ops = LEAGUE_AVG_OPS.get(sport_id, 0.720)
+    if avg_ops == 0: return 100.0
+    return (ops / avg_ops) * 100.0
+
+def get_team_wrc_proxy(team_name, sport_id=1):
     """Return a weighted multi-season wRC+ proxy for the named team."""
     if team_name in team_wrc_cache:
         return team_wrc_cache[team_name]
@@ -201,7 +222,7 @@ def get_team_wrc_proxy(team_name):
         return FALLBACK_WRC
 
     blended_ops = weighted_ops / total_weight
-    wrc_proxy   = round((blended_ops / LEAGUE_AVG_OPS) * 100, 1)
+    wrc_proxy   = round((blended_ops / LEAGUE_AVG_OPS.get(sport_id, 0.720)) * 100, 1)
     team_wrc_cache[team_name] = wrc_proxy
     return wrc_proxy
 

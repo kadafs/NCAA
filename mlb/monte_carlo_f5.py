@@ -134,7 +134,7 @@ def generate_generic_lineup():
         
     return lineup
 
-def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids, away_pitcher_name, home_pitcher_name, away_pitcher_fip, home_pitcher_fip, iterations=2000):
+def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids, away_pitcher_name, home_pitcher_name, away_pitcher_fip, home_pitcher_fip, iterations=2000, park_factor=1.0):
     """
     Runs Monte Carlo simulation for the F5 innings.
     Returns expected runs, win probabilities, and total distribution.
@@ -203,14 +203,14 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids, away_pitcher_name, home
         else:
             ties += 1
             
-    # 4. Calculate Summary Statistics
-    exp_away = away_total_runs / iterations
-    exp_home = home_total_runs / iterations
+    # 4. Calculate Summary Statistics and apply Park Factor
+    exp_away = (away_total_runs / iterations) * park_factor
+    exp_home = (home_total_runs / iterations) * park_factor
     
-    # Calculate probability of going Under typical totals
-    under_3_5 = sum(1 for t in f5_totals if t < 3.5) / iterations
-    under_4_5 = sum(1 for t in f5_totals if t < 4.5) / iterations
-    under_5_5 = sum(1 for t in f5_totals if t < 5.5) / iterations
+    # Calculate probability of going Under typical totals (multiplying individual sim totals by park factor)
+    under_3_5 = sum(1 for t in f5_totals if (t * park_factor) < 3.5) / iterations
+    under_4_5 = sum(1 for t in f5_totals if (t * park_factor) < 4.5) / iterations
+    under_5_5 = sum(1 for t in f5_totals if (t * park_factor) < 5.5) / iterations
     
     return {
         'away_mc_runs': round(exp_away, 2),
@@ -241,5 +241,5 @@ if __name__ == '__main__':
         print(f"Testing Monte Carlo for {away} vs {home}")
         lineups = get_lineup_for_game(gid)
         
-        res = run_monte_carlo_f5(lineups['away'], lineups['home'], ap, hp, iterations=500)
+        res = run_monte_carlo_f5(lineups['away'], lineups['home'], ap, hp, 4.00, 4.00, iterations=500)
         print(res)

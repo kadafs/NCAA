@@ -173,10 +173,10 @@ def get_pitcher_pa_modifiers(pitcher_fip, pitcher_player_id=None):
     hit_mod = pitcher_fip / 4.00
 
     return {
-        'k':  pitcher_k_per9  / LEAGUE_K_PER_9,
-        'bb': pitcher_bb_per9 / LEAGUE_BB_PER_9,
-        'hr': pitcher_hr_per9 / LEAGUE_HR_PER_9,
-        'hit_mod': hit_mod
+        'k':  max(0.4, min(2.5, pitcher_k_per9  / LEAGUE_K_PER_9)),
+        'bb': max(0.4, min(3.0, pitcher_bb_per9 / LEAGUE_BB_PER_9)),
+        'hr': max(0.4, min(4.0, pitcher_hr_per9 / LEAGUE_HR_PER_9)),
+        'hit_mod': max(0.6, min(1.8, hit_mod))
     }
 
 
