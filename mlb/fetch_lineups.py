@@ -20,6 +20,8 @@ def get_lineup_for_game(game_id):
         return {'away': [], 'home': []}
 
 
+_batter_hand_cache = {}
+
 def get_batter_hand(player_id: int) -> str:
     """
     Returns 'L' or 'R' for a batter's bat side from the Stats API.
@@ -32,14 +34,21 @@ def get_batter_hand(player_id: int) -> str:
     This is the canonical implementation shared by both the pre-game MC engine
     and the live cache builder. live_cache._get_batter_hand() delegates here.
     """
+    if player_id in _batter_hand_cache:
+        return _batter_hand_cache[player_id]
+        
     try:
         data = statsapi.get('people', {'personIds': player_id})
         for p in data.get('people', []):
             code = p.get('batSide', {}).get('code', 'R')
             # 'S' = switch hitter — treated as 'R' (no platoon penalty applies)
-            return code if code in ('L', 'R') else 'R'
+            hand = code if code in ('L', 'R') else 'R'
+            _batter_hand_cache[player_id] = hand
+            return hand
     except Exception:
         pass
+    
+    _batter_hand_cache[player_id] = 'R'
     return 'R'
 
 

@@ -338,25 +338,30 @@ def get_team_bullpen_fip(team_name, sport_id=1):
         return result
 
     # Fetch each pitcher's season stats and classify starter vs. reliever
+    # SPEED OPTIMIZATION: Instead of looping and making 20 individual API calls,
+    # we pass all pitcher IDs as a comma-separated string to fetch them in ONE call.
     relief_k = relief_bb = relief_hr = relief_ip = 0.0
     found_relievers = 0
+    
+    id_string = ','.join(str(pid) for pid in pitcher_ids)
 
-    for pid in pitcher_ids:
-        try:
-            raw = statsapi.get('people', {
-                'personIds': pid,
-                'hydrate':   f'stats(group=[pitching],type=season,season={season})'
-            })
+    try:
+        raw = statsapi.get('people', {
+            'personIds': id_string,
+            'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+        })
+        
+        for person in raw.get('people', []):
             stats = {}
-            for person in raw.get('people', []):
-                for grp in person.get('stats', []):
-                    splits = grp.get('splits', [])
-                    if splits:
-                        stats = splits[0].get('stat', {})
-                        break
-                if stats:
+            for grp in person.get('stats', []):
+                splits = grp.get('splits', [])
+                if splits:
+                    stats = splits[0].get('stat', {})
                     break
-
+            
+            if not stats:
+                continue
+                
             ip  = _parse_ip(stats.get('inningsPitched', '0'))
             gs  = int(stats.get('gamesStarted', 0) or 0)
 
@@ -370,8 +375,8 @@ def get_team_bullpen_fip(team_name, sport_id=1):
                 relief_bb  += int(stats.get('baseOnBalls', 0) or 0)
                 relief_hr  += int(stats.get('homeRuns',    0) or 0)
                 found_relievers += 1
-        except Exception:
-            continue
+    except Exception:
+        pass
 
     if found_relievers >= 3 and relief_ip >= 10.0:
         # Enough data to compute a reliable bullpen FIP
