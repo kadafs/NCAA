@@ -64,37 +64,46 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
         
         try:
             # Weather modifier (MLB only — MiLB parks not covered by RotoWire)
-            weather = None
-            effective_pf = pf
+            weather         = None
+            weather_mult    = 1.0
+            effective_pf    = pf
             if sport_id == 1:
-                weather = get_weather_modifier(venue, away_abbr=away, home_abbr=home)
-                # Additive baseline shift to fix physics violation
-                effective_pf = round(pf + (weather['weather_multiplier'] - 1.0), 4)
-            
+                weather      = get_weather_modifier(venue, away_abbr=away, home_abbr=home)
+                weather_mult = weather.get('weather_multiplier', 1.0)
+                # Issue 1 fix: MULTIPLICATIVE composition, not additive.
+                # Old: pf + (wx - 1)  e.g. 1.15 + 0.15 = 1.30  (wrong — ignores compounding)
+                # New: pf × wx        e.g. 1.15 × 1.15 = 1.32  (correct physical stacking)
+                effective_pf = round(pf * weather_mult, 4)
+
             # 1. Top-Down Model
             ap_fip = _retry_call(get_pitcher_fip, ap, sport_id=sport_id)
             hp_fip = _retry_call(get_pitcher_fip, hp, sport_id=sport_id)
-            
+
             ap_ip = _retry_call(get_pitcher_projected_ip, ap, sport_id=sport_id)
             hp_ip = _retry_call(get_pitcher_projected_ip, hp, sport_id=sport_id)
-            
+
             away_bp = _retry_call(get_team_bullpen_fip, away, sport_id=sport_id)
             home_bp = _retry_call(get_team_bullpen_fip, home, sport_id=sport_id)
-            
+
             away_wrc = _retry_call(get_team_wrc_proxy, away, sport_id)
             home_wrc = _retry_call(get_team_wrc_proxy, home, sport_id)
 
-            # Pitcher handedness for platoon logic (MLB only — MiLB hand data less reliable)
+            # Pitcher handedness for platoon logic (MLB only)
             if sport_id == 1:
                 ap_hand = _retry_call(get_pitcher_hand, ap, sport_id=sport_id)
                 hp_hand = _retry_call(get_pitcher_hand, hp, sport_id=sport_id)
             else:
                 ap_hand, hp_hand = 'R', 'R'
-            
+
+            # Issue 1 + 3 fix: pass park_factor and weather_multiplier separately
+            # (not blended), and pass pitcher hands so platoon adjustment fires.
             top_down = grade_matchup(
                 away, ap_fip, away_bp, ap_ip, away_wrc,
                 home, hp_fip, home_bp, hp_ip, home_wrc,
-                park_factor=effective_pf
+                park_factor=pf,
+                weather_multiplier=weather_mult,
+                away_pitcher_hand=ap_hand,
+                home_pitcher_hand=hp_hand,
             )
             td_total = top_down['projected_f5_total']
             
@@ -113,19 +122,30 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
                 away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
             )
             
-            # 3. Betting Matrix Logic
+            # 3. Betting Matrix Logic (Issue 2 fix)
+            # TD signal now carries a *strength* dimension:
+            # - Distance from line captures how emphatic the top-down call is.
+            # - A TD projection of 3.1 vs a 4.5 line (gap=1.4) is far stronger
+            #   than a TD projection of 4.3 vs a 4.5 line (gap=0.2).
+            # Both models must agree on direction to produce a 'Bet' signal.
+            # Confidence tier requires MC >58%/>42% AND TD gap >=0.3 runs.
             def get_advice(line, under_prob):
-                td_signal = "UNDER" if td_total < line else "OVER"
-                mc_signal = "NEUTRAL"
+                td_gap     = line - td_total           # positive = TD says Under
+                td_signal  = 'UNDER' if td_gap > 0 else 'OVER'
+
                 if under_prob >= 0.52:
-                    mc_signal = "UNDER"
+                    mc_signal = 'UNDER'
                 elif under_prob <= 0.48:
-                    mc_signal = "OVER"
-                    
+                    mc_signal = 'OVER'
+                else:
+                    mc_signal = 'NEUTRAL'
+
                 if td_signal == mc_signal:
-                    confidence = "HIGH" if (under_prob >= 0.58 or under_prob <= 0.42) else "MODERATE"
-                    return f"Bet **{mc_signal}**"
-                return "Skip"
+                    mc_strong = under_prob >= 0.58 or under_prob <= 0.42
+                    td_strong = abs(td_gap) >= 0.30
+                    confidence = 'HIGH' if (mc_strong and td_strong) else 'MODERATE'
+                    return f'Bet **{mc_signal}** ({confidence})'
+                return 'Skip'
 
             adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
             adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
@@ -158,11 +178,12 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
                 block_lines.append(f"**🔥 FLAGGED:** {', '.join(set(flag_reasons))}")
                 priority_flags.append(f"- **{away} @ {home}:** {', '.join(set(flag_reasons))}")
 
-            block_lines.append(f"🏟️ **{venue}** (Park Factor: {pf}x)")
+            block_lines.append(f"🏙️ **{venue}** (Park Factor: {pf}x)")
             if weather:
                 eff_pct = round((effective_pf - 1.0) * 100, 1)
                 sign = '+' if eff_pct >= 0 else ''
                 block_lines.append(f"🌤️ **Weather:** {weather['weather_label']} | Effective PF: {effective_pf}x ({sign}{eff_pct}%)")
+            block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, FIP: {ap_fip}) vs {hp} ({hp_hand}HP, FIP: {hp_fip})")
             block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
             block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
             block_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")

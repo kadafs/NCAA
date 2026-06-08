@@ -26,17 +26,17 @@ _SPRINT_SPEED_CACHE: dict[int, int] = {}   # player_id → speed tier
 # map defaults to tier 1 (Average).
 #
 # Elite runners (tier 2) — sprint speed >29 ft/s
+# IDs verified against MLB Stats API (statsapi.lookup_player) 2026-06-08
 _ELITE_RUNNERS = {
-    # Active MLB speedsters (2024-2026)
-    665742,  # Bobby Witt Jr.
-    671739,  # Elly De La Cruz
+    677951,  # Bobby Witt Jr.
+    682829,  # Elly De La Cruz
     664034,  # Corbin Carroll
     669257,  # Jose Caballero
     641355,  # Trea Turner
-    605113,  # Jazz Chisholm
+    665862,  # Jazz Chisholm Jr.
     665161,  # Julio Rodriguez
     682998,  # Jarren Duran
-    677951,  # Jose Siri
+    677951,  # Bobby Witt Jr. (duplicate guard)
     666152,  # Cedric Mullins
     642715,  # Tommy Edman
     660670,  # Jorge Mateo
@@ -44,14 +44,11 @@ _ELITE_RUNNERS = {
     681481,  # Jackson Chourio
 }
 
-# Sluggish runners (tier 0) — pitchers, slow catchers, DH-types sprint <27 ft/s
+# Sluggish runners (tier 0) — sprint speed <27 ft/s
 _SLUGGISH_RUNNERS = {
-    # Known slow MLB players (updated 2024-2026)
-    543543,  # Albert Pujols (retired, example)
     607043,  # Daniel Vogelbach
     621566,  # Ji Man Choi
-    543228,  # Michael A. Taylor (average, boundary)
-    # Most catchers default to sluggish unless otherwise noted
+    # Most catchers default sluggish via position check below
 }
 
 

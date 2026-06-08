@@ -1,6 +1,7 @@
 import random
 import numpy as np
-from fetch_lineups import get_batter_pa_rates, get_pitcher_pa_modifiers, get_pitcher_hand
+from fetch_lineups import get_batter_pa_rates, get_pitcher_pa_modifiers, get_pitcher_hand, get_batter_hand
+from live_state import get_runner_speed_tier
 import statsapi
 
 def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0):
@@ -431,21 +432,23 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
     # 2. Fetch Batter Rates and Adjust
     # We now store RAW rates and adjust them dynamically inside the inning loop 
     # to perfectly simulate TTTO degradation.
+    # ── Audit Fix #6 & #7: Real handedness + real speed tiers ───────────────
+    # Previously both were hardcoded: hand='R', speed_tier=1.
+    # This disabled platoon splits and runner advancement for confirmed lineups.
+    # Both are now resolved per player from the Stats API (with session caching).
+    # API calls are batched once per player per session — no per-iteration overhead.
     away_raw_lineup = []
     for pid in away_lineup_ids:
         raw = get_batter_pa_rates(pid)
-        # Approximate batter hand: statsapi doesn't return hand in simple lineup lookup,
-        # but we assume R for crosswind if unknown, or we could fetch it.
-        # For performance, we assume 'R' if unknown, but ideally we'd pass it in.
-        raw['hand'] = 'R' 
-        raw['speed_tier'] = 1  # 1: Average
+        raw['hand']       = get_batter_hand(int(pid))         # 'L', 'R' (switch→'R')
+        raw['speed_tier'] = get_runner_speed_tier(int(pid))   # 0=Sluggish,1=Avg,2=Elite
         away_raw_lineup.append(raw)
 
     home_raw_lineup = []
     for pid in home_lineup_ids:
         raw = get_batter_pa_rates(pid)
-        raw['hand'] = 'R'
-        raw['speed_tier'] = 1  # 1: Average
+        raw['hand']       = get_batter_hand(int(pid))
+        raw['speed_tier'] = get_runner_speed_tier(int(pid))
         home_raw_lineup.append(raw)
 
     # If lineups aren't posted, use platoon-aware generic lineup

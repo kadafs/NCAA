@@ -20,6 +20,29 @@ def get_lineup_for_game(game_id):
         return {'away': [], 'home': []}
 
 
+def get_batter_hand(player_id: int) -> str:
+    """
+    Returns 'L' or 'R' for a batter's bat side from the Stats API.
+
+    Switch hitters ('S') are treated as 'R' for platoon modelling purposes
+    (switch hitters have no platoon disadvantage, so the same-hand penalty
+    in adjust_batter_rates() should not apply — 'R' is the safer neutral).
+    Falls back to 'R' on any API error (league is ~70% RHB).
+
+    This is the canonical implementation shared by both the pre-game MC engine
+    and the live cache builder. live_cache._get_batter_hand() delegates here.
+    """
+    try:
+        data = statsapi.get('people', {'personIds': player_id})
+        for p in data.get('people', []):
+            code = p.get('batSide', {}).get('code', 'R')
+            # 'S' = switch hitter — treated as 'R' (no platoon penalty applies)
+            return code if code in ('L', 'R') else 'R'
+    except Exception:
+        pass
+    return 'R'
+
+
 def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
     """
     Returns 'L' or 'R' for the pitcher's throwing hand.

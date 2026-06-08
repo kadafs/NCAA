@@ -316,18 +316,9 @@ def _build_raw_lineup(lineup_ids: list, opp_pitcher_hand: str) -> list:
 
 
 def _get_batter_hand(player_id: int) -> str:
-    """
-    Fetches a batter's bat side ('L' or 'R') from the Stats API.
-    Falls back to 'R' on any error (league average is ~70% RHB).
-    """
-    try:
-        data = statsapi.get('people', {'personIds': player_id})
-        for p in data.get('people', []):
-            bat_side = p.get('batSide', {}).get('code', 'R')
-            return bat_side if bat_side in ('L', 'R') else 'R'
-    except Exception:
-        pass
-    return 'R'
+    """Delegates to the canonical fetch_lineups.get_batter_hand()."""
+    from fetch_lineups import get_batter_hand
+    return get_batter_hand(player_id)
 
 
 if __name__ == '__main__':

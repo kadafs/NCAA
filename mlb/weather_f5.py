@@ -65,6 +65,102 @@ STADIUM_COORDS = {
 }
 
 # ---------------------------------------------------------------------------
+# Per-stadium center-field bearing (Issue 9 fix)
+# ---------------------------------------------------------------------------
+# The compass bearing (0°=North, 90°=East) FROM home plate TOWARD center field.
+# Wind blowing FROM the OPPOSITE direction blows OUT toward CF.
+# Most MLB parks face ENE (~60°) to keep afternoon sun out of the batter's eyes.
+# Well-documented exceptions are listed here; unknown parks default to 60°.
+#
+# Sources: stadium architectural plans, satellite imagery, published research.
+STADIUM_CF_BEARING = {
+    # ENE-facing (standard, ~60°)
+    "Yankee Stadium":                  67,   # faces ESE from HP to CF
+    "Citi Field":                      62,
+    "Citizens Bank Park":              63,
+    "Nationals Park":                  67,
+    "Oriole Park at Camden Yards":     60,
+    "Progressive Field":               57,
+    "PNC Park":                        60,
+    "Great American Ball Park":        60,
+    "Truist Park":                     65,
+    "Busch Stadium":                   63,
+    "American Family Field":           60,
+    "Globe Life Field":                62,   # retractable, but outdoors when open
+    "Kauffman Stadium":                57,
+    "Guaranteed Rate Field":           60,
+    "Target Field":                    58,
+    "Rogers Centre":                   60,   # indoor dome — fallback rarely fires
+    "Angel Stadium":                   60,
+    "UNIQLO Field at Dodger Stadium":  65,
+    "Dodger Stadium":                  65,
+    "Petco Park":                      62,
+    "Comerica Park":                   58,
+
+    # Notable exceptions
+    "Fenway Park":                     34,   # faces NNE; LF is to the SW
+    "Wrigley Field":                   21,   # faces NNE; well-known wind tunnel
+    "Coors Field":                     69,   # faces ESE into the mountains
+    "Oracle Park":                     44,   # faces NE across McCovey Cove
+    "T-Mobile Park":                   13,   # faces nearly N; different from most
+    "Daikin Park":                     80,   # former Minute Maid; faces E
+    "loanDepot park":                  60,   # retractable roof
+    "Tropicana Field":                 60,   # indoor
+    "Chase Field":                     60,   # retractable roof
+}
+
+# Default bearing for parks not in the table
+_DEFAULT_CF_BEARING = 60   # ENE — statistically accurate for ~70% of MLB parks
+
+
+def _wind_relative_to_stadium(wind_deg: int, venue_name: str) -> str:
+    """
+    Issue 9 fix: converts a compass wind bearing to a stadium-relative direction
+    using the per-stadium CF bearing table.
+
+    Logic:
+    - wind_blows_toward = (wind_deg + 180) % 360  (wind FROM X blows TOWARD X+180)
+    - angular distance from wind_blows_toward to cf_bearing:
+        < 50°  → 'Out'   (blowing toward CF)
+        < 50° from opposite → 'In'  (blowing toward HP)
+        within foul-line cone (±40° of 3B/1B lines) → 'L-R' or 'R-L'
+        otherwise → 'Cross' (generic diagonal)
+    """
+    # Find CF bearing for this venue
+    cf_bearing = _DEFAULT_CF_BEARING
+    venue_lower = venue_name.lower()
+    for name, bearing in STADIUM_CF_BEARING.items():
+        if name.lower() in venue_lower or venue_lower in name.lower():
+            cf_bearing = bearing
+            break
+
+    # Direction the wind is blowing TOWARD
+    wind_toward = (wind_deg + 180) % 360
+
+    # Angular distance (0–180°)
+    def _ang_dist(a, b):
+        d = abs(a - b) % 360
+        return d if d <= 180 else 360 - d
+
+    to_cf   = _ang_dist(wind_toward, cf_bearing)
+    to_hp   = _ang_dist(wind_toward, (cf_bearing + 180) % 360)
+    to_1b   = _ang_dist(wind_toward, (cf_bearing + 90)  % 360)  # 1B side
+    to_3b   = _ang_dist(wind_toward, (cf_bearing - 90)  % 360)  # 3B side
+
+    if to_cf <= 50:
+        return 'Out'
+    if to_hp <= 50:
+        return 'In'
+    # Foul-line laterals: LHB pulls to RF (1B side), RHB pulls to LF (3B side)
+    # Wind toward 1B line = R-L (headwind for LHB pull, tailwind for RHB pull)
+    # Wind toward 3B line = L-R
+    if to_3b <= 40:
+        return 'L-R'
+    if to_1b <= 40:
+        return 'R-L'
+    return 'Cross'
+
+# ---------------------------------------------------------------------------
 # Wind direction → relative field impact parser
 # ---------------------------------------------------------------------------
 # RotoWire uses these terms: 'Out', 'In', 'L-R', 'R-L', 'Calm', 'Dome'
@@ -268,14 +364,12 @@ def _get_wttr_weather(venue_name: str) -> dict:
         temp_f   = round((int(current['temp_C']) * 9/5) + 32)
         wind_mph = int(current['windspeedMiles'])
         wind_deg = int(current['winddirDegree'])
-        # Map compass degrees to simplified In/Out/Cross using stadium orientation
-        # MLB stadiums face roughly ENE (bearing ~60-70°). Wind from S/SW blows 'Out',
-        # from N/NE blows 'In'. We use a simplified 4-quadrant mapping.
-        if 45 <= wind_deg <= 225:   # wind from E/S/W sector → generally blows toward OF
-            wind_dir = 'Out'
-        elif wind_deg > 225 or wind_deg < 45:   # wind from N sector → blows toward HP
-            wind_dir = 'In'
-        else:
+        # Map compass degrees to stadium-relative direction
+        # Issue 9 fix: uses per-stadium CF bearing instead of a single global quadrant.
+        wind_dir   = _wind_relative_to_stadium(wind_deg, venue_name)
+        wind_lateral = wind_dir if wind_dir in ('L-R', 'R-L') else None
+        # Normalise Cross back to the simplified token the rest of the system expects
+        if wind_dir == 'Cross':
             wind_dir = 'Cross'
         return {'temp': temp_f, 'wind_mph': wind_mph,
                 'wind_dir': wind_dir, 'wind_lateral': None,

@@ -119,7 +119,14 @@ def _get_pitcher_fip_single_season(player_id, season):
         return None
 
 def get_pitcher_fip(pitcher_name, sport_id=1):
-    """Return a weighted multi-season FIP for the named pitcher."""
+    """Return a weighted multi-season FIP for the named pitcher.
+
+    Issue 5 fix: if the pitcher has fewer than MIN_RELIABLE_IP innings in the
+    current season, blend 50/50 with the prior season to reduce small-sample noise.
+    The 100% current-year weight only activates once the pitcher has a reliable sample.
+    """
+    MIN_RELIABLE_IP = 20.0   # innings below this triggers prior-year blend
+
     if pitcher_name in ('TBD', '', None):
         return FALLBACK_FIP
 
@@ -128,13 +135,10 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
         return FALLBACK_FIP
 
     player_id = players[0]['id']
+    current_season = max(SEASON_WEIGHTS.keys())  # e.g. 2026
+    prior_season   = current_season - 1           # e.g. 2025
 
-    weighted_fip  = 0.0
-    total_weight  = 0.0
-    season_detail = {}
-
-    # Use the 'people' hydrate endpoint — correctly scoped to this player only
-    for season, weight in SEASON_WEIGHTS.items():
+    def _fetch_season_fip(season):
         try:
             raw = statsapi.get('people', {
                 'personIds': player_id,
@@ -149,21 +153,28 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
                         break
                 if stats:
                     break
+            ip  = _parse_ip(stats.get('inningsPitched', '0'))
             fip = _calc_fip(stats)
-        except Exception as e:
-            fip = None
+            return fip, ip
+        except Exception:
+            return None, 0.0
 
-        season_detail[season] = round(fip, 2) if fip else None
-        if fip is not None:
-            weighted_fip += fip * weight
-            total_weight += weight
+    current_fip, current_ip = _fetch_season_fip(current_season)
 
-    if total_weight == 0:
-        return FALLBACK_FIP
+    if current_fip is None:
+        # No current-year data at all — try prior year
+        prior_fip, _ = _fetch_season_fip(prior_season)
+        return round(prior_fip, 2) if prior_fip else FALLBACK_FIP
 
-    # If some seasons were missing, rescale the remaining weights
-    blended = weighted_fip / total_weight
-    return round(blended, 2)
+    if current_ip < MIN_RELIABLE_IP:
+        # Issue 5: small sample — blend 50/50 with prior year for stability
+        prior_fip, prior_ip = _fetch_season_fip(prior_season)
+        if prior_fip and prior_ip >= MIN_RELIABLE_IP:
+            blended = (current_fip * 0.50) + (prior_fip * 0.50)
+            return round(blended, 2)
+
+    # Sufficient current-year sample — use it at full weight
+    return round(current_fip, 2)
 
 
 def get_pitcher_projected_ip(pitcher_name, sport_id=1):
@@ -285,32 +296,95 @@ def _get_team_pitching_fip_single_season(team_id, season):
 
 def get_team_bullpen_fip(team_name, sport_id=1):
     """
-    Returns a proxy for the team's bullpen FIP by grabbing the team's 
-    overall pitching FIP for the season.
+    Returns the team's TRUE BULLPEN FIP by fetching individual pitcher stats,
+    separating starters from relievers, and computing a relief-only weighted FIP.
+
+    Issue 4 fix: the old implementation used team-wide pitching stats, which
+    includes starter innings. A team with an ace starter would show a misleadingly
+    low 'bullpen' FIP. This version identifies relievers by GS count (GS < 3)
+    and computes FIP only from their innings.
+
+    Falls back to team-wide pitching FIP if insufficient reliever data.
     """
     if team_name in team_bullpen_cache:
         return team_bullpen_cache[team_name]
-        
+
     teams = statsapi.lookup_team(team_name, sportIds=sport_id)
     if not teams:
         return FALLBACK_FIP
-        
-    team_id = teams[0]['id']
-    weighted_fip = 0.0
-    total_weight = 0.0
-    
-    for season, weight in SEASON_WEIGHTS.items():
+
+    team_id   = teams[0]['id']
+    season    = max(SEASON_WEIGHTS.keys())
+
+    try:
+        # Fetch all pitchers on the active 40-man roster for this team
+        roster_data = statsapi.get('team_roster', {
+            'teamId':   team_id,
+            'rosterType': 'active',
+        })
+        roster = roster_data.get('roster', [])
+        pitcher_ids = [
+            p['person']['id'] for p in roster
+            if p.get('position', {}).get('code') == '1'  # pitchers only
+        ]
+    except Exception:
+        pitcher_ids = []
+
+    if not pitcher_ids:
+        # Fallback to team-wide FIP
         fip = _get_team_pitching_fip_single_season(team_id, season)
-        if fip and fip > 0:
-            weighted_fip += fip * weight
-            total_weight += weight
-            
-    if total_weight == 0:
-        return FALLBACK_FIP
-        
-    blended_fip = round(weighted_fip / total_weight, 2)
-    team_bullpen_cache[team_name] = blended_fip
-    return blended_fip
+        result = round(fip, 2) if fip else FALLBACK_FIP
+        team_bullpen_cache[team_name] = result
+        return result
+
+    # Fetch each pitcher's season stats and classify starter vs. reliever
+    relief_k = relief_bb = relief_hr = relief_ip = 0.0
+    found_relievers = 0
+
+    for pid in pitcher_ids:
+        try:
+            raw = statsapi.get('people', {
+                'personIds': pid,
+                'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+            })
+            stats = {}
+            for person in raw.get('people', []):
+                for grp in person.get('stats', []):
+                    splits = grp.get('splits', [])
+                    if splits:
+                        stats = splits[0].get('stat', {})
+                        break
+                if stats:
+                    break
+
+            ip  = _parse_ip(stats.get('inningsPitched', '0'))
+            gs  = int(stats.get('gamesStarted', 0) or 0)
+
+            if ip < 1.0:
+                continue  # no meaningful data
+
+            # Issue 4: classify as reliever if fewer than 3 starts
+            if gs < 3:
+                relief_ip  += ip
+                relief_k   += int(stats.get('strikeOuts',  0) or 0)
+                relief_bb  += int(stats.get('baseOnBalls', 0) or 0)
+                relief_hr  += int(stats.get('homeRuns',    0) or 0)
+                found_relievers += 1
+        except Exception:
+            continue
+
+    if found_relievers >= 3 and relief_ip >= 10.0:
+        # Enough data to compute a reliable bullpen FIP
+        bullpen_fip = ((13 * relief_hr) + (3 * relief_bb) - (2 * relief_k)) / relief_ip + FIP_CONSTANT
+        result = round(max(2.5, min(7.5, bullpen_fip)), 2)   # hard cap for sanity
+    else:
+        # Insufficient reliever data — fall back to team-wide FIP
+        fip = _get_team_pitching_fip_single_season(team_id, season)
+        result = round(fip, 2) if fip else FALLBACK_FIP
+
+    team_bullpen_cache[team_name] = result
+    return result
+
 
 def main():
     games = get_today_games()
