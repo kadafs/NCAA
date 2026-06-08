@@ -2,13 +2,15 @@ import os
 import datetime
 from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy
 from grade_f5 import grade_matchup
-from fetch_lineups import get_lineup_for_game
+from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
 from park_factors import get_park_factor
+from weather_f5 import get_weather_modifier
 
-def generate_consensus_report(sport_id=1, date_str=None):
+def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     """
     date_str: optional date in MM/DD/YYYY format. Defaults to today.
+    force_generic: if True, skips fetching confirmed lineups and uses the generic league-average weights.
     """
     games = get_today_games(sport_id, date_str=date_str)
     if not games:
@@ -40,20 +42,44 @@ def generate_consensus_report(sport_id=1, date_str=None):
         
         print(f"Processing: {away} @ {home} ({venue} - PF: {pf})")
         
+        # Weather modifier (MLB only — MiLB parks not covered by RotoWire)
+        if sport_id == 1:
+            weather = get_weather_modifier(venue)
+            effective_pf = round(pf * weather['weather_multiplier'], 4)
+        else:
+            weather = None
+            effective_pf = pf
+        
         # 1. Top-Down Model
-        ap_fip = get_pitcher_fip(ap)
-        hp_fip = get_pitcher_fip(hp)
+        ap_fip = get_pitcher_fip(ap, sport_id=sport_id)
+        hp_fip = get_pitcher_fip(hp, sport_id=sport_id)
         away_wrc = get_team_wrc_proxy(away, sport_id)
         home_wrc = get_team_wrc_proxy(home, sport_id)
+
+        # Pitcher handedness for platoon logic (MLB only — MiLB hand data less reliable)
+        if sport_id == 1:
+            ap_hand = get_pitcher_hand(ap, sport_id=sport_id)
+            hp_hand = get_pitcher_hand(hp, sport_id=sport_id)
+        else:
+            ap_hand, hp_hand = 'R', 'R'
         
-        top_down = grade_matchup(away, ap_fip, away_wrc, home, hp_fip, home_wrc, park_factor=pf)
+        top_down = grade_matchup(away, ap_fip, away_wrc, home, hp_fip, home_wrc, park_factor=effective_pf)
         td_total = top_down['projected_f5_total']
         
         # 2. Monte Carlo Model
-        lineups = get_lineup_for_game(gid)
+        if force_generic:
+            lineups = {'away': [], 'home': []}
+        else:
+            lineups = get_lineup_for_game(gid)
+
         # Check if lineups exist, otherwise MC uses league average generic lineups.
         lineups_status = "Confirmed" if lineups['away'] else "Projected (Generic)"
-        mc = run_monte_carlo_f5(lineups['away'], lineups['home'], ap, hp, ap_fip, hp_fip, iterations=10000, park_factor=pf)
+        mc = run_monte_carlo_f5(
+            lineups['away'], lineups['home'],
+            ap, hp, ap_fip, hp_fip,
+            iterations=10000, park_factor=effective_pf, sport_id=sport_id,
+            away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
+        )
         
         # 3. Betting Matrix Logic
         def get_advice(line, under_prob):
@@ -76,6 +102,10 @@ def generate_consensus_report(sport_id=1, date_str=None):
         # 4. Format Output
         report_lines.append(f"### {away} ({ap}) @ {home} ({hp})")
         report_lines.append(f"🏟️ **{venue}** (Park Factor: {pf}x)")
+        if weather:
+            eff_pct = round((effective_pf - 1.0) * 100, 1)
+            sign = '+' if eff_pct >= 0 else ''
+            report_lines.append(f"🌤️ **Weather:** {weather['weather_label']} | Effective PF: {effective_pf}x ({sign}{eff_pct}%)")
         report_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
         report_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
         report_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
@@ -102,6 +132,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate MLB or MiLB Consensus F5 Report")
     parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, 12=AA, 13=High-A, 14=Single-A')
     parser.add_argument('--date', type=str, default=None, help='Date in MM/DD/YYYY format (default: today)')
+    parser.add_argument('--generic', action='store_true', help='Force the model to use Generic lineups even if confirmed lineups are available')
     args = parser.parse_args()
     
-    generate_consensus_report(args.sportId, date_str=args.date)
+    generate_consensus_report(args.sportId, date_str=args.date, force_generic=args.generic)

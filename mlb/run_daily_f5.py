@@ -118,12 +118,12 @@ def _get_pitcher_fip_single_season(player_id, season):
         _pitcher_cache[key] = None
         return None
 
-def get_pitcher_fip(pitcher_name):
+def get_pitcher_fip(pitcher_name, sport_id=1):
     """Return a weighted multi-season FIP for the named pitcher."""
     if pitcher_name in ('TBD', '', None):
         return FALLBACK_FIP
 
-    players = statsapi.lookup_player(pitcher_name)
+    players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
     if not players:
         return FALLBACK_FIP
 
@@ -204,7 +204,7 @@ def get_team_wrc_proxy(team_name, sport_id=1):
     if team_name in team_wrc_cache:
         return team_wrc_cache[team_name]
 
-    teams = statsapi.lookup_team(team_name)
+    teams = statsapi.lookup_team(team_name, sportIds=sport_id)
     if not teams:
         return FALLBACK_WRC
 

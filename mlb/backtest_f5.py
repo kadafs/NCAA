@@ -48,7 +48,7 @@ def get_actual_f5_score(game_id):
         return None
 
 
-def run_backtest(date_str, sport_id=1):
+def run_backtest(date_str, sport_id=1, quick=False):
     """
     Runs the full backtest for a given date.
     """
@@ -75,17 +75,23 @@ def run_backtest(date_str, sport_id=1):
         print(f"Projecting: {away} @ {home} (PF={pf})...")
         
         # --- Model projections ---
-        ap_fip = get_pitcher_fip(ap)
-        hp_fip = get_pitcher_fip(hp)
+        ap_fip = get_pitcher_fip(ap, sport_id=sport_id)
+        hp_fip = get_pitcher_fip(hp, sport_id=sport_id)
         away_wrc = get_team_wrc_proxy(away, sport_id)
         home_wrc = get_team_wrc_proxy(home, sport_id)
         
         top_down = grade_matchup(away, ap_fip, away_wrc, home, hp_fip, home_wrc, park_factor=pf)
         td_total = top_down['projected_f5_total']
         
-        lineups = get_lineup_for_game(gid)
-        mc = run_monte_carlo_f5(lineups['away'], lineups['home'], ap, hp, ap_fip, hp_fip,
-                                iterations=2000, park_factor=pf)
+        # --quick skips fetching confirmed lineups (much faster, uses generic)
+        if quick:
+            lineup_away, lineup_home = [], []
+        else:
+            lineups = get_lineup_for_game(gid)
+            lineup_away, lineup_home = lineups['away'], lineups['home']
+        
+        mc = run_monte_carlo_f5(lineup_away, lineup_home, ap, hp, ap_fip, hp_fip,
+                                iterations=1000, park_factor=pf, sport_id=sport_id)
         
         # Consensus signal at the 4.5 line (most common F5 line)
         td_signal = "UNDER" if td_total < 4.5 else "OVER"
@@ -159,6 +165,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Backtest the F5 consensus model against actual results')
     parser.add_argument('--date', type=str, required=True, help='Date in MM/DD/YYYY format (e.g. 06/06/2026)')
     parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, etc.')
+    parser.add_argument('--quick', action='store_true', help='Skip confirmed lineup fetching (uses generic lineups, much faster)')
     args = parser.parse_args()
     
-    run_backtest(args.date, args.sportId)
+    run_backtest(args.date, args.sportId, quick=args.quick)

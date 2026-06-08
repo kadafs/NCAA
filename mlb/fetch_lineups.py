@@ -12,16 +12,31 @@ def get_lineup_for_game(game_id):
     in batting order (1-9). Returns empty lists if lineup not yet posted.
     """
     try:
-        data = statsapi.get('game', {
-            'gamePk':  game_id,
-            'hydrate': 'lineups'
-        })
-        lineups = data.get('liveData', {}).get('lineups', {})
-        away_ids = [p['id'] for p in lineups.get('awayPlayers', [])]
-        home_ids = [p['id'] for p in lineups.get('homePlayers', [])]
+        box = statsapi.boxscore_data(game_id)
+        away_ids = box.get('away', {}).get('battingOrder', [])
+        home_ids = box.get('home', {}).get('battingOrder', [])
         return {'away': away_ids, 'home': home_ids}
     except Exception:
         return {'away': [], 'home': []}
+
+
+def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
+    """
+    Returns 'L' or 'R' for the pitcher's throwing hand.
+    Defaults to 'R' (majority of MLB starters are RHP) if not found.
+    """
+    if not pitcher_name or pitcher_name.strip().upper() == 'TBD':
+        return 'R'
+    try:
+        results = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        if results:
+            hand = results[0].get('pitchHand', {})
+            if isinstance(hand, dict):
+                return hand.get('code', 'R').upper()
+            return str(hand).upper()
+    except Exception:
+        pass
+    return 'R'
 
 
 def get_batter_pa_rates(player_id):

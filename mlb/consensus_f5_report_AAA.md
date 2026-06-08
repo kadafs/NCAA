@@ -1,130 +1,128 @@
-# AAA F5 Consensus Picks - 2026-06-06
+# AAA F5 Consensus Picks - 2026-06-07
 This report combines the Top-Down wRC+/FIP Model with a 10,000-iteration Monte Carlo Simulation.
 
-### Buffalo Bisons (Shane Bieber) @ Worcester Red Sox ()
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.81 Runs (Lineups: Projected (Generic))
+### Buffalo Bisons (Grant Rogers) @ Worcester Red Sox ()
+🏟️ **Polar Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 4.78 Runs
+- **Monte Carlo Simulated F5 Total:** 3.51 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 39%
-  - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 64%
+  - If Line is **3.5** -> Skip | MC Under Probability: 56%
+  - If Line is **4.5** -> Skip | MC Under Probability: 69%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 79%
 
-### Toledo Mud Hens (Dylan File) @ Iowa Cubs ()
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.8 Runs (Lineups: Projected (Generic))
+### Omaha Storm Chasers (Henry Williams) @ Columbus Clippers (Rorik Maltrud)
+🏟️ **Huntington Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 5.04 Runs
+- **Monte Carlo Simulated F5 Total:** 2.98 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 39%
-  - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Skip | MC Under Probability: 64%
+  - If Line is **4.5** -> Skip | MC Under Probability: 77%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 85%
 
-### Toledo Mud Hens () @ Iowa Cubs ()
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.84 Runs (Lineups: Projected (Generic))
+### Scranton/Wilkes-Barre RailRiders (Dom Hamel) @ Syracuse Mets (Daniel Duarte)
+🏟️ **NBT Bank Stadium** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 3.67 Runs
+- **Monte Carlo Simulated F5 Total:** 1.36 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 38%
-  - If Line is **4.5** -> Skip | MC Under Probability: 51%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Skip | MC Under Probability: 91%
+  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 95%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 98%
 
-### Norfolk Tides (Christian Herberholz) @ Gwinnett Stripers (Austin Gomber)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.79 Runs (Lineups: Projected (Generic))
+### Norfolk Tides (Yaqui Rivera) @ Gwinnett Stripers (Owen Murphy)
+🏟️ **Gwinnett Field** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 4.72 Runs
+- **Monte Carlo Simulated F5 Total:** 2.14 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 38%
-  - If Line is **4.5** -> Skip | MC Under Probability: 51%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Skip | MC Under Probability: 78%
+  - If Line is **4.5** -> Skip | MC Under Probability: 87%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 93%
 
-### Scranton/Wilkes-Barre RailRiders (Adam Kloffenstein) @ Syracuse Mets (Nate Lavender)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.83 Runs (Lineups: Projected (Generic))
+### Rochester Red Wings (Carson Palmquist) @ Lehigh Valley IronPigs (Drake Fellows)
+🏟️ **Coca-Cola Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 4.88 Runs
+- **Monte Carlo Simulated F5 Total:** 5.84 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 38%
-  - If Line is **4.5** -> Skip | MC Under Probability: 51%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 28%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 40%
+  - If Line is **5.5** -> Skip | MC Under Probability: 51%
 
-### Nashville Sounds (Garrett Stallings) @ Jacksonville Jumbo Shrimp (Karson Milbrandt)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.77 Runs (Lineups: Projected (Generic))
+### Louisville Bats (Julian Garcia) @ Memphis Redbirds ()
+🏟️ **AutoZone Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 5.35 Runs
+- **Monte Carlo Simulated F5 Total:** 3.02 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 39%
-  - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Skip | MC Under Probability: 64%
+  - If Line is **4.5** -> Skip | MC Under Probability: 76%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 84%
 
-### Rochester Red Wings (Andry Lara) @ Lehigh Valley IronPigs (Alan Rangel)
-- **Top-Down Projected F5 Total:** 2.43 Runs
-- **Monte Carlo Simulated F5 Total:** 2.78 Runs (Lineups: Projected (Generic))
+### Nashville Sounds () @ Jacksonville Jumbo Shrimp (Patrick Monteverde)
+🏟️ **Vystar Ballpark** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 4.78 Runs
+- **Monte Carlo Simulated F5 Total:** 3.09 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **UNDER** | MC Under Probability: 68%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 79%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 87%
+  - If Line is **3.5** -> Skip | MC Under Probability: 63%
+  - If Line is **4.5** -> Skip | MC Under Probability: 75%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 84%
 
-### Charlotte Knights (Joe Rock) @ Durham Bulls ()
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.8 Runs (Lineups: Projected (Generic))
+### Round Rock Express () @ Oklahoma City Comets (Cole Irvin)
+🏟️ **Chickasaw Bricktown Ballpark** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 5.09 Runs
+- **Monte Carlo Simulated F5 Total:** 3.63 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 39%
-  - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Skip | MC Under Probability: 55%
+  - If Line is **4.5** -> Skip | MC Under Probability: 68%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 78%
 
-### Round Rock Express () @ Oklahoma City Comets (Charlie Barnes)
-- **Top-Down Projected F5 Total:** 5.5 Runs
-- **Monte Carlo Simulated F5 Total:** 7.21 Runs (Lineups: Projected (Generic))
+### Reno Aces (Jose Cabrera) @ Las Vegas Aviators (Geoff Hartlieb)
+🏟️ **Las Vegas Ballpark** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 5.33 Runs
+- **Monte Carlo Simulated F5 Total:** 8.38 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 19%
-  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 28%
-  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 38%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 13%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 20%
+  - If Line is **5.5** -> Skip | MC Under Probability: 29%
 
-### Omaha Storm Chasers (Ben Sears) @ Columbus Clippers (Logan Allen)
-- **Top-Down Projected F5 Total:** 2.75 Runs
-- **Monte Carlo Simulated F5 Total:** 3.21 Runs (Lineups: Projected (Generic))
+### Indianapolis Indians (Isaac Mattson) @ St. Paul Saints (John Klein)
+🏟️ **CHS Field** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 6.36 Runs
+- **Monte Carlo Simulated F5 Total:** 13.27 Runs (Lineups: Confirmed)
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **UNDER** | MC Under Probability: 61%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 73%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 82%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 3%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 6%
+  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 9%
 
-### Louisville Bats (Davis Daniel) @ Memphis Redbirds ()
-- **Top-Down Projected F5 Total:** 5.0 Runs
+### Tacoma Rainiers (Randy Dobnak) @ Sacramento River Cats (Blade Tidwell)
+🏟️ **Sutter Health Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 4.64 Runs
+- **Monte Carlo Simulated F5 Total:** 5.12 Runs (Lineups: Confirmed)
+- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 35%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 48%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 60%
+
+### Charlotte Knights (Hagen Smith) @ Durham Bulls ()
+🏟️ **Durham Bulls Athletic Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 5.08 Runs
 - **Monte Carlo Simulated F5 Total:** 4.78 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
   - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 39%
   - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 64%
-
-### Indianapolis Indians (Beau Burrows) @ St. Paul Saints (Aaron Rozek)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.77 Runs (Lineups: Projected (Generic))
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 39%
-  - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 64%
-
-### Albuquerque Isotopes (Sean Sullivan) @ Salt Lake Bees (George Klassen)
-- **Top-Down Projected F5 Total:** 7.97 Runs
-- **Monte Carlo Simulated F5 Total:** 32.52 Runs (Lineups: Projected (Generic))
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 0%
-  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 0%
-  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 0%
-
-### Sugar Land Space Cowboys (Ryan Weiss) @ El Paso Chihuahuas (Fernando Sanchez)
-- **Top-Down Projected F5 Total:** 6.5 Runs
-- **Monte Carlo Simulated F5 Total:** 19.02 Runs (Lineups: Projected (Generic))
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 0%
-  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 1%
-  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 2%
-
-### Tacoma Rainiers (Casey Lawrence) @ Sacramento River Cats (Carson Whisenhunt)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.82 Runs (Lineups: Projected (Generic))
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 38%
-  - If Line is **4.5** -> Skip | MC Under Probability: 51%
   - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
 
-### Reno Aces () @ Las Vegas Aviators (Wei-En Lin)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.8 Runs (Lineups: Projected (Generic))
+### Albuquerque Isotopes (Sean Sullivan) @ Salt Lake Bees (Alek Manoah)
+🏟️ **The Ballpark at America First Square** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 7.07 Runs
+- **Monte Carlo Simulated F5 Total:** 12.18 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 38%
-  - If Line is **4.5** -> Skip | MC Under Probability: 52%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 63%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 4%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 6%
+  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 11%
+
+### Sugar Land Space Cowboys (Brandon McPherson) @ El Paso Chihuahuas (Germán Márquez)
+🏟️ **Southwest University Park** (Park Factor: 1.0x)
+- **Top-Down Projected F5 Total:** 6.13 Runs
+- **Monte Carlo Simulated F5 Total:** 9.67 Runs (Lineups: Projected (Generic))
+- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 7%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 13%
+  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 20%

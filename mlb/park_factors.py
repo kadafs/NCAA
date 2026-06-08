@@ -17,8 +17,10 @@ MLB_PARK_FACTORS = {
     "Progressive Field": 1.01,
     
     # Neutral
-    "Dodger Stadium": 1.00,
-    "Minute Maid Park": 1.00,
+    "UNIQLO Field at Dodger Stadium": 1.00,  # formerly Dodger Stadium
+    "Dodger Stadium": 1.00,                   # legacy name alias
+    "Daikin Park": 1.00,                      # formerly Minute Maid Park
+    "Minute Maid Park": 1.00,                 # legacy name alias
     "Rogers Centre": 1.00,
     "American Family Field": 1.00,
     
