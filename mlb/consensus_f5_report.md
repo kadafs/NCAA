@@ -1,137 +1,100 @@
-# MLB F5 Consensus Picks - 2026-06-07
-This report combines the Top-Down wRC+/FIP Model with a 10,000-iteration Monte Carlo Simulation.
+# ⚾ Consensus F5 Prediction Report (Sport ID: 1)
+**Date:** 06/08/2026
+**Generated:** 12:50:10
+**Model Mode:** Standard (Confirmed if available)
 
-### Pittsburgh Pirates (Mason Montgomery) @ Atlanta Braves (Bryce Elder)
-🏟️ **Truist Park** (Park Factor: 1.01x)
-- **Top-Down Projected F5 Total:** 4.27 Runs
-- **Monte Carlo Simulated F5 Total:** 3.97 Runs (Lineups: Confirmed)
+## 🚨 TOP PRIORITY GAMES 🚨
+- **Seattle Mariners @ Baltimore Orioles:** Extreme Weather (+5.2%), High Confidence Edge
+- **Boston Red Sox @ Tampa Bay Rays:** High Confidence Edge
+- **Philadelphia Phillies @ Toronto Blue Jays:** High Confidence Edge
+- **Houston Astros @ Los Angeles Angels:** High Confidence Edge
+- **Cincinnati Reds @ San Diego Padres:** High Confidence Edge, Extreme Weather (-9.4%)
+- **Washington Nationals @ San Francisco Giants:** Extreme Weather (-11.3%)
+
+---
+
+### 🚨 Seattle Mariners (Emerson Hancock) @ Baltimore Orioles ()
+**🔥 FLAGGED:** Extreme Weather (+5.2%), High Confidence Edge
+🏟️ **Oriole Park at Camden Yards** (Park Factor: 0.99x)
+🌤️ **Weather:** 70F | 9 MPH Out | Weather: +6.2% | Effective PF: 1.052x (+5.2%)
+- **Top-Down Projected F5 Total:** 4.85 Runs
+- **Monte Carlo Simulated F5 Total:** 6.04 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Skip | MC Under Probability: 50%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 64%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 74%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 27%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 38%
+  - If Line is **5.5** -> Skip | MC Under Probability: 49%
 
-### Chicago White Sox (Tyler Gilbert) @ Philadelphia Phillies (Aaron Nola)
-🏟️ **Citizens Bank Park** (Park Factor: 1.02x)
-- **Top-Down Projected F5 Total:** 8.89 Runs
-- **Monte Carlo Simulated F5 Total:** 8.4 Runs (Lineups: Confirmed)
+### 🚨 Boston Red Sox (Connelly Early) @ Tampa Bay Rays (Ian Seymour)
+**🔥 FLAGGED:** High Confidence Edge
+🏟️ **Tropicana Field** (Park Factor: 0.97x)
+🌤️ **Weather:** Indoor / Roof Closed | No weather adjustment | Effective PF: 0.97x (-3.0%)
+- **Top-Down Projected F5 Total:** 4.77 Runs
+- **Monte Carlo Simulated F5 Total:** 5.8 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 14%
-  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 21%
-  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 30%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 30%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 41%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 52%
 
-### Boston Red Sox (Ranger Suarez) @ New York Yankees (Cam Schlittler)
-🏟️ **Yankee Stadium** (Park Factor: 0.99x)
-- **Top-Down Projected F5 Total:** 3.01 Runs
-- **Monte Carlo Simulated F5 Total:** 1.7 Runs (Lineups: Confirmed)
+### New York Yankees (Will Warren) @ Cleveland Guardians (Gavin Williams)
+🏟️ **Progressive Field** (Park Factor: 1.01x)
+🌤️ **Weather:** 63F | 6 MPH Out | Weather: +3.1% | Effective PF: 1.041x (+4.1%)
+- **Top-Down Projected F5 Total:** 4.1 Runs
+- **Monte Carlo Simulated F5 Total:** 5.53 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **UNDER** | MC Under Probability: 85%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 92%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 96%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 32%
+  - If Line is **4.5** -> Skip | MC Under Probability: 44%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 55%
 
-### Baltimore Orioles (Shane Baz) @ Toronto Blue Jays (Kevin Gausman)
+### 🚨 Philadelphia Phillies (Cristopher Sánchez) @ Toronto Blue Jays (Patrick Corbin)
+**🔥 FLAGGED:** High Confidence Edge
 🏟️ **Rogers Centre** (Park Factor: 1.0x)
-- **Top-Down Projected F5 Total:** 3.77 Runs
-- **Monte Carlo Simulated F5 Total:** 3.29 Runs (Lineups: Confirmed)
+🌤️ **Weather:** 59F | 7 MPH Out | Weather: +2.5% | Effective PF: 1.025x (+2.5%)
+- **Top-Down Projected F5 Total:** 3.42 Runs
+- **Monte Carlo Simulated F5 Total:** 4.06 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Skip | MC Under Probability: 59%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 72%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 82%
+  - If Line is **3.5** -> Skip | MC Under Probability: 49%
+  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 62%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 72%
 
-### Seattle Mariners (Luis Castillo) @ Detroit Tigers (Jack Flaherty)
-🏟️ **Comerica Park** (Park Factor: 0.98x)
-- **Top-Down Projected F5 Total:** 4.51 Runs
-- **Monte Carlo Simulated F5 Total:** 4.21 Runs (Lineups: Confirmed)
+### 🚨 Houston Astros (Spencer Arrighetti) @ Los Angeles Angels (Grayson Rodriguez)
+**🔥 FLAGGED:** High Confidence Edge
+🏟️ **Angel Stadium** (Park Factor: 0.98x)
+🌤️ **Weather:** 64F | 6 MPH Out | Weather: +3.4% | Effective PF: 1.0145x (+1.4%)
+- **Top-Down Projected F5 Total:** 5.73 Runs
+- **Monte Carlo Simulated F5 Total:** 8.36 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 45%
-  - If Line is **4.5** -> Skip | MC Under Probability: 58%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 70%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 13%
+  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 21%
+  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 29%
 
-### Tampa Bay Rays (Griffin Jax) @ Miami Marlins (Sandy Alcantara)
-🏟️ **loanDepot park** (Park Factor: 0.97x)
-- **Top-Down Projected F5 Total:** 4.99 Runs
-- **Monte Carlo Simulated F5 Total:** 4.41 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 42%
-  - If Line is **4.5** -> Skip | MC Under Probability: 55%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 66%
-
-### Athletics (Gage Jump) @ Houston Astros (Mike Burrows)
-🏟️ **Daikin Park** (Park Factor: 1.0x)
-- **Top-Down Projected F5 Total:** 4.58 Runs
-- **Monte Carlo Simulated F5 Total:** 4.57 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 42%
-  - If Line is **4.5** -> Skip | MC Under Probability: 55%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 66%
-
-### Kansas City Royals (Noah Cameron) @ Minnesota Twins (Connor Prielipp)
-🏟️ **Target Field** (Park Factor: 0.99x)
-- **Top-Down Projected F5 Total:** 3.83 Runs
-- **Monte Carlo Simulated F5 Total:** 2.95 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Skip | MC Under Probability: 65%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 77%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 85%
-
-### Cincinnati Reds (Rhett Lowder) @ St. Louis Cardinals (Michael McGreevy)
-🏟️ **Busch Stadium** (Park Factor: 0.96x)
-- **Top-Down Projected F5 Total:** 4.27 Runs
-- **Monte Carlo Simulated F5 Total:** 3.12 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Skip | MC Under Probability: 60%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 73%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 82%
-
-### Cleveland Guardians (Joey Cantillo) @ Texas Rangers (Jacob deGrom)
-🏟️ **Globe Life Field** (Park Factor: 1.01x)
-- **Top-Down Projected F5 Total:** 4.71 Runs
-- **Monte Carlo Simulated F5 Total:** 4.31 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 44%
-  - If Line is **4.5** -> Skip | MC Under Probability: 58%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 70%
-
-### Milwaukee Brewers (Shane Drohan) @ Colorado Rockies (Kyle Freeland)
-🏟️ **Coors Field** (Park Factor: 1.15x)
-- **Top-Down Projected F5 Total:** 5.7 Runs
-- **Monte Carlo Simulated F5 Total:** 5.08 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 44%
-  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 44%
-  - If Line is **5.5** -> Skip | MC Under Probability: 57%
-
-### Washington Nationals (Cade Cavalli) @ Arizona Diamondbacks (Michael Soroka)
-🏟️ **Chase Field** (Park Factor: 1.02x)
-- **Top-Down Projected F5 Total:** 3.47 Runs
-- **Monte Carlo Simulated F5 Total:** 2.7 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **UNDER** | MC Under Probability: 70%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 81%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 89%
-
-### Los Angeles Angels (José Soriano) @ Los Angeles Dodgers (Emmet Sheehan)
-🏟️ **UNIQLO Field at Dodger Stadium** (Park Factor: 1.0x)
-- **Top-Down Projected F5 Total:** 4.65 Runs
-- **Monte Carlo Simulated F5 Total:** 4.25 Runs (Lineups: Confirmed)
-- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 45%
-  - If Line is **4.5** -> Skip | MC Under Probability: 59%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 70%
-
-### New York Mets (Huascar Brazobán) @ San Diego Padres (Randy Vásquez)
+### 🚨 Cincinnati Reds (Andrew Abbott) @ San Diego Padres (Walker Buehler)
+**🔥 FLAGGED:** High Confidence Edge, Extreme Weather (-9.4%)
 🏟️ **Petco Park** (Park Factor: 0.94x)
-- **Top-Down Projected F5 Total:** 3.82 Runs
-- **Monte Carlo Simulated F5 Total:** 3.38 Runs (Lineups: Confirmed)
+🌤️ **Weather:** 64F | 5 MPH In | Weather: -3.3% | Effective PF: 0.9065x (-9.4%)
+- **Top-Down Projected F5 Total:** 4.03 Runs
+- **Monte Carlo Simulated F5 Total:** 5.86 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Skip | MC Under Probability: 55%
-  - If Line is **4.5** -> Bet **UNDER** | MC Under Probability: 68%
-  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 78%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 29%
+  - If Line is **4.5** -> Skip | MC Under Probability: 40%
+  - If Line is **5.5** -> Skip | MC Under Probability: 51%
 
-### San Francisco Giants (Trevor McDonald) @ Chicago Cubs (Jameson Taillon)
-🏟️ **Wrigley Field** (Park Factor: 0.98x)
-- **Top-Down Projected F5 Total:** 5.57 Runs
-- **Monte Carlo Simulated F5 Total:** 6.84 Runs (Lineups: Projected (Generic))
+### 🚨 Washington Nationals (Miles Mikolas) @ San Francisco Giants (Logan Webb)
+**🔥 FLAGGED:** Extreme Weather (-11.3%)
+🏟️ **Oracle Park** (Park Factor: 0.96x)
+🌤️ **Weather:** 55F | 6 MPH In | Weather: -7.3% | Effective PF: 0.887x (-11.3%)
+- **Top-Down Projected F5 Total:** 4.62 Runs
+- **Monte Carlo Simulated F5 Total:** 5.14 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 20%
-  - If Line is **4.5** -> Bet **OVER** | MC Under Probability: 29%
-  - If Line is **5.5** -> Bet **OVER** | MC Under Probability: 40%
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 35%
+  - If Line is **4.5** -> Skip | MC Under Probability: 48%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 59%
+
+### Milwaukee Brewers (Kyle Harrison) @ Athletics (Jeffrey Springs)
+🏟️ **Las Vegas Ballpark** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.7% | Effective PF: 1.007x (+0.7%)
+- **Top-Down Projected F5 Total:** 4.28 Runs
+- **Monte Carlo Simulated F5 Total:** 5.49 Runs (Lineups: Projected (Generic))
+- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
+  - If Line is **3.5** -> Bet **OVER** | MC Under Probability: 32%
+  - If Line is **4.5** -> Skip | MC Under Probability: 44%
+  - If Line is **5.5** -> Bet **UNDER** | MC Under Probability: 55%

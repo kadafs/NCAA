@@ -77,13 +77,28 @@ def _parse_wind_dir(text: str) -> str:
         return 'Indoor'
     if 'out' in t:
         return 'Out'
-    if 'in' in t:
+    if 'in' in t and 'wind' not in t:   # 'in' but not 'wind'
         return 'In'
     if 'l-r' in t or 'r-l' in t or 'left' in t or 'right' in t:
         return 'Cross'
     if 'calm' in t or t.strip() == '':
         return 'Calm'
     return 'Cross'
+
+
+def _parse_wind_lateral(text: str):
+    """
+    For crosswind games returns 'L-R' or 'R-L'.
+    Returns None for Out/In/Calm/Indoor winds.
+    L-R = blowing from LF toward RF (left-to-right from batter's perspective).
+    R-L = blowing from RF toward LF.
+    """
+    t = text.lower()
+    if 'l-r' in t or 'left to right' in t or 'left-to-right' in t:
+        return 'L-R'
+    if 'r-l' in t or 'right to left' in t or 'right-to-left' in t:
+        return 'R-L'
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -136,10 +151,22 @@ def _wind_multiplier(wind_mph: float, wind_dir: str) -> float:
         return round(1.0 + adj, 4)
 
     if wind_dir == 'Cross':
-        # Very minor impact; slight negative as crosswinds affect trajectory
-        adj = -min(wind_mph * 0.001, 0.01)
-        return round(1.0 + adj, 4)
+        # Very minor impact; handled separately via handedness in MC engine
+        return 1.0
 
+    return 1.0
+
+
+def _temp_fatigue_scaler(temp_f: float) -> float:
+    """
+    Returns a TTTO fatigue acceleration multiplier based on temperature.
+    Hot weather (>85°F): pitcher degrades faster through the order (+up to 15%)
+    Cool weather (<65°F): pitcher degrades slower (-up to 8%)
+    """
+    if temp_f > 85:
+        return round(1.0 + ((temp_f - 85) / 15) * 0.15, 4)  # +15% at 100°F
+    elif temp_f < 65:
+        return round(1.0 - ((65 - temp_f) / 20) * 0.08, 4)  # -8% at 45°F
     return 1.0
 
 
@@ -197,19 +224,20 @@ def _scrape_rotowire() -> dict:
         # Extract temp + wind
         m = _WEATHER_RE.search(txt)
         if m:
-            temp    = int(m.group(1))
+            temp     = int(m.group(1))
             wind_mph = int(m.group(2))
             wind_dir = _parse_wind_dir(m.group(3))
+            wind_lateral = _parse_wind_lateral(m.group(3))
         else:
             # Temp only (calm)
             t = _TEMP_ONLY_RE.search(txt)
-            temp     = int(t.group(1)) if t else 72
-            wind_mph = 0
             wind_dir = 'Calm'
+            wind_lateral = None
 
         result[key] = {
             'temp': temp, 'wind_mph': wind_mph,
-            'wind_dir': wind_dir, 'rain_pct': rain_pct, 'is_dome': False
+            'wind_dir': wind_dir, 'wind_lateral': wind_lateral,
+            'rain_pct': rain_pct, 'is_dome': False
         }
 
     return result
@@ -250,7 +278,8 @@ def _get_wttr_weather(venue_name: str) -> dict:
         else:
             wind_dir = 'Cross'
         return {'temp': temp_f, 'wind_mph': wind_mph,
-                'wind_dir': wind_dir, 'rain_pct': 0, 'is_dome': False}
+                'wind_dir': wind_dir, 'wind_lateral': None,
+                'rain_pct': 0, 'is_dome': False}
     except Exception:
         return None
 
@@ -336,21 +365,33 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
         if rain_pct > 50 or temp < 55 or temp > 95:
             is_indoor = True
 
-    # --- Step 4: Calculate multipliers ---
+    # --- Step 4: Calculate multipliers and physical deltas ---
     if is_indoor:
-        temp_f   = INDOOR_TEMP
-        wind_mph = INDOOR_WIND
-        wind_dir = 'Indoor'
+        temp_f       = INDOOR_TEMP
+        wind_mph     = INDOOR_WIND
+        wind_dir     = 'Indoor'
+        wind_lateral = None
         t_mult   = 1.0
         w_mult   = 1.0
+        t_hr_d   = 0.0
+        t_pwr_d  = 0.0
+        w_hr_d   = 0.0
+        w_pwr_d  = 0.0
+        fatigue_scaler = 1.0
     else:
-        temp_f   = raw.get('temp', 72)
-        wind_mph = raw.get('wind_mph', 0)
-        wind_dir = raw.get('wind_dir', 'Calm')
+        temp_f       = raw.get('temp', 72)
+        wind_mph     = raw.get('wind_mph', 0)
+        wind_dir     = raw.get('wind_dir', 'Calm')
+        wind_lateral = raw.get('wind_lateral', None)
+        # Legacy combined multipliers (kept for Top-Down model)
         t_mult   = _temp_multiplier(temp_f)
         w_mult   = _wind_multiplier(wind_mph, wind_dir)
+        fatigue_scaler = _temp_fatigue_scaler(temp_f)
 
-    combined = round(t_mult * w_mult, 4)
+    # Top-Down model legacy multiplier: Convert to additive baseline shift
+    t_delta = t_mult - 1.0
+    w_delta = w_mult - 1.0
+    combined = round(1.0 + t_delta + w_delta, 4)
 
     # Build human-readable label
     if is_indoor:
@@ -365,7 +406,12 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
         'temp':               temp_f,
         'wind_mph':           wind_mph,
         'wind_dir':           wind_dir,
+        'wind_lateral':       wind_lateral if not is_indoor else None,
         'is_indoor':          is_indoor,
+        'rain_pct':           raw.get('rain_pct', 0),
+        # Fatigue scaler for TTTO acceleration (Fix 4)
+        'temp_fatigue_scaler': fatigue_scaler,
+        # Legacy combined multiplier (kept for Top-Down model in grade_f5)
         'temp_multiplier':    t_mult,
         'wind_multiplier':    w_mult,
         'weather_multiplier': combined,

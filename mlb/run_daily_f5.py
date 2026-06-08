@@ -165,6 +165,44 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
     blended = weighted_fip / total_weight
     return round(blended, 2)
 
+
+def get_pitcher_projected_ip(pitcher_name, sport_id=1):
+    """
+    Returns the projected F5 innings (capped at 5.0) based on the pitcher's
+    recent game logs (last 5 games).
+    """
+    if pitcher_name in ('TBD', '', None):
+        return 4.0 # generic projection
+        
+    players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+    if not players:
+        return 4.0
+        
+    player_id = players[0]['id']
+    try:
+        # Fetch 2026 game log
+        data = statsapi.player_stat_data(player_id, group="pitching", type="gameLog", sportId=sport_id)
+        games = data.get('stats', [])
+        if not games: return 4.0
+        
+        # Take up to last 5 games
+        recent_games = games[:5]
+        total_ip = 0.0
+        count = 0
+        for g in recent_games:
+            stats = g.get('stats', {})
+            ip_str = stats.get('inningsPitched', '0')
+            total_ip += _parse_ip(ip_str)
+            count += 1
+            
+        if count == 0: return 4.0
+        
+        avg_ip = total_ip / count
+        # For F5 purposes, cap at 5.0 innings
+        return round(min(5.0, avg_ip), 2)
+    except Exception:
+        return 4.0
+
 # ---------------------------------------------------------------------------
 # Team offense — weighted multi-season OPS → wRC+ proxy
 # ---------------------------------------------------------------------------
@@ -225,6 +263,54 @@ def get_team_wrc_proxy(team_name, sport_id=1):
     wrc_proxy   = round((blended_ops / LEAGUE_AVG_OPS.get(sport_id, 0.720)) * 100, 1)
     team_wrc_cache[team_name] = wrc_proxy
     return wrc_proxy
+
+team_bullpen_cache = {}
+
+def _get_team_pitching_fip_single_season(team_id, season):
+    try:
+        data = statsapi.get('team_stats', {
+            'teamId':    team_id,
+            'group':     'pitching',
+            'stats':     'season',
+            'season':    str(season)
+        })
+        for grp in data.get('stats', []):
+            splits = grp.get('splits', [])
+            if splits:
+                fip = _calc_fip(splits[0].get('stat', {}))
+                return fip
+        return None
+    except Exception:
+        return None
+
+def get_team_bullpen_fip(team_name, sport_id=1):
+    """
+    Returns a proxy for the team's bullpen FIP by grabbing the team's 
+    overall pitching FIP for the season.
+    """
+    if team_name in team_bullpen_cache:
+        return team_bullpen_cache[team_name]
+        
+    teams = statsapi.lookup_team(team_name, sportIds=sport_id)
+    if not teams:
+        return FALLBACK_FIP
+        
+    team_id = teams[0]['id']
+    weighted_fip = 0.0
+    total_weight = 0.0
+    
+    for season, weight in SEASON_WEIGHTS.items():
+        fip = _get_team_pitching_fip_single_season(team_id, season)
+        if fip and fip > 0:
+            weighted_fip += fip * weight
+            total_weight += weight
+            
+    if total_weight == 0:
+        return FALLBACK_FIP
+        
+    blended_fip = round(weighted_fip / total_weight, 2)
+    team_bullpen_cache[team_name] = blended_fip
+    return blended_fip
 
 def main():
     games = get_today_games()

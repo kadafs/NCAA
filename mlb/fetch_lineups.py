@@ -184,14 +184,20 @@ def get_pitcher_pa_modifiers(pitcher_fip, pitcher_player_id=None):
     pitcher_bb_per9 = (bb_total / ip_total) * 9
     pitcher_hr_per9 = (hr_total / ip_total) * 9
 
-    # Use FIP as a proxy for the pitcher's general ability to suppress hits
-    hit_mod = pitcher_fip / 4.00
+    # hit_mod: captures a pitcher's overall ability to suppress contact quality.
+    # Neutral FIP is 4.20 (2022-2025 MLB avg). We use a damped ratio to prevent
+    # over-punishment from high-FIP pitchers stacking onto already-adjusted batter rates.
+    # FIP 3.00 → hit_mod ~0.86 (elite suppressor)
+    # FIP 4.20 → hit_mod ~1.00 (neutral)
+    # FIP 5.50 → hit_mod ~1.15 (bad, but not catastrophic)
+    # Cap at 1.25 max, 0.75 min.
+    hit_mod = (pitcher_fip / 4.20) ** 0.6
 
     return {
-        'k':  max(0.4, min(2.5, pitcher_k_per9  / LEAGUE_K_PER_9)),
-        'bb': max(0.4, min(3.0, pitcher_bb_per9 / LEAGUE_BB_PER_9)),
-        'hr': max(0.4, min(4.0, pitcher_hr_per9 / LEAGUE_HR_PER_9)),
-        'hit_mod': max(0.6, min(1.8, hit_mod))
+        'k':  max(0.5, min(1.8, pitcher_k_per9  / LEAGUE_K_PER_9)),
+        'bb': max(0.5, min(2.0, pitcher_bb_per9 / LEAGUE_BB_PER_9)),
+        'hr': max(0.5, min(2.5, pitcher_hr_per9 / LEAGUE_HR_PER_9)),
+        'hit_mod': max(0.75, min(1.25, hit_mod))
     }
 
 

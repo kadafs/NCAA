@@ -1,11 +1,25 @@
 import os
+import time
 import datetime
-from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy
+from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip
 from grade_f5 import grade_matchup
 from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
 from park_factors import get_park_factor
 from weather_f5 import get_weather_modifier
+
+
+def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
+    """Call fn(*args, **kwargs), retrying up to `retries` times on network errors."""
+    for attempt in range(retries):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            if attempt < retries - 1:
+                print(f"  [Retry {attempt+1}/{retries}] {fn.__name__} failed: {e}. Retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                raise
 
 def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     """
@@ -25,12 +39,18 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     elif sport_id == 12: league_name = "AA"
     elif sport_id == 13: league_name = "High-A"
     elif sport_id == 14: league_name = "Single-A"
+    date_label = date_str if date_str else datetime.datetime.now().strftime('%m/%d/%Y')
     
     report_lines = []
-    report_lines.append(f"# {league_name} F5 Consensus Picks - {report_date}")
-    report_lines.append("This report combines the Top-Down wRC+/FIP Model with a 10,000-iteration Monte Carlo Simulation.")
+    report_lines.append(f"# ⚾ Consensus F5 Prediction Report (Sport ID: {sport_id})")
+    report_lines.append(f"**Date:** {date_label}")
+    report_lines.append(f"**Generated:** {datetime.datetime.now().strftime('%H:%M:%S')}")
+    report_lines.append(f"**Model Mode:** {'Generic Lineups (FORCED)' if force_generic else 'Standard (Confirmed if available)'}")
     report_lines.append("")
     
+    priority_flags = []
+    game_blocks = []
+
     for game in games:
         away = game['away_team']
         home = game['home_team']
@@ -42,77 +62,135 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
         
         print(f"Processing: {away} @ {home} ({venue} - PF: {pf})")
         
-        # Weather modifier (MLB only — MiLB parks not covered by RotoWire)
-        if sport_id == 1:
-            weather = get_weather_modifier(venue)
-            effective_pf = round(pf * weather['weather_multiplier'], 4)
-        else:
+        try:
+            # Weather modifier (MLB only — MiLB parks not covered by RotoWire)
             weather = None
             effective_pf = pf
-        
-        # 1. Top-Down Model
-        ap_fip = get_pitcher_fip(ap, sport_id=sport_id)
-        hp_fip = get_pitcher_fip(hp, sport_id=sport_id)
-        away_wrc = get_team_wrc_proxy(away, sport_id)
-        home_wrc = get_team_wrc_proxy(home, sport_id)
+            if sport_id == 1:
+                weather = get_weather_modifier(venue, away_abbr=away, home_abbr=home)
+                # Additive baseline shift to fix physics violation
+                effective_pf = round(pf + (weather['weather_multiplier'] - 1.0), 4)
+            
+            # 1. Top-Down Model
+            ap_fip = _retry_call(get_pitcher_fip, ap, sport_id=sport_id)
+            hp_fip = _retry_call(get_pitcher_fip, hp, sport_id=sport_id)
+            
+            ap_ip = _retry_call(get_pitcher_projected_ip, ap, sport_id=sport_id)
+            hp_ip = _retry_call(get_pitcher_projected_ip, hp, sport_id=sport_id)
+            
+            away_bp = _retry_call(get_team_bullpen_fip, away, sport_id=sport_id)
+            home_bp = _retry_call(get_team_bullpen_fip, home, sport_id=sport_id)
+            
+            away_wrc = _retry_call(get_team_wrc_proxy, away, sport_id)
+            home_wrc = _retry_call(get_team_wrc_proxy, home, sport_id)
 
-        # Pitcher handedness for platoon logic (MLB only — MiLB hand data less reliable)
-        if sport_id == 1:
-            ap_hand = get_pitcher_hand(ap, sport_id=sport_id)
-            hp_hand = get_pitcher_hand(hp, sport_id=sport_id)
-        else:
-            ap_hand, hp_hand = 'R', 'R'
-        
-        top_down = grade_matchup(away, ap_fip, away_wrc, home, hp_fip, home_wrc, park_factor=effective_pf)
-        td_total = top_down['projected_f5_total']
-        
-        # 2. Monte Carlo Model
-        if force_generic:
-            lineups = {'away': [], 'home': []}
-        else:
-            lineups = get_lineup_for_game(gid)
+            # Pitcher handedness for platoon logic (MLB only — MiLB hand data less reliable)
+            if sport_id == 1:
+                ap_hand = _retry_call(get_pitcher_hand, ap, sport_id=sport_id)
+                hp_hand = _retry_call(get_pitcher_hand, hp, sport_id=sport_id)
+            else:
+                ap_hand, hp_hand = 'R', 'R'
+            
+            top_down = grade_matchup(
+                away, ap_fip, away_bp, ap_ip, away_wrc,
+                home, hp_fip, home_bp, hp_ip, home_wrc,
+                park_factor=effective_pf
+            )
+            td_total = top_down['projected_f5_total']
+            
+            # 2. Monte Carlo Model
+            if force_generic:
+                lineups = {'away': [], 'home': []}
+            else:
+                lineups = _retry_call(get_lineup_for_game, gid)
 
-        # Check if lineups exist, otherwise MC uses league average generic lineups.
-        lineups_status = "Confirmed" if lineups['away'] else "Projected (Generic)"
-        mc = run_monte_carlo_f5(
-            lineups['away'], lineups['home'],
-            ap, hp, ap_fip, hp_fip,
-            iterations=10000, park_factor=effective_pf, sport_id=sport_id,
-            away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
-        )
-        
-        # 3. Betting Matrix Logic
-        def get_advice(line, under_prob):
-            td_signal = "UNDER" if td_total < line else "OVER"
-            mc_signal = "NEUTRAL"
-            if under_prob >= 0.52:
-                mc_signal = "UNDER"
-            elif under_prob <= 0.48:
-                mc_signal = "OVER"
-                
-            if td_signal == mc_signal:
-                confidence = "HIGH" if (under_prob >= 0.58 or under_prob <= 0.42) else "MODERATE"
-                return f"Bet **{mc_signal}**"
-            return "Skip"
+            # Check if lineups exist, otherwise MC uses league average generic lineups.
+            lineups_status = "Confirmed" if lineups['away'] else "Projected (Generic)"
+            mc = run_monte_carlo_f5(
+                lineups['away'], lineups['home'],
+                ap, hp, ap_fip, hp_fip,
+                iterations=10000, park_factor=pf, weather_context=weather, sport_id=sport_id,
+                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
+            )
+            
+            # 3. Betting Matrix Logic
+            def get_advice(line, under_prob):
+                td_signal = "UNDER" if td_total < line else "OVER"
+                mc_signal = "NEUTRAL"
+                if under_prob >= 0.52:
+                    mc_signal = "UNDER"
+                elif under_prob <= 0.48:
+                    mc_signal = "OVER"
+                    
+                if td_signal == mc_signal:
+                    confidence = "HIGH" if (under_prob >= 0.58 or under_prob <= 0.42) else "MODERATE"
+                    return f"Bet **{mc_signal}**"
+                return "Skip"
 
-        adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
-        adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
-        adv_5_5 = get_advice(5.5, mc['under_5_5_prob'])
+            adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
+            adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
+            adv_5_5 = get_advice(5.5, mc['under_5_5_prob'])
+            
+            # 4. Format Output
+            block_lines = []
+            is_priority = False
+            flag_reasons = []
+
+            # Check for extreme weather
+            if weather:
+                eff_pct_val = (effective_pf - 1.0) * 100
+                if abs(eff_pct_val) >= 5.0:
+                    is_priority = True
+                    flag_reasons.append(f"Extreme Weather ({'+' if eff_pct_val>0 else ''}{round(eff_pct_val,1)}%)")
+
+            # Check for high confidence edges
+            for adv in [adv_3_5, adv_4_5, adv_5_5]:
+                if "Bet" in adv and "Skip" not in adv:
+                    if mc['under_4_5_prob'] >= 0.58 or mc['under_4_5_prob'] <= 0.42:
+                        is_priority = True
+                        flag_reasons.append("High Confidence Edge")
+                        break
+
+            title = f"### {'🚨 ' if is_priority else ''}{away} ({ap}) @ {home} ({hp})"
+            block_lines.append(title)
+            
+            if is_priority:
+                block_lines.append(f"**🔥 FLAGGED:** {', '.join(set(flag_reasons))}")
+                priority_flags.append(f"- **{away} @ {home}:** {', '.join(set(flag_reasons))}")
+
+            block_lines.append(f"🏟️ **{venue}** (Park Factor: {pf}x)")
+            if weather:
+                eff_pct = round((effective_pf - 1.0) * 100, 1)
+                sign = '+' if eff_pct >= 0 else ''
+                block_lines.append(f"🌤️ **Weather:** {weather['weather_label']} | Effective PF: {effective_pf}x ({sign}{eff_pct}%)")
+            block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
+            block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
+            block_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
+            block_lines.append(f"  - If Line is **3.5** -> {adv_3_5} | MC Under Probability: {int(mc['under_3_5_prob']*100)}%")
+            block_lines.append(f"  - If Line is **4.5** -> {adv_4_5} | MC Under Probability: {int(mc['under_4_5_prob']*100)}%")
+            block_lines.append(f"  - If Line is **5.5** -> {adv_5_5} | MC Under Probability: {int(mc['under_5_5_prob']*100)}%")
+            block_lines.append("")
+            
+            game_blocks.extend(block_lines)
+            
+        except Exception as e:
+            print(f"  ⚠️  SKIPPED {away} @ {home}: {type(e).__name__}: {e}")
+            game_blocks.append(f"### {away} @ {home} — ⚠️ Data Error (skipped)")
+            game_blocks.append(f"Error: {type(e).__name__}: {e}")
+            game_blocks.append("")
         
-        # 4. Format Output
-        report_lines.append(f"### {away} ({ap}) @ {home} ({hp})")
-        report_lines.append(f"🏟️ **{venue}** (Park Factor: {pf}x)")
-        if weather:
-            eff_pct = round((effective_pf - 1.0) * 100, 1)
-            sign = '+' if eff_pct >= 0 else ''
-            report_lines.append(f"🌤️ **Weather:** {weather['weather_label']} | Effective PF: {effective_pf}x ({sign}{eff_pct}%)")
-        report_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
-        report_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
-        report_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
-        report_lines.append(f"  - If Line is **3.5** -> {adv_3_5} | MC Under Probability: {int(mc['under_3_5_prob']*100)}%")
-        report_lines.append(f"  - If Line is **4.5** -> {adv_4_5} | MC Under Probability: {int(mc['under_4_5_prob']*100)}%")
-        report_lines.append(f"  - If Line is **5.5** -> {adv_5_5} | MC Under Probability: {int(mc['under_5_5_prob']*100)}%")
+        # Brief pause between games to avoid rate-limiting the MLB Stats API
+        time.sleep(0.5)
+
+    # 5. Assemble final report
+    if priority_flags:
+        report_lines.append("## 🚨 TOP PRIORITY GAMES 🚨")
+        report_lines.extend(priority_flags)
         report_lines.append("")
+        report_lines.append("---")
+        report_lines.append("")
+
+    report_lines.extend(game_blocks)
         
     # Use dated filename for historical runs so they don't overwrite today's report
     if date_str:
