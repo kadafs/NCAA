@@ -1,7 +1,19 @@
+##Baseball 
 python mlb/consensus_f5.py - MLB F5 Consensus Picks
 python mlb/live_cache.py - Run the daily morning cache manually (optional, the daemon auto-builds if missing):
 python mlb/live_f5.py --interval 30 - Start the Live Polling Daemon:
+python mlb/consensus_f5_v1_weather.py - To run V1 + Weather (V1.5):
+python mlb/consensus_f5_v1.py - To run V1 (No Weather):
+python mlb/consensus_f5_v2.py - To run V2 (Hybrid: Top-Down + V1 MC + Weather):
+python mlb/consensus_f5_v3.py - To run V3 (Tuned: Top-Down + Tuned Current MC + Weather):
+python mlb/grade_td_reports.py - grader script for MLB
+python grade_intl_reports.py --league KBO - grader script for KBO
+python grade_intl_reports.py --league NPB - grader script for NPB
+python kbo/consensus_f5_kbo.py - KBO F5 Morning Picks
+python npb/consensus_f5_npb.py - NPB F5 Morning Picks
 
+
+##Basketball
 TRACKING_EPOCH = "2026-03-26"
 python audit_team_names.py - check team names
 / **[python grade_basketball.py  
