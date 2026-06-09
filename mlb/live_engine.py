@@ -142,12 +142,22 @@ def run_live_simulation(
     away_idx = np.full(iterations, away_idx_start, dtype=np.int32)
     home_idx = np.full(iterations, home_idx_start, dtype=np.int32)
     
-    # TTTO state approximation (0=1st/2nd inn, 1=3rd/4th inn, 2=5th inn)
-    # Based strictly on current inning for the continuation engine to start
-    tto_start = 0 if curr_inning <= 2 else (1 if curr_inning <= 4 else 2)
+    # Calculate true Times-Through-The-Order (TTO) state based on estimated batters faced,
+    # rather than blindly jumping to TTO=1 in the 3rd inning.
+    # Batters faced ≈ (completed_innings * 3) + (runs_scored * 1.5)
+    away_completed_inns = curr_inning - 1 if not is_bottom else curr_inning
+    home_completed_inns = curr_inning - 1
     
-    away_tto = np.full(iterations, tto_start, dtype=np.int32)
-    home_tto = np.full(iterations, tto_start, dtype=np.int32)
+    away_batters_faced = (away_completed_inns * 3) + (live_state['scoreboard']['away_runs'] * 1.5)
+    home_batters_faced = (home_completed_inns * 3) + (live_state['scoreboard']['home_runs'] * 1.5)
+    
+    # TTO is capped at 2 (3rd time through the order) in the CDF arrays
+    away_tto_start = min(2, int(away_batters_faced // 9))
+    home_tto_start = min(2, int(home_batters_faced // 9))
+    
+    # We assign home_tto_start to the Home pitcher (who faces Away batters), and vice versa
+    away_tto = np.full(iterations, home_tto_start, dtype=np.int32)
+    home_tto = np.full(iterations, away_tto_start, dtype=np.int32)
     
     prev_away_idx = np.copy(away_idx)
     prev_home_idx = np.copy(home_idx)
@@ -230,6 +240,7 @@ def run_live_simulation(
                         a_games, a_states, _idx1, _outs1, away_runs,
                         _b1_1, _b2_1, _b3_1, game_cache['away_speed_tiers'], home_tto
                     )
+                    away_idx[stay_mask] = _idx1[stay_mask]
 
                 # --- Paths where starter was pulled (bullpen CDF) ---
                 if np.any(starter_exits):
@@ -244,6 +255,7 @@ def run_live_simulation(
                         b_games, bullpen_stub, _idx2, _outs2, away_runs,
                         _b1_2, _b2_2, _b3_2, game_cache['away_speed_tiers'], tto_zero
                     )
+                    away_idx[starter_exits] = _idx2[starter_exits]
             else:
                 # All paths use the starter — fast path, no allocation overhead
                 simulate_half_inning_vectorized(
@@ -263,6 +275,7 @@ def run_live_simulation(
                         a_games, h_states, _idx1, _outs1, home_runs,
                         _b1_1, _b2_1, _b3_1, game_cache['home_speed_tiers'], away_tto
                     )
+                    home_idx[stay_mask] = _idx1[stay_mask]
                 if np.any(starter_exits):
                     b_games = active_games.copy(); b_games[stay_mask] = False
                     bullpen_stub = h_bullpen[np.newaxis, :, :]
@@ -274,6 +287,7 @@ def run_live_simulation(
                         b_games, bullpen_stub, _idx2, _outs2, home_runs,
                         _b1_2, _b2_2, _b3_2, game_cache['home_speed_tiers'], tto_zero
                     )
+                    home_idx[starter_exits] = _idx2[starter_exits]
             else:
                 simulate_half_inning_vectorized(
                     active_games, h_states, home_idx, outs, home_runs,

@@ -63,8 +63,8 @@ def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
     dict:
         The full nested cache dictionary keyed by game_id.
     """
-    if date_str is None:
-        date_str = datetime.datetime.now().strftime("%m/%d/%Y")
+    if not date_str:
+        date_str = (datetime.datetime.now() - datetime.timedelta(hours=6)).strftime("%m/%d/%Y")
         
     print(f"Building LF5 Morning Cache for {date_str} (sportId={sport_id})...")
     schedule = statsapi.schedule(sportId=sport_id, date=date_str)

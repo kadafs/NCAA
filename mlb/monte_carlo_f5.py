@@ -283,7 +283,7 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
         batter_indices[active_games] = (batter_indices[active_games] + 1) % lineup_length
         
         # Recalculate mask (active_games is modified in place technically, but we're creating a new boolean array)
-        active_games = outs < 3
+        active_games &= (outs < 3)
 
 def get_pitcher_id(pitcher_name, sport_id=1):
     if not pitcher_name or pitcher_name == 'TBD': return None

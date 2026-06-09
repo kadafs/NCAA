@@ -73,7 +73,9 @@ def get_today_games(sport_id=1, date_str=None):
     if date_str:
         today = date_str
     else:
-        today = datetime.datetime.now().strftime("%m/%d/%Y")
+        # Timezone Fix: Subtract 6 hours so the baseball schedule day doesn't roll over 
+        # to tomorrow at midnight local time while West Coast US games are still actively playing.
+        today = (datetime.datetime.now() - datetime.timedelta(hours=6)).strftime("%m/%d/%Y")
     print(f"Fetching schedule for {today} (sportId={sport_id})...")
     try:
         schedule = statsapi.schedule(sportId=sport_id, date=today)

@@ -1,6 +1,6 @@
 import pybaseball
 from pybaseball import schedule_and_record, team_game_logs
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 
 def get_today_games():
@@ -12,7 +12,7 @@ def get_today_games():
     """
     import statsapi
     
-    today = datetime.now().strftime("%m/%d/%Y")
+    today = (datetime.now() - timedelta(hours=6)).strftime("%m/%d/%Y")
     print(f"Fetching MLB schedule for {today}...")
     
     try:

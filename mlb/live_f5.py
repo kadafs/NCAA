@@ -9,11 +9,21 @@ continuation engine, and detects actionable mathematical edges > 4.5%.
 """
 
 import os
+import sys
 import time
 import datetime
 import argparse
 import requests
 from requests.exceptions import RequestException
+
+# ---------------------------------------------------------------------------
+# Windows UTF-8 Fix: Force stdout to UTF-8 to prevent emoji UnicodeEncodeError
+# This is critical — without this, the daemon crashes the moment it fires an
+# alert containing emoji characters on Windows terminals using CP1252 encoding.
+# ---------------------------------------------------------------------------
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 from live_cache import build_morning_cache, save_cache, load_cache, CACHE_DIR
 from live_state import fetch_live_state
@@ -154,7 +164,7 @@ def run_daemon(sport_id: int = 1, interval_sec: int = 30, test_mode: bool = Fals
     print("=========================================================")
     
     # 1. Load or build morning cache
-    today_str = datetime.datetime.now().strftime("%Y-%m-%d")
+    today_str = (datetime.datetime.now() - datetime.timedelta(hours=6)).strftime("%Y-%m-%d")
     cache_path = os.path.join(CACHE_DIR, f"lf5_cache_{today_str}.npz")
     
     cache = load_cache(cache_path)
@@ -268,6 +278,15 @@ def run_daemon(sport_id: int = 1, interval_sec: int = 30, test_mode: bool = Fals
                 
                 if game_odds:
                     line = game_odds['line']
+                    
+                    # Odds API fallback: If the API returns a Full Game total (e.g. 8.5) 
+                    # we must heuristically convert it to an F5 line to match our F5 engine.
+                    # MLB F5 lines are typically ~54% of the full game total.
+                    if line >= 6.5:
+                        converted_line = round((line * 0.54) * 2) / 2
+                        # Ensure we don't drop below the minimum F5 line offered by books
+                        line = max(3.5, converted_line)
+                        
                     under_prob = res['under_line_prob'].get(line)
                     
                     if under_prob is not None:
@@ -293,6 +312,14 @@ def run_daemon(sport_id: int = 1, interval_sec: int = 30, test_mode: bool = Fals
         print("\nDaemon stopped by user.")
 
 
+def _safe_print(text: str):
+    """Prints text, replacing any unencodable characters to prevent crashes."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(text.encode('ascii', 'replace').decode('ascii'))
+
+
 def _log_edge(away_team, home_team, state, res, line, odds, under_p, over_p, under_imp, over_imp, under_edge, over_edge, fatigue):
     """Formats and prints an actionable trading alert."""
     ts = datetime.datetime.now().strftime('%H:%M:%S')
@@ -300,23 +327,23 @@ def _log_edge(away_team, home_team, state, res, line, odds, under_p, over_p, und
     outs = state['current_outs']
     score = f"{away_team} {state['scoreboard']['away_runs']} - {state['scoreboard']['home_runs']} {home_team}"
     
-    print(f"\n[{ts}] 🚨 LF5 EDGE DETECTED 🚨")
-    print(f"  Game:  {score} ({inn_str}, {outs} Outs)")
+    _safe_print(f"\n[{ts}] \U0001f6a8 LF5 EDGE DETECTED \U0001f6a8")
+    _safe_print(f"  Game:  {score} ({inn_str}, {outs} Outs)")
     
     if fatigue > FATIGUE_THRESHOLD:
-        print(f"  ⚠️ PITCHER FATIGUE ALERT: Scaler = {fatigue:.2f} (>1.10)")
+        _safe_print(f"  \u26a0\ufe0f PITCHER FATIGUE ALERT: Scaler = {fatigue:.2f} (>1.10)")
         
-    print(f"  Proj Total: {res['projected_f5_total']} (Remaining: {res['remaining_away_runs'] + res['remaining_home_runs']})")
+    _safe_print(f"  Proj Total: {res['projected_f5_total']} (Remaining: {res['remaining_away_runs'] + res['remaining_home_runs']})")
     
     if over_edge:
-        print(f"  🎯 BET OVER {line}  ({odds['over_odds']})")
-        print(f"     Model Over Prob: {over_p*100:.1f}% vs Book Implied: {over_imp*100:.1f}%")
-        print(f"     Edge: +{over_edge['edge_pct']}%  Confidence: {over_edge['confidence']}")
+        _safe_print(f"  \U0001f3af BET OVER {line}  ({odds['over_odds']})")
+        _safe_print(f"     Model Over Prob: {over_p*100:.1f}% vs Book Implied: {over_imp*100:.1f}%")
+        _safe_print(f"     Edge: +{over_edge['edge_pct']}%  Confidence: {over_edge['confidence']}")
         
     if under_edge:
-        print(f"  🎯 BET UNDER {line} ({odds['under_odds']})")
-        print(f"     Model Under Prob: {under_p*100:.1f}% vs Book Implied: {under_imp*100:.1f}%")
-        print(f"     Edge: +{under_edge['edge_pct']}%  Confidence: {under_edge['confidence']}")
+        _safe_print(f"  \U0001f3af BET UNDER {line} ({odds['under_odds']})")
+        _safe_print(f"     Model Under Prob: {under_p*100:.1f}% vs Book Implied: {under_imp*100:.1f}%")
+        _safe_print(f"     Edge: +{under_edge['edge_pct']}%  Confidence: {under_edge['confidence']}")
 
 
 if __name__ == '__main__':
