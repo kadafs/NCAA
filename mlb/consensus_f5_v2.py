@@ -118,8 +118,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
             mc = run_monte_carlo_f5(
                 lineups['away'], lineups['home'],
                 ap, hp, ap_fip, hp_fip,
-                iterations=10000, park_factor=pf, sport_id=sport_id,
-                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
+                iterations=10000, park_factor=pf
             )
             
             # 3. Betting Matrix Logic (Issue 2 fix)
