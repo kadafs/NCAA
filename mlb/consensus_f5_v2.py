@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import datetime
 from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip
@@ -50,6 +51,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     
     priority_flags = []
     game_blocks = []
+    raw_json_data = []
 
     for game in games:
         away = game['away_team']
@@ -143,12 +145,27 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
                     mc_strong = under_prob >= 0.58 or under_prob <= 0.42
                     td_strong = abs(td_gap) >= 0.30
                     confidence = 'HIGH' if (mc_strong and td_strong) else 'MODERATE'
-                    return f'Bet **{mc_signal}** ({confidence})'
+                    
+                    if mc_signal == 'OVER':
+                        fg_map = {3.5: '7.5', 4.5: '8.5', 5.5: '10.5'}
+                        fg_line = fg_map.get(line, f"{line*2}")
+                        return f'Bet **FULL GAME OVER** (e.g. {fg_line}) ({confidence})'
+                    else:
+                        return f'Bet **{mc_signal}** ({confidence})'
                 return 'Skip'
 
             adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
             adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
             adv_5_5 = get_advice(5.5, mc['under_5_5_prob'])
+            
+            raw_json_data.append({
+                "away_team": away,
+                "home_team": home,
+                "adv_3_5": adv_3_5,
+                "adv_4_5": adv_4_5,
+                "adv_5_5": adv_5_5,
+                "version": "v2"
+            })
             
             # 4. Format Output
             block_lines = []
@@ -222,6 +239,10 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(report_lines))
+        
+    json_output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f".{filename.replace('.md', '.json')}")
+    with open(json_output_path, 'w', encoding='utf-8') as f:
+        json.dump(raw_json_data, f, indent=4)
         
     print(f"\nDone! Report written to {output_path}")
     return output_path
