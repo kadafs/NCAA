@@ -39,9 +39,10 @@ python scrape_nbl1.py - For NBL 1 games only
   
   1b. # Update the raw stats from api python auto_update_historical.py
   # 1c. Update the SDI index python calculate_sdi.py
+    1d. python calibrate_from_local.py -  ← rebuild pace/eff pivots (run once every 2 weeks)
 
 # 2. Convert raw stats into the True Offense/Defense Matrix
-python generate_advanced_metrics.py
+python generate_advanced_metrics.py - rebuild SRS matrix
 
 # 3. Finally, run today's predictions using those updated matrices
 python run_basketball_daily.py --mode full --date 2026-04-19 --refresh
@@ -81,11 +82,6 @@ python push_to_dashboard.py --sport basketball
       # confidence report audit 
          python standard_confidence_audit.py 
 
-
-Every 2 weeks:
-  python auto_update_historical.py      ← pull latest game results
-  python calibrate_from_local.py        ← rebuild pace/eff pivots
-  python generate_advanced_metrics.py   ← rebuild SRS matrix
 
 
 

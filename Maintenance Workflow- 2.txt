@@ -1,3 +1,20 @@
+##Baseball 
+python mlb/consensus_f5.py - MLB F5 Consensus Picks
+python mlb/live_cache.py - Run the daily morning cache manually (optional, the daemon auto-builds if missing):
+python mlb/live_f5.py --interval 30 - Start the Live Polling Daemon:
+python mlb/consensus_f5_v1_weather.py - To run V1 + Weather (V1.5):
+python mlb/consensus_f5_v1.py - To run V1 (No Weather):
+python mlb/consensus_f5_v2.py - To run V2 (Hybrid: Top-Down + V1 MC + Weather):
+python mlb/consensus_f5_v3.py - To run V3 (Tuned: Top-Down + Tuned Current MC + Weather):
+python mlb/grade_td_reports.py - grader script for MLB
+python grade_intl_reports.py --league KBO - grader script for KBO
+python grade_intl_reports.py --league NPB - grader script for NPB
+python kbo/consensus_f5_kbo.py - KBO F5 Morning Picks
+python npb/consensus_f5_npb.py - NPB F5 Morning Picks
+python mlb/post_process_fg.py --file .consensus_f5_v3_report_MLB_YYYY-MM-DD.json - BULLPEN POST-PROCESSING MODULE
+
+
+##Basketball
 TRACKING_EPOCH = "2026-03-26"
 python audit_team_names.py - check team names
 / **[python grade_basketball.py  
@@ -22,9 +39,10 @@ python scrape_nbl1.py - For NBL 1 games only
   
   1b. # Update the raw stats from api python auto_update_historical.py
   # 1c. Update the SDI index python calculate_sdi.py
+    1d. python calibrate_from_local.py -  ← rebuild pace/eff pivots (run once every 2 weeks)
 
 # 2. Convert raw stats into the True Offense/Defense Matrix
-python generate_advanced_metrics.py
+python generate_advanced_metrics.py - rebuild SRS matrix
 
 # 3. Finally, run today's predictions using those updated matrices
 python run_basketball_daily.py --mode full --date 2026-04-19 --refresh
@@ -64,11 +82,6 @@ python push_to_dashboard.py --sport basketball
       # confidence report audit 
          python standard_confidence_audit.py 
 
-
-Every 2 weeks:
-  python auto_update_historical.py      ← pull latest game results
-  python calibrate_from_local.py        ← rebuild pace/eff pivots
-  python generate_advanced_metrics.py   ← rebuild SRS matrix
 
 
 

@@ -104,9 +104,9 @@ def find_game_id(matchup, schedule):
 # ---------------------------------------------------------------------------
 # Grade a single sport's report
 # ---------------------------------------------------------------------------
-def grade_report(sport_id, line, schedule_date):
+def grade_report(sport_id, line, schedule_date, filepath_override=None):
     label = SPORT_LABELS.get(sport_id, f'Sport {sport_id}')
-    filepath = REPORT_FILES.get(sport_id)
+    filepath = filepath_override if filepath_override else REPORT_FILES.get(sport_id)
 
     if not filepath or not os.path.exists(filepath):
         print(f"\n[{label}] No report found at {filepath}")
@@ -146,6 +146,7 @@ def grade_report(sport_id, line, schedule_date):
         gid = find_game_id(g['matchup'], schedule)
         
         actual_total = None
+        fg_actual_total = None
         if gid:
             try:
                 box = statsapi.get('game', {'gamePk': gid, 'hydrate': 'linescore'})
@@ -154,6 +155,10 @@ def grade_report(sport_id, line, schedule_date):
                     a_runs = sum(inn.get('away', {}).get('runs', 0) for inn in innings[:5])
                     h_runs = sum(inn.get('home', {}).get('runs', 0) for inn in innings[:5])
                     actual_total = a_runs + h_runs
+                if innings:
+                    a_runs_fg = sum(inn.get('away', {}).get('runs', 0) for inn in innings)
+                    h_runs_fg = sum(inn.get('home', {}).get('runs', 0) for inn in innings)
+                    fg_actual_total = a_runs_fg + h_runs_fg
             except:
                 pass
         
@@ -180,6 +185,8 @@ def grade_report(sport_id, line, schedule_date):
                 losses += 1
                 
         actual_str = f"{actual_total} runs ({actual_result})" if actual_total is not None else "N/A"
+        if g['td_bet'] == "OVER" and fg_actual_total is not None:
+            actual_str += f"  [Full Game: {fg_actual_total} runs]"
         
         print(f"\n  {g['matchup']}")
         print(f"    TD Proj: {g['td_total']:.2f} -> Bet {g['td_bet']} {line}")
@@ -201,7 +208,8 @@ if __name__ == '__main__':
     dt_kst = datetime.now(timezone(timedelta(hours=9)))
     default_date = dt_kst.strftime('%m/%d/%Y')
     parser.add_argument('--date', type=str, default=default_date, help='Date for API lookup (default: today KST)')
+    parser.add_argument('--file', type=str, default=None, help='Specific markdown report file to grade')
     
     args = parser.parse_args()
     
-    grade_report(args.sportId, args.line, args.date)
+    grade_report(args.sportId, args.line, args.date, filepath_override=args.file)
