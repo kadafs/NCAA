@@ -9,7 +9,7 @@ from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
 from park_factors import get_park_factor
 from weather_f5 import get_weather_modifier
-
+from umpire_engine import get_umpire_for_game, load_umpire_profile
 
 def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
     """Call fn(*args, **kwargs), retrying up to `retries` times on network errors."""
@@ -146,11 +146,24 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
 
             # Check if lineups exist, otherwise MC uses league average generic lineups.
             lineups_status = "Confirmed" if lineups['away'] else "Projected (Generic)"
+            
+            # Fetch Umpire (MLB Only)
+            umpire_name = None
+            ump_profile = None
+            if sport_id == 1:
+                try:
+                    umpire_name = get_umpire_for_game(gid)
+                    if umpire_name:
+                        ump_profile = load_umpire_profile(umpire_name)
+                except Exception as e:
+                    print(f"  [Warning] Umpire fetch failed: {e}")
+
             mc = run_monte_carlo_f5(
                 lineups['away'], lineups['home'],
                 ap, hp, ap_fip, hp_fip,
                 iterations=10000, park_factor=pf, weather_context=weather, sport_id=sport_id,
-                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
+                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
+                umpire_profile=ump_profile
             )
             
             # 3. Betting Matrix Logic (Issue 2 fix)
@@ -229,6 +242,21 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
                 eff_pct = round((effective_pf - 1.0) * 100, 1)
                 sign = '+' if eff_pct >= 0 else ''
                 block_lines.append(f"🌤️ **Weather:** {weather['weather_label']} | Effective PF: {effective_pf}x ({sign}{eff_pct}%)")
+            
+            if umpire_name and ump_profile:
+                games = ump_profile.get('games_called', 0)
+                if games > 0:
+                    weight = games / (games + 40)
+                    k_mod = (ump_profile.get('raw_k_mod', 1.0) * weight) + (1.0 * (1.0 - weight))
+                    bb_mod = (ump_profile.get('raw_bb_mod', 1.0) * weight) + (1.0 * (1.0 - weight))
+                    k_pct = round((k_mod - 1.0) * 100, 1)
+                    bb_pct = round((bb_mod - 1.0) * 100, 1)
+                    k_sign = '+' if k_pct > 0 else ''
+                    bb_sign = '+' if bb_pct > 0 else ''
+                    block_lines.append(f"⚖️ **Umpire:** {umpire_name} (K: {k_sign}{k_pct}%, BB: {bb_sign}{bb_pct}%)")
+                else:
+                    block_lines.append(f"⚖️ **Umpire:** {umpire_name} (Neutral - Insufficient Data)")
+
             block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, FIP: {ap_fip}) vs {hp} ({hp_hand}HP, FIP: {hp_fip})")
             block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
             block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")

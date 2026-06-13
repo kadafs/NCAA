@@ -37,8 +37,8 @@ _DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'data', 'umpires.json')
 STABILIZATION_GAMES = 40
 
 # Rolling window: how many seasons back to blend
-_SEASONS = [2023, 2024, 2025]
-_SEASON_WEIGHTS = {2023: 0.20, 2024: 0.40, 2025: 0.40}
+_SEASONS = [2024, 2025, 2026]
+_SEASON_WEIGHTS = {2024: 0.20, 2025: 0.30, 2026: 0.50}
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +105,9 @@ def update_umpire_db(verbose: bool = False) -> None:
 
     # Season date ranges for regular season games
     season_dates = {
-        2023: ('2023-03-30', '2023-10-01'),
         2024: ('2024-03-20', '2024-09-29'),
         2025: ('2025-03-27', '2025-09-28'),
+        2026: ('2026-03-26', '2026-09-27'),
     }
 
     for season, weight in _SEASON_WEIGHTS.items():
@@ -228,7 +228,7 @@ def get_umpire_for_game(game_pk: int) -> str | None:
     try:
         feed = statsapi.get('game', {
             'gamePk': game_pk,
-            'fields': 'liveData,boxscore,officials'
+            'fields': 'liveData,boxscore,officials,official,fullName'
         })
         officials = feed.get('liveData', {}).get('boxscore', {}).get('officials', [])
         for o in officials:
