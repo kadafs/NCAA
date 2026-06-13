@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 import os
 import json
 import time
@@ -32,7 +33,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
         print(f"No games found for sportId={sport_id} on {date_str or 'today'}.")
         return
         
-    report_date = date_str or datetime.datetime.now().strftime('%Y-%m-%d')
+    report_date = date_str or get_mlb_now().strftime('%Y-%m-%d')
     print(f"Generating Consensus Report for {len(games)} games on {report_date}...")
     
     league_name = "MLB"
@@ -40,12 +41,12 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     elif sport_id == 12: league_name = "AA"
     elif sport_id == 13: league_name = "High-A"
     elif sport_id == 14: league_name = "Single-A"
-    date_label = date_str if date_str else datetime.datetime.now().strftime('%m/%d/%Y')
+    date_label = date_str if date_str else get_mlb_now().strftime('%m/%d/%Y')
     
     report_lines = []
     report_lines.append(f"# ⚾ V2 Hybrid F5 Prediction Report (Sport ID: {sport_id})")
     report_lines.append(f"**Date:** {date_label}")
-    report_lines.append(f"**Generated:** {datetime.datetime.now().strftime('%H:%M:%S')}")
+    report_lines.append(f"**Generated:** {get_mlb_now().strftime('%H:%M:%S')}")
     report_lines.append(f"**Model Mode:** {'Generic Lineups (FORCED)' if force_generic else 'Standard (Confirmed if available)'}")
     report_lines.append("")
     

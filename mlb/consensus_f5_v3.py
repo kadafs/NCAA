@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 import os
 import json
 import time
@@ -22,17 +23,45 @@ def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
             else:
                 raise
 
-def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
+def _purge_old_caches(date_str: str):
+    """Automatically deletes yesterday's transient daily caches to prevent disk bloat."""
+    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    if not os.path.exists(data_dir): return
+    
+    prefixes = ('batter_stats_', 'batter_hand_', 'speed_tier_', 'bullpen_rest_', 'league_fip_')
+    try:
+        for fname in os.listdir(data_dir):
+            if fname.startswith(prefixes) and fname.endswith('.json'):
+                if date_str not in fname:
+                    try:
+                        os.remove(os.path.join(data_dir, fname))
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
+
+def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, team_filter=None):
     """
     date_str: optional date in MM/DD/YYYY format. Defaults to today.
     force_generic: if True, skips fetching confirmed lineups and uses the generic league-average weights.
+    team_filter: string to filter games by away or home team name (case insensitive).
     """
     games = get_today_games(sport_id, date_str=date_str)
     if not games:
         print(f"No games found for sportId={sport_id} on {date_str or 'today'}.")
         return
         
-    report_date = date_str or datetime.datetime.now().strftime('%Y-%m-%d')
+    if team_filter:
+        t_lower = team_filter.lower()
+        games = [g for g in games if t_lower in g['away_team'].lower() or t_lower in g['home_team'].lower()]
+        if not games:
+            print(f"No games found matching team filter: '{team_filter}'")
+            return
+
+    report_date = date_str or get_mlb_now().strftime('%Y-%m-%d')
+    _purge_old_caches(report_date)
+    
     print(f"Generating Consensus Report for {len(games)} games on {report_date}...")
     
     league_name = "MLB"
@@ -40,12 +69,12 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     elif sport_id == 12: league_name = "AA"
     elif sport_id == 13: league_name = "High-A"
     elif sport_id == 14: league_name = "Single-A"
-    date_label = date_str if date_str else datetime.datetime.now().strftime('%m/%d/%Y')
+    date_label = date_str if date_str else get_mlb_now().strftime('%m/%d/%Y')
     
     report_lines = []
     report_lines.append(f"# ⚾ V3 Tuned F5 Prediction Report (Sport ID: {sport_id})")
     report_lines.append(f"**Date:** {date_label}")
-    report_lines.append(f"**Generated:** {datetime.datetime.now().strftime('%H:%M:%S')}")
+    report_lines.append(f"**Generated:** {get_mlb_now().strftime('%H:%M:%S')}")
     report_lines.append(f"**Model Mode:** {'Generic Lineups (FORCED)' if force_generic else 'Standard (Confirmed if available)'}")
     report_lines.append("")
     
@@ -231,7 +260,10 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     report_lines.extend(game_blocks)
         
     # Use dated filename for historical runs so they don't overwrite today's report
-    if date_str:
+    if team_filter:
+        safe_team = team_filter.replace(' ', '_').lower()
+        filename = f"{safe_team}_consensus_f5_v3_report.md"
+    elif date_str:
         safe_date = date_str.replace('/', '-')
         filename = f"consensus_f5_v3_report_{league_name}_{safe_date}.md"
     else:
@@ -253,6 +285,8 @@ if __name__ == "__main__":
     parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, 12=AA, 13=High-A, 14=Single-A')
     parser.add_argument('--date', type=str, default=None, help='Date in MM/DD/YYYY format (default: today)')
     parser.add_argument('--generic', action='store_true', help='Force the model to use Generic lineups even if confirmed lineups are available')
+    parser.add_argument('--team', nargs='+', type=str, default=None, help='Filter the report to only include games matching this team name')
     args = parser.parse_args()
     
-    generate_consensus_report(args.sportId, date_str=args.date, force_generic=args.generic)
+    team_str = " ".join(args.team) if args.team else None
+    generate_consensus_report(args.sportId, date_str=args.date, force_generic=args.generic, team_filter=team_str)

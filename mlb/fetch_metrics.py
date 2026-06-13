@@ -1,10 +1,11 @@
+from mlb_time import get_mlb_now
 import pybaseball
 from pybaseball import pitching_stats, team_batting
 from datetime import datetime
 
 def get_pitching_siera(year=None):
     if not year:
-        year = datetime.now().year
+        year = get_mlb_now().year
     print(f"Fetching pitching SIERA for {year}...")
     try:
         # qual=10 means minimum 10 innings pitched to filter out non-starters
@@ -21,7 +22,7 @@ def get_team_wrc_plus(year=None):
     Get Team wRC+. For simplicity in V1, we use overall team batting stats. 
     """
     if not year:
-        year = datetime.now().year
+        year = get_mlb_now().year
     print(f"Fetching team wRC+ for {year}...")
     try:
         stats = team_batting(year, year)

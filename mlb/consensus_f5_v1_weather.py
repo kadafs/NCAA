@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 consensus_f5_v1_weather.py
 ==========================
@@ -45,7 +46,7 @@ def generate_v1_weather_report(sport_id=1, date_str=None, force_generic=False):
         print(f"No games found for sportId={sport_id} on {date_str or 'today'}.")
         return
 
-    report_date = date_str or datetime.datetime.now().strftime('%Y-%m-%d')
+    report_date = date_str or get_mlb_now().strftime('%Y-%m-%d')
     print(f"\n[V1+Weather] Generating consensus report for {len(games)} games on {report_date}...")
     print(f"[V1+Weather] Model: Simple FIP/wRC+ | Sequential MC | WITH WEATHER | {'GENERIC LINEUPS' if force_generic else 'CONFIRMED LINEUPS'}\n")
 

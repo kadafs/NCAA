@@ -1,4 +1,5 @@
-﻿import random
+from mlb_time import get_mlb_now
+import random
 from fetch_lineups import get_batter_pa_rates, get_pitcher_pa_modifiers
 import statsapi
 
@@ -150,20 +151,20 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids, away_pitcher_name, home
     away_adjusted_lineup = []
     for pid in away_lineup_ids:
         raw_rates = get_batter_pa_rates(pid)
-        adjusted = adjust_batter_rates(raw_rates, home_pitcher_mods)
+        adjusted = adjust_batter_rates(raw_rates, home_pitcher_mods.get('R'))
         away_adjusted_lineup.append(adjusted)
         
     home_adjusted_lineup = []
     for pid in home_lineup_ids:
         raw_rates = get_batter_pa_rates(pid)
-        adjusted = adjust_batter_rates(raw_rates, away_pitcher_mods)
+        adjusted = adjust_batter_rates(raw_rates, away_pitcher_mods.get('R'))
         home_adjusted_lineup.append(adjusted)
         
     # If lineups aren't posted, use generic lineup, adjusted for pitchers
     if not away_adjusted_lineup:
-        away_adjusted_lineup = [adjust_batter_rates(b, home_pitcher_mods) for b in generate_generic_lineup()]
+        away_adjusted_lineup = [adjust_batter_rates(b, home_pitcher_mods.get('R')) for b in generate_generic_lineup()]
     if not home_adjusted_lineup:
-        home_adjusted_lineup = [adjust_batter_rates(b, away_pitcher_mods) for b in generate_generic_lineup()]
+        home_adjusted_lineup = [adjust_batter_rates(b, away_pitcher_mods.get('R')) for b in generate_generic_lineup()]
 
     # 3. Simulate Iterations
     away_wins = 0
@@ -228,7 +229,7 @@ if __name__ == '__main__':
     # Test MC Engine
     from fetch_lineups import get_lineup_for_game
     import datetime
-    today = datetime.datetime.now().strftime('%m/%d/%Y')
+    today = get_mlb_now().strftime('%m/%d/%Y')
     schedule = statsapi.schedule(date=today)
     if schedule:
         game = schedule[0]

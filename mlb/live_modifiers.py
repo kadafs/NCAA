@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 live_modifiers.py
 =================
@@ -145,7 +146,7 @@ def get_bullpen_availability(team_name: str, sport_id: int = 1) -> dict:
         return _empty_bullpen_result("No pitchers found on roster")
 
     # Check pitch counts over the last 2 calendar days
-    today   = datetime.date.today()
+    today   = get_mlb_now().date()
     cutoff  = today - datetime.timedelta(days=2)
 
     combined_recent_pitches: dict[int, int] = {}

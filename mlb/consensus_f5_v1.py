@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 consensus_f5_v1.py
 ==================
@@ -51,7 +52,7 @@ def generate_v1_report(sport_id=1, date_str=None, force_generic=False):
         print(f"No games found for sportId={sport_id} on {date_str or 'today'}.")
         return
 
-    report_date = date_str or datetime.datetime.now().strftime('%Y-%m-%d')
+    report_date = date_str or get_mlb_now().strftime('%Y-%m-%d')
     print(f"\n[V1] Generating consensus report for {len(games)} games on {report_date}...")
     print(f"[V1] Model: Simple FIP/wRC+ | Sequential MC | {'GENERIC LINEUPS' if force_generic else 'CONFIRMED LINEUPS'}\n")
 

@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 import statsapi
 import datetime
 import os
@@ -25,6 +26,17 @@ LEAGUE_AVG_OPS = {
     13: 0.730,  # High-A
     14: 0.730,  # Single-A
 }
+
+# MLB League Average FIP fluctuates by season
+LEAGUE_AVG_FIP_BY_SEASON = {
+    2023: 4.33,
+    2024: 4.15,
+    2025: 4.20,
+    2026: 4.25,
+}
+
+# Live dynamic rolling FIP cache to prevent repeating the 55-second API fetch
+_LIVE_LEAGUE_FIP_CACHE = {}
 FIP_CONSTANT    = 3.20    # standard FIP constant
 FALLBACK_FIP    = 4.50    # league-average fallback when data is missing
 FALLBACK_WRC    = 100.0   # league-average wRC+ fallback
@@ -57,6 +69,69 @@ def _calc_fip(stats):
     except Exception:
         return None
 
+def _fetch_live_league_fip(season):
+    """
+    Fetches the true dynamic league average FIP by aggregating all 30 MLB teams.
+    This takes ~55 seconds to run, so the result should be cached to disk per day.
+    """
+    if season in _LIVE_LEAGUE_FIP_CACHE:
+        return _LIVE_LEAGUE_FIP_CACHE[season]
+
+    import os, json, datetime
+    today_str = get_mlb_now().date().isoformat()
+    cache_path = os.path.join(os.path.dirname(__file__), '..', 'data', f'league_fip_{season}_{today_str}.json')
+    
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                val = json.load(f).get('fip')
+                if val:
+                    _LIVE_LEAGUE_FIP_CACHE[season] = val
+                    return val
+        except Exception:
+            pass
+
+    print(f"\n[SYSTEM] Fetching live MLB League FIP for {season} (This takes ~55 seconds)...")
+    try:
+        teams = statsapi.get('teams', {'sportId': 1, 'season': season}).get('teams', [])
+        total_hr, total_bb, total_hbp, total_k, total_ip = 0, 0, 0, 0, 0.0
+
+        for t in teams:
+            team_id = t['id']
+            try:
+                data = statsapi.get('team_stats', {'teamId': team_id, 'group': 'pitching', 'stats': 'season', 'season': season})
+                for stat_group in data.get('stats', []):
+                    splits = stat_group.get('splits', [])
+                    if splits:
+                        stats = splits[0].get('stat', {})
+                        total_hr += int(stats.get('homeRuns', 0))
+                        total_bb += int(stats.get('baseOnBalls', 0))
+                        total_hbp += int(stats.get('hitBatsmen', 0))
+                        total_k += int(stats.get('strikeOuts', 0))
+                        total_ip += _parse_ip(stats.get('inningsPitched', '0'))
+                        break
+            except Exception:
+                continue
+
+        if total_ip > 0:
+            league_fip = ((13 * total_hr) + (3 * (total_bb + total_hbp)) - (2 * total_k)) / total_ip + FIP_CONSTANT
+            _LIVE_LEAGUE_FIP_CACHE[season] = round(league_fip, 3)
+            print(f"[SYSTEM] Live {season} League FIP: {league_fip:.3f}\n")
+            
+            try:
+                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+                with open(cache_path, 'w', encoding='utf-8') as f:
+                    json.dump({'fip': _LIVE_LEAGUE_FIP_CACHE[season]}, f)
+            except Exception:
+                pass
+                
+            return _LIVE_LEAGUE_FIP_CACHE[season]
+            
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch live league FIP: {e}")
+    
+    return None
+
 def _calc_ops(stat_dict):
     """Return OPS float from a statsapi team stat dict, or None."""
     try:
@@ -75,7 +150,7 @@ def get_today_games(sport_id=1, date_str=None):
     else:
         # Timezone Fix: Subtract 6 hours so the baseball schedule day doesn't roll over 
         # to tomorrow at midnight local time while West Coast US games are still actively playing.
-        today = (datetime.datetime.now() - datetime.timedelta(hours=6)).strftime("%m/%d/%Y")
+        today = (get_mlb_now() - datetime.timedelta(hours=6)).strftime("%m/%d/%Y")
     print(f"Fetching schedule for {today} (sportId={sport_id})...")
     try:
         schedule = statsapi.schedule(sportId=sport_id, date=today)
@@ -162,21 +237,38 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
             return None, 0.0
 
     current_fip, current_ip = _fetch_season_fip(current_season)
+    prior_fip, prior_ip = _fetch_season_fip(prior_season)
 
-    if current_fip is None:
-        # No current-year data at all — try prior year
-        prior_fip, _ = _fetch_season_fip(prior_season)
-        return round(prior_fip, 2) if prior_fip else FALLBACK_FIP
+    # Bayesian Shrinkage (Regressing to the mean)
+    # This prevents single-game extreme volatility by weighting the pitcher's
+    # actual performance against the league average based on their total IP.
+    REGRESSION_WEIGHT = 50.0
+    
+    if sport_id == 1:
+        live_league_fip = _fetch_live_league_fip(current_season)
+        if live_league_fip is not None:
+            league_fip = live_league_fip
+        else:
+            league_fip = LEAGUE_AVG_FIP_BY_SEASON.get(current_season, 4.25)
+    else:
+        # Minor league run environments are slightly higher
+        league_fip = FALLBACK_FIP
 
-    if current_ip < MIN_RELIABLE_IP:
-        # Issue 5: small sample — blend 50/50 with prior year for stability
-        prior_fip, prior_ip = _fetch_season_fip(prior_season)
-        if prior_fip and prior_ip >= MIN_RELIABLE_IP:
-            blended = (current_fip * 0.50) + (prior_fip * 0.50)
-            return round(blended, 2)
+    total_ip = current_ip + (prior_ip if prior_fip else 0.0)
 
-    # Sufficient current-year sample — use it at full weight
-    return round(current_fip, 2)
+    if total_ip == 0:
+        return league_fip
+
+    weighted_perf = 0.0
+    if current_fip is not None:
+        weighted_perf += (current_fip * current_ip)
+    if prior_fip is not None:
+        weighted_perf += (prior_fip * prior_ip)
+
+    # Projected FIP = ((Pitcher FIP * Pitcher IP) + (League FIP * Regression Weight)) / (Pitcher IP + Regression Weight)
+    projected_fip = (weighted_perf + (league_fip * REGRESSION_WEIGHT)) / (total_ip + REGRESSION_WEIGHT)
+
+    return round(projected_fip, 2)
 
 
 def get_pitcher_projected_ip(pitcher_name, sport_id=1):
@@ -402,7 +494,7 @@ def main():
     print(f"Found {len(games)} games. Grading matchups...")
     
     report_lines = []
-    report_lines.append(f"# MLB F5 Predictions - {datetime.datetime.now().strftime('%Y-%m-%d')}")
+    report_lines.append(f"# MLB F5 Predictions - {get_mlb_now().strftime('%Y-%m-%d')}")
     report_lines.append("")
     
     for game in games:

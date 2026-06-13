@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 weather_f5.py
 =============
@@ -202,27 +203,27 @@ def _parse_wind_lateral(text: str):
 # ---------------------------------------------------------------------------
 def _temp_multiplier(temp_f: float) -> float:
     """
-    For every 10°F above 70°F: +3.5%
-    For every 10°F below 65°F: -3.5%
+    For every 10°F above 70°F: +1.5% (Dampened from 3.5%)
+    For every 10°F below 65°F: -1.5%
     65–70°F: neutral
-    Hard clamped to ±15%.
+    Hard clamped to ±10%.
     """
     if temp_f > 70:
-        adj = ((temp_f - 70) / 10) * 0.035
+        adj = ((temp_f - 70) / 10) * 0.015
     elif temp_f < 65:
-        adj = -((65 - temp_f) / 10) * 0.035
+        adj = -((65 - temp_f) / 10) * 0.015
     else:
         adj = 0.0
-    return round(1.0 + max(-0.15, min(0.15, adj)), 4)
+    return round(1.0 + max(-0.10, min(0.10, adj)), 4)
 
 
 def _wind_multiplier(wind_mph: float, wind_dir: str) -> float:
     """
-    Out tailwind  > 10 MPH : 1.08–1.15 (scales linearly up to 25 MPH)
-    Out tailwind  5–10 MPH : 1.03–1.07
-    In headwind   > 10 MPH : 0.88–0.93
-    In headwind   5–10 MPH : 0.93–0.97
-    Crosswind               : 0.99–1.01 (minor)
+    Out tailwind  > 10 MPH : 1.03–1.07 (scales linearly up to 25 MPH)
+    Out tailwind  5–10 MPH : 1.01–1.03
+    In headwind   > 10 MPH : 0.93–0.97
+    In headwind   5–10 MPH : 0.97–0.99
+    Crosswind               : 1.00 (minor)
     Calm (< 5 MPH)          : 1.00
     """
     if wind_dir in ('Indoor', 'Calm') or wind_mph < 5:
@@ -230,20 +231,20 @@ def _wind_multiplier(wind_mph: float, wind_dir: str) -> float:
 
     if wind_dir == 'Out':
         if wind_mph <= 10:
-            # Linear: 5→1.03, 10→1.07
-            adj = 0.03 + ((wind_mph - 5) / 5) * 0.04
+            # Linear: 5→1.01, 10→1.03
+            adj = 0.01 + ((wind_mph - 5) / 5) * 0.02
         else:
-            # Linear: 10→1.08, 25+→1.15 (capped)
-            adj = 0.08 + min((wind_mph - 10) / 15, 1.0) * 0.07
+            # Linear: 10→1.03, 25+→1.07 (capped)
+            adj = 0.03 + min((wind_mph - 10) / 15, 1.0) * 0.04
         return round(1.0 + adj, 4)
 
     if wind_dir == 'In':
         if wind_mph <= 10:
-            # Linear: 5→-0.03, 10→-0.07
-            adj = -(0.03 + ((wind_mph - 5) / 5) * 0.04)
+            # Linear: 5→-0.01, 10→-0.03
+            adj = -(0.01 + ((wind_mph - 5) / 5) * 0.02)
         else:
-            # Linear: 10→-0.08, 25+→-0.12 (capped)
-            adj = -(0.08 + min((wind_mph - 10) / 15, 1.0) * 0.04)
+            # Linear: 10→-0.03, 25+→-0.07 (capped)
+            adj = -(0.03 + min((wind_mph - 10) / 15, 1.0) * 0.04)
         return round(1.0 + adj, 4)
 
     if wind_dir == 'Cross':
@@ -518,7 +519,7 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
     import statsapi, datetime
-    today = datetime.datetime.now().strftime('%m/%d/%Y')
+    today = get_mlb_now().strftime('%m/%d/%Y')
     schedule = statsapi.schedule(sportId=1, date=today)
 
     print(f"\n{'='*60}")

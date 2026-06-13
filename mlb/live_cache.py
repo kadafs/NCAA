@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 live_cache.py
 =============
@@ -44,14 +45,16 @@ def _get_mop_up_pitcher_mods(pitcher_mods: dict) -> dict:
     is unavailable (Scenario D).
     """
     # MOP_UP_FIP_PENALTY is roughly +1.25 FIP, which equates to a hit_mod bump
-    # Since FIP 4.20 -> hit_mod 1.0, and hit_mod = (FIP / 4.20)^0.6
-    # Let's approximate the penalty by directly inflating the existing mods.
-    mop_up = dict(pitcher_mods)
-    mop_up['hit_mod'] = min(1.30, mop_up.get('hit_mod', 1.0) * 1.15)
-    mop_up['k']       = max(0.50, mop_up.get('k', 1.0) * 0.85)
-    mop_up['bb']      = min(1.50, mop_up.get('bb', 1.0) * 1.15)
-    mop_up['hr']      = min(1.50, mop_up.get('hr', 1.0) * 1.15)
-    return mop_up
+    # Let's approximate the penalty by directly inflating the existing mods
+    return {
+        hand: {
+            'hit_mod': min(1.30, metrics.get('hit_mod', 1.0) * 1.15),
+            'k':       max(0.50, metrics.get('k', 1.0) * 0.85),
+            'bb':      min(1.50, metrics.get('bb', 1.0) * 1.15),
+            'hr':      min(1.50, metrics.get('hr', 1.0) * 1.15)
+        }
+        for hand, metrics in pitcher_mods.items()
+    }
 
 
 def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
@@ -64,7 +67,7 @@ def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
         The full nested cache dictionary keyed by game_id.
     """
     if not date_str:
-        date_str = (datetime.datetime.now() - datetime.timedelta(hours=6)).strftime("%m/%d/%Y")
+        date_str = (get_mlb_now() - datetime.timedelta(hours=6)).strftime("%m/%d/%Y")
         
     print(f"Building LF5 Morning Cache for {date_str} (sportId={sport_id})...")
     schedule = statsapi.schedule(sportId=sport_id, date=date_str)
@@ -134,7 +137,13 @@ def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
             home_inning_mods = apply_ttto_penalty(home_p_mods, tto, temp_scaler)
             a_cdf_matrix = []
             for b in away_raw_lineup:
-                adj = adjust_batter_rates(b, home_inning_mods, batter_hand=b['hand'], pitcher_hand=home_p_hand, tto=tto, temp_scaler=temp_scaler)
+                if b.get('hand', 'R') == 'S':
+                    pitcher_mod_hand = 'R' if home_p_hand == 'L' else 'L'
+                else:
+                    pitcher_mod_hand = b.get('hand', 'R')
+                current_pitcher_mods = home_inning_mods.get(pitcher_mod_hand, home_inning_mods.get('R'))
+
+                adj = adjust_batter_rates(b, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_p_hand, tto=tto, temp_scaler=temp_scaler)
                 adj = apply_environmental_physics(adj, park_factor, weather_ctx, batter_hand=b['hand'])
                 a_cdf_matrix.append(create_cdf_array(adj))
             away_lineup_states.append(np.array(a_cdf_matrix))
@@ -143,7 +152,13 @@ def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
             away_inning_mods = apply_ttto_penalty(away_p_mods, tto, temp_scaler)
             h_cdf_matrix = []
             for b in home_raw_lineup:
-                adj = adjust_batter_rates(b, away_inning_mods, batter_hand=b['hand'], pitcher_hand=away_p_hand, tto=tto, temp_scaler=temp_scaler)
+                if b.get('hand', 'R') == 'S':
+                    pitcher_mod_hand = 'R' if away_p_hand == 'L' else 'L'
+                else:
+                    pitcher_mod_hand = b.get('hand', 'R')
+                current_pitcher_mods = away_inning_mods.get(pitcher_mod_hand, away_inning_mods.get('R'))
+
+                adj = adjust_batter_rates(b, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_p_hand, tto=tto, temp_scaler=temp_scaler)
                 adj = apply_environmental_physics(adj, park_factor, weather_ctx, batter_hand=b['hand'])
                 h_cdf_matrix.append(create_cdf_array(adj))
             home_lineup_states.append(np.array(h_cdf_matrix))
@@ -152,13 +167,25 @@ def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
         # Assumes TTO = 0 (relievers entering fresh)
         a_bullpen_matrix = []
         for b in away_raw_lineup:
-            adj = adjust_batter_rates(b, home_mop_up_mods, batter_hand=b['hand'], pitcher_hand=home_p_hand, tto=0, temp_scaler=temp_scaler)
+            if b.get('hand', 'R') == 'S':
+                pitcher_mod_hand = 'R' if home_p_hand == 'L' else 'L'
+            else:
+                pitcher_mod_hand = b.get('hand', 'R')
+            current_pitcher_mods = home_mop_up_mods.get(pitcher_mod_hand, home_mop_up_mods.get('R'))
+
+            adj = adjust_batter_rates(b, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_p_hand, tto=0, temp_scaler=temp_scaler)
             adj = apply_environmental_physics(adj, park_factor, weather_ctx, batter_hand=b['hand'])
             a_bullpen_matrix.append(create_cdf_array(adj))
             
         h_bullpen_matrix = []
         for b in home_raw_lineup:
-            adj = adjust_batter_rates(b, away_mop_up_mods, batter_hand=b['hand'], pitcher_hand=away_p_hand, tto=0, temp_scaler=temp_scaler)
+            if b.get('hand', 'R') == 'S':
+                pitcher_mod_hand = 'R' if away_p_hand == 'L' else 'L'
+            else:
+                pitcher_mod_hand = b.get('hand', 'R')
+            current_pitcher_mods = away_mop_up_mods.get(pitcher_mod_hand, away_mop_up_mods.get('R'))
+
+            adj = adjust_batter_rates(b, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_p_hand, tto=0, temp_scaler=temp_scaler)
             adj = apply_environmental_physics(adj, park_factor, weather_ctx, batter_hand=b['hand'])
             h_bullpen_matrix.append(create_cdf_array(adj))
             
@@ -193,7 +220,7 @@ def save_cache(cache: dict, date_str: str = None) -> str:
         os.makedirs(CACHE_DIR)
         
     if date_str is None:
-        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        date_str = get_mlb_now().strftime("%Y-%m-%d")
     else:
         # Convert mm/dd/yyyy to yyyy-mm-dd for filesystem
         try:

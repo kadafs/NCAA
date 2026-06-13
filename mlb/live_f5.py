@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 live_f5.py
 ==========
@@ -164,7 +165,7 @@ def run_daemon(sport_id: int = 1, interval_sec: int = 30, test_mode: bool = Fals
     print("=========================================================")
     
     # 1. Load or build morning cache
-    today_str = (datetime.datetime.now() - datetime.timedelta(hours=6)).strftime("%Y-%m-%d")
+    today_str = (get_mlb_now() - datetime.timedelta(hours=6)).strftime("%Y-%m-%d")
     cache_path = os.path.join(CACHE_DIR, f"lf5_cache_{today_str}.npz")
     
     cache = load_cache(cache_path)
@@ -213,7 +214,7 @@ def run_daemon(sport_id: int = 1, interval_sec: int = 30, test_mode: bool = Fals
 
                 if state['game_status'] == 'FINAL_F5':
                     finalized_games.add(gid_str)
-                    print(f"[{datetime.datetime.now().strftime('%H:%M:%S')}] Game {gid} F5 window closed. Stop monitoring.")
+                    print(f"[{get_mlb_now().strftime('%H:%M:%S')}] Game {gid} F5 window closed. Stop monitoring.")
                     continue
 
                 # ── Live Weather Injection (micro_climate) ───────────────────
@@ -322,7 +323,7 @@ def _safe_print(text: str):
 
 def _log_edge(away_team, home_team, state, res, line, odds, under_p, over_p, under_imp, over_imp, under_edge, over_edge, fatigue):
     """Formats and prints an actionable trading alert."""
-    ts = datetime.datetime.now().strftime('%H:%M:%S')
+    ts = get_mlb_now().strftime('%H:%M:%S')
     inn_str = f"{'Bot' if state['is_bottom_inning'] else 'Top'} {state['current_inning']}"
     outs = state['current_outs']
     score = f"{away_team} {state['scoreboard']['away_runs']} - {state['scoreboard']['home_runs']} {home_team}"

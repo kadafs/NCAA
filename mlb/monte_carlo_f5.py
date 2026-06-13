@@ -1,10 +1,15 @@
+from mlb_time import get_mlb_now
 import random
 import numpy as np
-from fetch_lineups import get_batter_pa_rates, get_pitcher_pa_modifiers, get_pitcher_hand, get_batter_hand
+from fetch_lineups import (
+    get_batter_pa_rates, get_pitcher_pa_modifiers,
+    get_batter_hand, get_pitcher_hand
+)
 from live_state import get_runner_speed_tier
+from umpire_engine import apply_umpire_sabermetric_layer
 import statsapi
 
-def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0):
+def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None):
     """
     Adjusts a batter's raw outcome probabilities based on the pitcher's modifiers.
     Applies dynamic TTTO Platoon Fatigue dilution (pitcher loses control against opp-hand when tired/hot).
@@ -23,13 +28,21 @@ def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitch
     adjusted['triple'] = batter_rates.get('triple', 0.005) * hit_mod
     
     # Dynamic Platoon Fatigue Dilution
-    # If the pitcher is fatigued (tto > 0), their disadvantage against opposite-handed batters widens
-    if batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
+    # True baseline platoon advantages are now perfectly handled by API StatSplits.
+    # This logic only applies an *additional* penalty when the pitcher is fatigued (tto > 0),
+    # simulating how a tired pitcher's breaking ball flattens out against opposite-handed batters.
+    if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
         # tto=1 (2nd time) gives +1.5% base boost. tto=2 gives +3% base boost. Multiplied by heat.
         platoon_boost = 1.0 + (tto * 0.015 * temp_scaler)
         adjusted['bb'] *= platoon_boost
         adjusted['hr'] *= platoon_boost
         adjusted['single'] *= platoon_boost
+        
+    # Safety Check: Enforce a strict Strikeout Floor (Trap 2 Fix)
+    # Prevents simulated K-rates from dropping so low that it causes an unrealistic defensive meltdown
+    min_k_floor = batter_rates.get('k', 0.22) * 0.70
+    if adjusted['k'] < min_k_floor:
+        adjusted['k'] = min_k_floor
     
     # Calculate the remaining probability as an out
     total_non_out = sum(adjusted.values())
@@ -54,49 +67,67 @@ def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_h
     
     # Defaults
     temp_modifier = 1.0
-    wind_modifier = 1.0
+    wind_mph = 0.0
+    wind_dir = "None"
     wind_lateral = None
-    wind_mph = 0
     
-    if weather_ctx and not weather_ctx.get('is_indoor'):
-        temp = weather_ctx.get('temp', 72)
-        wind_dir = weather_ctx.get('wind_dir', 'Calm')
-        wind_mph = weather_ctx.get('wind_mph', 0)
-        wind_lateral = weather_ctx.get('wind_lateral')
-        
-        # 1. Thermal Modifier: 70°F is neutral (1.0). Scales +/- 3.5% per 10 degrees.
-        temp_modifier = 1.0 + ((temp - 70) / 10) * 0.035
-        
-        # 2. Wind Modifier: Linearly scales up to a locked physical limit at 15+ MPH
-        if wind_dir == 'Out':
-            wind_modifier = 1.0 + (min(wind_mph, 15) * 0.01)   # Max Cap: 1.15x
-        elif wind_dir == 'In':
-            wind_modifier = 1.0 - (min(wind_mph, 15) * 0.008)  # Max Penalty: 0.88x
-
-    # 3. Apply the multiplicative rates to Home Runs
-    final_hr_prob = adjusted.get('hr', 0) * park_factor * temp_modifier * wind_modifier
-    
-    # 4. Asymmetrical Crosswind Adjustment for HRs (Multiplicative)
-    if wind_lateral and wind_mph >= 5:
-        # Crosswind magnitude: up to ~5% modifier at 20+ mph
-        cross_scale = 1.0 + min(wind_mph / 20.0, 1.0) * 0.05
-        
-        if batter_hand == 'L':
-            if wind_lateral == 'L-R':  # tailwind for pulled ball
-                final_hr_prob *= cross_scale
-            elif wind_lateral == 'R-L': # headwind for pulled ball
-                final_hr_prob /= cross_scale
+    if weather_ctx:
+        # 1. Enforce the Dome/Roof Constraint
+        if weather_ctx.get('is_indoor'):
+            wind_mph = 0.0
+            wind_dir = "None"
         else:
-            if wind_lateral == 'R-L':  # tailwind for pulled ball
-                final_hr_prob *= cross_scale
-            elif wind_lateral == 'L-R': # headwind for pulled ball
-                final_hr_prob /= cross_scale
-                
-    adjusted['hr'] = max(0.0001, final_hr_prob)
+            temp = weather_ctx.get('temp', 72)
+            wind_dir = weather_ctx.get('wind_dir', 'Calm')
+            wind_mph = float(weather_ctx.get('wind_mph', 0))
+            wind_lateral = weather_ctx.get('wind_lateral')
+            
+            # 1b. Thermal Modifier: 70°F is neutral (1.0). Scales +/- 1.5% per 10 degrees. (Dampened)
+            temp_modifier = 1.0 + ((temp - 70) / 10) * 0.015
+
+    # 2. Shift to Non-Linear Physics Scaling (Quadratic-Leaning Power Scale)
+    hr_wind_modifier = 1.0
     
-    # 5. Apply partial scaling to doubles (50%) and triples (30%)
-    double_scale = 1.0 + ((park_factor * temp_modifier * wind_modifier) - 1.0) * 0.5
-    triple_scale = 1.0 + ((park_factor * temp_modifier) - 1.0) * 0.3 # wind helps less
+    if wind_mph > 0.0 and wind_dir not in ("None", "Calm", "Indoor"):
+        # This prevents over-correcting minor breezes while capturing blasts. (Dampened)
+        base_effect = (wind_mph**1.2) * 0.003
+
+        # 3. Apply Directional Matrices
+        if wind_dir == 'Out':
+            hr_wind_modifier = min(1.10, 1.0 + base_effect)  # Capped at +10%
+        elif wind_dir == 'In':
+            hr_wind_modifier = max(0.90, 1.0 - (base_effect * 0.85))
+        
+        # 4. Asymmetrical Crosswind Physics Matrix
+        if wind_lateral == 'L-R' or wind_dir == 'L-R':
+            if batter_hand == 'L':  # Lefties pull with the wind vector
+                hr_wind_modifier += (base_effect * 0.4)
+            elif batter_hand == 'R': # Righties hit a crosswind pushing balls foul
+                hr_wind_modifier -= (base_effect * 0.3)
+                
+        elif wind_lateral == 'R-L' or wind_dir == 'R-L':
+            if batter_hand == 'R':  # Righties pull with the wind vector
+                hr_wind_modifier += (base_effect * 0.4)
+            elif batter_hand == 'L': # Lefties hit a crosswind pushing balls foul
+                hr_wind_modifier -= (base_effect * 0.3)
+
+    # Convert to deltas for Additive Stacking (Prevents exponential compounding)
+    temp_delta = temp_modifier - 1.0
+    wind_delta = hr_wind_modifier - 1.0
+    pf_delta = park_factor - 1.0
+    
+    # Cap the maximum environmental inflation to prevent out_rate collapse
+    total_env_delta = temp_delta + wind_delta + pf_delta
+    # Strict structural limits: weather/park cannot mathematically boost HRs by more than 15%
+    total_env_delta = max(-0.20, min(0.15, total_env_delta))
+    
+    final_hr_scalar = 1.0 + total_env_delta
+    adjusted['hr'] = max(0.0001, adjusted.get('hr', 0) * final_hr_scalar)
+    
+    # 5. Apply the scaling downward through the extra-base carry matrix
+    # Doubles receive 50% of the total aerodynamic drift, Triples receive 30%
+    double_scale = 1.0 + (total_env_delta * 0.5)
+    triple_scale = 1.0 + ((temp_delta + pf_delta) * 0.3) # wind helps less
     
     adjusted['double'] = max(0.0001, adjusted.get('double', 0) * double_scale)
     adjusted['triple'] = max(0.0001, adjusted.get('triple', 0) * triple_scale)
@@ -386,17 +417,17 @@ TTTO_HIT_PENALTY  = {0: 1.00, 1: 1.12, 2: 1.22}   # hit_mod multiplier per TTO
 TTTO_HR_PENALTY   = {0: 1.00, 1: 1.09, 2: 1.18}   # hr multiplier per TTO
 TTTO_K_REDUCTION  = {0: 1.00, 1: 0.93, 2: 0.87}   # k multiplier per TTO (decreasing)
 
+# Home field advantage: home batters score ~3% more runs on average league-wide
+# Applied as a uniform lift to all positive offensive outcomes for home lineup
+HOME_ADVANTAGE_FACTOR = 1.03
+
 
 def apply_ttto_penalty(pitcher_mods: dict, times_through: int, temp_scaler: float = 1.0) -> dict:
     """
-    Returns a new pitcher modifier dict degraded for the given TTO count.
-    times_through=0: first time through (innings 1-2)
-    times_through=1: second time through (innings 3-4)
-    times_through=2: third time through (inning 5+)
-    temp_scaler accelerates or decelerates fatigue based on weather.
+    Safely applies TTTO penalties across a dual-keyed dictionary 
+    without causing in-place reference mutations.
     """
     tto = min(times_through, 2)
-    degraded = dict(pitcher_mods)
     
     # Apply temp_scaler to the penalties (base 1.0, so we scale the part above 1.0)
     hit_pen = 1.0 + ((TTTO_HIT_PENALTY[tto] - 1.0) * temp_scaler)
@@ -405,23 +436,30 @@ def apply_ttto_penalty(pitcher_mods: dict, times_through: int, temp_scaler: floa
     k_red = 1.0 - ((1.0 - TTTO_K_REDUCTION[tto]) * temp_scaler)
     bb_pen = 1.0 + ((tto * 0.04) * temp_scaler)
 
-    degraded['hit_mod'] = round(pitcher_mods.get('hit_mod', 1.0) * hit_pen, 4)
-    degraded['hr']      = round(pitcher_mods.get('hr',       1.0) * hr_pen,  4)
-    degraded['k']       = round(pitcher_mods.get('k',        1.0) * k_red,   4)
-    degraded['bb']      = round(pitcher_mods.get('bb',       1.0) * bb_pen,  4)
-    return degraded
+    return {
+        hand: {
+            'hit_mod': round(metrics.get('hit_mod', 1.0) * hit_pen, 4),
+            'hr':      round(metrics.get('hr',       1.0) * hr_pen,  4),
+            'k':       round(metrics.get('k',        1.0) * k_red,   4),
+            'bb':      round(metrics.get('bb',       1.0) * bb_pen,  4)
+        }
+        for hand, metrics in pitcher_mods.items()
+    }
 
 def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
                        away_pitcher_name, home_pitcher_name,
                        away_pitcher_fip, home_pitcher_fip,
                        iterations=2000, park_factor=1.0, weather_context=None, sport_id=1,
-                       away_pitcher_hand=None, home_pitcher_hand=None):
+                       away_pitcher_hand=None, home_pitcher_hand=None,
+                       umpire_profile=None):
     """
     Runs Monte Carlo simulation for the F5 innings.
     Returns expected runs, win probabilities, and total distribution.
 
     away_pitcher_hand / home_pitcher_hand: 'L' or 'R'.
     If None, fetched automatically from the API.
+    umpire_profile: dict from umpire_engine.load_umpire_profile().
+    If None, no umpire adjustment is applied.
     """
     # 1. Fetch Pitcher Modifiers
     away_pitcher_id = get_pitcher_id(away_pitcher_name, sport_id)
@@ -446,16 +484,20 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
     # API calls are batched once per player per session — no per-iteration overhead.
     away_raw_lineup = []
     for pid in away_lineup_ids:
-        raw = get_batter_pa_rates(pid)
+        raw = get_batter_pa_rates(pid, pitcher_hand=home_pitcher_hand)
         raw['hand']       = get_batter_hand(int(pid))         # 'L', 'R' (switch→'R')
         raw['speed_tier'] = get_runner_speed_tier(int(pid))   # 0=Sluggish,1=Avg,2=Elite
+        # Umpire Layer: applied to raw talent rates BEFORE fatigue/environment
+        raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
         away_raw_lineup.append(raw)
 
     home_raw_lineup = []
     for pid in home_lineup_ids:
-        raw = get_batter_pa_rates(pid)
+        raw = get_batter_pa_rates(pid, pitcher_hand=away_pitcher_hand)
         raw['hand']       = get_batter_hand(int(pid))
         raw['speed_tier'] = get_runner_speed_tier(int(pid))
+        # Umpire Layer: applied to raw talent rates BEFORE fatigue/environment
+        raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
         home_raw_lineup.append(raw)
 
     # If lineups aren't posted, use platoon-aware generic lineup
@@ -479,23 +521,53 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
     away_lineup_states = []
     home_lineup_states = []
     
+    # HFA input scaling keys: only offensive contact/walk outcomes, NOT strikeouts.
+    # Applying at input level keeps k-rate ratios intact through the existing normalization.
+    _HFA_KEYS = ('single', 'double', 'triple', 'hr', 'bb')
+    _AWAY_SCALE = 2.0 - HOME_ADVANTAGE_FACTOR  # 0.97 — symmetric suppression
+
     for tto in range(3):
         away_inning_mods = apply_ttto_penalty(home_pitcher_mods, tto, temp_scaler)
         home_inning_mods = apply_ttto_penalty(away_pitcher_mods, tto, temp_scaler)
         
         a_cdf_matrix = []
         for b in away_raw_lineup:
-            adj = adjust_batter_rates(b, away_inning_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler)
+            if b.get('hand', 'R') == 'S':
+                pitcher_mod_hand = 'R' if home_pitcher_hand == 'L' else 'L'
+            else:
+                pitcher_mod_hand = b.get('hand', 'R')
+            current_pitcher_mods = home_inning_mods.get(pitcher_mod_hand, home_inning_mods.get('R'))
+
+            # Scale away batter input rates down symmetrically (0.97x) before normalization
+            b_scaled = dict(b)
+            for key in _HFA_KEYS:
+                if key in b_scaled:
+                    b_scaled[key] = b_scaled[key] * _AWAY_SCALE
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             a_cdf_matrix.append(create_cdf_array(adj))
         away_lineup_states.append(np.array(a_cdf_matrix))
         
         h_cdf_matrix = []
         for b in home_raw_lineup:
-            adj = adjust_batter_rates(b, home_inning_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler)
+            if b.get('hand', 'R') == 'S':
+                pitcher_mod_hand = 'R' if away_pitcher_hand == 'L' else 'L'
+            else:
+                pitcher_mod_hand = b.get('hand', 'R')
+            current_pitcher_mods = away_inning_mods.get(pitcher_mod_hand, away_inning_mods.get('R'))
+
+            # Scale home batter input rates up (1.03x) BEFORE adjust_batter_rates().
+            # This lets the existing out_rate normalization proportionally shrink ALL
+            # outcomes including k, preserving strikeout ratios correctly.
+            b_scaled = dict(b)
+            for key in _HFA_KEYS:
+                if key in b_scaled:
+                    b_scaled[key] = b_scaled[key] * HOME_ADVANTAGE_FACTOR
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             h_cdf_matrix.append(create_cdf_array(adj))
         home_lineup_states.append(np.array(h_cdf_matrix))
+
         
     away_speed_tiers = np.array([b['speed_tier'] for b in away_raw_lineup])
     home_speed_tiers = np.array([b['speed_tier'] for b in home_raw_lineup])
@@ -583,7 +655,7 @@ if __name__ == '__main__':
     # Test MC Engine
     from fetch_lineups import get_lineup_for_game
     import datetime
-    today = datetime.datetime.now().strftime('%m/%d/%Y')
+    today = get_mlb_now().strftime('%m/%d/%Y')
     schedule = statsapi.schedule(date=today)
     if schedule:
         game = schedule[0]

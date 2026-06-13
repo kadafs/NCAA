@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 live_state.py
 =============
@@ -61,6 +62,20 @@ def get_runner_speed_tier(player_id: int) -> int:
     if player_id in _SPRINT_SPEED_CACHE:
         return _SPRINT_SPEED_CACHE[player_id]
 
+    import os, json, datetime
+    today_str = get_mlb_now().date().isoformat()
+    cache_path = os.path.join(os.path.dirname(__file__), '..', 'data', f'speed_tier_{player_id}_{today_str}.json')
+    
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                tier = json.load(f).get('tier')
+                if tier is not None:
+                    _SPRINT_SPEED_CACHE[player_id] = tier
+                    return tier
+        except Exception:
+            pass
+
     if player_id in _ELITE_RUNNERS:
         tier = 2
     elif player_id in _SLUGGISH_RUNNERS:
@@ -86,6 +101,14 @@ def get_runner_speed_tier(player_id: int) -> int:
             tier = 1
 
     _SPRINT_SPEED_CACHE[player_id] = tier
+    
+    try:
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            json.dump({'tier': tier}, f)
+    except Exception:
+        pass
+        
     return tier
 
 
@@ -304,7 +327,7 @@ def detect_pitcher_change(prev_state: dict, curr_state: dict) -> bool:
 
 if __name__ == '__main__':
     import datetime
-    today = datetime.datetime.now().strftime('%m/%d/%Y')
+    today = get_mlb_now().strftime('%m/%d/%Y')
     schedule = statsapi.schedule(sportId=1, date=today)
     if schedule:
         game = schedule[0]

@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 """
 fetch_lineups.py
 Fetches today's confirmed batting lineups from the MLB StatsAPI.
@@ -37,6 +38,20 @@ def get_batter_hand(player_id: int) -> str:
     if player_id in _batter_hand_cache:
         return _batter_hand_cache[player_id]
         
+    import os, json, datetime
+    today_str = get_mlb_now().date().isoformat()
+    cache_path = os.path.join(os.path.dirname(__file__), '..', 'data', f'batter_hand_{player_id}_{today_str}.json')
+    
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                hand = json.load(f).get('hand')
+                if hand:
+                    _batter_hand_cache[player_id] = hand
+                    return hand
+        except Exception:
+            pass
+        
     try:
         data = statsapi.get('people', {'personIds': player_id})
         for p in data.get('people', []):
@@ -44,6 +59,14 @@ def get_batter_hand(player_id: int) -> str:
             # 'S' = switch hitter — treated as 'R' (no platoon penalty applies)
             hand = code if code in ('L', 'R') else 'R'
             _batter_hand_cache[player_id] = hand
+            
+            try:
+                os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+                with open(cache_path, 'w', encoding='utf-8') as f:
+                    json.dump({'hand': hand}, f)
+            except Exception as e:
+                print("ERROR SAVING BATTER CACHE:", e)
+                
             return hand
     except Exception:
         pass
@@ -71,7 +94,7 @@ def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
     return 'R'
 
 
-def get_batter_pa_rates(player_id):
+def get_batter_pa_rates(player_id, pitcher_hand=None):
     """
     Returns a dict of plate appearance outcome rates for a batter,
     blended across 2024/2025/2026 seasons using the same weights as run_daily_f5.py.
@@ -79,12 +102,26 @@ def get_batter_pa_rates(player_id):
     Keys: bb_rate, k_rate, hr_rate, single_rate, double_rate, triple_rate, out_rate
     All values are per-PA probabilities that sum to ~1.0.
     """
+    import os, json, datetime
+    today_str = get_mlb_now().date().isoformat()
+    cache_path = os.path.join(os.path.dirname(__file__), '..', 'data', f'batter_stats_{player_id}_{pitcher_hand}_{today_str}.json')
+    
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
     # Monte Carlo uses historical data to determine true talent
     MC_WEIGHTS = {
         2026: 0.40,
         2025: 0.40,
         2024: 0.20,
     }
+    CURRENT_SEASON = 2026
+    # Below this PA threshold, the current season sample is regressed toward
+    # the player's own prior-season baseline to prevent hot/cold streak noise.
+    PA_STABILIZATION_THRESHOLD = 250
 
     LEAGUE_AVG = {
         'bb':     0.085,
@@ -95,14 +132,19 @@ def get_batter_pa_rates(player_id):
         'triple': 0.005,
     }
 
-    weighted = {k: 0.0 for k in LEAGUE_AVG}
-    total_weight = 0.0
-
-    for season, weight in MC_WEIGHTS.items():
+    # --- Pass 1: Collect raw rates per season ---
+    season_rates = {}   # season -> {'rates': {...}, 'pa': int}
+    for season in MC_WEIGHTS:
         try:
+            if pitcher_hand and pitcher_hand.upper() in ('L', 'R'):
+                sit_code = 'vl' if pitcher_hand.upper() == 'L' else 'vr'
+                hydrate_str = f'stats(group=[hitting],type=statSplits,sitCodes={sit_code},season={season})'
+            else:
+                hydrate_str = f'stats(group=[hitting],type=season,season={season})'
+                
             raw = statsapi.get('people', {
                 'personIds': player_id,
-                'hydrate':   f'stats(group=[hitting],type=season,season={season})'
+                'hydrate':   hydrate_str
             })
             stats = {}
             for person in raw.get('people', []):
@@ -116,7 +158,7 @@ def get_batter_pa_rates(player_id):
 
             pa  = int(stats.get('plateAppearances', 0) or 0)
             if pa < 10:
-                continue  # too small a sample — skip this season
+                continue
 
             bb  = int(stats.get('baseOnBalls', 0) or 0)
             k   = int(stats.get('strikeOuts',  0) or 0)
@@ -126,20 +168,63 @@ def get_batter_pa_rates(player_id):
             trp = int(stats.get('triples',     0) or 0)
             sng = h - hr - dbl - trp
 
-            rates = {
-                'bb':     bb  / pa,
-                'k':      k   / pa,
-                'hr':     hr  / pa,
-                'single': max(sng, 0) / pa,
-                'double': dbl / pa,
-                'triple': trp / pa,
+            season_rates[season] = {
+                'pa': pa,
+                'rates': {
+                    'bb':     bb  / pa,
+                    'k':      k   / pa,
+                    'hr':     hr  / pa,
+                    'single': max(sng, 0) / pa,
+                    'double': dbl / pa,
+                    'triple': trp / pa,
+                }
             }
-            for k_name in weighted:
-                weighted[k_name] += rates[k_name] * weight
-            total_weight += weight
-
         except Exception:
             continue
+
+    # --- Pass 2: Build personal prior from prior seasons (2024 + 2025) ---
+    prior_rates = None
+    prior_pa_total = 0.0
+    prior_seasons = [s for s in season_rates if s != CURRENT_SEASON]
+    if prior_seasons:
+        prior_weighted = {k: 0.0 for k in LEAGUE_AVG}
+        prior_weight_sum = 0.0
+        for s in prior_seasons:
+            w = MC_WEIGHTS.get(s, 0.0)
+            for metric in prior_weighted:
+                prior_weighted[metric] += season_rates[s]['rates'][metric] * w
+            prior_weight_sum += w
+            prior_pa_total += season_rates[s]['pa']
+        if prior_weight_sum > 0:
+            prior_rates = {k: prior_weighted[k] / prior_weight_sum for k in prior_weighted}
+
+    # --- Pass 3: Bayesian regression on current season if below PA threshold ---
+    if CURRENT_SEASON in season_rates:
+        cur = season_rates[CURRENT_SEASON]
+        cur_pa = cur['pa']
+        if cur_pa < PA_STABILIZATION_THRESHOLD and prior_rates is not None:
+            # Regress 2026 raw rates toward the player's own 2024/2025 prior.
+            # The PA count controls how much trust we give the current-season sample.
+            # regressed = (raw * cur_pa + prior * threshold) / (cur_pa + threshold)
+            regressed = {}
+            for metric in LEAGUE_AVG:
+                raw_val   = cur['rates'][metric]
+                prior_val = prior_rates[metric]
+                regressed[metric] = (
+                    (raw_val * cur_pa) + (prior_val * PA_STABILIZATION_THRESHOLD)
+                ) / (cur_pa + PA_STABILIZATION_THRESHOLD)
+            season_rates[CURRENT_SEASON]['rates'] = regressed
+
+    # --- Pass 4: Apply MC_WEIGHTS blend across all available seasons ---
+    weighted = {k: 0.0 for k in LEAGUE_AVG}
+    total_weight = 0.0
+    for season, weight in MC_WEIGHTS.items():
+        if season not in season_rates:
+            continue
+        rates = season_rates[season]['rates']
+        for k_name in weighted:
+            weighted[k_name] += rates[k_name] * weight
+        total_weight += weight
 
     if total_weight == 0:
         # No data — return league averages
@@ -166,8 +251,13 @@ def get_pitcher_pa_modifiers(pitcher_fip, pitcher_player_id=None):
     LEAGUE_BB_PER_9 = 3.1
     LEAGUE_HR_PER_9 = 1.2
 
+    # Calculate global hit_mod based on overall FIP
+    default_hit_mod = (pitcher_fip / 4.20) ** 0.6 if pitcher_fip else 1.0
+    default_hit_mod = max(0.75, min(1.25, default_hit_mod))
+    default_profile = {'k': 1.0, 'bb': 1.0, 'hr': 1.0, 'hit_mod': default_hit_mod}
+
     if pitcher_player_id is None:
-        return {'k': 1.0, 'bb': 1.0, 'hr': 1.0}
+        return {'L': default_profile, 'R': default_profile}
 
     # Monte Carlo uses historical data to determine true talent
     MC_WEIGHTS = {
@@ -176,66 +266,105 @@ def get_pitcher_pa_modifiers(pitcher_fip, pitcher_player_id=None):
         2024: 0.20,
     }
 
-    k_total = bb_total = hr_total = ip_total = 0.0
-    w_total = 0.0
+    # 'L' = vs LHB, 'R' = vs RHB
+    split_stats = {
+        'L': {'k': 0.0, 'bb': 0.0, 'hr': 0.0, 'ip': 0.0, 'w': 0.0},
+        'R': {'k': 0.0, 'bb': 0.0, 'hr': 0.0, 'ip': 0.0, 'w': 0.0}
+    }
 
+    # 1. Fetch exact splits
     for season, weight in MC_WEIGHTS.items():
-        try:
-            raw = statsapi.get('people', {
-                'personIds': pitcher_player_id,
-                'hydrate':   f'stats(group=[pitching],type=season,season={season})'
-            })
-            stats = {}
-            for person in raw.get('people', []):
-                for grp in person.get('stats', []):
-                    splits = grp.get('splits', [])
-                    if splits:
-                        stats = splits[0].get('stat', {})
+        for hand, sit_code in [('L', 'vl'), ('R', 'vr')]:
+            try:
+                raw = statsapi.get('people', {
+                    'personIds': pitcher_player_id,
+                    'hydrate':   f'stats(group=[pitching],type=statSplits,sitCodes={sit_code},season={season})'
+                })
+                stats = {}
+                for person in raw.get('people', []):
+                    for grp in person.get('stats', []):
+                        splits = grp.get('splits', [])
+                        if splits:
+                            stats = splits[0].get('stat', {})
+                            break
+                    if stats:
                         break
-                if stats:
-                    break
 
-            ip_str = str(stats.get('inningsPitched', '0'))
-            parts  = ip_str.split('.')
-            ip     = float(parts[0]) + (float(parts[1]) / 3.0 if len(parts) > 1 else 0)
-            if ip < 1:
+                ip_str = str(stats.get('inningsPitched', '0'))
+                parts  = ip_str.split('.')
+                ip     = float(parts[0]) + (float(parts[1]) / 3.0 if len(parts) > 1 else 0)
+                
+                if ip < 2:  # Minimum innings to bother tracking for this season/split
+                    continue
+
+                split_stats[hand]['k']  += int(stats.get('strikeOuts',  0) or 0) * weight
+                split_stats[hand]['bb'] += int(stats.get('baseOnBalls', 0) or 0) * weight
+                split_stats[hand]['hr'] += int(stats.get('homeRuns',    0) or 0) * weight
+                split_stats[hand]['ip'] += ip * weight
+                split_stats[hand]['w']  += weight
+            except Exception:
                 continue
 
-            k_total  += int(stats.get('strikeOuts',  0) or 0) * weight
-            bb_total += int(stats.get('baseOnBalls', 0) or 0) * weight
-            hr_total += int(stats.get('homeRuns',    0) or 0) * weight
-            ip_total += ip * weight
-            w_total  += weight
-        except Exception:
-            continue
+    # 2. Fallback check: if we lack robust data for a split, fallback to global season totals
+    # We do a one-time global aggregate fetch if needed
+    needs_fallback = any(split_stats[h]['ip'] < 10 for h in ('L', 'R'))
+    if needs_fallback:
+        agg_stats = {'k': 0.0, 'bb': 0.0, 'hr': 0.0, 'ip': 0.0, 'w': 0.0}
+        for season, weight in MC_WEIGHTS.items():
+            try:
+                raw = statsapi.get('people', {
+                    'personIds': pitcher_player_id,
+                    'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+                })
+                stats = {}
+                for person in raw.get('people', []):
+                    for grp in person.get('stats', []):
+                        splits = grp.get('splits', [])
+                        if splits:
+                            stats = splits[0].get('stat', {})
+                            break
+                    if stats:
+                        break
+                ip_str = str(stats.get('inningsPitched', '0'))
+                parts  = ip_str.split('.')
+                ip     = float(parts[0]) + (float(parts[1]) / 3.0 if len(parts) > 1 else 0)
+                if ip < 1: continue
+                agg_stats['k']  += int(stats.get('strikeOuts',  0) or 0) * weight
+                agg_stats['bb'] += int(stats.get('baseOnBalls', 0) or 0) * weight
+                agg_stats['hr'] += int(stats.get('homeRuns',    0) or 0) * weight
+                agg_stats['ip'] += ip * weight
+                agg_stats['w']  += weight
+            except Exception:
+                continue
 
-    if ip_total == 0 or w_total == 0:
-        return {'k': 1.0, 'bb': 1.0, 'hr': 1.0}
+        for hand in ('L', 'R'):
+            if split_stats[hand]['ip'] < 10:
+                split_stats[hand] = agg_stats
 
-    pitcher_k_per9  = (k_total  / ip_total) * 9
-    pitcher_bb_per9 = (bb_total / ip_total) * 9
-    pitcher_hr_per9 = (hr_total / ip_total) * 9
+    # 3. Finalize ratios per hand
+    pitcher_splits = {}
+    for hand in ('L', 'R'):
+        st = split_stats[hand]
+        if st['ip'] == 0 or st['w'] == 0:
+            pitcher_splits[hand] = dict(default_profile)
+        else:
+            p_k_9  = (st['k']  / st['ip']) * 9
+            p_bb_9 = (st['bb'] / st['ip']) * 9
+            p_hr_9 = (st['hr'] / st['ip']) * 9
 
-    # hit_mod: captures a pitcher's overall ability to suppress contact quality.
-    # Neutral FIP is 4.20 (2022-2025 MLB avg). We use a damped ratio to prevent
-    # over-punishment from high-FIP pitchers stacking onto already-adjusted batter rates.
-    # FIP 3.00 → hit_mod ~0.86 (elite suppressor)
-    # FIP 4.20 → hit_mod ~1.00 (neutral)
-    # FIP 5.50 → hit_mod ~1.15 (bad, but not catastrophic)
-    # Cap at 1.25 max, 0.75 min.
-    hit_mod = (pitcher_fip / 4.20) ** 0.6
+            pitcher_splits[hand] = {
+                'k':  max(0.5, min(1.8, p_k_9  / LEAGUE_K_PER_9)),
+                'bb': max(0.5, min(2.0, p_bb_9 / LEAGUE_BB_PER_9)),
+                'hr': max(0.5, min(2.5, p_hr_9 / LEAGUE_HR_PER_9)),
+                'hit_mod': default_hit_mod
+            }
 
-    return {
-        'k':  max(0.5, min(1.8, pitcher_k_per9  / LEAGUE_K_PER_9)),
-        'bb': max(0.5, min(2.0, pitcher_bb_per9 / LEAGUE_BB_PER_9)),
-        'hr': max(0.5, min(2.5, pitcher_hr_per9 / LEAGUE_HR_PER_9)),
-        'hit_mod': max(0.75, min(1.25, hit_mod))
-    }
+    return pitcher_splits
 
 
 if __name__ == '__main__':
     import datetime
-    today = datetime.datetime.now().strftime('%m/%d/%Y')
+    today = get_mlb_now().strftime('%m/%d/%Y')
     schedule = statsapi.schedule(date=today)
     if schedule:
         game = schedule[0]
@@ -246,5 +375,5 @@ if __name__ == '__main__':
         print(f"  Home lineup IDs: {lineups['home'][:3]}...")
         if lineups['away']:
             pid = lineups['away'][0]
-            rates = get_batter_pa_rates(pid)
+            rates = get_batter_pa_rates(pid, pitcher_hand=pitcher_hand)
             print(f"  Batter {pid} PA rates: {rates}")

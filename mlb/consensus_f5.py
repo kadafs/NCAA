@@ -1,3 +1,4 @@
+from mlb_time import get_mlb_now
 import os
 import time
 import datetime
@@ -7,6 +8,8 @@ from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
 from park_factors import get_park_factor
 from weather_f5 import get_weather_modifier
+from umpire_engine import get_umpire_for_game, load_umpire_profile
+from bullpen_rest import get_adjusted_bullpen_fip
 
 
 def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
@@ -31,7 +34,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
         print(f"No games found for sportId={sport_id} on {date_str or 'today'}.")
         return
         
-    report_date = date_str or datetime.datetime.now().strftime('%Y-%m-%d')
+    report_date = date_str or get_mlb_now().strftime('%Y-%m-%d')
     print(f"Generating Consensus Report for {len(games)} games on {report_date}...")
     
     league_name = "MLB"
@@ -39,12 +42,12 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
     elif sport_id == 12: league_name = "AA"
     elif sport_id == 13: league_name = "High-A"
     elif sport_id == 14: league_name = "Single-A"
-    date_label = date_str if date_str else datetime.datetime.now().strftime('%m/%d/%Y')
+    date_label = date_str if date_str else get_mlb_now().strftime('%m/%d/%Y')
     
     report_lines = []
     report_lines.append(f"# ⚾ Consensus F5 Prediction Report (Sport ID: {sport_id})")
     report_lines.append(f"**Date:** {date_label}")
-    report_lines.append(f"**Generated:** {datetime.datetime.now().strftime('%H:%M:%S')}")
+    report_lines.append(f"**Generated:** {get_mlb_now().strftime('%H:%M:%S')}")
     report_lines.append(f"**Model Mode:** {'Generic Lineups (FORCED)' if force_generic else 'Standard (Confirmed if available)'}")
     report_lines.append("")
     
@@ -82,8 +85,8 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
             ap_ip = _retry_call(get_pitcher_projected_ip, ap, sport_id=sport_id)
             hp_ip = _retry_call(get_pitcher_projected_ip, hp, sport_id=sport_id)
 
-            away_bp = _retry_call(get_team_bullpen_fip, away, sport_id=sport_id)
-            home_bp = _retry_call(get_team_bullpen_fip, home, sport_id=sport_id)
+            away_bp = _retry_call(get_adjusted_bullpen_fip, away)
+            home_bp = _retry_call(get_adjusted_bullpen_fip, home)
 
             away_wrc = _retry_call(get_team_wrc_proxy, away, sport_id)
             home_wrc = _retry_call(get_team_wrc_proxy, home, sport_id)
@@ -94,6 +97,16 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
                 hp_hand = _retry_call(get_pitcher_hand, hp, sport_id=sport_id)
             else:
                 ap_hand, hp_hand = 'R', 'R'
+
+            # Umpire profile (MLB only — released ~1.5h before first pitch)
+            umpire_profile = None
+            if sport_id == 1:
+                umpire_name   = get_umpire_for_game(gid)
+                umpire_profile = load_umpire_profile(umpire_name)
+                if umpire_name:
+                    print(f"  Plate umpire: {umpire_name} | K-mod: {umpire_profile.get('raw_k_mod', 1.0):.3f} BB-mod: {umpire_profile.get('raw_bb_mod', 1.0):.3f}")
+                else:
+                    print(f"  Plate umpire: Not yet announced — using neutral profile.")
 
             # Issue 1 + 3 fix: pass park_factor and weather_multiplier separately
             # (not blended), and pass pitcher hands so platoon adjustment fires.
@@ -119,7 +132,8 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False):
                 lineups['away'], lineups['home'],
                 ap, hp, ap_fip, hp_fip,
                 iterations=10000, park_factor=pf, weather_context=weather, sport_id=sport_id,
-                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand
+                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
+                umpire_profile=umpire_profile
             )
             
             # 3. Betting Matrix Logic (Issue 2 fix)

@@ -25,6 +25,10 @@ _PLATOON_VS_RHP = 0.98   # avg team offense vs RHP (majority RHBs are same-hand)
 # Switch hitters → treated as neutral (no adjustment)
 _PLATOON_NEUTRAL = 1.00
 
+# Home field advantage: research shows home teams score ~3% more runs on average
+# Sources: FanGraphs home/away splits ~3-5% wRC+ boost across all MLB seasons
+HOME_ADVANTAGE_FACTOR = 1.03
+
 
 def _platoon_scaler(pitcher_hand: str) -> float:
     """Returns the team-level wRC+ platoon scaler given the opposing pitcher hand."""
@@ -62,9 +66,18 @@ def calculate_expected_runs(
                         Applied MULTIPLICATIVELY, not additively, to avoid
                         the physics violation in the old additive formula.
     """
-    # Pitching baseline: runs surrendered per 5 innings
-    starter_runs  = (starter_siera / 9.0) * proj_ip
-    bullpen_runs  = (bullpen_fip   / 9.0) * max(0.0, 5.0 - proj_ip)
+    # 1. Unearned Run Factor (ERA/SIERA/FIP -> RA9 conversion)
+    # Pitching metrics omit unearned runs, but RA9 is typically ~1.08x higher.
+    unearned_run_modifier = 1.08
+    
+    # 2. Adjust bullpen FIP for high-leverage situations
+    # F5 games use top middle relievers, outperforming season-long full-bullpen FIP.
+    bullpen_leverage_factor = 0.95
+    adjusted_bullpen_fip = bullpen_fip * bullpen_leverage_factor
+
+    # 3. Pitching baseline: explicit runs surrendered per 5 innings
+    starter_runs  = (starter_siera / 9.0) * unearned_run_modifier * proj_ip
+    bullpen_runs  = (adjusted_bullpen_fip / 9.0) * unearned_run_modifier * max(0.0, 5.0 - proj_ip)
     baseline_runs = starter_runs + bullpen_runs
 
     # Offensive quality multiplier (wRC+ 100 → 1.0x)
@@ -109,7 +122,8 @@ def grade_matchup(
     """
     # Platoon-adjusted offensive strength
     away_adj_wrc = away_wrc * _platoon_scaler(home_pitcher_hand)
-    home_adj_wrc = home_wrc * _platoon_scaler(away_pitcher_hand)
+    # Home field advantage applied to home offensive strength (~3% wRC+ boost)
+    home_adj_wrc = home_wrc * _platoon_scaler(away_pitcher_hand) * HOME_ADVANTAGE_FACTOR
 
     # Home pitcher + bullpen faces Away offense
     away_expected = calculate_expected_runs(
