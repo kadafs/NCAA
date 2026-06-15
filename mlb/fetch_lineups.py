@@ -5,6 +5,8 @@ Fetches today's confirmed batting lineups from the MLB StatsAPI.
 Falls back gracefully when lineups haven't been posted yet.
 """
 import statsapi
+import os
+import json
 
 
 def get_lineup_for_game(game_id):
@@ -23,6 +25,19 @@ def get_lineup_for_game(game_id):
 
 _batter_hand_cache = {}
 
+_player_map = {}
+_map_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'player_map.json')
+if os.path.exists(_map_path):
+    try:
+        import json
+        with open(_map_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            for name, info in data.items():
+                _player_map[str(info['id'])] = info
+                _player_map[name] = info
+    except Exception:
+        pass
+
 def get_batter_hand(player_id: int) -> str:
     """
     Returns 'L' or 'R' for a batter's bat side from the Stats API.
@@ -37,6 +52,10 @@ def get_batter_hand(player_id: int) -> str:
     """
     if player_id in _batter_hand_cache:
         return _batter_hand_cache[player_id]
+        
+    if str(player_id) in _player_map:
+        code = _player_map[str(player_id)]['bat_side']
+        return code if code in ('L', 'R') else 'R'
         
     import os, json, datetime
     today_str = get_mlb_now().date().isoformat()
@@ -82,6 +101,11 @@ def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
     """
     if not pitcher_name or pitcher_name.strip().upper() == 'TBD':
         return 'R'
+        
+    if pitcher_name in _player_map:
+        code = _player_map[pitcher_name]['pitch_hand']
+        return code.upper() if code else 'R'
+        
     try:
         results = statsapi.lookup_player(pitcher_name, sportId=sport_id)
         if results:

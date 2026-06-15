@@ -503,6 +503,8 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
     # If lineups aren't posted, use platoon-aware generic lineup
     if not away_raw_lineup:
         generic = generate_generic_lineup(pitcher_hand=home_pitcher_hand)
+        for i in range(len(generic)):
+            generic[i] = apply_umpire_sabermetric_layer(generic[i], umpire_profile)
         away_raw_lineup = generic
         away_is_generic = True
     else:
@@ -510,6 +512,8 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
 
     if not home_raw_lineup:
         generic = generate_generic_lineup(pitcher_hand=away_pitcher_hand)
+        for i in range(len(generic)):
+            generic[i] = apply_umpire_sabermetric_layer(generic[i], umpire_profile)
         home_raw_lineup = generic
         home_is_generic = True
     else:

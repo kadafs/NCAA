@@ -4,21 +4,60 @@ import time
 import csv
 import sys
 import os
+import statsapi
 
+import run_daily_f5
 from run_daily_f5 import get_today_games, get_pitcher_projected_ip
 from fetch_lineups import get_lineup_for_game, get_pitcher_hand
-from weather_f5 import get_weather_modifier
+from historical_weather import get_historical_weather
 from grade_f5 import grade_matchup
 from monte_carlo_f5 import run_monte_carlo_f5
 from park_factors import get_park_factor
 
 # Historical Point-in-time Fetchers
-from historical_fetcher import get_historical_pitcher_fip, get_historical_team_wrc, get_historical_team_bullpen_fip
+from historical_fetcher import (
+    get_historical_pitcher_fip,
+    get_historical_team_wrc,
+    get_historical_team_bullpen_fip,
+    get_historical_pitcher_avg_ip,
+)
 from historical_umpire import get_historical_umpire_profile
 
-def get_advice(line, td_total, under_prob):
+_umpire_cache = {}
+
+def get_historical_umpire_for_game(game_id):
+    """Fetches the actual home plate umpire for a historical game. Cached per game_id."""
+    if game_id in _umpire_cache:
+        return _umpire_cache[game_id]
+    try:
+        box = statsapi.get('game', {'gamePk': game_id})
+        officials = box.get('liveData', {}).get('boxscore', {}).get('officials', [])
+        for official in officials:
+            if official.get('officialType') == 'Home Plate':
+                name = official.get('official', {}).get('fullName', '')
+                _umpire_cache[game_id] = name
+                return name
+        _umpire_cache[game_id] = None
+        return None
+    except Exception:
+        _umpire_cache[game_id] = None
+        return None
+
+# Monkey-Patch requests.get with our Retry Session to survive MLB rate-limiting
+import requests
+from historical_fetcher import _session
+requests.get = _session.get
+
+# Monkey-Patch the live FIP fetcher so it returns a static 4.25 and avoids 30 API calls
+run_daily_f5._fetch_live_league_fip = lambda *args, **kwargs: 4.25
+
+def get_advice(line, td_total, under_prob, td_only=False):
     td_gap = line - td_total
     td_signal = 'UNDER' if td_gap > 0 else 'OVER'
+
+    if td_only:
+        # Grade purely on Top-Down vs the line, no confidence tiers
+        return td_signal, 'TD-ONLY'
 
     if under_prob >= 0.52:
         mc_signal = 'UNDER'
@@ -29,12 +68,27 @@ def get_advice(line, td_total, under_prob):
 
     if td_signal == mc_signal:
         mc_strong = under_prob >= 0.58 or under_prob <= 0.42
-        td_strong = abs(td_gap) >= 0.30
-        conf = 'HIGH' if (mc_strong and td_strong) else 'MODERATE'
-        return mc_signal, conf
-    return 'SKIP', 'NONE'
+        confidence = 'HIGH' if (mc_strong and td_strong) else 'MODERATE'
+        return mc_signal, confidence
+    return 'SKIP', 'LOW'
 
-def run_backtest(start_date_str, end_date_str, team_filter=None):
+def get_actual_f5_score(game_id):
+    """Fetches the actual runs scored in the first 5 innings."""
+    try:
+        box = statsapi.get('game', {'gamePk': game_id})
+        innings = box.get('liveData', {}).get('linescore', {}).get('innings', [])
+        
+        # Game was rained out or didn't reach 5 innings
+        if len(innings) < 5:
+            return None
+            
+        away_runs = sum([inning.get('away', {}).get('runs', 0) for inning in innings[:5]])
+        home_runs = sum([inning.get('home', {}).get('runs', 0) for inning in innings[:5]])
+        return away_runs + home_runs
+    except Exception:
+        return None
+
+def run_backtest(start_date_str, end_date_str, team_filter=None, td_only=False):
     start_date = datetime.datetime.strptime(start_date_str, "%Y-%m-%d").date()
     end_date = datetime.datetime.strptime(end_date_str, "%Y-%m-%d").date()
     
@@ -71,6 +125,8 @@ def run_backtest(start_date_str, end_date_str, team_filter=None):
             gid = g['game_id']
             ap = g['away_pitcher']
             hp = g['home_pitcher']
+            ap_id = g.get('away_pitcher_id')
+            hp_id = g.get('home_pitcher_id')
             
             if ap in ('TBD', '', None) or hp in ('TBD', '', None):
                 print("Skipping - TBD Pitchers")
@@ -89,17 +145,25 @@ def run_backtest(start_date_str, end_date_str, team_filter=None):
             away_wrc = get_historical_team_wrc(away, date_str)
             home_wrc = get_historical_team_wrc(home, date_str)
             
-            ap_ip = get_pitcher_projected_ip(ap, sport_id=1)
-            hp_ip = get_pitcher_projected_ip(hp, sport_id=1)
+            # Use rolling historical avg IP to avoid leaking current-season data
+            ap_ip = get_historical_pitcher_avg_ip(ap, date_str)
+            hp_ip = get_historical_pitcher_avg_ip(hp, date_str)
             
             ap_hand = get_pitcher_hand(ap, sport_id=1)
             hp_hand = get_pitcher_hand(hp, sport_id=1)
             
             pf = get_park_factor(g['venue_name'])
-            weather = get_weather_modifier(g['venue_name'], away_abbr=away, home_abbr=home)
-            weather_mult = weather.get('weather_multiplier', 1.0) if weather else 1.0
             
-            ump_profile = get_historical_umpire_profile("Ben May", date_str) # MOCKED
+            # Use historical point-in-time weather from the boxscore
+            weather = get_historical_weather(gid)
+            if not weather:
+                # Fallback to neutral if boxscore is missing weather
+                weather = {'temp_multiplier': 1.0, 'wind_multiplier': 1.0, 'weather_multiplier': 1.0, 'temp_fatigue_scaler': 1.0}
+            weather_mult = weather.get('weather_multiplier', 1.0)
+            
+            # Fetch the actual umpire who called this game
+            ump_name = get_historical_umpire_for_game(gid)
+            ump_profile = get_historical_umpire_profile(ump_name, date_str) if ump_name else None
             
             top_down = grade_matchup(
                 away, ap_fip, away_bp, ap_ip, away_wrc,
@@ -111,20 +175,33 @@ def run_backtest(start_date_str, end_date_str, team_filter=None):
             )
             td_total = top_down['projected_f5_total']
             
-            lineups = get_lineup_for_game(gid)
-            mc = run_monte_carlo_f5(
-                lineups['away'], lineups['home'],
-                ap, hp, ap_fip, hp_fip,
-                iterations=2000, park_factor=pf, weather_context=weather, sport_id=1,
-                away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
-                umpire_profile=ump_profile
-            )
+            # 2. Monte Carlo Model (Skip if TD-only)
+            if td_only:
+                mc = {'under_4_5_prob': 0.0}
+            else:
+                lineups = get_lineup_for_game(gid)
+                mc = run_monte_carlo_f5(
+                    lineups['away'], lineups['home'],
+                    ap_id, hp_id, ap_fip, hp_fip,
+                    iterations=10000, park_factor=pf, weather_context=weather, sport_id=1,
+                    away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
+                    umpire_profile=ump_profile
+                )
             
             # We assume a standard Vegas line of 4.5 for the backtest
-            signal, conf = get_advice(4.5, td_total, mc['under_4_5_prob'])
+            signal, conf = get_advice(4.5, td_total, mc['under_4_5_prob'], td_only=td_only)
             
+            actual_runs = get_actual_f5_score(gid)
+            grade = "PENDING"
+            
+            if actual_runs is not None and signal != 'SKIP':
+                if signal == 'OVER':
+                    grade = "WIN" if actual_runs > 4.5 else "LOSS"
+                elif signal == 'UNDER':
+                    grade = "WIN" if actual_runs < 4.5 else "LOSS"
+                    
             print(f"  TD: {td_total} | MC Under 4.5 Prob: {mc['under_4_5_prob']:.2f}")
-            print(f"  -> Signal: {signal} ({conf})")
+            print(f"  -> Signal: {signal} ({conf}) | Actual F5 Runs: {actual_runs} | Grade: {grade}")
             
             results.append({
                 'Date': date_str,
@@ -132,18 +209,40 @@ def run_backtest(start_date_str, end_date_str, team_filter=None):
                 'TD Total': td_total,
                 'MC Under 4.5 Prob': mc['under_4_5_prob'],
                 'Signal': signal,
-                'Confidence': conf
+                'Confidence': conf,
+                'Actual Runs': actual_runs,
+                'Grade': grade
             })
             
         current_date += delta
         
-    print("\n\nBacktest Complete.")
+    print("\n\n=============================================")
+    print(" BACKTEST COMPLETE: GRADING SUMMARY")
+    print("=============================================")
+    
+    wins = sum(1 for r in results if r['Grade'] == 'WIN')
+    losses = sum(1 for r in results if r['Grade'] == 'LOSS')
+    skips = sum(1 for r in results if r['Signal'] == 'SKIP')
+    high_wins = sum(1 for r in results if r['Grade'] == 'WIN' and r['Confidence'] == 'HIGH')
+    high_losses = sum(1 for r in results if r['Grade'] == 'LOSS' and r['Confidence'] == 'HIGH')
+    
+    total_bets = wins + losses
+    win_rate = (wins / total_bets * 100) if total_bets > 0 else 0
+    
+    high_bets = high_wins + high_losses
+    high_win_rate = (high_wins / high_bets * 100) if high_bets > 0 else 0
+    
+    print(f"Total Games Processed: {len(results)}")
+    print(f"Total Bets Placed: {total_bets} (Skipped {skips})")
+    print(f"Overall Record: {wins}-{losses} ({win_rate:.1f}%)")
+    print(f"HIGH Confidence Record: {high_wins}-{high_losses} ({high_win_rate:.1f}%)")
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--start-date', type=str, required=True, help="YYYY-MM-DD")
     parser.add_argument('--end-date', type=str, required=True, help="YYYY-MM-DD")
     parser.add_argument('--team', type=str, default=None)
+    parser.add_argument('--td-only', action='store_true', help="Bypass Monte Carlo and only grade based on Top-Down model")
     args = parser.parse_args()
     
-    run_backtest(args.start_date, args.end_date, args.team)
+    run_backtest(args.start_date, args.end_date, args.team, args.td_only)
