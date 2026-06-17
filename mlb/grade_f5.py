@@ -70,10 +70,9 @@ def calculate_expected_runs(
     # Pitching metrics omit unearned runs, but RA9 is typically ~1.08x higher.
     unearned_run_modifier = 1.08
     
-    # 2. Adjust bullpen FIP for high-leverage situations
-    # F5 games use top middle relievers, outperforming season-long full-bullpen FIP.
-    bullpen_leverage_factor = 0.95
-    adjusted_bullpen_fip = bullpen_fip * bullpen_leverage_factor
+    # 2. Bullpen FIP
+    # Note: caller should pass the rest-adjusted high-leverage FIP.
+    adjusted_bullpen_fip = bullpen_fip
 
     # 3. Pitching baseline: explicit runs surrendered per 5 innings
     starter_runs  = (starter_siera / 9.0) * unearned_run_modifier * proj_ip

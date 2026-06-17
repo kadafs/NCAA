@@ -1,9 +1,75 @@
 ---
 description: Daily Football BTTS + Draw prediction workflow
 ---
+
 # Football Prediction Workflow
 
-## Universal Runner (All Leagues — Recommended)
+---
+
+## 🏆 FIFA World Cup 2026 — Group Stage (Offline Predictor)
+
+**No API required.** All 72 group stage fixtures are embedded with Elo-based predictions.
+Results update automatically from live standings — no refreshes needed.
+
+```bash
+# Full group stage — all predictions + standings + export
+python run_wc2026.py --standings --export
+
+# Single group
+python run_wc2026.py --group A --standings
+
+# All games for one team
+python run_wc2026.py --team Spain
+
+# Today's upcoming games only
+python run_wc2026.py --upcoming
+
+# Completed games with result check
+python run_wc2026.py --completed
+
+# BTTS value picks only
+python run_wc2026.py --btts-only
+
+# Matchday filter
+python run_wc2026.py --matchday 2
+
+# Sharp mode + math trace
+python run_wc2026.py --group H --mode full --trace
+```
+
+### Updating Results Daily
+After games finish, feed in scores using the helper — no manual file editing:
+
+```bash
+# Single result
+python wc2026_update.py --result "Spain 2-0 Cabo Verde"
+
+# Multiple results at once
+python wc2026_update.py --result "Belgium 1-0 Egypt" --result "Saudi Arabia 0-1 Uruguay"
+
+# Interactive mode (paste multiple scores)
+python wc2026_update.py
+
+# Check what's already logged
+python wc2026_update.py --check
+
+# See today's fixtures
+python wc2026_update.py --today
+```
+
+Output file: `data/football/wc2026_predictions_YYYY-MM-DD.json`
+
+#start server 
+python wc2026_server.py
+
+
+> [!NOTE]
+> The WC2026 engine uses **Elo → xG → Poisson** math calibrated to international
+> tournament baselines (BTTS ~44%, avg total ~2.45 goals). All 72 fixtures span
+> Jun 11 – Jun 28. Matchday 3 games in each group are played simultaneously.
+
+---
+
 
 Runs predictions for **every football league** active today in a single command:
 

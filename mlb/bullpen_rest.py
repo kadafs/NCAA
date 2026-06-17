@@ -240,6 +240,8 @@ def _get_season_fip_for_relievers(pitcher_ids: list) -> dict:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+_adjusted_bullpen_cache = {}
+
 def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
     """
     Drop-in replacement for get_team_bullpen_fip() that applies real-world
@@ -255,10 +257,16 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
 
     Falls back to the static get_team_bullpen_fip() on any failure.
     """
+    global _adjusted_bullpen_cache
+    if team_name in _adjusted_bullpen_cache:
+        return _adjusted_bullpen_cache[team_name]
+        
     try:
         teams = statsapi.lookup_team(team_name, sportIds=1)
         if not teams:
-            return get_team_bullpen_fip(team_name)
+            res = get_team_bullpen_fip(team_name)
+            _adjusted_bullpen_cache[team_name] = res
+            return res
 
         team_id = teams[0]['id']
 

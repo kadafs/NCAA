@@ -1,22 +1,22 @@
 # ⚾ V3 Tuned F5 Prediction Report (Sport ID: 1)
-**Date:** 06/14/2026
-**Generated:** 11:54:20
-**Model Mode:** Standard (Confirmed if available)
+**Date:** 06/15/2026
+**Generated:** 22:20:31
+**Model Mode:** Generic Lineups (FORCED)
 
 ## 🚨 TOP PRIORITY GAMES 🚨
-- **Miami Marlins @ Pittsburgh Pirates:** High Confidence Edge
+- **Pittsburgh Pirates @ Athletics:** High Confidence Edge
 
 ---
 
-### 🚨 Miami Marlins (Max Meyer) @ Pittsburgh Pirates (Paul Skenes)
+### 🚨 Pittsburgh Pirates (Jared Jones) @ Athletics (J.T. Ginn)
 **🔥 FLAGGED:** High Confidence Edge
-🏙️ **PNC Park** (Park Factor: 0.95x)
-🌤️ **Weather:** 72F | Calm | Weather: +0.3% | Effective PF: 0.9528x (-4.7%)
-⚖️ **Umpire:** Stu Scheurwater (K: -0.7%, BB: +4.3%)
-- **Pitcher Matchup:** Max Meyer (RHP, FIP: 4.03) vs Paul Skenes (RHP, FIP: 2.77)
-- **Top-Down Projected F5 Total:** 3.95 Runs
-- **Monte Carlo Simulated F5 Total:** 3.57 Runs (Lineups: Confirmed)
+🏙️ **Sutter Health Park** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3% | Effective PF: 1.003x (+0.3%)
+⚖️ **Umpire:** Charlie Ramos (K: -1.7%, BB: +6.2%)
+- **Pitcher Matchup:** Jared Jones (RHP, FIP: 4.35) vs J.T. Ginn (RHP, FIP: 4.44)
+- **Top-Down Projected F5 Total:** 5.16 Runs
+- **Monte Carlo Simulated F5 Total:** 7.14 Runs (Lineups: Projected (Generic))
 - 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**
-  - If Line is **3.5** -> Skip | MC Under Probability: 56%
-  - If Line is **4.5** -> Bet **UNDER** (HIGH) | MC Under Probability: 68%
-  - If Line is **5.5** -> Bet **UNDER** (HIGH) | MC Under Probability: 78%
+  - If Line is **3.5** -> Bet **FULL GAME OVER** (e.g. 7.5) (HIGH) | MC Under Probability: 19%
+  - If Line is **4.5** -> Bet **FULL GAME OVER** (e.g. 8.5) (HIGH) | MC Under Probability: 28%
+  - If Line is **5.5** -> Skip | MC Under Probability: 38%

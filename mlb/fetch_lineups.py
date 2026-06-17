@@ -226,29 +226,53 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
     if CURRENT_SEASON in season_rates:
         cur = season_rates[CURRENT_SEASON]
         cur_pa = cur['pa']
-        if cur_pa < PA_STABILIZATION_THRESHOLD and prior_rates is not None:
-            # Regress 2026 raw rates toward the player's own 2024/2025 prior.
-            # The PA count controls how much trust we give the current-season sample.
-            # regressed = (raw * cur_pa + prior * threshold) / (cur_pa + threshold)
+        if cur_pa < PA_STABILIZATION_THRESHOLD:
+            # Determine the regression anchor.
+            # If the player has a personal prior (2024/2025), use it (credibility-weighted).
+            # If they have NO prior data (rookie / no MLB history), regress toward LEAGUE_AVG.
+            if prior_rates is not None:
+                # Credibility Fix: if the prior itself is built from very few PAs (e.g., 51 PAs
+                # across 2024+2025), it is statistically unreliable. We blend the prior toward
+                # league average proportionally before using it as the regression anchor.
+                # At prior_pa=150 → 50/50 blend. At prior_pa=0 → pure league avg. At prior_pa=300+ → trust prior.
+                MIN_PRIOR_PA = 150
+                prior_credibility = min(1.0, prior_pa_total / (prior_pa_total + MIN_PRIOR_PA))
+                regression_target = {
+                    metric: (prior_rates[metric] * prior_credibility) + (LEAGUE_AVG[metric] * (1.0 - prior_credibility))
+                    for metric in LEAGUE_AVG
+                }
+            else:
+                # No prior data at all (true rookie or player with no MLB history).
+                # Regress directly toward league average to prevent tiny-sample inflation
+                # (e.g., K=58% from 12 PAs, or HR=8% from a hot 20-PA stretch).
+                regression_target = LEAGUE_AVG
+
             regressed = {}
             for metric in LEAGUE_AVG:
                 raw_val   = cur['rates'][metric]
-                prior_val = prior_rates[metric]
+                prior_val = regression_target[metric]
                 regressed[metric] = (
                     (raw_val * cur_pa) + (prior_val * PA_STABILIZATION_THRESHOLD)
                 ) / (cur_pa + PA_STABILIZATION_THRESHOLD)
             season_rates[CURRENT_SEASON]['rates'] = regressed
 
     # --- Pass 4: Apply MC_WEIGHTS blend across all available seasons ---
+    # PA-credibility weighting: a season with 11 PA should not count the same as one with 400 PA.
+    # Each season's effective weight = its MC_WEIGHT × min(PA / PA_SATURATION, 1.0).
+    # This is Marcel projection methodology — small samples get proportionally downweighted.
+    PA_SATURATION = 250  # Full weight at 250+ PAs; smaller samples are downweighted
     weighted = {k: 0.0 for k in LEAGUE_AVG}
     total_weight = 0.0
     for season, weight in MC_WEIGHTS.items():
         if season not in season_rates:
             continue
+        season_pa = season_rates[season]['pa']
+        pa_credibility = min(1.0, season_pa / PA_SATURATION)
+        effective_weight = weight * pa_credibility
         rates = season_rates[season]['rates']
         for k_name in weighted:
-            weighted[k_name] += rates[k_name] * weight
-        total_weight += weight
+            weighted[k_name] += rates[k_name] * effective_weight
+        total_weight += effective_weight
 
     if total_weight == 0:
         # No data — return league averages

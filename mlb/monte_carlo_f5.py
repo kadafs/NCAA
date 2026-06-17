@@ -112,25 +112,36 @@ def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_h
                 hr_wind_modifier -= (base_effect * 0.3)
 
     # Convert to deltas for Additive Stacking (Prevents exponential compounding)
+    # Convert to deltas for Additive Stacking (Prevents exponential compounding)
     temp_delta = temp_modifier - 1.0
     wind_delta = hr_wind_modifier - 1.0
     pf_delta = park_factor - 1.0
     
-    # Cap the maximum environmental inflation to prevent out_rate collapse
+    # Total Environmental Factor (No artificial 15% cap anymore)
     total_env_delta = temp_delta + wind_delta + pf_delta
-    # Strict structural limits: weather/park cannot mathematically boost HRs by more than 15%
-    total_env_delta = max(-0.20, min(0.15, total_env_delta))
     
     final_hr_scalar = 1.0 + total_env_delta
     adjusted['hr'] = max(0.0001, adjusted.get('hr', 0) * final_hr_scalar)
     
-    # 5. Apply the scaling downward through the extra-base carry matrix
+    # 5. Apply the scaling downward through the extra-base carry matrix and BABIP (Singles)
     # Doubles receive 50% of the total aerodynamic drift, Triples receive 30%
     double_scale = 1.0 + (total_env_delta * 0.5)
     triple_scale = 1.0 + ((temp_delta + pf_delta) * 0.3) # wind helps less
     
+    # Singles (BABIP) are largely influenced by Park Factor (e.g. Coors huge outfield)
+    # They receive 60% of the Park Factor delta, and 30% of the temperature delta.
+    single_scale = 1.0 + (pf_delta * 0.6) + (temp_delta * 0.3)
+    
+    # Walks and Strikeouts: Pitchers struggle to locate in extreme heat/altitude
+    # If weather/pf is extreme (+), BBs go up slightly, Ks go down slightly.
+    bb_scale = 1.0 + (total_env_delta * 0.2)
+    k_scale = 1.0 - (total_env_delta * 0.15)
+    
     adjusted['double'] = max(0.0001, adjusted.get('double', 0) * double_scale)
     adjusted['triple'] = max(0.0001, adjusted.get('triple', 0) * triple_scale)
+    adjusted['single'] = max(0.0001, adjusted.get('single', 0) * single_scale)
+    adjusted['bb'] = max(0.0001, adjusted.get('bb', 0) * bb_scale)
+    adjusted['k'] = max(0.0001, adjusted.get('k', 0) * k_scale)
 
     # 6. Strict Structural Floor & Re-Normalization Sink
     total_non_out = sum(v for k, v in adjusted.items() if k != 'out_rate')
@@ -331,7 +342,9 @@ def get_pitcher_id(pitcher_name, sport_id=1):
 
 def generate_generic_lineup(pitcher_hand: str = 'R') -> list:
     """
-    Generates a platoon-aware generic 9-batter lineup.
+    Generates a platoon-aware generic 9-batter lineup using league-average
+    per-PA rates. Does NOT scale by team wRC+ — team offensive quality is
+    captured exclusively by the Top-Down model to avoid double-counting.
 
     When the opposing pitcher is RHP, left-handed batters have a platoon
     advantage (+BB, +HR, +hits, -K). When the pitcher is LHP, right-handed
@@ -343,19 +356,22 @@ def generate_generic_lineup(pitcher_hand: str = 'R') -> list:
       RHB vs LHP (advantage):  BB+10%, K-7%,  HR+12%, Hits+7%
       Same-hand (disadvantage): BB-8%, K+10%, HR-10%, Hits-6%
 
-    Slot weights (top-of-order boost, bottom-of-order penalty) unchanged.
+    Slot boosts/penalties reflect real MLB lineup construction:
+      Batters 1-4 (top of order): ×1.08 on all positive outcomes, K×0.94
+      Batters 7-9 (bottom of order): ×0.93 on all positive outcomes, K×1.07
     """
-    # Proportion of the lineup that has the platoon ADVANTAGE
-    # Typical MLB team stacks 5-6 opposite-handed bats vs any given SP
+    # Platoon advantage/disadvantage magnitudes match published MLB split averages.
+    # These are intentionally NOT toned down — team quality is handled by the
+    # Top-Down model, not here. Reducing them here caused under-projection.
     if pitcher_hand == 'R':
-        advantage_adj = {'bb': 1.12, 'k': 0.92, 'hr': 1.15,
-                         'single': 1.08, 'double': 1.08, 'triple': 1.08}
+        advantage_adj    = {'bb': 1.12, 'k': 0.92, 'hr': 1.15,
+                            'single': 1.08, 'double': 1.08, 'triple': 1.08}
         disadvantage_adj = {'bb': 0.92, 'k': 1.10, 'hr': 0.90,
                             'single': 0.94, 'double': 0.94, 'triple': 0.94}
         opp_hand = 'L'
     else:  # LHP on the mound
-        advantage_adj = {'bb': 1.10, 'k': 0.93, 'hr': 1.12,
-                         'single': 1.07, 'double': 1.07, 'triple': 1.07}
+        advantage_adj    = {'bb': 1.10, 'k': 0.93, 'hr': 1.12,
+                            'single': 1.07, 'double': 1.07, 'triple': 1.07}
         disadvantage_adj = {'bb': 0.92, 'k': 1.10, 'hr': 0.90,
                             'single': 0.94, 'double': 0.94, 'triple': 0.94}
         opp_hand = 'R'
@@ -368,21 +384,19 @@ def generate_generic_lineup(pitcher_hand: str = 'R') -> list:
 
     for i in range(9):
         batter = dict(base)
-        
+
         # Only top 3 slots get the opposite-hand (platoon advantage) assignment.
         # Real MLB lineups stack 3-4 platoon-favourable bats at the top of the order.
-        # 3/9 = 33% opposite-hand → weighted lineup OBP ≈ 0.319, matching MLB average.
         batter['hand'] = opp_hand if i < 3 else pitcher_hand
-        
-        # Apply strict platoon advantage/disadvantage based on assigned hand
+
+        # Apply platoon advantage/disadvantage based on assigned hand vs pitcher hand
         adj = advantage_adj if batter['hand'] == opp_hand else disadvantage_adj
-        
         for stat in ['bb', 'hr', 'single', 'double', 'triple']:
             batter[stat] *= adj[stat]
         batter['k'] *= adj['k']
 
-        # Batting order slot boost/penalty — kept modest (1.08x) to avoid
-        # over-inflation when compounded with platoon and pitcher FIP mods.
+        # Slot boost/penalty: reflects that better hitters bat at the top of the order.
+        # These magnitudes were validated against real confirmed lineup projections.
         if i < 4:    # Top of order (slots 1-4): better hitters
             for k in ['bb', 'hr', 'single', 'double', 'triple']:
                 batter[k] *= 1.08
@@ -394,7 +408,11 @@ def generate_generic_lineup(pitcher_hand: str = 'R') -> list:
             batter['k'] *= 1.07
             batter['speed_tier'] = 0 if i > 6 else 1  # 0: Sluggish, 1: Average
         else:
-            batter['speed_tier'] = 1  # 1: Average
+            batter['speed_tier'] = 1  # 1: Average (slots 5-6)
+
+        # NOTE: No wRC+ scaling here. Team offensive quality is accounted for
+        # by the Top-Down model (grade_matchup). Scaling here caused double-
+        # counting and large divergences vs confirmed lineup projections.
 
         batter['out_rate'] = max(0.0001, 1.0 - sum(
             v for key, v in batter.items() if key not in ('out_rate', 'hand', 'speed_tier')
@@ -416,6 +434,87 @@ def generate_generic_lineup(pitcher_hand: str = 'R') -> list:
 TTTO_HIT_PENALTY  = {0: 1.00, 1: 1.12, 2: 1.22}   # hit_mod multiplier per TTO
 TTTO_HR_PENALTY   = {0: 1.00, 1: 1.09, 2: 1.18}   # hr multiplier per TTO
 TTTO_K_REDUCTION  = {0: 1.00, 1: 0.93, 2: 0.87}   # k multiplier per TTO (decreasing)
+
+# ---------------------------------------------------------------------------
+# Bullpen Integration
+# ---------------------------------------------------------------------------
+
+_LEAGUE_FIP     = 4.30
+_BP_BASE_K      = 0.225
+_BP_BASE_BB     = 0.082
+_BP_BASE_HR     = 0.030
+_BP_BASE_SINGLE = 0.145
+_BP_BASE_DOUBLE = 0.040
+_BP_BASE_TRIPLE = 0.004
+
+_FIP_K_SENSITIVITY      = -0.012
+_FIP_BB_SENSITIVITY     =  0.008
+_FIP_HR_SENSITIVITY     =  0.005
+_FIP_SINGLE_SENSITIVITY =  0.010
+_FIP_DOUBLE_SENSITIVITY =  0.003
+_FIP_TRIPLE_SENSITIVITY =  0.001
+
+def fip_to_bullpen_pa_rates(fip: float) -> dict:
+    fip = max(2.80, min(6.50, fip))
+    delta = fip - _LEAGUE_FIP
+
+    k      = max(0.10, _BP_BASE_K      + (delta * _FIP_K_SENSITIVITY))
+    bb     = max(0.02, _BP_BASE_BB     + (delta * _FIP_BB_SENSITIVITY))
+    hr     = max(0.01, _BP_BASE_HR     + (delta * _FIP_HR_SENSITIVITY))
+    single = max(0.05, _BP_BASE_SINGLE + (delta * _FIP_SINGLE_SENSITIVITY))
+    double = max(0.01, _BP_BASE_DOUBLE + (delta * _FIP_DOUBLE_SENSITIVITY))
+    triple = max(0.00, _BP_BASE_TRIPLE + (delta * _FIP_TRIPLE_SENSITIVITY))
+
+    total = k + bb + hr + single + double + triple
+    if total > 0.95:
+        scale = 0.95 / total
+        k *= scale; bb *= scale; hr *= scale
+        single *= scale; double *= scale; triple *= scale
+        out_rate = 0.05
+    else:
+        out_rate = max(0.0001, 1.0 - total)
+
+    return {
+        'bb': bb, 'k': k, 'hr': hr, 'single': single, 'double': double,
+        'triple': triple, 'out_rate': out_rate, 'hand': 'R', 'speed_tier': 1,
+    }
+
+def _build_bullpen_lineup_states(
+    raw_lineup: list,
+    opposing_bp_fip: float,
+    park_factor: float = 1.0,
+    weather_context: dict = None,
+    umpire_profile: dict = None,
+    is_home: bool = False,
+) -> list:
+    bp_rates = fip_to_bullpen_pa_rates(opposing_bp_fip)
+    
+    def _bp_to_mods(bp: dict) -> dict:
+        return {
+            'hit_mod': bp['single'] / _BP_BASE_SINGLE,
+            'hr': bp['hr'] / _BP_BASE_HR,
+            'k': bp['k'] / _BP_BASE_K,
+            'bb': bp['bb'] / _BP_BASE_BB,
+        }
+    bp_mods = _bp_to_mods(bp_rates)
+    cdf_matrix = []
+    
+    _HFA_KEYS = ('single', 'double', 'triple', 'hr', 'bb')
+    _AWAY_SCALE = 2.0 - HOME_ADVANTAGE_FACTOR
+    
+    for b in raw_lineup:
+        b_adj = apply_umpire_sabermetric_layer(dict(b), umpire_profile)
+        if is_home:
+            for key in _HFA_KEYS:
+                if key in b_adj: b_adj[key] *= HOME_ADVANTAGE_FACTOR
+        else:
+            for key in _HFA_KEYS:
+                if key in b_adj: b_adj[key] *= _AWAY_SCALE
+                
+        adj = adjust_batter_rates(b_adj, bp_mods, batter_hand=b.get('hand', 'R'), pitcher_hand='R', tto=0)
+        adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b.get('hand', 'R'))
+        cdf_matrix.append(create_cdf_array(adj))
+    return [np.array(cdf_matrix)]
 
 # Home field advantage: home batters score ~3% more runs on average league-wide
 # Applied as a uniform lift to all positive offensive outcomes for home lineup
@@ -446,12 +545,27 @@ def apply_ttto_penalty(pitcher_mods: dict, times_through: int, temp_scaler: floa
         for hand, metrics in pitcher_mods.items()
     }
 
-def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
-                       away_pitcher_name, home_pitcher_name,
-                       away_pitcher_fip, home_pitcher_fip,
-                       iterations=2000, park_factor=1.0, weather_context=None, sport_id=1,
-                       away_pitcher_hand=None, home_pitcher_hand=None,
-                       umpire_profile=None):
+def run_monte_carlo_f5(
+    away_lineup_ids: list,
+    home_lineup_ids: list,
+    away_pitcher_name: str,
+    home_pitcher_name: str,
+    away_pitcher_fip: float,
+    home_pitcher_fip: float,
+    iterations: int = 10000,
+    park_factor: float = 1.0,
+    weather_context: dict = None,
+    sport_id: int = 1,
+    away_pitcher_hand: str = 'R',
+    home_pitcher_hand: str = 'R',
+    umpire_profile: dict = None,
+    away_wrc: float = 100.0,
+    home_wrc: float = 100.0,
+    away_bp_fip: float = None,
+    home_bp_fip: float = None,
+    away_projected_ip: float = 5.0,
+    home_projected_ip: float = 5.0,
+) -> dict:
     """
     Runs Monte Carlo simulation for the F5 innings.
     Returns expected runs, win probabilities, and total distribution.
@@ -500,21 +614,35 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
         raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
         home_raw_lineup.append(raw)
 
-    # If lineups aren't posted, use platoon-aware generic lineup
+    # If lineups aren't posted, use platoon-aware league-average generic lineup.
+    # The umpire layer is NOT applied to generic batters (statistical constructs,
+    # not real players with individual tendencies).
+    # wRC+ scaling IS now applied: differentiates team offensive quality without
+    # double-counting the Top-Down model (which handles pitcher-level suppression).
+    # Dampened square-root scaling keeps extremes in check: √(wRC+/100).
+    _WRC_KEYS = ('bb', 'hr', 'single', 'double', 'triple')
     if not away_raw_lineup:
-        generic = generate_generic_lineup(pitcher_hand=home_pitcher_hand)
-        for i in range(len(generic)):
-            generic[i] = apply_umpire_sabermetric_layer(generic[i], umpire_profile)
-        away_raw_lineup = generic
+        away_raw_lineup = generate_generic_lineup(pitcher_hand=home_pitcher_hand)
+        if away_wrc and away_wrc != 100.0:
+            wrc_scale = (away_wrc / 100.0) ** 0.5
+            for b in away_raw_lineup:
+                for k in _WRC_KEYS:
+                    b[k] *= wrc_scale
+                b['out_rate'] = max(0.0001, 1.0 - sum(
+                    v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
         away_is_generic = True
     else:
         away_is_generic = False
 
     if not home_raw_lineup:
-        generic = generate_generic_lineup(pitcher_hand=away_pitcher_hand)
-        for i in range(len(generic)):
-            generic[i] = apply_umpire_sabermetric_layer(generic[i], umpire_profile)
-        home_raw_lineup = generic
+        home_raw_lineup = generate_generic_lineup(pitcher_hand=away_pitcher_hand)
+        if home_wrc and home_wrc != 100.0:
+            wrc_scale = (home_wrc / 100.0) ** 0.5
+            for b in home_raw_lineup:
+                for k in _WRC_KEYS:
+                    b[k] *= wrc_scale
+                b['out_rate'] = max(0.0001, 1.0 - sum(
+                    v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
         home_is_generic = True
     else:
         home_is_generic = False
@@ -572,6 +700,16 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
             h_cdf_matrix.append(create_cdf_array(adj))
         home_lineup_states.append(np.array(h_cdf_matrix))
 
+    if away_bp_fip is not None and home_bp_fip is not None:
+        away_bp_states = _build_bullpen_lineup_states(
+            away_raw_lineup, home_bp_fip, park_factor, weather_context, umpire_profile, is_home=False
+        )
+        home_bp_states = _build_bullpen_lineup_states(
+            home_raw_lineup, away_bp_fip, park_factor, weather_context, umpire_profile, is_home=True
+        )
+    else:
+        away_bp_states = None
+        home_bp_states = None
         
     away_speed_tiers = np.array([b['speed_tier'] for b in away_raw_lineup])
     home_speed_tiers = np.array([b['speed_tier'] for b in home_raw_lineup])
@@ -597,12 +735,25 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
     active_games = np.ones(iterations, dtype=bool)
     
     for inning in range(5):
-        # Update TTO
-        away_tto += (away_idx < prev_away_idx).astype(np.int32)
-        home_tto += (home_idx < prev_home_idx).astype(np.int32)
-        # Cap TTO at 2
-        away_tto = np.minimum(away_tto, 2)
-        home_tto = np.minimum(home_tto, 2)
+        # Check if starters have exited based on projected IP
+        use_away_bp = (away_bp_states is not None) and ((inning + 1) > home_projected_ip)
+        use_home_bp = (home_bp_states is not None) and ((inning + 1) > away_projected_ip)
+        
+        current_away_states = away_bp_states if use_away_bp else away_lineup_states
+        current_home_states = home_bp_states if use_home_bp else home_lineup_states
+
+        # Update TTO only if facing starter
+        if not use_home_bp:
+            away_tto += (away_idx < prev_away_idx).astype(np.int32)
+            away_tto = np.minimum(away_tto, 2)
+        else:
+            away_tto.fill(0)
+            
+        if not use_away_bp:
+            home_tto += (home_idx < prev_home_idx).astype(np.int32)
+            home_tto = np.minimum(home_tto, 2)
+        else:
+            home_tto.fill(0)
         
         prev_away_idx[:] = away_idx
         prev_home_idx[:] = home_idx
@@ -616,7 +767,7 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
         
         # Top of inning (Away)
         simulate_half_inning_vectorized(
-            active_games, away_lineup_states, away_idx, outs, away_total_runs,
+            active_games, current_away_states, away_idx, outs, away_total_runs,
             base1, base2, base3, away_speed_tiers, home_tto
         )
         
@@ -629,7 +780,7 @@ def run_monte_carlo_f5(away_lineup_ids, home_lineup_ids,
         
         # Bottom of inning (Home)
         simulate_half_inning_vectorized(
-            active_games, home_lineup_states, home_idx, outs, home_total_runs,
+            active_games, current_home_states, home_idx, outs, home_total_runs,
             base1, base2, base3, home_speed_tiers, away_tto
         )
 

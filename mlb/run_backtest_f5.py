@@ -185,7 +185,8 @@ def run_backtest(start_date_str, end_date_str, team_filter=None, td_only=False):
                     ap_id, hp_id, ap_fip, hp_fip,
                     iterations=10000, park_factor=pf, weather_context=weather, sport_id=1,
                     away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
-                    umpire_profile=ump_profile
+                    umpire_profile=ump_profile,
+                    away_wrc=away_wrc, home_wrc=home_wrc
                 )
             
             # We assume a standard Vegas line of 4.5 for the backtest
