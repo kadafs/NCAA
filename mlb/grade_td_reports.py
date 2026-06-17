@@ -1,14 +1,16 @@
 """
 grade_td_reports.py
 ===================
-Grades the existing markdown reports, but PURELY based on the
-"Top-Down Projected F5 Total" against a specific line (e.g., 4.5).
+Grades the existing markdown reports based on:
+  1. "Top-Down Projected F5 Total" vs a specific F5 line (e.g., 4.5)
+  2. "Full Game Probs" (Over 7.5 / 8.5 / 9.5) — graded against the actual full game total.
 It does not re-run the model, making it incredibly fast.
 
 Usage:
     python mlb/grade_td_reports.py                          # grades MLB against 4.5
     python mlb/grade_td_reports.py --sportId 11             # grades AAA against 4.5
     python mlb/grade_td_reports.py --line 5.5               # grades against 5.5
+    python mlb/grade_td_reports.py --no-fg                  # skip Full Game grading
 """
 import time
 import os, re, sys, argparse
@@ -34,11 +36,14 @@ SPORT_LABELS = {1: 'MLB', 11: 'AAA', 12: 'AA'}
 # ---------------------------------------------------------------------------
 def parse_report(filepath, line=4.5):
     """
-    Parses a markdown report and extracts the Top-Down projection.
+    Parses a markdown report and extracts the Top-Down projection and Full Game Probs.
     Returns a list of dicts:
-        matchup  : "Away Team @ Home Team"
-        td_total : float
-        td_bet   : "OVER" / "UNDER" / "PUSH"
+        matchup      : "Away Team @ Home Team"
+        td_total     : float
+        td_bet       : "OVER" / "UNDER" / "PUSH"
+        fg_over_7_5  : float or None  (probability the full game goes OVER 7.5)
+        fg_over_8_5  : float or None
+        fg_over_9_5  : float or None
     """
     if not os.path.exists(filepath):
         return []
@@ -64,10 +69,10 @@ def parse_report(filepath, line=4.5):
         td_match = re.search(r'-\s*\*\*Top-Down Projected F5 Total:\*\*\s*(\d+\.?\d*)', block)
         if not td_match:
             continue
-            
+
         td_total = float(td_match.group(1))
-        
-        # Determine bet against the line
+
+        # Determine bet against the F5 line
         if td_total < line:
             td_bet = "UNDER"
         elif td_total > line:
@@ -75,10 +80,23 @@ def parse_report(filepath, line=4.5):
         else:
             td_bet = "PUSH"
 
+        # --- Parse Full Game Probs ---
+        # Format: **Full Game Probs:** Over 7.5: 75% | Over 8.5: 63% | Over 9.5: 50%
+        fg_match = re.search(
+            r'\*\*Full Game Probs:\*\*\s*Over 7\.5:\s*(\d+)%\s*\|\s*Over 8\.5:\s*(\d+)%\s*\|\s*Over 9\.5:\s*(\d+)%',
+            block
+        )
+        fg_over_7_5 = float(fg_match.group(1)) / 100 if fg_match else None
+        fg_over_8_5 = float(fg_match.group(2)) / 100 if fg_match else None
+        fg_over_9_5 = float(fg_match.group(3)) / 100 if fg_match else None
+
         games.append({
-            'matchup': matchup, 
-            'td_total': td_total,
-            'td_bet': td_bet
+            'matchup':    matchup,
+            'td_total':   td_total,
+            'td_bet':     td_bet,
+            'fg_over_7_5': fg_over_7_5,
+            'fg_over_8_5': fg_over_8_5,
+            'fg_over_9_5': fg_over_9_5,
         })
 
     return games
@@ -104,7 +122,30 @@ def find_game_id(matchup, schedule):
 # ---------------------------------------------------------------------------
 # Grade a single sport's report
 # ---------------------------------------------------------------------------
-def grade_report(sport_id, line, schedule_date, filepath_override=None):
+def _grade_fg_line(fg_actual_total, prob, fg_line):
+    """
+    Grade a single full-game over/under probability call.
+    If the model says prob > 0.50 it calls OVER, else UNDER.
+    Returns: ('WIN'|'LOSS'|'PUSH'|'PENDING', 'OVER'|'UNDER'|'PENDING')
+    """
+    if prob is None:
+        return 'PENDING', 'N/A'
+    model_call = 'OVER' if prob >= 0.50 else 'UNDER'
+    if fg_actual_total is None:
+        return 'PENDING', model_call
+    if fg_actual_total > fg_line:
+        actual = 'OVER'
+    elif fg_actual_total < fg_line:
+        actual = 'UNDER'
+    else:
+        actual = 'PUSH'
+
+    if actual == 'PUSH':
+        return 'PUSH', model_call
+    return ('WIN' if model_call == actual else 'LOSS'), model_call
+
+
+def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg=True):
     label = SPORT_LABELS.get(sport_id, f'Sport {sport_id}')
     filepath = filepath_override if filepath_override else REPORT_FILES.get(sport_id)
 
@@ -113,7 +154,7 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None):
         return
 
     print(f"\n{'='*60}")
-    print(f"  {label} TOP-DOWN GRADER (Line: {line})")
+    print(f"  {label} TOP-DOWN GRADER (F5 Line: {line})")
     print(f"{'='*60}")
     print(f"  Report: {os.path.basename(filepath)}")
     print(f"  Date:   {schedule_date}")
@@ -137,14 +178,23 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None):
         print(f"  No Top-Down projections parsed from report.")
         return
 
+    # F5 counters
     wins = 0
     losses = 0
     skips = 0
     pending = 0
 
+    # Full Game counters per line
+    fg_results = {
+        7.5: {'wins': 0, 'losses': 0, 'pushes': 0, 'pending': 0},
+        8.5: {'wins': 0, 'losses': 0, 'pushes': 0, 'pending': 0},
+        9.5: {'wins': 0, 'losses': 0, 'pushes': 0, 'pending': 0},
+    }
+    fg_prob_keys = {7.5: 'fg_over_7_5', 8.5: 'fg_over_8_5', 9.5: 'fg_over_9_5'}
+
     for g in games:
         gid = find_game_id(g['matchup'], schedule)
-        
+
         actual_total = None
         fg_actual_total = None
         if gid:
@@ -161,7 +211,8 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None):
                     fg_actual_total = a_runs_fg + h_runs_fg
             except:
                 pass
-        
+
+        # --- F5 grading ---
         if actual_total is None:
             actual_result = "N/A"
             verdict = "[PENDING]"
@@ -173,7 +224,7 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None):
                 actual_result = "OVER"
             else:
                 actual_result = "PUSH"
-                
+
             if g['td_bet'] == "PUSH" or actual_result == "PUSH":
                 verdict = "[PUSH] "
                 skips += 1
@@ -183,33 +234,67 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None):
             else:
                 verdict = "[LOSS] "
                 losses += 1
-                
-        actual_str = f"{actual_total} runs ({actual_result})" if actual_total is not None else "N/A"
-        if g['td_bet'] == "OVER" and fg_actual_total is not None:
-            actual_str += f"  [Full Game: {fg_actual_total} runs]"
-        
-        print(f"\n  {g['matchup']}")
-        print(f"    TD Proj: {g['td_total']:.2f} -> Bet {g['td_bet']} {line}")
-        print(f"    Actual : {actual_str}  |  {verdict}")
 
+        actual_str = f"{actual_total} runs ({actual_result})" if actual_total is not None else "N/A"
+        fg_str = f"  [Full Game: {fg_actual_total} runs]" if fg_actual_total is not None else ""
+
+        print(f"\n  {g['matchup']}")
+        print(f"    TD Proj : {g['td_total']:.2f} -> Bet {g['td_bet']} {line}")
+        print(f"    F5 Act  : {actual_str}  |  {verdict}{fg_str}")
+
+        # --- Full Game grading ---
+        if grade_fg:
+            fg_line_labels = []
+            for fg_line in [7.5, 8.5, 9.5]:
+                prob = g.get(fg_prob_keys[fg_line])
+                result, model_call = _grade_fg_line(fg_actual_total, prob, fg_line)
+
+                if result == 'PENDING':
+                    fg_results[fg_line]['pending'] += 1
+                elif result == 'WIN':
+                    fg_results[fg_line]['wins'] += 1
+                elif result == 'LOSS':
+                    fg_results[fg_line]['losses'] += 1
+                elif result == 'PUSH':
+                    fg_results[fg_line]['pushes'] += 1
+
+                prob_str = f"{int(prob*100)}%" if prob is not None else "N/A"
+                fg_line_labels.append(f"O{fg_line} {model_call}({prob_str}) [{result}]")
+
+            print(f"    FG Probs: {' | '.join(fg_line_labels)}")
+
+    # --- F5 Summary ---
     graded = wins + losses
     win_pct = (wins / graded * 100) if graded > 0 else 0
-    print(f"\n  ------------------------------------")
-    print(f"  Summary -> Wins: {wins} | Losses: {losses} | Pushes/Skips: {skips} | Pending: {pending}")
-    print(f"  Win Rate -> {win_pct:.1f}% ({wins}/{graded} graded picks)\n")
+    print(f"\n  {'-'*56}")
+    print(f"  F5 Summary  -> Wins: {wins} | Losses: {losses} | Pushes: {skips} | Pending: {pending}")
+    print(f"  F5 Win Rate -> {win_pct:.1f}% ({wins}/{graded} graded)")
+
+    # --- Full Game Summary ---
+    if grade_fg:
+        print(f"\n  {'-'*56}")
+        print(f"  FULL GAME PROBS Summary")
+        for fg_line in [7.5, 8.5, 9.5]:
+            r = fg_results[fg_line]
+            fg_graded = r['wins'] + r['losses']
+            fg_pct = (r['wins'] / fg_graded * 100) if fg_graded > 0 else 0
+            print(f"    Over {fg_line}: {fg_pct:.1f}% ({r['wins']}W/{r['losses']}L | "
+                  f"Pushes: {r['pushes']} | Pending: {r['pending']})")
+    print()
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Grade markdown reports based strictly on Top-Down projection vs a specific line')
+    parser = argparse.ArgumentParser(description='Grade markdown reports based on Top-Down F5 projection AND Full Game Probs')
     parser.add_argument('--sportId', type=int, default=1, help='Grade a specific sport (1=MLB, 11=AAA, 12=AA)')
     parser.add_argument('--line', type=float, default=4.5, help='The F5 line to grade against (default 4.5)')
-    
+    parser.add_argument('--no-fg', action='store_true', help='Skip Full Game Probs grading')
+
     # KST date for default (matching typical daily flow)
     dt_kst = datetime.now(timezone(timedelta(hours=9)))
     default_date = dt_kst.strftime('%m/%d/%Y')
     parser.add_argument('--date', type=str, default=default_date, help='Date for API lookup (default: today KST)')
     parser.add_argument('--file', type=str, default=None, help='Specific markdown report file to grade')
-    
+
     args = parser.parse_args()
-    
-    grade_report(args.sportId, args.line, args.date, filepath_override=args.file)
+
+    grade_report(args.sportId, args.line, args.date, filepath_override=args.file, grade_fg=not args.no_fg)

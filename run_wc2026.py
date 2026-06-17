@@ -473,6 +473,12 @@ ACTUAL_RESULTS = {
 
         ("France",	"Senegal"):		(3, 1),   # Jun 16 ✓
 
+        ("Iraq",	"Norway"):		(1, 4),   # Jun 17 ✓
+
+        ("Argentina",	"Algeria"):		(3, 0),   # Jun 17 ✓
+
+        ("Austria",	"Jordan"):		(3, 1),   # Jun 17 ✓
+
     # ─── MATCHDAY 3 RESULTS (add as they come in) ────────────────────────────
 }
 

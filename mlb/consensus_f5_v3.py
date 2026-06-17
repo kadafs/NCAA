@@ -172,9 +172,42 @@ def process_single_game(args):
         result['raw_json_data'] = {
             "away_team": away,
             "home_team": home,
-            "adv_3_5": adv_3_5,
-            "adv_4_5": adv_4_5,
-            "adv_5_5": adv_5_5,
+            "pitchers": {
+                "away": {"name": ap, "hand": ap_hand, "fip": ap_fip},
+                "home": {"name": hp, "hand": hp_hand, "fip": hp_fip}
+            },
+            "environment": {
+                "venue": venue,
+                "park_factor": pf,
+                "weather": weather,
+                "effective_pf": effective_pf,
+                "umpire": {
+                    "name": umpire_name,
+                    "profile": ump_profile
+                } if umpire_name else None
+            },
+            "lineups_status": lineups_status,
+            "predictions": {
+                "top_down_f5": td_total,
+                "mc_f5": mc.get('mc_total_runs'),
+                "mc_f5_away": mc.get('away_f5_runs') or mc.get('away_mc_runs'),
+                "mc_f5_home": mc.get('home_f5_runs') or mc.get('home_mc_runs'),
+                "mc_late": mc.get('late_total'),
+                "mc_full_game": mc.get('full_game_total')
+            },
+            "probabilities": {
+                "under_3_5": mc.get('under_3_5_prob'),
+                "under_4_5": mc.get('under_4_5_prob'),
+                "under_5_5": mc.get('under_5_5_prob'),
+                "full_over_7_5": mc.get('full_over_7_5_prob'),
+                "full_over_8_5": mc.get('full_over_8_5_prob'),
+                "full_over_9_5": mc.get('full_over_9_5_prob')
+            },
+            "action_matrix": {
+                "adv_3_5": adv_3_5,
+                "adv_4_5": adv_4_5,
+                "adv_5_5": adv_5_5
+            },
             "version": "v3"
         }
         
@@ -325,11 +358,28 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(report_lines))
         
-    json_output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f".{filename.replace('.md', '.json')}")
+    # Save structured JSON payload for the frontend data bridge
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'baseball')
+    os.makedirs(data_dir, exist_ok=True)
+    
+    # Always append date. Use report_date defined earlier in the function.
+    mode_suffix = "generic" if force_generic else "confirmed"
+    json_filename = f"universal_predictions_{report_date}-{mode_suffix}.json"
+    json_output_path = os.path.join(data_dir, json_filename)
+    
+    # Frontend wrapper format expects {"predictions": [...]}
+    frontend_payload = {
+        "date": report_date,
+        "mode": mode_suffix,
+        "total_predictions": len(raw_json_data),
+        "predictions": raw_json_data
+    }
+    
     with open(json_output_path, 'w', encoding='utf-8') as f:
-        json.dump(raw_json_data, f, indent=4)
+        json.dump(frontend_payload, f, indent=4)
         
     print(f"\nDone! Report written to {output_path}")
+    print(f"JSON data bridged to {json_output_path}")
     return output_path
 
 if __name__ == "__main__":

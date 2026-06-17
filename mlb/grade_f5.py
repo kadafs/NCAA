@@ -48,46 +48,46 @@ def calculate_expected_runs(
     starter_siera: float,
     bullpen_fip: float,
     proj_ip: float,
-    wrc_plus: float,
+    wrc_plus: float,          # Kept for signature compatibility; no longer used as a scaler.
     park_factor: float = 1.0,
     weather_multiplier: float = 1.0,
 ) -> float:
     """
-    Top-Down model: Expected F5 runs allowed by the pitching staff vs the offense.
+    Top-Down model: Expected F5 runs allowed by the pitching staff.
+
+    FIP is the sole offensive driver. Lineup quality (wRC+) is intentionally
+    excluded here — the Monte Carlo model handles per-batter offensive context
+    with full lineup matchup logic. Applying wRC+ here double-counts offense
+    and inflates totals for elite pitchers facing strong lineups.
+
+    Small pitcher-context adjustments (platoon ±2-4%, home field +3%) are
+    applied in grade_matchup() after this call.
 
     Parameters
     ----------
     starter_siera    : Starting pitcher FIP (or SIERA proxy)
     bullpen_fip      : Team bullpen FIP proxy
     proj_ip          : Starter's projected innings pitched (capped at 5.0)
-    wrc_plus         : Team's wRC+ (100 = league average)
+    wrc_plus         : Unused. Kept for backward compatibility.
     park_factor      : Stadium run multiplier (1.0 = neutral)
     weather_multiplier: Combined temp×wind run multiplier (1.0 = neutral).
-                        Applied MULTIPLICATIVELY, not additively, to avoid
-                        the physics violation in the old additive formula.
+                        Applied MULTIPLICATIVELY, not additively.
     """
     # 1. Unearned Run Factor (ERA/SIERA/FIP -> RA9 conversion)
     # Pitching metrics omit unearned runs, but RA9 is typically ~1.08x higher.
     unearned_run_modifier = 1.08
-    
-    # 2. Bullpen FIP
-    # Note: caller should pass the rest-adjusted high-leverage FIP.
-    adjusted_bullpen_fip = bullpen_fip
 
-    # 3. Pitching baseline: explicit runs surrendered per 5 innings
+    # 2. Pitching baseline: explicit runs surrendered per 5 innings (vs avg lineup)
     starter_runs  = (starter_siera / 9.0) * unearned_run_modifier * proj_ip
-    bullpen_runs  = (adjusted_bullpen_fip / 9.0) * unearned_run_modifier * max(0.0, 5.0 - proj_ip)
+    bullpen_runs  = (bullpen_fip   / 9.0) * unearned_run_modifier * max(0.0, 5.0 - proj_ip)
     baseline_runs = starter_runs + bullpen_runs
 
-    # Offensive quality multiplier (wRC+ 100 → 1.0x)
-    offensive_multiplier = wrc_plus / 100.0
-
-    # Multiplicative environment stacking: park × weather (correct physics)
-    # Old formula was: park_factor + (weather_mult - 1)  ← additive, wrong
-    # New formula is:  park_factor × weather_mult        ← multiplicative, correct
+    # 3. Environment: park × weather (multiplicative, correct physics)
     env_multiplier = park_factor * weather_multiplier
 
-    return baseline_runs * offensive_multiplier * env_multiplier
+    # wRC+ intentionally NOT applied — FIP is the pure run-prevention signal.
+    # Offensive context is fully handled by the Monte Carlo model.
+    return baseline_runs * env_multiplier
 
 
 # ---------------------------------------------------------------------------
@@ -99,12 +99,12 @@ def grade_matchup(
     away_siera: float,
     away_bp: float,
     away_ip: float,
-    away_wrc: float,
+    away_wrc: float,          # Retained for signature compatibility; not used as a scaler.
     home_team: str,
     home_siera: float,
     home_bp: float,
     home_ip: float,
-    home_wrc: float,
+    home_wrc: float,          # Retained for signature compatibility; not used as a scaler.
     park_factor: float = 1.0,
     weather_multiplier: float = 1.0,
     away_pitcher_hand: str = 'R',
@@ -113,25 +113,33 @@ def grade_matchup(
     """
     Grades a full matchup and returns expected runs for both sides.
 
-    Issue 1 fix: weather_multiplier is now passed separately and applied
-    multiplicatively rather than being baked into the park factor additively.
+    FIP-pure model: wRC+ (lineup quality) has been removed from the Top-Down
+    calculation because the Monte Carlo model already handles it with full
+    per-batter matchup logic. Applying wRC+ twice inflated totals for elite
+    pitchers facing strong offenses.
 
-    Issue 3 fix: team wRC+ is adjusted by a small platoon scaler based on
-    the opposing pitcher's handedness (LHP → majority RHBs have advantage).
+    Retained adjustments (pitcher-context, not lineup-context):
+      - Platoon splits (±2-4%): LHP on the mound gives opposite-hand bats an edge.
+      - Home field advantage (+3%): home teams score more regardless of lineup.
+      - Park factor + weather (multiplicative env stack).
     """
-    # Platoon-adjusted offensive strength
-    away_adj_wrc = away_wrc * _platoon_scaler(home_pitcher_hand)
-    # Home field advantage applied to home offensive strength (~3% wRC+ boost)
-    home_adj_wrc = home_wrc * _platoon_scaler(away_pitcher_hand) * HOME_ADVANTAGE_FACTOR
+    # Platoon scalers: how the BATTING team fares given the OPPOSING pitcher's hand
+    away_platoon = _platoon_scaler(home_pitcher_hand)  # Rays vs LHP Wrobleski → +4%
+    home_platoon = _platoon_scaler(away_pitcher_hand)  # Dodgers vs RHP Rasmussen → -2%
 
-    # Home pitcher + bullpen faces Away offense
+    # Home pitcher + bullpen faces Away offense (FIP-pure baseline, platoon-adjusted)
     away_expected = calculate_expected_runs(
-        home_siera, home_bp, home_ip, away_adj_wrc, park_factor, weather_multiplier
-    )
-    # Away pitcher + bullpen faces Home offense
+        home_siera, home_bp, home_ip,
+        100.0,  # wRC+ neutral — FIP is the sole run-prevention driver
+        park_factor, weather_multiplier
+    ) * away_platoon
+
+    # Away pitcher + bullpen faces Home offense (FIP-pure baseline, platoon + HFA adjusted)
     home_expected = calculate_expected_runs(
-        away_siera, away_bp, away_ip, home_adj_wrc, park_factor, weather_multiplier
-    )
+        away_siera, away_bp, away_ip,
+        100.0,  # wRC+ neutral — FIP is the sole run-prevention driver
+        park_factor, weather_multiplier
+    ) * home_platoon * HOME_ADVANTAGE_FACTOR
 
     total_runs = away_expected + home_expected
     spread     = home_expected - away_expected
