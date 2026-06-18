@@ -65,20 +65,29 @@ def parse_report(filepath, line=4.5):
         raw_header = header_match.group(1).strip()
         matchup = re.sub(r'\s*\([^)]*\)', '', raw_header).strip()
 
-        # --- Parse Top-Down Projected F5 Total ---
-        td_match = re.search(r'-\s*\*\*Top-Down Projected F5 Total:\*\*\s*(\d+\.?\d*)', block)
-        if not td_match:
-            continue
-
-        td_total = float(td_match.group(1))
-
-        # Determine bet against the F5 line
-        if td_total < line:
-            td_bet = "UNDER"
-        elif td_total > line:
-            td_bet = "OVER"
+        # --- Parse Action Matrix ---
+        action_match = re.search(rf'-\s*If Line is \*\*{line}\*\* -> (.*?)\s*\|', block)
+        if action_match:
+            action_raw = action_match.group(1).strip()
+            if "Skip" in action_raw:
+                action_bet = "SKIP"
+            elif "UNDER" in action_raw:
+                action_bet = "UNDER"
+            elif "FULL GAME OVER" in action_raw:
+                action_bet = "FG_OVER"
+            elif "OVER" in action_raw:
+                action_bet = "OVER"
+            else:
+                action_bet = "SKIP"
         else:
-            td_bet = "PUSH"
+            action_raw = "Not Found"
+            action_bet = "SKIP"
+
+        fg_line_for_over = None
+        if action_bet == "FG_OVER":
+            m = re.search(r'\(e\.g\.\s*(\d+\.?\d*)\)', action_raw)
+            if m:
+                fg_line_for_over = float(m.group(1))
 
         # --- Parse Full Game Probs ---
         # Format: **Full Game Probs:** Over 7.5: 75% | Over 8.5: 63% | Over 9.5: 50%
@@ -92,8 +101,9 @@ def parse_report(filepath, line=4.5):
 
         games.append({
             'matchup':    matchup,
-            'td_total':   td_total,
-            'td_bet':     td_bet,
+            'action_raw': action_raw,
+            'action_bet': action_bet,
+            'fg_line_for_over': fg_line_for_over,
             'fg_over_7_5': fg_over_7_5,
             'fg_over_8_5': fg_over_8_5,
             'fg_over_9_5': fg_over_9_5,
@@ -154,7 +164,7 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
         return
 
     print(f"\n{'='*60}")
-    print(f"  {label} TOP-DOWN GRADER (F5 Line: {line})")
+    print(f"  {label} ACTION MATRIX GRADER (Line: {line})")
     print(f"{'='*60}")
     print(f"  Report: {os.path.basename(filepath)}")
     print(f"  Date:   {schedule_date}")
@@ -175,7 +185,7 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
     games = parse_report(filepath, line=line)
 
     if not games:
-        print(f"  No Top-Down projections parsed from report.")
+        print(f"  No Action Matrix projections parsed from report.")
         return
 
     # F5 counters
@@ -212,35 +222,65 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
             except:
                 pass
 
-        # --- F5 grading ---
-        if actual_total is None:
-            actual_result = "N/A"
-            verdict = "[PENDING]"
-            pending += 1
-        else:
-            if actual_total < line:
-                actual_result = "UNDER"
-            elif actual_total > line:
-                actual_result = "OVER"
+        # --- Action Matrix Grading ---
+        if g['action_bet'] == "SKIP":
+            verdict = "[SKIP] "
+            skips += 1
+            actual_str = f"{actual_total} runs (F5)" if actual_total is not None else "N/A"
+        elif g['action_bet'] in ("OVER", "UNDER"):
+            if actual_total is None:
+                actual_result = "N/A"
+                verdict = "[PENDING]"
+                pending += 1
             else:
-                actual_result = "PUSH"
+                if actual_total < line:
+                    actual_result = "UNDER"
+                elif actual_total > line:
+                    actual_result = "OVER"
+                else:
+                    actual_result = "PUSH"
 
-            if g['td_bet'] == "PUSH" or actual_result == "PUSH":
-                verdict = "[PUSH] "
-                skips += 1
-            elif g['td_bet'] == actual_result:
-                verdict = "[WIN]  "
-                wins += 1
+                if actual_result == "PUSH":
+                    verdict = "[PUSH] "
+                    skips += 1
+                elif g['action_bet'] == actual_result:
+                    verdict = "[WIN]  "
+                    wins += 1
+                else:
+                    verdict = "[LOSS] "
+                    losses += 1
+            actual_str = f"{actual_total} runs (F5 {actual_result})" if actual_total is not None else "N/A"
+
+        elif g['action_bet'] == "FG_OVER":
+            fg_line_target = g.get('fg_line_for_over')
+            if fg_actual_total is None or fg_line_target is None:
+                actual_result = "N/A"
+                verdict = "[PENDING]"
+                pending += 1
             else:
-                verdict = "[LOSS] "
-                losses += 1
+                if fg_actual_total > fg_line_target:
+                    actual_result = "OVER"
+                elif fg_actual_total < fg_line_target:
+                    actual_result = "UNDER"
+                else:
+                    actual_result = "PUSH"
 
-        actual_str = f"{actual_total} runs ({actual_result})" if actual_total is not None else "N/A"
+                if actual_result == "PUSH":
+                    verdict = "[PUSH] "
+                    skips += 1
+                elif actual_result == "OVER":
+                    verdict = "[WIN]  "
+                    wins += 1
+                else:
+                    verdict = "[LOSS] "
+                    losses += 1
+            actual_str = f"{fg_actual_total} runs (FG {actual_result} vs {fg_line_target})" if fg_actual_total is not None else "N/A"
+
         fg_str = f"  [Full Game: {fg_actual_total} runs]" if fg_actual_total is not None else ""
 
         print(f"\n  {g['matchup']}")
-        print(f"    TD Proj : {g['td_total']:.2f} -> Bet {g['td_bet']} {line}")
-        print(f"    F5 Act  : {actual_str}  |  {verdict}{fg_str}")
+        print(f"    Action  : {g['action_raw']}")
+        print(f"    Result  : {actual_str}  |  {verdict}{fg_str}")
 
         # --- Full Game grading ---
         if grade_fg:
@@ -263,12 +303,12 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
 
             print(f"    FG Probs: {' | '.join(fg_line_labels)}")
 
-    # --- F5 Summary ---
+    # --- Action Matrix Summary ---
     graded = wins + losses
     win_pct = (wins / graded * 100) if graded > 0 else 0
     print(f"\n  {'-'*56}")
-    print(f"  F5 Summary  -> Wins: {wins} | Losses: {losses} | Pushes: {skips} | Pending: {pending}")
-    print(f"  F5 Win Rate -> {win_pct:.1f}% ({wins}/{graded} graded)")
+    print(f"  Matrix Summary -> Wins: {wins} | Losses: {losses} | Pushes/Skips: {skips} | Pending: {pending}")
+    print(f"  Matrix Win Rate -> {win_pct:.1f}% ({wins}/{graded} graded)")
 
     # --- Full Game Summary ---
     if grade_fg:

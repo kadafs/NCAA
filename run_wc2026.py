@@ -479,6 +479,12 @@ ACTUAL_RESULTS = {
 
         ("Austria",	"Jordan"):		(3, 1),   # Jun 17 ✓
 
+        ("Portugal",	"Congo DR"):		(1, 1),   # Jun 18 ✓
+
+        ("England",	"Croatia"):		(4, 2),   # Jun 18 ✓
+
+        ("Ghana",	"Panama"):		(1, 0),   # Jun 18 ✓
+
     # ─── MATCHDAY 3 RESULTS (add as they come in) ────────────────────────────
 }
 

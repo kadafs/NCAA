@@ -157,12 +157,7 @@ def process_single_game(args):
                 td_strong = abs(td_gap) >= 0.30
                 confidence = 'HIGH' if (mc_strong and td_strong) else 'MODERATE'
                 
-                if mc_signal == 'OVER':
-                    fg_map = {3.5: '7.5', 4.5: '8.5', 5.5: '10.5'}
-                    fg_line = fg_map.get(line, f"{line*2}")
-                    return f'Bet **FULL GAME OVER** (e.g. {fg_line}) ({confidence})'
-                else:
-                    return f'Bet **{mc_signal}** ({confidence})'
+                return f'Bet **{mc_signal}** ({confidence})'
             return 'Skip'
 
         adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
