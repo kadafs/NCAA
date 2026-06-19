@@ -485,6 +485,8 @@ ACTUAL_RESULTS = {
 
         ("Ghana",	"Panama"):		(1, 0),   # Jun 18 ✓
 
+        ("Czechia",	"South Africa"):		(1, 1),   # Jun 18 ✓
+
     # ─── MATCHDAY 3 RESULTS (add as they come in) ────────────────────────────
 }
 
