@@ -1087,7 +1087,7 @@ def main():
 
     # Save
     if all_predictions:
-        out_path = f"data/basketball/universal_predictions_v2_{date_str}.json"
+        out_path = f"data/basketball/universal_predictions_{date_str}_v2.json"
         save_json(out_path, {
             "date": date_str,
             "mode": args.mode,

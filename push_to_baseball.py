@@ -149,7 +149,11 @@ def git_commit_and_push(copied_files: list[str], dashboard_root: Path):
 
     run(["git", "commit", "-m", commit_msg], cwd=dashboard_root)
     print(f"\n  🚀 Pushing to GitHub...")
-    run(["git", "push"], cwd=dashboard_root)
+    try:
+        run(["git", "push"], cwd=dashboard_root)
+    except RuntimeError:
+        print("  ⚠️ Standard push failed (likely no upstream branch). Attempting to set upstream...")
+        run(["git", "push", "-u", "origin", "HEAD"], cwd=dashboard_root)
     print("  ✅ Dashboard data pushed successfully!")
 
 # ── Main ───────────────────────────────────────────────────────────────────────

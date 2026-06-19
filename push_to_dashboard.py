@@ -115,7 +115,8 @@ def cleanup_old_files(sport: str, keep_days: int = 14):
     for f in dest_dir.glob("universal_predictions_*.json"):
         date_str = f.stem.replace("universal_predictions_", "")
         try:
-            file_date = date.fromisoformat(date_str)
+            clean_date_str = date_str.replace("v2_", "").replace("_v2", "")
+            file_date = date.fromisoformat(clean_date_str)
             if file_date < cutoff:
                 f.unlink()
                 removed.append(f.name)
