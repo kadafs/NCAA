@@ -487,6 +487,26 @@ ACTUAL_RESULTS = {
 
         ("Czechia",	"South Africa"):		(1, 1),   # Jun 18 ✓
 
+        ("Switzerland",	"Bosnia and Herzegovina"):		(4, 1),   # Jun 20 ✓
+
+        ("Canada",	"Qatar"):		(6, 0),   # Jun 20 ✓
+
+        ("Uzbekistan",	"Colombia"):		(1, 3),   # Jun 20 ✓
+
+        ("Mexico",	"Korea Republic"):		(1, 0),   # Jun 20 ✓
+
+        ("Scotland",	"Morocco"):		(0, 1),   # Jun 20 ✓
+
+        ("USA",	"Australia"):		(2, 0),   # Jun 20 ✓
+
+        ("Brazil",	"Haiti"):		(3, 0),   # Jun 20 ✓
+
+        ("Türkiye",	"Paraguay"):		(0, 1),   # Jun 20 ✓
+
+        ("Germany",	"Côte d'Ivoire"):		(2, 1),   # Jun 20 ✓
+
+        ("Netherlands",	"Sweden"):		(5, 1),   # Jun 20 ✓
+
     # ─── MATCHDAY 3 RESULTS (add as they come in) ────────────────────────────
 }
 
