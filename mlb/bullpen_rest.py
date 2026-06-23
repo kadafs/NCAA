@@ -50,6 +50,12 @@ _MIN_PITCHES_TO_COUNT = 5
 _HIGH_VOLUME_2D_THRESHOLD = 35
 _HIGH_VOLUME_EXTRA_PENALTY = 1.05
 
+# If a reliever threw more than this many pitches in a single appearance yesterday,
+# they are likely unavailable for a high-leverage role today.
+# Apply an extra FIP penalty that effectively pushes them out of the HL filter.
+_HIGH_PITCH_SINGLE_GAME_THRESHOLD = 25
+_HIGH_PITCH_UNAVAILABLE_PENALTY   = 1.15
+
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
@@ -331,6 +337,15 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
             total_pitches_2d = usage.get(1, 0) + usage.get(2, 0)
             if total_pitches_2d > _HIGH_VOLUME_2D_THRESHOLD:
                 effective_fip *= _HIGH_VOLUME_EXTRA_PENALTY
+
+            # High single-game pitch penalty:
+            # A reliever who threw >25 pitches yesterday is likely running on fumes
+            # and will not be available in a high-leverage situation today.
+            yesterday_pitches = usage.get(1, 0)
+            if yesterday_pitches > _HIGH_PITCH_SINGLE_GAME_THRESHOLD:
+                effective_fip *= _HIGH_PITCH_UNAVAILABLE_PENALTY
+                if verbose:
+                    print(f"    [{team_name}] PID {pid}: HIGH-PITCH ({yesterday_pitches}p yesterday) penalty applied")
 
             effective_fip = round(min(7.5, effective_fip), 2)
             effective_profiles.append({'pid': pid, 'base_fip': base_fip, 'effective_fip': effective_fip})

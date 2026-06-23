@@ -118,6 +118,55 @@ def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
     return 'R'
 
 
+def _fetch_recent_batter_rates(player_id, days=15):
+    """
+    Fetches a batter's hitting rates over the last `days` calendar days.
+    Returns a dict of rates (same keys as LEAGUE_AVG) or None on failure / insufficient sample.
+    Minimum 15 PA required to be used.
+    """
+    import datetime
+    today = get_mlb_now().date()
+    start_date = (today - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+    end_date = today.strftime('%Y-%m-%d')
+    try:
+        raw = statsapi.get('people', {
+            'personIds': player_id,
+            'hydrate': f'stats(group=[hitting],type=byDateRange,startDate={start_date},endDate={end_date})'
+        })
+        stats = {}
+        for person in raw.get('people', []):
+            for grp in person.get('stats', []):
+                splits = grp.get('splits', [])
+                if splits:
+                    stats = splits[0].get('stat', {})
+                    break
+            if stats:
+                break
+
+        pa = int(stats.get('plateAppearances', 0) or 0)
+        if pa < 15:
+            return None  # too small a sample
+
+        bb  = int(stats.get('baseOnBalls', 0) or 0)
+        k   = int(stats.get('strikeOuts',  0) or 0)
+        hr  = int(stats.get('homeRuns',    0) or 0)
+        h   = int(stats.get('hits',        0) or 0)
+        dbl = int(stats.get('doubles',     0) or 0)
+        trp = int(stats.get('triples',     0) or 0)
+        sng = max(h - hr - dbl - trp, 0)
+
+        return {
+            'bb':     bb  / pa,
+            'k':      k   / pa,
+            'hr':     hr  / pa,
+            'single': sng / pa,
+            'double': dbl / pa,
+            'triple': trp / pa,
+        }
+    except Exception:
+        return None
+
+
 def get_batter_pa_rates(player_id, pitcher_hand=None):
     """
     Returns a dict of plate appearance outcome rates for a batter,
@@ -282,7 +331,28 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
 
     # Rescale to actual weight collected
     result = {k: weighted[k] / total_weight for k in weighted}
-    result['out_rate'] = max(0.0, 1.0 - sum(result.values()))
+
+    # ── 15-Day Rolling Form Blend ─────────────────────────────────────────────
+    # Blend 30% last-15-day rates + 70% multi-season blend.
+    # Gated by >=15 PA in the window. Skipped for pitcher-split queries
+    # (those already narrow the sample and adding recency risks instability).
+    if not pitcher_hand:
+        recent_rates = _fetch_recent_batter_rates(player_id, days=15)
+        if recent_rates is not None:
+            for k in result:
+                if k in recent_rates:
+                    result[k] = (recent_rates[k] * 0.30) + (result[k] * 0.70)
+
+    result['out_rate'] = max(0.0, 1.0 - sum(v for key, v in result.items() if key != 'out_rate'))
+
+    try:
+        import os, json
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            json.dump(result, f)
+    except Exception:
+        pass
+
     return result
 
 

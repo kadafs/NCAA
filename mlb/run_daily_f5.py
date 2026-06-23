@@ -7,6 +7,12 @@ import sys
 # Import our grading engine
 from grade_f5 import grade_matchup
 
+# Velocity trend engine (Statcast — silent fallback if unavailable)
+try:
+    from velocity_engine import get_velocity_fip_adjustment
+except Exception:
+    def get_velocity_fip_adjustment(name): return 0.0
+
 # ---------------------------------------------------------------------------
 # Multi-year season weights  (must sum to 1.0)
 # Early in the season the current year has a small sample, so we lean on
@@ -68,6 +74,42 @@ def _calc_fip(stats):
         return ((13 * hr) + (3 * (bb + hbp)) - (2 * k)) / ip + FIP_CONSTANT
     except Exception:
         return None
+
+
+def _get_rolling_start_fip(player_id, n=5):
+    """
+    Computes FIP from the pitcher's last N starts using their game log.
+    Returns (rolling_fip, starts_used) or (None, 0) on failure.
+    """
+    try:
+        data = statsapi.player_stat_data(player_id, group="pitching", type="gameLog", sportId=1)
+        games = data.get('stats', [])
+        if not games:
+            return None, 0
+
+        # Filter to starts only (gamesStarted == 1)
+        starts = [g for g in games if int(g.get('stats', {}).get('gamesStarted', 0)) == 1]
+        recent = starts[:n]
+        if not recent:
+            return None, 0
+
+        total_hr, total_bb, total_hbp, total_k, total_ip = 0, 0, 0, 0, 0.0
+        for g in recent:
+            s = g.get('stats', {})
+            total_ip  += _parse_ip(s.get('inningsPitched', '0'))
+            total_hr  += int(s.get('homeRuns',    0))
+            total_bb  += int(s.get('baseOnBalls', 0))
+            total_hbp += int(s.get('hitBatsmen',  0))
+            total_k   += int(s.get('strikeOuts',  0))
+
+        if total_ip < 1.0:
+            return None, 0
+
+        rolling_fip = ((13 * total_hr) + (3 * (total_bb + total_hbp)) - (2 * total_k)) / total_ip + FIP_CONSTANT
+        return round(rolling_fip, 2), len(recent)
+    except Exception:
+        return None, 0
+
 
 def _fetch_live_league_fip(season):
     """
@@ -268,47 +310,97 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
         weighted_perf += (prior_fip * prior_ip)
 
     # Projected FIP = ((Pitcher FIP * Pitcher IP) + (League FIP * Regression Weight)) / (Pitcher IP + Regression Weight)
-    projected_fip = (weighted_perf + (league_fip * REGRESSION_WEIGHT)) / (total_ip + REGRESSION_WEIGHT)
+    bayesian_fip = (weighted_perf + (league_fip * REGRESSION_WEIGHT)) / (total_ip + REGRESSION_WEIGHT)
 
-    return round(projected_fip, 2)
+    # ── Rolling Form Blend ──────────────────────────────────────────────────
+    # Blend 60% recent (last 5 starts) + 40% Bayesian season FIP.
+    # Only applies for MLB starters with enough recent data (>=3 starts).
+    # Falls back to pure Bayesian if rolling data is unavailable.
+    if sport_id == 1:
+        rolling_fip, starts_used = _get_rolling_start_fip(player_id, n=5)
+        if rolling_fip is not None and starts_used >= 3:
+            rolling_fip_clamped = max(2.5, min(7.5, rolling_fip))
+            base_fip = round((rolling_fip_clamped * 0.60) + (bayesian_fip * 0.40), 2)
+        else:
+            base_fip = round(bayesian_fip, 2)
+
+        # ── Velocity Trend Adjustment ────────────────────────────────────────
+        # Add Statcast-based FIP penalty when fastball velo is declining.
+        # Silently skipped if Baseball Savant is unreachable.
+        velo_adj = get_velocity_fip_adjustment(pitcher_name)
+        final_fip = round(min(8.0, base_fip + velo_adj), 2)
+        return final_fip
+
+    return round(bayesian_fip, 2)
+
 
 
 def get_pitcher_projected_ip(pitcher_name, sport_id=1):
     """
     Returns the projected F5 innings (capped at 5.0) based on the pitcher's
-    recent game logs (last 5 games).
+    recent game logs (last 5 starts), adjusted for days rest.
     """
     if pitcher_name in ('TBD', '', None):
-        return 4.0 # generic projection
-        
+        return 4.0  # generic projection
+
     players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
     if not players:
         return 4.0
-        
+
     player_id = players[0]['id']
     try:
-        # Fetch 2026 game log
+        # Fetch game log
         data = statsapi.player_stat_data(player_id, group="pitching", type="gameLog", sportId=sport_id)
         games = data.get('stats', [])
-        if not games: return 4.0
-        
-        # Take up to last 5 games
-        recent_games = games[:5]
+        if not games:
+            return 4.0
+
+        # Filter to starts only
+        starts = [g for g in games if int(g.get('stats', {}).get('gamesStarted', 0)) == 1]
+        if not starts:
+            # Relief pitcher or no starts — fall back using all game entries
+            starts = games
+
+        recent_starts = starts[:5]
         total_ip = 0.0
         count = 0
-        for g in recent_games:
-            stats = g.get('stats', {})
-            ip_str = stats.get('inningsPitched', '0')
+        for g in recent_starts:
+            ip_str = g.get('stats', {}).get('inningsPitched', '0')
             total_ip += _parse_ip(ip_str)
             count += 1
-            
-        if count == 0: return 4.0
-        
+
+        if count == 0:
+            return 4.0
+
         avg_ip = total_ip / count
-        # For F5 purposes, cap at 5.0 innings
-        return round(min(5.0, avg_ip), 2)
+
+        # ── Days-Rest Modifier ────────────────────────────────────────────────
+        # Adjust projected IP based on how many days rest the pitcher has.
+        # The last start date is in starts[0]['date'] (format: 'YYYY-MM-DD').
+        rest_modifier = 1.0
+        if sport_id == 1 and starts:
+            try:
+                last_start_str = starts[0].get('date', '')
+                if last_start_str:
+                    last_date = datetime.date.fromisoformat(last_start_str)
+                    today = get_mlb_now().date()
+                    days_rest = (today - last_date).days - 1  # subtract game day itself
+                    if days_rest <= 3:
+                        rest_modifier = 0.88   # short rest → pulled early
+                    elif days_rest == 4:
+                        rest_modifier = 1.00   # normal rest → no change
+                    elif days_rest <= 6:
+                        rest_modifier = 1.05   # extra rest → may go deeper
+                    else:
+                        rest_modifier = 0.85   # return from IL / very long layoff
+            except Exception:
+                pass
+
+        adjusted_ip = avg_ip * rest_modifier
+        return round(min(5.0, adjusted_ip), 2)
     except Exception:
         return 4.0
+
 
 # ---------------------------------------------------------------------------
 # Team offense — weighted multi-season OPS → wRC+ proxy
