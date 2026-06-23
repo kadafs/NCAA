@@ -1,0 +1,69 @@
+name: Daily MLB Engine Pipeline
+
+on:
+  schedule:
+    # Run automatically every day at 13:30 UTC (9:30 AM Eastern Time)
+    - cron: '30 13 * * *'
+  workflow_dispatch:
+    # Allow manual triggering from the GitHub Actions UI
+
+jobs:
+  run_mlb_engine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ncaa-api
+        uses: actions/checkout@v4
+        with:
+          path: ncaa-api
+          # We need a token that can push back to ncaa-api
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout baseball-dashboard
+        uses: actions/checkout@v4
+        with:
+          repository: kadafs/baseball-dashboard
+          path: baseball-dashboard
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # cache pip dependencies
+
+      - name: Install Dependencies
+        run: |
+          cd ncaa-api
+          pip install -r requirements.txt
+
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run MLB Consensus Engine (V3)
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          cd ncaa-api
+          python mlb/consensus_f5_v3.py
+
+      - name: Push Data to Baseball Dashboard
+        run: |
+          cd ncaa-api
+          python push_to_baseball.py
+
+      - name: Commit Generated Files to ncaa-api
+        run: |
+          cd ncaa-api
+          git add mlb/*.md data/baseball/*.json
+          # Only commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-generate daily MLB consensus reports"
+            git push
+          else
+            echo "No changes to commit to ncaa-api"
+          fi
