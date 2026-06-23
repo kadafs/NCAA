@@ -219,7 +219,8 @@ def process_single_game(args):
                 "mc_f5_away": mc.get('away_f5_runs') or mc.get('away_mc_runs'),
                 "mc_f5_home": mc.get('home_f5_runs') or mc.get('home_mc_runs'),
                 "mc_late": mc.get('late_total'),
-                "mc_full_game": mc.get('full_game_total')
+                "mc_full_game": mc.get('full_game_total'),
+                "td_clamp_applied": _td_clamp_applied
             },
             "probabilities": {
                 "under_3_5": mc.get('under_3_5_prob'),
@@ -285,6 +286,11 @@ def process_single_game(args):
         block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, FIP: {ap_fip}) vs {hp} ({hp_hand}HP, FIP: {hp_fip})")
         block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
         block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
+        if _td_clamp_applied:
+            block_lines.append(
+                f"- ⚠️ **TD-Anchor Clamp Applied** — MC diverged significantly from Top-Down model. "
+                f"Treat as **lower-conviction play**. Reduce bet size or require stronger line edge."
+            )
         if 'late_total' in mc:
             block_lines.append(f"- **Monte Carlo Late Innings (6-9):** {mc['late_total']} Runs (Away BP FIP: {mc['away_bp_fip']} | Home BP FIP: {mc['home_bp_fip']})")
             block_lines.append(f"- **Monte Carlo FULL GAME Total:** {mc['full_game_total']} Runs")
