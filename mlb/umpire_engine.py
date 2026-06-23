@@ -243,11 +243,35 @@ def load_umpire_profile(umpire_name: str | None) -> dict:
     """
     Loads a single umpire's profile dict from the local DB.
     Returns a neutral profile if umpire is unknown or DB is missing.
+
+    Tries multiple name-matching strategies in order:
+      1. Exact match
+      2. Case-insensitive match
+      3. Last-name-only match (handles "B. Walsh" vs "Brian Walsh")
     """
+    _NEUTRAL = {'games_called': 0, 'raw_k_mod': 1.0, 'raw_bb_mod': 1.0}
     if not umpire_name:
-        return {'games_called': 0, 'raw_k_mod': 1.0, 'raw_bb_mod': 1.0}
+        return _NEUTRAL
     db = _load_db()
-    return db.get(umpire_name, {'games_called': 0, 'raw_k_mod': 1.0, 'raw_bb_mod': 1.0})
+
+    # 1. Exact match
+    if umpire_name in db:
+        return db[umpire_name]
+
+    # 2. Case-insensitive match
+    name_lower = umpire_name.lower()
+    for key, val in db.items():
+        if key.lower() == name_lower:
+            return val
+
+    # 3. Last-name-only fallback (handles "B. Walsh" → "Brian Walsh")
+    last_name = umpire_name.strip().split()[-1].lower()
+    candidates = [(k, v) for k, v in db.items()
+                  if k.strip().split()[-1].lower() == last_name]
+    if len(candidates) == 1:
+        return candidates[0][1]
+
+    return _NEUTRAL
 
 
 # ---------------------------------------------------------------------------
