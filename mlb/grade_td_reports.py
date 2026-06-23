@@ -22,11 +22,23 @@ import statsapi
 # ---------------------------------------------------------------------------
 # Report file map
 # ---------------------------------------------------------------------------
-REPORT_FILES = {
-    1:  os.path.join(os.path.dirname(os.path.abspath(__file__)), 'consensus_f5_v3_report.md'),
-    11: os.path.join(os.path.dirname(os.path.abspath(__file__)), 'consensus_f5_v3_report_AAA.md'),
-    12: os.path.join(os.path.dirname(os.path.abspath(__file__)), 'consensus_f5_v3_report_AA.md'),
-}
+def get_report_filepath(sport_id, schedule_date):
+    # Convert schedule_date (MM/DD/YYYY) to report date format (YYYY-MM-DD)
+    try:
+        report_date = datetime.strptime(schedule_date, '%m/%d/%Y').strftime('%Y-%m-%d')
+    except ValueError:
+        report_date = schedule_date
+
+    if sport_id == 1:
+        filename = f"consensus_f5_v3_report_{report_date}.md"
+    elif sport_id == 11:
+        filename = f"consensus_f5_v3_report_AAA_{report_date}.md"
+    elif sport_id == 12:
+        filename = f"consensus_f5_v3_report_AA_{report_date}.md"
+    else:
+        filename = f"consensus_f5_v3_report_{sport_id}_{report_date}.md"
+        
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
 
 SPORT_LABELS = {1: 'MLB', 11: 'AAA', 12: 'AA'}
 
@@ -235,7 +247,7 @@ def _grade_fg_line(fg_actual_total, prob, fg_line):
 
 def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg=True, grading_mode='fixed'):
     label = SPORT_LABELS.get(sport_id, f'Sport {sport_id}')
-    filepath = filepath_override if filepath_override else REPORT_FILES.get(sport_id)
+    filepath = filepath_override if filepath_override else get_report_filepath(sport_id, schedule_date)
 
     if not filepath or not os.path.exists(filepath):
         print(f"\n[{label}] No report found at {filepath}")

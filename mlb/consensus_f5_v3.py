@@ -340,15 +340,12 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
 
     report_lines.extend(game_blocks)
         
-    # Use dated filename for historical runs so they don't overwrite today's report
+    # Use dated filename so reports never overwrite each other
     if team_filter:
         safe_team = team_filter.replace(' ', '_').lower()
-        filename = f"{safe_team}_consensus_f5_v3_report.md"
-    elif date_str:
-        safe_date = date_str.replace('/', '-')
-        filename = f"consensus_f5_v3_report_{league_name}_{safe_date}.md"
+        filename = f"{safe_team}_consensus_f5_v3_report_{report_date}.md"
     else:
-        filename = f"consensus_f5_v3_report_{league_name}.md" if sport_id != 1 else "consensus_f5_v3_report.md"
+        filename = f"consensus_f5_v3_report_{league_name}_{report_date}.md" if sport_id != 1 else f"consensus_f5_v3_report_{report_date}.md"
     output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(report_lines))
