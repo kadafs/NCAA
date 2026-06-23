@@ -61,27 +61,38 @@ def copy_baseball_data(date_filter: str | None = None):
 
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    # Find files to copy
-    all_files = sorted(src_dir.glob("universal_predictions_*.json"), reverse=True)
+    all_files = list(src_dir.glob("universal_predictions_*.json"))
     if not all_files:
         print(f"  ⚠️ No prediction files found in {src_dir}")
         return []
 
+    date_to_files = {}
+    for f in all_files:
+        match = re.search(r"(\d{4}-\d{2}-\d{2})", f.name)
+        if match:
+            date_to_files.setdefault(match.group(1), []).append(f)
+
+    dates_to_process = sorted(date_to_files.keys(), reverse=True)
+
     if date_filter:
-        files_to_copy = [f for f in all_files if date_filter in f.name]
-        if not files_to_copy:
+        dates_to_process = [d for d in dates_to_process if d == date_filter]
+        if not dates_to_process:
             print(f"  ⚠️ No file found for date {date_filter} in {src_dir}")
             return []
     else:
-        # Copy up to 14 recent files to ensure graded past games sync over
-        files_to_copy = all_files[:14]
+        # Copy up to 14 recent days
+        dates_to_process = dates_to_process[:14]
 
     copied = []
-    for src_file in files_to_copy:
-        dest_file = dest_dir / src_file.name
-        print(f"  📄 Copying: {src_file.name}")
-        shutil.copy2(src_file, dest_file)
-        copied.append(src_file.name)
+    for d in dates_to_process:
+        files_for_date = date_to_files[d]
+        # find the most recently modified file for this date
+        latest_file = max(files_for_date, key=lambda p: p.stat().st_mtime)
+        dest_file = dest_dir / f"universal_predictions_{d}.json"
+        
+        print(f"  📄 Copying: {latest_file.name} -> {dest_file.name}")
+        shutil.copy2(latest_file, dest_file)
+        copied.append(dest_file.name)
 
     print(f"  ✅ Copied {len(copied)} file(s) for baseball.")
     return copied
@@ -99,8 +110,7 @@ def cleanup_old_files(keep_days: int = 14):
     cutoff = date.today() - timedelta(days=keep_days)
     removed = []
     for f in dest_dir.glob("universal_predictions_*.json"):
-        # Match YYYY-MM-DD format
-        match = re.match(r"universal_predictions_(\d{4}-\d{2}-\d{2})-(generic|confirmed)", f.stem)
+        match = re.match(r"universal_predictions_(\d{4}-\d{2}-\d{2})\.json", f.name)
         if not match: continue
         
         date_str = match.group(1)
