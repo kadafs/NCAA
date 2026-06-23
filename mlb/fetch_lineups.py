@@ -99,23 +99,52 @@ def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
     Returns 'L' or 'R' for the pitcher's throwing hand.
     Defaults to 'R' (majority of MLB starters are RHP) if not found.
     """
+    import unicodedata
+
+    def _strip_accents(s: str) -> str:
+        """Normalize accented characters to ASCII equivalents for fuzzy matching."""
+        return ''.join(
+            c for c in unicodedata.normalize('NFD', s)
+            if unicodedata.category(c) != 'Mn'
+        )
+
     if not pitcher_name or pitcher_name.strip().upper() == 'TBD':
         return 'R'
-        
+
+    # Check player_map first — try exact match then accent-stripped fallback
     if pitcher_name in _player_map:
-        code = _player_map[pitcher_name]['pitch_hand']
-        return code.upper() if code else 'R'
-        
+        code = _player_map[pitcher_name].get('pitch_hand', '')
+        if code:
+            return code.upper()
+
+    # Accent-stripped fallback for names like Rodón, Luzardo
+    stripped_name = _strip_accents(pitcher_name)
+    for key, info in _player_map.items():
+        if isinstance(key, str) and _strip_accents(key) == stripped_name:
+            code = info.get('pitch_hand', '')
+            if code:
+                return code.upper()
+
+    # Live API fallback: lookup_player to get ID, then people endpoint for pitchHand
     try:
         results = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        if not results:
+            # Try accent-stripped name
+            results = statsapi.lookup_player(stripped_name, sportId=sport_id)
         if results:
-            hand = results[0].get('pitchHand', {})
-            if isinstance(hand, dict):
-                return hand.get('code', 'R').upper()
-            return str(hand).upper()
+            player_id = results[0]['id']
+            person_data = statsapi.get('people', {'personIds': player_id})
+            for person in person_data.get('people', []):
+                hand = person.get('pitchHand', {})
+                if isinstance(hand, dict):
+                    return hand.get('code', 'R').upper()
+                elif hand:
+                    return str(hand).upper()
     except Exception:
         pass
     return 'R'
+
+
 
 
 def _fetch_recent_batter_rates(player_id, days=15):
