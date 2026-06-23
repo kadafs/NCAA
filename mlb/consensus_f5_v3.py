@@ -139,7 +139,38 @@ def process_single_game(args):
             umpire_profile=ump_profile,
             away_wrc=away_wrc, home_wrc=home_wrc
         )
-        
+
+        # ── Top-Down Anchor Clamp ─────────────────────────────────────────────
+        # Detects catastrophic simulation runs where the MC F5 total diverges
+        # more than 60% above or 45% below the analytically-derived Top-Down
+        # total. When triggered, blends MC (40%) + TD (60%) for both the
+        # reported total and all under/over probabilities, preventing a single
+        # extreme simulation path from polluting the action matrix.
+        #
+        # Thresholds: MC > TD×1.60  OR  MC < TD×0.55
+        # Blend weights: 40% MC + 60% neutral (TD anchor)
+        _mc_f5 = mc.get('mc_total_runs') or td_total
+        _td_clamp_applied = False
+        if td_total > 0:
+            _ratio = _mc_f5 / td_total
+            if _ratio > 1.60 or _ratio < 0.55:
+                _td_clamp_applied = True
+                print(f"  [TD-Clamp] {away} @ {home}: MC {_mc_f5} vs TD {td_total} "
+                      f"(ratio {_ratio:.2f}) — blending 40/60")
+                mc = dict(mc)  # make mutable copy
+                # Blend total
+                mc['mc_total_runs'] = round((_mc_f5 * 0.40) + (td_total * 0.60), 2)
+                # Blend all probabilities 40% MC + 60% neutral (0.50)
+                # This is consistent with the 40/60 total blend:
+                # extreme MC probs are pulled toward 0.50 (no edge) by 60%.
+                _PROB_KEYS = [
+                    'under_3_5_prob', 'under_4_5_prob', 'under_5_5_prob',
+                    'full_over_7_5_prob', 'full_over_8_5_prob', 'full_over_9_5_prob',
+                ]
+                for _pk in _PROB_KEYS:
+                    if mc.get(_pk) is not None:
+                        mc[_pk] = round((mc[_pk] * 0.40) + (0.50 * 0.60), 4)
+
         # 3. Betting Matrix Logic
         def get_advice(line, under_prob):
             td_gap     = line - td_total
