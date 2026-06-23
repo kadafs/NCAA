@@ -10,6 +10,8 @@ on:
 jobs:
   run_mlb_engine:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout ncaa-api
         uses: actions/checkout@v4
