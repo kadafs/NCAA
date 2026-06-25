@@ -576,8 +576,6 @@ def run_monte_carlo_f5(
     home_bp_fip: float = None,
     away_projected_ip: float = 5.0,
     home_projected_ip: float = 5.0,
-    away_f5_form: float = 1.0,
-    home_f5_form: float = 1.0,
 ) -> dict:
     """
     Runs Monte Carlo simulation for the F5 innings.
@@ -660,28 +658,21 @@ def run_monte_carlo_f5(
     else:
         home_is_generic = False
 
-    # ── F5 Form Factor + Calibration ─────────────────────────────────────────
+    # ── Calibration ─────────────────────────────────────────
     # Applied AFTER wRC+ scaling, BEFORE TTTO pre-computation.
-    # Combines recent F5 offensive form (per-team) with a global calibration
-    # constant to correct for MC's slight OVER bias.
-    # away_f5_form / home_f5_form: values < 1.0 dampen a cold offense,
-    # values > 1.0 boost a hot offense. Neutral = 1.0.
-    _away_combined = away_f5_form * MLB_F5_CALIBRATION
-    _home_combined = home_f5_form * MLB_F5_CALIBRATION
-
-    if _away_combined != 1.0:
+    # Global calibration constant to correct for MC's slight OVER bias.
+    if MLB_F5_CALIBRATION != 1.0:
         for b in away_raw_lineup:
             for k in _OFFENSE_KEYS:
                 if k in b:
-                    b[k] *= _away_combined
+                    b[k] *= MLB_F5_CALIBRATION
             b['out_rate'] = max(0.0001, 1.0 - sum(
                 v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
 
-    if _home_combined != 1.0:
         for b in home_raw_lineup:
             for k in _OFFENSE_KEYS:
                 if k in b:
-                    b[k] *= _home_combined
+                    b[k] *= MLB_F5_CALIBRATION
             b['out_rate'] = max(0.0001, 1.0 - sum(
                 v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
     # ─────────────────────────────────────────────────────────────────────────

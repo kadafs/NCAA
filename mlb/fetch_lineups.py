@@ -362,15 +362,13 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
     result = {k: weighted[k] / total_weight for k in weighted}
 
     # ── 15-Day Rolling Form Blend ─────────────────────────────────────────────
-    # Blend 30% last-15-day rates + 70% multi-season blend.
-    # Gated by >=15 PA in the window. Skipped for pitcher-split queries
-    # (those already narrow the sample and adding recency risks instability).
-    if not pitcher_hand:
-        recent_rates = _fetch_recent_batter_rates(player_id, days=15)
-        if recent_rates is not None:
-            for k in result:
-                if k in recent_rates:
-                    result[k] = (recent_rates[k] * 0.30) + (result[k] * 0.70)
+    # Blend 30% last-15-day overall rates + 70% multi-season (split) blend.
+    # Gated by >=15 PA in the 15-day window.
+    recent_rates = _fetch_recent_batter_rates(player_id, days=15)
+    if recent_rates is not None:
+        for k in result:
+            if k in recent_rates:
+                result[k] = (recent_rates[k] * 0.30) + (result[k] * 0.70)
 
     result['out_rate'] = max(0.0, 1.0 - sum(v for key, v in result.items() if key != 'out_rate'))
 

@@ -191,8 +191,6 @@ def run_full_game_mc(
     umpire_profile: dict = None,
     away_wrc: float = 100.0,
     home_wrc: float = 100.0,
-    away_f5_form: float = 1.0,
-    home_f5_form: float = 1.0,
 ) -> dict:
     """
     Runs a full 9-inning Monte Carlo simulation combining:
@@ -242,8 +240,6 @@ def run_full_game_mc(
         home_bp_fip=home_bp_fip,
         away_projected_ip=away_projected_ip,
         home_projected_ip=home_projected_ip,
-        away_f5_form=away_f5_form,
-        home_f5_form=home_f5_form,
     )
 
 

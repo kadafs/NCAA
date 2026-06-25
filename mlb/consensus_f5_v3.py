@@ -157,8 +157,6 @@ def process_single_game(args):
             away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
             umpire_profile=ump_profile,
             away_wrc=away_wrc, home_wrc=home_wrc,
-            away_f5_form=away_form_info['factor'],
-            home_f5_form=home_form_info['factor'],
         )
 
         # ── Top-Down Anchor Clamp ─────────────────────────────────────────────
@@ -195,36 +193,6 @@ def process_single_game(args):
         # The action matrix probabilities still use the raw MC distribution.
         consensus_f5 = round(0.30 * mc.get('mc_total_runs', td_total) + 0.70 * td_total, 2)
 
-        # ── Form Factor Guard: baseline (pre-form) MC ────────────────────────
-        # If the base call (without form) at a given line was SKIP, form cannot
-        # open a new active bet. This prevents cold-team form from creating new
-        # bets on games where the base model had no conviction.
-        _form_active = (
-            abs(away_form_info.get('factor', 1.0) - 1.0) > 0.01 or
-            abs(home_form_info.get('factor', 1.0) - 1.0) > 0.01
-        )
-        mc_base = None
-        if _form_active:
-            try:
-                mc_base = run_full_game_mc(
-                    lineups['away'], lineups['home'],
-                    ap, hp, ap_fip, hp_fip,
-                    away_team_name=away, home_team_name=home,
-                    away_projected_ip=ap_ip, home_projected_ip=hp_ip,
-                    iterations=3000,           # lightweight — guard only
-                    park_factor=pf, weather_context=weather, sport_id=sport_id,
-                    away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
-                    umpire_profile=ump_profile,
-                    away_wrc=away_wrc, home_wrc=home_wrc,
-                    away_f5_form=1.0,          # neutral — no form adjustment
-                    home_f5_form=1.0,
-                )
-                print(f"  [Form Guard] Base MC (neutral): F5={mc_base.get('mc_total_runs')} "
-                      f"u4.5={mc_base.get('under_4_5_prob'):.2f}")
-            except Exception as _fg_err:
-                print(f"  [Form Guard] Base MC failed: {_fg_err}")
-                mc_base = None
-
 
         # ── Pre-form advice (for flip detection) ──────────────────────────
         # We detect signal flips by comparing 4.5 advice direction only.
@@ -239,22 +207,9 @@ def process_single_game(args):
         )
 
         # 3. Betting Matrix Logic
-        def get_advice(line, under_prob, base_under_prob=None):
+        def get_advice(line, under_prob):
             td_gap     = line - td_total
             td_signal  = 'UNDER' if td_gap > 0 else 'OVER'
-
-            # ── Form Factor Guard ─────────────────────────────────────────────
-            # If the pre-form baseline was a SKIP, form cannot open a new bet.
-            # (Form may only reinforce or reduce an existing conviction.)
-            if base_under_prob is not None:
-                _base_mc = (
-                    'UNDER' if base_under_prob >= 0.52
-                    else 'OVER' if base_under_prob <= 0.48
-                    else 'NEUTRAL'
-                )
-                _base_skip = (_base_mc == 'NEUTRAL') or (td_signal != _base_mc)
-                if _base_skip:
-                    return 'Skip'  # form cannot open this bet
 
             if under_prob >= 0.52:
                 mc_signal = 'UNDER'
@@ -302,12 +257,9 @@ def process_single_game(args):
 
             return _advice
 
-        _b35 = mc_base['under_3_5_prob'] if mc_base else None
-        _b45 = mc_base['under_4_5_prob'] if mc_base else None
-        _b55 = mc_base['under_5_5_prob'] if mc_base else None
-        adv_3_5 = get_advice(3.5, mc['under_3_5_prob'], base_under_prob=_b35)
-        adv_4_5 = get_advice(4.5, mc['under_4_5_prob'], base_under_prob=_b45)
-        adv_5_5 = get_advice(5.5, mc['under_5_5_prob'], base_under_prob=_b55)
+        adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
+        adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
+        adv_5_5 = get_advice(5.5, mc['under_5_5_prob'])
 
         # Detect Rule 1 and Rule 2 Under Lean signals for report flagging
         _under_lean_r1 = any('Under Lean - R1' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
