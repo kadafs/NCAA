@@ -9,6 +9,17 @@ from live_state import get_runner_speed_tier
 from umpire_engine import apply_umpire_sabermetric_layer
 import statsapi
 
+# ---------------------------------------------------------------------------
+# Calibration constant
+# ---------------------------------------------------------------------------
+# Mild global dampener to correct for slight MC OVER bias.
+# Derived from season-to-date average: actual F5 / MC projected F5 ~ 0.97.
+# Set to 1.0 to disable. Reassess monthly as season progresses.
+MLB_F5_CALIBRATION = 0.97
+
+# Offensive outcome keys affected by form/calibration adjustments
+_OFFENSE_KEYS = ('bb', 'hr', 'single', 'double', 'triple')
+
 def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None):
     """
     Adjusts a batter's raw outcome probabilities based on the pitcher's modifiers.
@@ -565,6 +576,8 @@ def run_monte_carlo_f5(
     home_bp_fip: float = None,
     away_projected_ip: float = 5.0,
     home_projected_ip: float = 5.0,
+    away_f5_form: float = 1.0,
+    home_f5_form: float = 1.0,
 ) -> dict:
     """
     Runs Monte Carlo simulation for the F5 innings.
@@ -646,7 +659,33 @@ def run_monte_carlo_f5(
         home_is_generic = True
     else:
         home_is_generic = False
-        
+
+    # ── F5 Form Factor + Calibration ─────────────────────────────────────────
+    # Applied AFTER wRC+ scaling, BEFORE TTTO pre-computation.
+    # Combines recent F5 offensive form (per-team) with a global calibration
+    # constant to correct for MC's slight OVER bias.
+    # away_f5_form / home_f5_form: values < 1.0 dampen a cold offense,
+    # values > 1.0 boost a hot offense. Neutral = 1.0.
+    _away_combined = away_f5_form * MLB_F5_CALIBRATION
+    _home_combined = home_f5_form * MLB_F5_CALIBRATION
+
+    if _away_combined != 1.0:
+        for b in away_raw_lineup:
+            for k in _OFFENSE_KEYS:
+                if k in b:
+                    b[k] *= _away_combined
+            b['out_rate'] = max(0.0001, 1.0 - sum(
+                v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
+
+    if _home_combined != 1.0:
+        for b in home_raw_lineup:
+            for k in _OFFENSE_KEYS:
+                if k in b:
+                    b[k] *= _home_combined
+            b['out_rate'] = max(0.0001, 1.0 - sum(
+                v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
+    # ─────────────────────────────────────────────────────────────────────────
+
     temp_scaler = weather_context.get('temp_fatigue_scaler', 1.0) if weather_context else 1.0
 
     # --- Pre-compute TTTO CDF Matrices ---

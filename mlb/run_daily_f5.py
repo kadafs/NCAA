@@ -205,6 +205,8 @@ def get_today_games(sport_id=1, date_str=None):
                 'game_id': game['game_id'],
                 'away_team': game['away_name'],
                 'home_team': game['home_name'],
+                'away_id': game.get('away_id'),
+                'home_id': game.get('home_id'),
                 'away_pitcher': game.get('away_probable_pitcher', 'TBD'),
                 'home_pitcher': game.get('home_probable_pitcher', 'TBD'),
                 'away_pitcher_id': game.get('away_pitcher_id'),
@@ -215,6 +217,99 @@ def get_today_games(sport_id=1, date_str=None):
     except Exception as e:
         print(f"Error fetching schedule: {e}")
         return []
+
+# ---------------------------------------------------------------------------
+# Recent F5 Team Form Factor
+# ---------------------------------------------------------------------------
+# Session-level cache: {team_id: form_factor} — reset each time the process runs
+_f5_form_cache = {}
+
+# 2026 MLB baseline: average F5 runs scored per team per game
+MLB_F5_BASELINE = 2.30
+
+def get_team_f5_form_factor(team_id: int, n_games: int = 5) -> dict:
+    """
+    Computes a recent-form multiplier for a team's F5 offensive output.
+
+    Fetches the last n_games+1 Final games, trims the highest single-game
+    outlier (to suppress blowout noise), averages the remaining F5 runs
+    scored, then blends 50% toward neutral (1.0) for stability.
+
+    Clamped to [0.55, 1.45] before blending.
+
+    Returns
+    -------
+    dict with keys:
+        'factor'      : float (effective multiplier, after 50% blend)
+        'raw_avg'     : float (trimmed average F5 runs scored)
+        'games_used'  : int
+        'games_raw'   : list[int] (all F5 runs scored before trim)
+    """
+    if team_id in _f5_form_cache:
+        return _f5_form_cache[team_id]
+
+    neutral = {'factor': 1.0, 'raw_avg': MLB_F5_BASELINE, 'games_used': 0, 'games_raw': []}
+
+    try:
+        today   = (get_mlb_now() - datetime.timedelta(hours=6)).date()
+        start   = today - datetime.timedelta(days=21)
+        games   = statsapi.schedule(
+            sportId=1, team=team_id,
+            start_date=start.strftime('%Y-%m-%d'),
+            end_date=(today - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+        )
+
+        final_games = [g for g in reversed(games) if g.get('status') == 'Final']
+        recent      = final_games[: n_games + 1]   # +1 so we can trim one outlier
+
+        if len(recent) < 2:
+            _f5_form_cache[team_id] = neutral
+            return neutral
+
+        f5_list = []
+        for g in recent:
+            gid     = g['game_id']
+            is_home = (g.get('home_id') == team_id)
+            try:
+                feed    = statsapi.get('game', {
+                    'gamePk': gid,
+                    'fields': 'liveData,linescore,innings,runs,away,home'
+                })
+                innings = feed['liveData']['linescore']['innings']
+                side    = 'home' if is_home else 'away'
+                f5_list.append(sum(i[side].get('runs', 0) for i in innings[:5]))
+            except Exception:
+                continue
+
+        if len(f5_list) < 2:
+            _f5_form_cache[team_id] = neutral
+            return neutral
+
+        raw_list = list(f5_list)  # keep full list for reporting
+
+        # Trim highest outlier when we have enough samples
+        trimmed = sorted(f5_list)[:-1] if len(f5_list) > 3 else f5_list
+
+        recent_avg   = sum(trimmed) / len(trimmed)
+        raw_factor   = recent_avg / MLB_F5_BASELINE
+        clamped      = max(0.55, min(1.45, raw_factor))
+        # 50% blend toward neutral
+        effective    = round(0.50 + 0.50 * clamped, 3)
+
+        result = {
+            'factor':     effective,
+            'raw_avg':    round(recent_avg, 2),
+            'games_used': len(trimmed),
+            'games_raw':  raw_list,
+        }
+        _f5_form_cache[team_id] = result
+        return result
+
+    except Exception as e:
+        print(f"  [F5 Form] Error for team {team_id}: {e} — using neutral")
+        _f5_form_cache[team_id] = neutral
+        return neutral
+
 
 # Per-season lookup caches so we only call the API once per player/team
 _pitcher_cache = {}  # (player_id, season) -> fip

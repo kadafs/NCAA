@@ -4,7 +4,7 @@ import time
 import datetime
 from multiprocessing import Pool, cpu_count
 from mlb_time import get_mlb_now
-from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip
+from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip, get_team_f5_form_factor
 from grade_f5 import grade_matchup
 from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
@@ -52,6 +52,8 @@ def process_single_game(args):
     ap = game['away_pitcher']
     hp = game['home_pitcher']
     gid = game['game_id']
+    away_id = game.get('away_id')
+    home_id = game.get('home_id')
     venue = game.get('venue_name', 'Unknown Venue')
     pf = get_park_factor(venue)
     
@@ -100,6 +102,23 @@ def process_single_game(args):
         else:
             ap_hand, hp_hand = 'R', 'R'
 
+        # ── F5 Recent Team Form Factors (MLB only) ───────────────────────────
+        _neutral = {'factor': 1.0, 'raw_avg': 2.3, 'games_used': 0, 'games_raw': []}
+        # Use pre-fetched data if the main process already embedded it (optimization);
+        # otherwise fall back to fetching inline (e.g. single-game test runs).
+        away_form_info = game.get('away_form_info', _neutral)
+        home_form_info = game.get('home_form_info', _neutral)
+        if sport_id == 1 and away_id and home_id and away_form_info == _neutral:
+            try:
+                away_form_info = get_team_f5_form_factor(int(away_id))
+                home_form_info = get_team_f5_form_factor(int(home_id))
+            except Exception as e:
+                print(f"  [F5 Form] Inline fetch skipped: {e}")
+        print(f"  [F5 Form] {away}: {away_form_info['factor']}x "
+              f"(avg {away_form_info['raw_avg']} F5 runs, {away_form_info['games_used']} games)")
+        print(f"  [F5 Form] {home}: {home_form_info['factor']}x "
+              f"(avg {home_form_info['raw_avg']} F5 runs, {home_form_info['games_used']} games)")
+
         top_down = grade_matchup(
             away, ap_fip, away_bp, ap_ip, away_wrc,
             home, hp_fip, home_bp, hp_ip, home_wrc,
@@ -137,23 +156,23 @@ def process_single_game(args):
             iterations=10000, park_factor=pf, weather_context=weather, sport_id=sport_id,
             away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
             umpire_profile=ump_profile,
-            away_wrc=away_wrc, home_wrc=home_wrc
+            away_wrc=away_wrc, home_wrc=home_wrc,
+            away_f5_form=away_form_info['factor'],
+            home_f5_form=home_form_info['factor'],
         )
 
         # ── Top-Down Anchor Clamp ─────────────────────────────────────────────
         # Detects catastrophic simulation runs where the MC F5 total diverges
-        # more than 60% above or 45% below the analytically-derived Top-Down
-        # total. When triggered, blends MC (40%) + TD (60%) for both the
-        # reported total and all under/over probabilities, preventing a single
-        # extreme simulation path from polluting the action matrix.
-        #
-        # Thresholds: MC > TD×1.60  OR  MC < TD×0.55
+        # more than 40% above or 35% below the analytically-derived Top-Down
+        # total. Tightened from 60%/45% to catch more MC OVER-inflation.
         # Blend weights: 40% MC + 60% neutral (TD anchor)
+        #
+        # Thresholds: MC > TD×1.40  OR  MC < TD×0.65
         _mc_f5 = mc.get('mc_total_runs') or td_total
         _td_clamp_applied = False
         if td_total > 0:
             _ratio = _mc_f5 / td_total
-            if _ratio > 1.60 or _ratio < 0.55:
+            if _ratio > 1.40 or _ratio < 0.65:
                 _td_clamp_applied = True
                 print(f"  [TD-Clamp] {away} @ {home}: MC {_mc_f5} vs TD {td_total} "
                       f"(ratio {_ratio:.2f}) — blending 40/60")
@@ -170,6 +189,23 @@ def process_single_game(args):
                 for _pk in _PROB_KEYS:
                     if mc.get(_pk) is not None:
                         mc[_pk] = round((mc[_pk] * 0.40) + (0.50 * 0.60), 4)
+
+        # ── Consensus F5 Total (Fix 2: Soft TD Blend) ───────────────────────
+        # Always apply a soft 30/70 MC/TD blend for the headline number.
+        # The action matrix probabilities still use the raw MC distribution.
+        consensus_f5 = round(0.30 * mc.get('mc_total_runs', td_total) + 0.70 * td_total, 2)
+
+        # ── Pre-form advice (for flip detection) ──────────────────────────
+        # We detect signal flips by comparing 4.5 advice direction only.
+        # A flip is defined as: one side was OVER/UNDER, the other is SKIP or opposite.
+        _away_form_neutral = away_form_info.get('factor', 1.0) == 1.0
+        _home_form_neutral = home_form_info.get('factor', 1.0) == 1.0
+        # Form adjustment note is shown when any team factor is significantly off-neutral
+        _show_form_note = (
+            away_form_info.get('games_used', 0) > 0 and
+            (away_form_info['factor'] < 0.88 or away_form_info['factor'] > 1.12 or
+             home_form_info['factor'] < 0.88 or home_form_info['factor'] > 1.12)
+        )
 
         # 3. Betting Matrix Logic
         def get_advice(line, under_prob):
@@ -216,11 +252,14 @@ def process_single_game(args):
             "predictions": {
                 "top_down_f5": td_total,
                 "mc_f5": mc.get('mc_total_runs'),
+                "consensus_f5": consensus_f5,
                 "mc_f5_away": mc.get('away_f5_runs') or mc.get('away_mc_runs'),
                 "mc_f5_home": mc.get('home_f5_runs') or mc.get('home_mc_runs'),
                 "mc_late": mc.get('late_total'),
                 "mc_full_game": mc.get('full_game_total'),
-                "td_clamp_applied": _td_clamp_applied
+                "td_clamp_applied": _td_clamp_applied,
+                "away_f5_form": away_form_info,
+                "home_f5_form": home_form_info,
             },
             "probabilities": {
                 "under_3_5": mc.get('under_3_5_prob'),
@@ -286,11 +325,28 @@ def process_single_game(args):
         block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, FIP: {ap_fip}) vs {hp} ({hp_hand}HP, FIP: {hp_fip})")
         block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
         block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
+        block_lines.append(f"- **Consensus F5 Total (30% MC / 70% TD):** {consensus_f5} Runs")
         if _td_clamp_applied:
             block_lines.append(
                 f"- ⚠️ **TD-Anchor Clamp Applied** — MC diverged significantly from Top-Down model. "
                 f"Treat as **lower-conviction play**. Reduce bet size or require stronger line edge."
             )
+        if _show_form_note:
+            form_lines = []
+            af = away_form_info
+            hf = home_form_info
+            if af['factor'] < 0.88 or af['factor'] > 1.12:
+                direction = '📉 Cold' if af['factor'] < 0.95 else '📈 Hot'
+                form_lines.append(f"  {direction} {away} offense: {af['factor']}x "
+                                   f"(recent avg {af['raw_avg']} F5 runs, {af['games_used']} games)")
+            if hf['factor'] < 0.88 or hf['factor'] > 1.12:
+                direction = '📉 Cold' if hf['factor'] < 0.95 else '📈 Hot'
+                form_lines.append(f"  {direction} {home} offense: {hf['factor']}x "
+                                   f"(recent avg {hf['raw_avg']} F5 runs, {hf['games_used']} games)")
+            if form_lines:
+                block_lines.append("- 📊 **F5 Offense Form Adjustment:**")
+                for fl in form_lines:
+                    block_lines.append(fl)
         if 'late_total' in mc:
             block_lines.append(f"- **Monte Carlo Late Innings (6-9):** {mc['late_total']} Runs (Away BP FIP: {mc['away_bp_fip']} | Home BP FIP: {mc['home_bp_fip']})")
             block_lines.append(f"- **Monte Carlo FULL GAME Total:** {mc['full_game_total']} Runs")
@@ -334,6 +390,33 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     _purge_old_caches(report_date)
     
     print(f"Generating Consensus Report for {len(games)} games on {report_date}...")
+
+    # ── Pre-fetch F5 Form Factors (main process, serial) ───────────────────────
+    # Fetch all unique team IDs once in the main process so that workers receive
+    # pre-computed form dicts and do NOT need to hit the statsapi independently.
+    # This cuts ~15-20 min of redundant API calls out of multiprocessing runs.
+    if sport_id == 1:
+        _neutral_form = {'factor': 1.0, 'raw_avg': 2.3, 'games_used': 0, 'games_raw': []}
+        unique_ids = {}
+        for g in games:
+            for id_key in ('away_id', 'home_id'):
+                tid = g.get(id_key)
+                if tid and tid not in unique_ids:
+                    unique_ids[tid] = None
+        print(f"  Pre-fetching F5 form factors for {len(unique_ids)} teams...")
+        for tid in unique_ids:
+            try:
+                unique_ids[tid] = get_team_f5_form_factor(int(tid))
+            except Exception as e:
+                print(f"  [F5 Form Pre-fetch] team {tid}: {e}")
+                unique_ids[tid] = _neutral_form
+        # Embed pre-fetched data into each game dict
+        for g in games:
+            g['away_form_info'] = unique_ids.get(g.get('away_id'), _neutral_form)
+            g['home_form_info'] = unique_ids.get(g.get('home_id'), _neutral_form)
+        print(f"  Form factor pre-fetch complete.")
+    # ────────────────────────────────────────────────────────────────
+
     
     league_name = "MLB"
     if sport_id == 11: league_name = "AAA"
