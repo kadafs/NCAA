@@ -241,15 +241,15 @@ def process_single_game(args):
                           f"-> OVER@{line} => Skip (Under Lean - R1)")
                     return 'Skip (Under Lean - R1)'
 
-            # ── Rule 2: Both Teams at Cold Floor + OVER ───────────────────────
-            # Both teams <= 0.775x AND model calls OVER -> downgrade to Skip.
+            # ── Rule 2: Both Teams Cold + OVER ────────────────────────────────
+            # Both teams < 0.88x AND model calls OVER -> downgrade to Skip.
             # Evidence: both-cold OVER went 1W/5L (17%) across Jun 20-24.
             # The TD anchor keeps consensus above the line even when both offences
             # are ice-cold, making the OVER call structurally misleading.
             if 'OVER' in _advice:
                 _a_form = away_form_info.get('factor', 1.0)
                 _h_form = home_form_info.get('factor', 1.0)
-                if _a_form <= 0.775 and _h_form <= 0.775:
+                if _a_form < 0.88 and _h_form < 0.88:
                     print(f"  [Rule 2: Both-Cold] {away}:{_a_form:.3f} "
                           f"{home}:{_h_form:.3f} "
                           f"-> OVER@{line} downgraded to Skip (Under Lean - R2)")
