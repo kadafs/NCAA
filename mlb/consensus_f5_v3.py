@@ -195,6 +195,37 @@ def process_single_game(args):
         # The action matrix probabilities still use the raw MC distribution.
         consensus_f5 = round(0.30 * mc.get('mc_total_runs', td_total) + 0.70 * td_total, 2)
 
+        # ── Form Factor Guard: baseline (pre-form) MC ────────────────────────
+        # If the base call (without form) at a given line was SKIP, form cannot
+        # open a new active bet. This prevents cold-team form from creating new
+        # bets on games where the base model had no conviction.
+        _form_active = (
+            abs(away_form_info.get('factor', 1.0) - 1.0) > 0.01 or
+            abs(home_form_info.get('factor', 1.0) - 1.0) > 0.01
+        )
+        mc_base = None
+        if _form_active:
+            try:
+                mc_base = run_full_game_mc(
+                    lineups['away'], lineups['home'],
+                    ap, hp, ap_fip, hp_fip,
+                    away_team_name=away, home_team_name=home,
+                    away_projected_ip=ap_ip, home_projected_ip=hp_ip,
+                    iterations=3000,           # lightweight — guard only
+                    park_factor=pf, weather_context=weather, sport_id=sport_id,
+                    away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
+                    umpire_profile=ump_profile,
+                    away_wrc=away_wrc, home_wrc=home_wrc,
+                    away_f5_form=1.0,          # neutral — no form adjustment
+                    home_f5_form=1.0,
+                )
+                print(f"  [Form Guard] Base MC (neutral): F5={mc_base.get('mc_total_runs')} "
+                      f"u4.5={mc_base.get('under_4_5_prob'):.2f}")
+            except Exception as _fg_err:
+                print(f"  [Form Guard] Base MC failed: {_fg_err}")
+                mc_base = None
+
+
         # ── Pre-form advice (for flip detection) ──────────────────────────
         # We detect signal flips by comparing 4.5 advice direction only.
         # A flip is defined as: one side was OVER/UNDER, the other is SKIP or opposite.
@@ -208,9 +239,22 @@ def process_single_game(args):
         )
 
         # 3. Betting Matrix Logic
-        def get_advice(line, under_prob):
+        def get_advice(line, under_prob, base_under_prob=None):
             td_gap     = line - td_total
             td_signal  = 'UNDER' if td_gap > 0 else 'OVER'
+
+            # ── Form Factor Guard ─────────────────────────────────────────────
+            # If the pre-form baseline was a SKIP, form cannot open a new bet.
+            # (Form may only reinforce or reduce an existing conviction.)
+            if base_under_prob is not None:
+                _base_mc = (
+                    'UNDER' if base_under_prob >= 0.52
+                    else 'OVER' if base_under_prob <= 0.48
+                    else 'NEUTRAL'
+                )
+                _base_skip = (_base_mc == 'NEUTRAL') or (td_signal != _base_mc)
+                if _base_skip:
+                    return 'Skip'  # form cannot open this bet
 
             if under_prob >= 0.52:
                 mc_signal = 'UNDER'
@@ -223,13 +267,51 @@ def process_single_game(args):
                 mc_strong = under_prob >= 0.58 or under_prob <= 0.42
                 td_strong = abs(td_gap) >= 0.30
                 confidence = 'HIGH' if (mc_strong and td_strong) else 'MODERATE'
-                
-                return f'Bet **{mc_signal}** ({confidence})'
-            return 'Skip'
+                _advice = f'Bet **{mc_signal}** ({confidence})'
+            else:
+                _advice = 'Skip'
 
-        adv_3_5 = get_advice(3.5, mc['under_3_5_prob'])
-        adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
-        adv_5_5 = get_advice(5.5, mc['under_5_5_prob'])
+            # -- Rule 1: Extreme Weather + Cold Team Override ------------------
+            # Effective park factor +8% above neutral AND at least one cold team
+            # (<0.88x) -> downgrade any OVER to Skip (Under Lean).
+            # Evidence: EW+cold OVER went 0-for-6 across Jun 20-24. The 70% TD
+            # anchor pulls consensus above the line regardless of cold form.
+            # Displayed as 'Skip (Under Lean - R1)' — directional signal, not active bet.
+            if 'OVER' in _advice and (effective_pf - 1.0) >= 0.08:
+                _a_form = away_form_info.get('factor', 1.0)
+                _h_form = home_form_info.get('factor', 1.0)
+                if _a_form < 0.88 or _h_form < 0.88:
+                    print(f"  [Rule 1: EW+Cold] eff_pf={effective_pf:.3f} "
+                          f"{away}:{_a_form:.3f} {home}:{_h_form:.3f} "
+                          f"-> OVER@{line} => Skip (Under Lean - R1)")
+                    return 'Skip (Under Lean - R1)'
+
+            # ── Rule 2: Both Teams at Cold Floor + OVER ───────────────────────
+            # Both teams <= 0.775x AND model calls OVER -> downgrade to Skip.
+            # Evidence: both-cold OVER went 1W/5L (17%) across Jun 20-24.
+            # The TD anchor keeps consensus above the line even when both offences
+            # are ice-cold, making the OVER call structurally misleading.
+            if 'OVER' in _advice:
+                _a_form = away_form_info.get('factor', 1.0)
+                _h_form = home_form_info.get('factor', 1.0)
+                if _a_form <= 0.775 and _h_form <= 0.775:
+                    print(f"  [Rule 2: Both-Cold] {away}:{_a_form:.3f} "
+                          f"{home}:{_h_form:.3f} "
+                          f"-> OVER@{line} downgraded to Skip (Under Lean - R2)")
+                    return 'Skip (Under Lean - R2)'
+
+            return _advice
+
+        _b35 = mc_base['under_3_5_prob'] if mc_base else None
+        _b45 = mc_base['under_4_5_prob'] if mc_base else None
+        _b55 = mc_base['under_5_5_prob'] if mc_base else None
+        adv_3_5 = get_advice(3.5, mc['under_3_5_prob'], base_under_prob=_b35)
+        adv_4_5 = get_advice(4.5, mc['under_4_5_prob'], base_under_prob=_b45)
+        adv_5_5 = get_advice(5.5, mc['under_5_5_prob'], base_under_prob=_b55)
+
+        # Detect Rule 1 and Rule 2 Under Lean signals for report flagging
+        _under_lean_r1 = any('Under Lean - R1' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
+        _under_lean_r2 = any('Under Lean - R2' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
         
         result['raw_json_data'] = {
             "away_team": away,
@@ -294,6 +376,13 @@ def process_single_game(args):
                     is_priority = True
                     flag_reasons.append("High Confidence Edge")
                     break
+
+        if _under_lean_r1:
+            is_priority = True
+            flag_reasons.append("Under Lean R1 (EW+Cold Form — skip OVER)")
+        if _under_lean_r2:
+            is_priority = True
+            flag_reasons.append("Under Lean R2 (Both Teams Cold — skip OVER)")
 
         title = f"### {'🚨 ' if is_priority else ''}{away} ({ap}) @ {home} ({hp})"
         block_lines.append(title)
