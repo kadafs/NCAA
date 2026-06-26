@@ -12,6 +12,7 @@ python mlb/consensus_f5_v1.py - To run V1 (No Weather):
 python mlb/consensus_f5_v2.py - To run V2 (Hybrid: Top-Down + V1 MC + Weather):
 
 python mlb/live_cache.py - Run the daily morning cache manually (optional, the daemon auto-builds if missing):
+python mlb/daily_f5_park_factors.py - Update Dynamic F5 Park Factors (must run before consensus)
 python mlb/consensus_f5_v3.py - To run V3 (Tuned: Top-Down + Tuned Current MC + Weather):
 python mlb/post_process_fg.py --file .consensus_f5_v3_report_MLB_YYYY-MM-DD.json - BULLPEN POST-PROCESSING MODULE
 python mlb/umpire_engine.py - Every Monday morning (before the daily run) 

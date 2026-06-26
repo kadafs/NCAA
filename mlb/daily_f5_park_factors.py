@@ -76,7 +76,9 @@ def main():
         has_historical_baseline = not is_temporary
         
         if has_historical_baseline:
-            blended_pf = (realized_pf * 0.15) + (static_pf * 0.85)
+            w_2026 = min(1.0, stats['games'] / 162.0)
+            w_static = 1.0 - w_2026
+            blended_pf = (realized_pf * w_2026) + (static_pf * w_static)
         else:
             if venue == "Sutter Health Park":
                 blended_pf = (realized_pf * 0.50) + (1.000 * 0.50)

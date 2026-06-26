@@ -698,7 +698,7 @@ def run_monte_carlo_f5(
                 pitcher_mod_hand = 'R' if home_pitcher_hand == 'L' else 'L'
             else:
                 pitcher_mod_hand = b.get('hand', 'R')
-            current_pitcher_mods = home_inning_mods.get(pitcher_mod_hand, home_inning_mods.get('R'))
+            current_pitcher_mods = away_inning_mods.get(pitcher_mod_hand, away_inning_mods.get('R'))  # Away batters face HOME pitcher (away_inning_mods = home SP + TTTO)
 
             # Scale away batter input rates down symmetrically (0.97x) before normalization
             b_scaled = dict(b)
@@ -716,7 +716,7 @@ def run_monte_carlo_f5(
                 pitcher_mod_hand = 'R' if away_pitcher_hand == 'L' else 'L'
             else:
                 pitcher_mod_hand = b.get('hand', 'R')
-            current_pitcher_mods = away_inning_mods.get(pitcher_mod_hand, away_inning_mods.get('R'))
+            current_pitcher_mods = home_inning_mods.get(pitcher_mod_hand, home_inning_mods.get('R'))  # Home batters face AWAY pitcher (home_inning_mods = away SP + TTTO)
 
             # Scale home batter input rates up (1.03x) BEFORE adjust_batter_rates().
             # This lets the existing out_rate normalization proportionally shrink ALL
