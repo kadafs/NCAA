@@ -261,6 +261,37 @@ def process_single_game(args):
         adv_4_5 = get_advice(4.5, mc['under_4_5_prob'])
         adv_5_5 = get_advice(5.5, mc['under_5_5_prob'])
 
+        # ── Execution Filter: Team Bias Filter Veto ─────────────────────────
+        from park_factors import get_park_factor_details
+        pf_details = get_park_factor_details(venue)
+        static_pf = pf_details.get('static', 1.0)
+        realized_pf = pf_details.get('realized', 1.0)
+        
+        pf_diff = realized_pf - static_pf
+        if abs(pf_diff) > 0.15:
+            is_hitter_bias = pf_diff > 0
+            is_pitcher_bias = pf_diff < 0
+            
+            for i, adv in enumerate([adv_3_5, adv_4_5, adv_5_5]):
+                new_adv = None
+                if "Bet OVER" in adv and is_hitter_bias:
+                    new_adv = "Skip (Team Bias Veto - Realized Hitter Edge)"
+                elif "Bet UNDER" in adv and is_pitcher_bias:
+                    new_adv = "Skip (Team Bias Veto - Realized Pitcher Edge)"
+                
+                if new_adv:
+                    if i == 0: adv_3_5 = new_adv
+                    elif i == 1: adv_4_5 = new_adv
+                    elif i == 2: adv_5_5 = new_adv
+                    
+        # ── Execution Filter: Retractable Roof Protocol ──────────────────────
+        is_roof_closed = weather and weather.get('weather_label', '').lower() in ['dome', 'roof closed']
+        is_roof_park = any(p in venue.lower() for p in ['daikin', 'chase', 'globe life', 'minute maid'])
+        if is_roof_closed and is_roof_park:
+            if "Bet OVER" in adv_3_5: adv_3_5 = "Skip (Roof Closed Protocol)"
+            if "Bet OVER" in adv_4_5: adv_4_5 = "Skip (Roof Closed Protocol)"
+            if "Bet OVER" in adv_5_5: adv_5_5 = "Skip (Roof Closed Protocol)"
+
         # Detect Rule 1 and Rule 2 Under Lean signals for report flagging
         _under_lean_r1 = any('Under Lean - R1' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
         _under_lean_r2 = any('Under Lean - R2' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
@@ -391,6 +422,12 @@ def process_single_game(args):
         if 'late_total' in mc:
             block_lines.append(f"- **Monte Carlo Late Innings (6-9):** {mc['late_total']} Runs (Away BP FIP: {mc['away_bp_fip']} | Home BP FIP: {mc['home_bp_fip']})")
             block_lines.append(f"- **Monte Carlo FULL GAME Total:** {mc['full_game_total']} Runs")
+            
+            # ── Execution Filter: Asymmetric Total Rule ──────────────────────
+            f5_ratio = mc['mc_total_runs'] / max(0.1, mc['full_game_total'])
+            if not (0.51 <= f5_ratio <= 0.53):
+                block_lines.append(f"- ⚠️ **Asymmetric Total Warning:** F5 is {f5_ratio:.1%} of full game total (Target: 51-53%). Verify SP baselines vs Bullpen.")
+                
         block_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
         block_lines.append(f"  - If Line is **3.5** -> {adv_3_5} | MC Under Probability: {int(mc['under_3_5_prob']*100)}%")
         block_lines.append(f"  - If Line is **4.5** -> {adv_4_5} | MC Under Probability: {int(mc['under_4_5_prob']*100)}%")
