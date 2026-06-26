@@ -274,9 +274,9 @@ def process_single_game(args):
             
             for i, adv in enumerate([adv_3_5, adv_4_5, adv_5_5]):
                 new_adv = None
-                if "Bet OVER" in adv and is_hitter_bias:
+                if "OVER" in adv and is_hitter_bias and "Skip" not in adv:
                     new_adv = "Skip (Team Bias Veto - Realized Hitter Edge)"
-                elif "Bet UNDER" in adv and is_pitcher_bias:
+                elif "UNDER" in adv and is_pitcher_bias and "Skip" not in adv:
                     new_adv = "Skip (Team Bias Veto - Realized Pitcher Edge)"
                 
                 if new_adv:
@@ -288,9 +288,9 @@ def process_single_game(args):
         is_roof_closed = weather and weather.get('weather_label', '').lower() in ['dome', 'roof closed']
         is_roof_park = any(p in venue.lower() for p in ['daikin', 'chase', 'globe life', 'minute maid'])
         if is_roof_closed and is_roof_park:
-            if "Bet OVER" in adv_3_5: adv_3_5 = "Skip (Roof Closed Protocol)"
-            if "Bet OVER" in adv_4_5: adv_4_5 = "Skip (Roof Closed Protocol)"
-            if "Bet OVER" in adv_5_5: adv_5_5 = "Skip (Roof Closed Protocol)"
+            if "OVER" in adv_3_5 and "Skip" not in adv_3_5: adv_3_5 = "Skip (Roof Closed Protocol)"
+            if "OVER" in adv_4_5 and "Skip" not in adv_4_5: adv_4_5 = "Skip (Roof Closed Protocol)"
+            if "OVER" in adv_5_5 and "Skip" not in adv_5_5: adv_5_5 = "Skip (Roof Closed Protocol)"
 
         # Detect Rule 1 and Rule 2 Under Lean signals for report flagging
         _under_lean_r1 = any('Under Lean - R1' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
@@ -301,7 +301,7 @@ def process_single_game(args):
         f5_ratio = 0
         if 'full_game_total' in mc:
             f5_ratio = mc['mc_total_runs'] / max(0.1, mc['full_game_total'])
-            if not (0.51 <= f5_ratio <= 0.53):
+            if not (0.55 <= f5_ratio <= 0.60):
                 asymmetric_warning = True
 
         result['raw_json_data'] = {
@@ -435,7 +435,7 @@ def process_single_game(args):
             
             # ── Execution Filter: Asymmetric Total Rule ──────────────────────
             if asymmetric_warning:
-                block_lines.append(f"- ⚠️ **Asymmetric Total Warning:** F5 is {f5_ratio:.1%} of full game total (Target: 51-53%). Verify SP baselines vs Bullpen.")
+                block_lines.append(f"- ⚠️ **Asymmetric Total Warning:** F5 is {f5_ratio:.1%} of full game total (Target: 55-60%). Verify SP baselines vs Bullpen.")
                 
         block_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
         block_lines.append(f"  - If Line is **3.5** -> {adv_3_5} | MC Under Probability: {int(mc['under_3_5_prob']*100)}%")
