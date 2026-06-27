@@ -13,6 +13,9 @@ from park_factors import get_park_factor
 from weather_f5 import get_weather_modifier
 from umpire_engine import get_umpire_for_game, load_umpire_profile
 from bullpen_rest import get_adjusted_bullpen_fip
+from pitcher_advanced_stats import get_pitcher_advanced_metrics
+from gatekeeper_v5 import generate_v5_mathematical_gatekeeper
+import pandas as pd
 
 def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
     """Call fn(*args, **kwargs), retrying up to `retries` times on network errors."""
@@ -62,7 +65,8 @@ def process_single_game(args):
     result = {
         'game_blocks': [],
         'priority_flags': [],
-        'raw_json_data': None
+        'raw_json_data': None,
+        'gatekeeper_data': None
     }
     
     try:
@@ -158,6 +162,14 @@ def process_single_game(args):
             umpire_profile=ump_profile,
             away_wrc=away_wrc, home_wrc=home_wrc,
         )
+
+        ap_adv = get_pitcher_advanced_metrics(ap, sport_id)
+        hp_adv = get_pitcher_advanced_metrics(hp, sport_id)
+        
+        from park_factors import get_park_factor_details
+        pf_details = get_park_factor_details(venue)
+        static_pf = pf_details.get('static', 1.0)
+        realized_pf = pf_details.get('realized', 1.0)
 
         # ── Top-Down Anchor Clamp ─────────────────────────────────────────────
         # Detects catastrophic simulation runs where the MC F5 total diverges
@@ -346,7 +358,27 @@ def process_single_game(args):
                 "adv_4_5": adv_4_5,
                 "adv_5_5": adv_5_5
             },
-            "version": "v3"
+            "version": "v4"
+        }
+        
+        # Build gatekeeper input
+        result['gatekeeper_data'] = {
+            'Game': f"{away} @ {home}",
+            'TD': td_total,
+            'MC': mc.get('mc_total_runs', td_total),
+            'MCaw': mc.get('away_f5_runs') or mc.get('away_mc_runs', td_total/2),
+            'MChm': mc.get('home_f5_runs') or mc.get('home_mc_runs', td_total/2),
+            'AwSP': ap_fip,
+            'HmSP': hp_fip,
+            'Realized_PF': realized_pf,
+            'Static_PF': static_pf,
+            'Blended_PF': effective_pf,
+            'Aw_HR_FB': ap_adv.get('HR_FB', 0),
+            'Hm_HR_FB': hp_adv.get('HR_FB', 0),
+            'Aw_K_Rate': ap_adv.get('K_Rate', 0),
+            'Hm_K_Rate': hp_adv.get('K_Rate', 0),
+            'Aw_BB_Rate': ap_adv.get('BB_Rate', 0),
+            'Hm_BB_Rate': hp_adv.get('BB_Rate', 0),
         }
         
         # 4. Format Output
@@ -434,12 +466,8 @@ def process_single_game(args):
             if asymmetric_warning:
                 block_lines.append(f"- ⚠️ **Asymmetric Total Warning:** F5 is {f5_ratio:.1%} of full game total (Target: 55-60%). Verify SP baselines vs Bullpen.")
                 
-        block_lines.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
-        block_lines.append(f"  - If Line is **3.5** -> {adv_3_5} | MC Under Probability: {int(mc['under_3_5_prob']*100)}%")
-        block_lines.append(f"  - If Line is **4.5** -> {adv_4_5} | MC Under Probability: {int(mc['under_4_5_prob']*100)}%")
-        block_lines.append(f"  - If Line is **5.5** -> {adv_5_5} | MC Under Probability: {int(mc['under_5_5_prob']*100)}%")
         if 'full_over_7_5_prob' in mc:
-            block_lines.append(f"  - **Full Game Probs:** Over 7.5: {int(mc['full_over_7_5_prob']*100)}% | Over 8.5: {int(mc['full_over_8_5_prob']*100)}% | Over 9.5: {int(mc['full_over_9_5_prob']*100)}%")
+            block_lines.append(f"- **Full Game Probs:** Over 7.5: {int(mc['full_over_7_5_prob']*100)}% | Over 8.5: {int(mc['full_over_8_5_prob']*100)}% | Over 9.5: {int(mc['full_over_9_5_prob']*100)}%")
         block_lines.append("")
         
         result['game_blocks'].extend(block_lines)
@@ -519,6 +547,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     priority_flags = []
     game_blocks = []
     raw_json_data = []
+    gatekeeper_rows = []
 
     # MULTIPROCESSING POOL
     # Windows requires the main module idiom, which is safely guarded by the if __name__ block
@@ -533,11 +562,30 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
         priority_flags.extend(r['priority_flags'])
         if r['raw_json_data']:
             raw_json_data.append(r['raw_json_data'])
+        if r.get('gatekeeper_data'):
+            gatekeeper_rows.append(r['gatekeeper_data'])
 
     # 5. Assemble final report
     if priority_flags:
         report_lines.append("## 🚨 TOP PRIORITY GAMES 🚨")
         report_lines.extend(priority_flags)
+        report_lines.append("")
+        report_lines.append("---")
+        report_lines.append("")
+        
+    if gatekeeper_rows:
+        df = pd.DataFrame(gatekeeper_rows)
+        gatekeeper_report, structured_data = generate_v5_mathematical_gatekeeper(df)
+        
+        # Inject structured data back into the raw_json_data per game
+        for g in raw_json_data:
+            game_key = f"{g['away_team']} @ {g['home_team']}"
+            if game_key in structured_data:
+                g['gatekeeper_logic'] = structured_data[game_key]
+            else:
+                g['gatekeeper_logic'] = {"category": "No Edge", "reason": "Did not meet divergence thresholds."}
+
+        report_lines.append(gatekeeper_report)
         report_lines.append("")
         report_lines.append("---")
         report_lines.append("")
