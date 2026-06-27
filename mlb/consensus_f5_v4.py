@@ -305,13 +305,7 @@ def process_single_game(args):
         _under_lean_r1 = any('Under Lean - R1' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
         _under_lean_r2 = any('Under Lean - R2' in adv for adv in [adv_3_5, adv_4_5, adv_5_5])
         
-        # ── Execution Filter: Asymmetric Total Rule ──────────────────────
-        asymmetric_warning = False
-        f5_ratio = 0
-        if 'full_game_total' in mc:
-            f5_ratio = mc['mc_total_runs'] / max(0.1, mc['full_game_total'])
-            if not (0.55 <= f5_ratio <= 0.60):
-                asymmetric_warning = True
+        # (Execution Filter: Asymmetric Total Rule removed)
 
         result['raw_json_data'] = {
             "away_team": away,
@@ -342,7 +336,7 @@ def process_single_game(args):
                 "td_clamp_applied": _td_clamp_applied,
                 "away_f5_form": away_form_info,
                 "home_f5_form": home_form_info,
-                "asymmetric_warning": asymmetric_warning,
+                "form_factor": "Not implemented",
                 "f5_ratio": f5_ratio
             },
             "probabilities": {
@@ -462,9 +456,7 @@ def process_single_game(args):
             block_lines.append(f"- **Monte Carlo Late Innings (6-9):** {mc['late_total']} Runs (Away BP FIP: {mc['away_bp_fip']} | Home BP FIP: {mc['home_bp_fip']})")
             block_lines.append(f"- **Monte Carlo FULL GAME Total:** {mc['full_game_total']} Runs")
             
-            # ── Execution Filter: Asymmetric Total Rule ──────────────────────
-            if asymmetric_warning:
-                block_lines.append(f"- ⚠️ **Asymmetric Total Warning:** F5 is {f5_ratio:.1%} of full game total (Target: 55-60%). Verify SP baselines vs Bullpen.")
+            # (Execution Filter: Asymmetric Total Rule removed)
                 
         if 'full_over_7_5_prob' in mc:
             block_lines.append(f"- **Full Game Probs:** Over 7.5: {int(mc['full_over_7_5_prob']*100)}% | Over 8.5: {int(mc['full_over_8_5_prob']*100)}% | Over 9.5: {int(mc['full_over_9_5_prob']*100)}%")
