@@ -51,6 +51,7 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           cd ncaa-api
+          python mlb/daily_f5_park_factors.py
           python mlb/consensus_f5_v4.py
 
       - name: Push Data to Baseball Dashboard
