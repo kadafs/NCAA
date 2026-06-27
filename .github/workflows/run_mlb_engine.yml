@@ -43,6 +43,16 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Update Umpire Engine (Mondays Only)
+        run: |
+          cd ncaa-api
+          if [ "$(date +%u)" = "1" ]; then
+            echo "Today is Monday. Updating umpire stats..."
+            python mlb/umpire_engine.py
+          else
+            echo "Not Monday. Skipping umpire update."
+          fi
+
       - name: Run MLB Consensus Engine (V4)
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
