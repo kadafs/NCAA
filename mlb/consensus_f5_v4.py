@@ -336,8 +336,7 @@ def process_single_game(args):
                 "td_clamp_applied": _td_clamp_applied,
                 "away_f5_form": away_form_info,
                 "home_f5_form": home_form_info,
-                "form_factor": "Not implemented",
-                "f5_ratio": f5_ratio
+                "form_factor": "Not implemented"
             },
             "probabilities": {
                 "under_3_5": mc.get('under_3_5_prob'),
