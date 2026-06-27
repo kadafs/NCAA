@@ -43,7 +43,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Run MLB Consensus Engine (V3)
+      - name: Run MLB Consensus Engine (V4)
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -51,7 +51,7 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           cd ncaa-api
-          python mlb/consensus_f5_v3.py
+          python mlb/consensus_f5_v4.py
 
       - name: Push Data to Baseball Dashboard
         run: |

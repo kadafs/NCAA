@@ -367,3 +367,145 @@ Quarantined: **Arizona Diamondbacks @ Tampa Bay Rays** (TD: 4.79 | MC: 4.38)
 Quarantined: **Kansas City Royals @ Chicago White Sox** (TD: 5.00 | MC: 5.69)
 *   *The Flag:* Distribution asymmetry detected. Review SP profiles.
 
+
+
+---
+
+# Automated V5 Mathematical F5 Gatekeeper Report
+
+## 1. Conditional High-Value Strategy Matrix
+1. **Cincinnati Reds @ Pittsburgh Pirates** (Index: 0.88)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust MC; TD blinded by extreme unregressed park variance (15.0%).
+    *   **IF Line is 4.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 5.5:** BET F5 UNDER ──► Trust MC; TD blinded by extreme unregressed park variance (15.0%).
+
+2. **Washington Nationals @ Baltimore Orioles** (Index: 1.58)
+    *   **IF Line is 3.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 4.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 5.5:** BET F5 UNDER ──► Trust MC via pure distance edge.
+
+3. **Texas Rangers @ Toronto Blue Jays** (Index: 1.53)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust TD via pure distance edge.
+    *   **IF Line is 4.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 5.5:** BET F5 UNDER ──► Trust MC via pure distance edge.
+
+4. **Colorado Rockies @ Minnesota Twins** (Index: 1.03)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust MC via pure distance edge.
+    *   **IF Line is 4.5:** BET F5 OVER ──► Trust MC via pure distance edge.
+    *   **IF Line is 5.5:** Hard Skip (Models conflict across line)
+
+5. **Los Angeles Dodgers @ San Diego Padres** (Index: 0.62)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust MC via pure distance edge.
+    *   **IF Line is 4.5:** BET F5 OVER ──► Trust MC via pure distance edge.
+    *   **IF Line is 5.5:** Hard Skip (Models conflict across line)
+
+
+## 2. High-Confidence Line Lookup (Index < 0.25)
+*   **Chicago Cubs @ Milwaukee Brewers** (Index: 0.07 | TD: 4.34 | MC: 4.27)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+    *   IF Line is 5.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+
+*   **Miami Marlins @ St. Louis Cardinals** (Index: 0.21 | TD: 4.56 | MC: 4.35)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► SKIP (No actionable betting margin)
+    *   IF Line is 5.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+
+*   **Athletics @ Los Angeles Angels** (Index: 0.22 | TD: 5.34 | MC: 5.56)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 5.5 ──► SKIP (No actionable betting margin)
+
+*   **Atlanta Braves @ San Francisco Giants** (Index: 0.16 | TD: 5.16 | MC: 5.00)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 5.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+
+
+
+### 3. Automated Error Log: Asymmetric Check Flagged
+
+Quarantined: **Houston Astros @ Detroit Tigers** (TD: 4.26 | MC: 4.30)
+*   *The Flag:* Distribution asymmetry detected. Review SP profiles.
+
+### 3. Automated Error Log: Asymmetric Check Flagged
+
+Quarantined: **Arizona Diamondbacks @ Tampa Bay Rays** (TD: 4.79 | MC: 4.38)
+*   *The Flag:* Distribution asymmetry detected. Review SP profiles.
+
+### 3. Automated Error Log: Asymmetric Check Flagged
+
+Quarantined: **Kansas City Royals @ Chicago White Sox** (TD: 5.00 | MC: 5.69)
+*   *The Flag:* Distribution asymmetry detected. Review SP profiles.
+
+
+
+---
+
+# Automated V5 Mathematical F5 Gatekeeper Report
+
+## 1. Conditional High-Value Strategy Matrix
+1. **Cincinnati Reds @ Pittsburgh Pirates** (Index: 0.88)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust MC; TD blinded by extreme unregressed park variance (15.0%).
+    *   **IF Line is 4.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 5.5:** BET F5 UNDER ──► Trust MC; TD blinded by extreme unregressed park variance (15.0%).
+
+2. **Washington Nationals @ Baltimore Orioles** (Index: 1.58)
+    *   **IF Line is 3.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 4.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 5.5:** BET F5 UNDER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+
+3. **Texas Rangers @ Toronto Blue Jays** (Index: 1.53)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+    *   **IF Line is 4.5:** Hard Skip (Models conflict across line)
+    *   **IF Line is 5.5:** BET F5 UNDER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+
+4. **Colorado Rockies @ Minnesota Twins** (Index: 1.03)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+    *   **IF Line is 4.5:** BET F5 OVER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+    *   **IF Line is 5.5:** Hard Skip (Models conflict across line)
+
+5. **Los Angeles Dodgers @ San Diego Padres** (Index: 0.62)
+    *   **IF Line is 3.5:** BET F5 OVER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+    *   **IF Line is 4.5:** BET F5 OVER ──► Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise.
+    *   **IF Line is 5.5:** Hard Skip (Models conflict across line)
+
+
+## 2. High-Confidence Line Lookup (Index < 0.25)
+*   **Chicago Cubs @ Milwaukee Brewers** (Index: 0.07 | TD: 4.34 | MC: 4.27)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+    *   IF Line is 5.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+
+*   **Miami Marlins @ St. Louis Cardinals** (Index: 0.21 | TD: 4.56 | MC: 4.35)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► SKIP (No actionable betting margin)
+    *   IF Line is 5.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+
+*   **Athletics @ Los Angeles Angels** (Index: 0.22 | TD: 5.34 | MC: 5.56)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 5.5 ──► SKIP (No actionable betting margin)
+
+*   **Atlanta Braves @ San Francisco Giants** (Index: 0.16 | TD: 5.16 | MC: 5.00)
+    *   IF Line is 3.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 4.5 ──► **BET F5 OVER** (Clean value engine agreement)
+    *   IF Line is 5.5 ──► **BET F5 UNDER** (Clean value engine agreement)
+
+
+
+### 3. Automated Error Log: Asymmetric Check Flagged
+
+Quarantined: **Houston Astros @ Detroit Tigers** (TD: 4.26 | MC: 4.30)
+*   *The Flag:* Distribution asymmetry detected. Review SP profiles.
+
+### 3. Automated Error Log: Asymmetric Check Flagged
+
+Quarantined: **Arizona Diamondbacks @ Tampa Bay Rays** (TD: 4.79 | MC: 4.38)
+*   *The Flag:* Distribution asymmetry detected. Review SP profiles.
+
+### 3. Automated Error Log: Asymmetric Check Flagged
+
+Quarantined: **Kansas City Royals @ Chicago White Sox** (TD: 5.00 | MC: 5.69)
+*   *The Flag:* Distribution asymmetry detected. Review SP profiles.
+
