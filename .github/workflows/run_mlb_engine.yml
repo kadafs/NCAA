@@ -5,7 +5,12 @@ on:
     # Run automatically every day at 13:30 UTC (9:30 AM Eastern Time)
     - cron: '30 13 * * *'
   workflow_dispatch:
-    # Allow manual triggering from the GitHub Actions UI
+    inputs:
+      force_umpire:
+        description: 'Force Umpire Engine Update'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   run_mlb_engine:
@@ -43,14 +48,14 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Update Umpire Engine (Mondays Only)
+      - name: Update Umpire Engine (Mondays Only or Forced)
         run: |
           cd ncaa-api
-          if [ "$(date +%u)" = "1" ]; then
-            echo "Today is Monday. Updating umpire stats..."
+          if [ "$(date +%u)" = "1" ] || [ "${{ github.event.inputs.force_umpire }}" = "true" ]; then
+            echo "Condition met. Updating umpire stats..."
             python mlb/umpire_engine.py
           else
-            echo "Not Monday. Skipping umpire update."
+            echo "Not Monday and not forced. Skipping umpire update."
           fi
 
       - name: Run MLB Consensus Engine (V4)
