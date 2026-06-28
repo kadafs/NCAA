@@ -76,6 +76,52 @@ def _calc_fip(stats):
         return None
 
 
+def _calc_xfip(stats, league_season=2026):
+    """Return xFIP from a statsapi stat dict, normalizing home run variance."""
+    try:
+        ip = _parse_ip(stats.get('inningsPitched', '0'))
+        if ip < MIN_IP_THRESHOLD:
+            return None
+            
+        bb  = int(stats.get('baseOnBalls', 0))
+        hbp = int(stats.get('hitBatsmen',  0))
+        k   = int(stats.get('strikeOuts',  0))
+        
+        bf = stats.get('battersFaced', 0)
+        fb = stats.get('flyOuts', 0) or stats.get('airOuts', 0) or (bf * 0.25)
+        
+        expected_hr = fb * 0.105
+        
+        return ((13 * expected_hr) + (3 * (bb + hbp)) - (2 * k)) / ip + FIP_CONSTANT
+    except Exception:
+        return None
+
+
+def _calc_siera(stats):
+    """
+    Calculate an approximate SIERA using foundational components.
+    Approximation formula based on standard regressions for Top-Down model.
+    """
+    try:
+        ip = _parse_ip(stats.get('inningsPitched', '0'))
+        if ip < MIN_IP_THRESHOLD:
+            return None
+        
+        bb  = int(stats.get('baseOnBalls', 0))
+        hbp = int(stats.get('hitBatsmen',  0))
+        k   = int(stats.get('strikeOuts',  0))
+        bf  = int(stats.get('battersFaced', 0))
+        
+        if bf == 0:
+            return None
+            
+        k_pct = k / bf
+        bb_pct = (bb + hbp) / bf
+        
+        siera = 6.145 - (16.986 * k_pct) + (11.434 * bb_pct) + (7.653 * (k_pct ** 2))
+        return siera
+    except Exception:
+        return None
 def _get_rolling_start_fip(player_id, n=5):
     """
     Computes FIP from the pitcher's last N starts using their game log.
@@ -560,6 +606,49 @@ def get_team_wrc_proxy(team_name, sport_id=1):
     team_wrc_cache[team_name] = wrc_proxy
     return wrc_proxy
 
+def _get_team_ops_split_single_season(team_id, season, sit_code):
+    try:
+        data = statsapi.get('team_stats', {
+            'teamId':    team_id,
+            'group':     'hitting',
+            'stats':     'statSplits',
+            'sitCodes':  sit_code,
+            'season':    str(season)
+        })
+        for grp in data.get('stats', []):
+            splits = grp.get('splits', [])
+            if splits:
+                return _calc_ops(splits[0].get('stat', {}))
+        return None
+    except Exception:
+        return None
+
+def get_team_wrc_splits(team_name, sport_id=1):
+    """Return a dict of multi-season wRC+ proxies for vsL and vsR."""
+    teams = statsapi.lookup_team(team_name, sportIds=sport_id)
+    if not teams:
+        return {'vsL': FALLBACK_WRC, 'vsR': FALLBACK_WRC}
+    
+    team_id = teams[0]['id']
+    avg_ops = LEAGUE_AVG_OPS.get(sport_id, 0.720)
+    
+    def _calc_split(sit_code):
+        weighted_ops = 0.0
+        total_weight = 0.0
+        for season, weight in SEASON_WEIGHTS.items():
+            ops = _get_team_ops_split_single_season(team_id, season, sit_code)
+            if ops and ops > 0:
+                weighted_ops += ops * weight
+                total_weight += weight
+        if total_weight == 0:
+            return FALLBACK_WRC
+        return round(((weighted_ops / total_weight) / avg_ops) * 100, 1)
+
+    return {
+        'vsL': _calc_split('vl'),
+        'vsR': _calc_split('vr')
+    }
+
 team_bullpen_cache = {}
 
 def _get_team_pitching_fip_single_season(team_id, season):
@@ -733,3 +822,85 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def get_pitcher_xfip(pitcher_name, sport_id=1, player_id=None):
+    """Return a weighted multi-season xFIP for the named pitcher."""
+    MIN_RELIABLE_IP = 20.0
+    if pitcher_name in ('TBD', '', None): return FALLBACK_FIP
+    if player_id is None:
+        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        if not players: return FALLBACK_FIP
+        player_id = players[0]['id']
+        
+    current_season = max(SEASON_WEIGHTS.keys())
+    prior_season   = current_season - 1
+
+    def _fetch_season_xfip(season):
+        try:
+            raw = statsapi.get('people', {'personIds': player_id, 'hydrate': f'stats(group=[pitching],type=season,season={season})'})
+            stats = {}
+            for person in raw.get('people', []):
+                for stat_grp in person.get('stats', []):
+                    splits = stat_grp.get('splits', [])
+                    if splits:
+                        stats = splits[0].get('stat', {})
+                        break
+                if stats: break
+            ip  = _parse_ip(stats.get('inningsPitched', '0'))
+            xfip = _calc_xfip(stats)
+            return xfip, ip
+        except Exception:
+            return None, 0.0
+
+    current_xfip, current_ip = _fetch_season_xfip(current_season)
+    prior_xfip, prior_ip = _fetch_season_xfip(prior_season)
+
+    current_xfip = current_xfip or FALLBACK_FIP
+    prior_xfip = prior_xfip or FALLBACK_FIP
+    current_weight = 1.0 if current_ip >= MIN_RELIABLE_IP else (current_ip / MIN_RELIABLE_IP)
+    prior_weight = 1.0 - current_weight
+
+    bayesian_xfip = ((current_xfip * current_weight * current_ip) + (prior_xfip * prior_weight * prior_ip) + (FALLBACK_FIP * 20)) / ( (current_weight * current_ip) + (prior_weight * prior_ip) + 20 )
+    return round(bayesian_xfip, 2)
+
+
+def get_pitcher_siera(pitcher_name, sport_id=1, player_id=None):
+    """Return a weighted multi-season SIERA for the named pitcher."""
+    MIN_RELIABLE_IP = 20.0
+    if pitcher_name in ('TBD', '', None): return FALLBACK_FIP
+    if player_id is None:
+        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        if not players: return FALLBACK_FIP
+        player_id = players[0]['id']
+        
+    current_season = max(SEASON_WEIGHTS.keys())
+    prior_season   = current_season - 1
+
+    def _fetch_season_siera(season):
+        try:
+            raw = statsapi.get('people', {'personIds': player_id, 'hydrate': f'stats(group=[pitching],type=season,season={season})'})
+            stats = {}
+            for person in raw.get('people', []):
+                for stat_grp in person.get('stats', []):
+                    splits = stat_grp.get('splits', [])
+                    if splits:
+                        stats = splits[0].get('stat', {})
+                        break
+                if stats: break
+            ip  = _parse_ip(stats.get('inningsPitched', '0'))
+            siera = _calc_siera(stats)
+            return siera, ip
+        except Exception:
+            return None, 0.0
+
+    current_siera, current_ip = _fetch_season_siera(current_season)
+    prior_siera, prior_ip = _fetch_season_siera(prior_season)
+
+    current_siera = current_siera or FALLBACK_FIP
+    prior_siera = prior_siera or FALLBACK_FIP
+    current_weight = 1.0 if current_ip >= MIN_RELIABLE_IP else (current_ip / MIN_RELIABLE_IP)
+    prior_weight = 1.0 - current_weight
+
+    bayesian_siera = ((current_siera * current_weight * current_ip) + (prior_siera * prior_weight * prior_ip) + (FALLBACK_FIP * 20)) / ( (current_weight * current_ip) + (prior_weight * prior_ip) + 20 )
+    return round(bayesian_siera, 2)

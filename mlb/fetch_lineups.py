@@ -385,11 +385,11 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
     return result
 
 
-def get_pitcher_pa_modifiers(pitcher_fip, pitcher_player_id=None):
+def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None):
     """
-    Returns a modifier dict that scales batter PA rates to reflect the
-    opposing pitcher's quality. Uses FIP components as a proxy.
-
+    V6 Monte Carlo Pitcher Modifier Engine: Uses xFIP as a true proxy for 
+    base-hit suppression, completely eliminating home run double-counting.
+    
     modifiers: {'k': float, 'bb': float, 'hr': float}
     A modifier of 1.2 means the pitcher inflates that outcome by 20%.
     """
@@ -398,8 +398,9 @@ def get_pitcher_pa_modifiers(pitcher_fip, pitcher_player_id=None):
     LEAGUE_BB_PER_9 = 3.1
     LEAGUE_HR_PER_9 = 1.2
 
-    # Calculate global hit_mod based on overall FIP
-    default_hit_mod = (pitcher_fip / 4.20) ** 0.6 if pitcher_fip else 1.0
+    # 1. Use xFIP to scale base hits. (4.20 is the historical MLB xFIP baseline)
+    # This cleanly isolates structural run prevention from home run luck.
+    default_hit_mod = (pitcher_xfip / 4.20) ** 0.6 if pitcher_xfip else 1.0
     default_hit_mod = max(0.75, min(1.25, default_hit_mod))
     default_profile = {'k': 1.0, 'bb': 1.0, 'hr': 1.0, 'hit_mod': default_hit_mod}
 

@@ -267,6 +267,19 @@ def _temp_fatigue_scaler(temp_f: float) -> float:
     return 1.0
 
 
+def get_thermal_adjusted_ip(base_projected_ip: float, temp_f: float) -> float:
+    """
+    Predictive Volatility Fix: Dynamically shortens a starting pitcher's 
+    projected innings under extreme heat conditions to mirror manager hooks.
+    """
+    if temp_f > 92:
+        # Programmatically reduce length by 8% due to rapid dehydration fatigue
+        return round(max(2.0, base_projected_ip * 0.92), 2)
+    elif temp_f > 85:
+        return round(max(2.0, base_projected_ip * 0.96), 2)
+    return base_projected_ip
+
+
 # ---------------------------------------------------------------------------
 # RotoWire scraper
 # ---------------------------------------------------------------------------
