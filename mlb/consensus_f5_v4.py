@@ -182,7 +182,9 @@ def process_single_game(args):
             away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
             umpire_profile=ump_profile,
             away_wrc=away_wrc, home_wrc=home_wrc,
+            venue_name=venue,
         )
+
 
         ap_adv = get_pitcher_advanced_metrics(ap, sport_id, player_id=ap_id)
         hp_adv = get_pitcher_advanced_metrics(hp, sport_id, player_id=hp_id)

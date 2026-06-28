@@ -551,6 +551,9 @@ def run_monte_carlo_f5(
     home_bp_fip: float = None,
     away_projected_ip: float = 5.0,
     home_projected_ip: float = 5.0,
+    away_team_name: str = None,
+    home_team_name: str = None,
+    venue_name: str = None,
 ) -> dict:
     """
     Runs Monte Carlo simulation for the F5 innings.
@@ -565,8 +568,14 @@ def run_monte_carlo_f5(
     away_pitcher_id = get_pitcher_id(away_pitcher_name, sport_id)
     home_pitcher_id = get_pitcher_id(home_pitcher_name, sport_id)
 
-    away_pitcher_mods = get_pitcher_pa_modifiers_xfip(away_pitcher_fip, away_pitcher_id)
-    home_pitcher_mods = get_pitcher_pa_modifiers_xfip(home_pitcher_fip, home_pitcher_id)
+    away_pitcher_mods = get_pitcher_pa_modifiers_xfip(
+        away_pitcher_fip, away_pitcher_id,
+        defending_team=home_team_name, venue_name=venue_name
+    )
+    home_pitcher_mods = get_pitcher_pa_modifiers_xfip(
+        home_pitcher_fip, home_pitcher_id,
+        defending_team=away_team_name, venue_name=venue_name
+    )
 
     # Resolve pitcher handedness (used for generic lineup platoon logic)
     if away_pitcher_hand is None:

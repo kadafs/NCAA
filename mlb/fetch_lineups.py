@@ -7,6 +7,7 @@ Falls back gracefully when lineups haven't been posted yet.
 import statsapi
 import os
 import json
+from defense_f5 import calculate_defensive_hit_modifier
 
 
 def get_lineup_for_game(game_id):
@@ -385,12 +386,17 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
     return result
 
 
-def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None):
+def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None,
+                                  defending_team=None, venue_name=None):
     """
     V6 Monte Carlo Pitcher Modifier Engine: Uses xFIP as a true proxy for 
     base-hit suppression, completely eliminating home run double-counting.
     
-    modifiers: {'k': float, 'bb': float, 'hr': float}
+    Now overlays the Defensive Efficiency & Turf Surface modifier so that
+    elite defenses on natural grass suppress the hit_mod, and poor defenses
+    on artificial turf inflate it.
+
+    modifiers: {'k': float, 'bb': float, 'hr': float, 'hit_mod': float}
     A modifier of 1.2 means the pitcher inflates that outcome by 20%.
     """
     # League averages as baseline
@@ -402,6 +408,14 @@ def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None):
     # This cleanly isolates structural run prevention from home run luck.
     default_hit_mod = (pitcher_xfip / 4.20) ** 0.6 if pitcher_xfip else 1.0
     default_hit_mod = max(0.75, min(1.25, default_hit_mod))
+
+    # 2. Overlay Defensive Efficiency & Turf Surface modifier
+    if defending_team and venue_name and pitcher_player_id:
+        defensive_scaler = calculate_defensive_hit_modifier(
+            pitcher_player_id, defending_team, venue_name
+        )
+        default_hit_mod = round(max(0.70, min(1.30, default_hit_mod * defensive_scaler)), 4)
+
     default_profile = {'k': 1.0, 'bb': 1.0, 'hr': 1.0, 'hit_mod': default_hit_mod}
 
     if pitcher_player_id is None:
