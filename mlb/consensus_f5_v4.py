@@ -4,13 +4,13 @@ import time
 import datetime
 from multiprocessing import Pool, cpu_count
 from mlb_time import get_mlb_now
-from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip, get_team_f5_form_factor
-from grade_f5 import grade_matchup
+from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip, get_team_f5_form_factor, get_team_wrc_splits, get_pitcher_siera, get_pitcher_xfip
+from grade_f5 import grade_matchup_v6
 from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
 from full_game_model import run_full_game_mc
 from park_factors import get_park_factor
-from weather_f5 import get_weather_modifier
+from weather_f5 import get_weather_modifier, get_thermal_adjusted_ip
 from umpire_engine import get_umpire_for_game, load_umpire_profile
 from bullpen_rest import get_adjusted_bullpen_fip
 from pitcher_advanced_stats import get_pitcher_advanced_metrics
@@ -84,11 +84,26 @@ def process_single_game(args):
             effective_pf = round(pf * weather_mult, 4)
 
         # 1. Top-Down Model
+        ap_siera = _retry_call(get_pitcher_siera, ap, sport_id=sport_id, player_id=ap_id)
+        hp_siera = _retry_call(get_pitcher_siera, hp, sport_id=sport_id, player_id=hp_id)
+        
+        ap_xfip = _retry_call(get_pitcher_xfip, ap, sport_id=sport_id, player_id=ap_id)
+        hp_xfip = _retry_call(get_pitcher_xfip, hp, sport_id=sport_id, player_id=hp_id)
+        
+        # Keep FIP for reporting or fallback
         ap_fip = _retry_call(get_pitcher_fip, ap, sport_id=sport_id, player_id=ap_id)
         hp_fip = _retry_call(get_pitcher_fip, hp, sport_id=sport_id, player_id=hp_id)
 
         ap_ip = _retry_call(get_pitcher_projected_ip, ap, sport_id=sport_id, player_id=ap_id)
         hp_ip = _retry_call(get_pitcher_projected_ip, hp, sport_id=sport_id, player_id=hp_id)
+
+        # ── Thermal IP Decay ─────────────────────────────────────────────────
+        # Shorten projected innings under extreme heat before routing downstream.
+        # Applies to both Top-Down and Monte Carlo models.
+        if sport_id == 1 and weather:
+            temp_f = weather.get('temp', 72)
+            ap_ip = get_thermal_adjusted_ip(ap_ip, temp_f)
+            hp_ip = get_thermal_adjusted_ip(hp_ip, temp_f)
 
         try:
             away_bp = _retry_call(get_adjusted_bullpen_fip, away)
@@ -102,6 +117,8 @@ def process_single_game(args):
 
         away_wrc = _retry_call(get_team_wrc_proxy, away, sport_id)
         home_wrc = _retry_call(get_team_wrc_proxy, home, sport_id)
+        away_splits = _retry_call(get_team_wrc_splits, away, sport_id)
+        home_splits = _retry_call(get_team_wrc_splits, home, sport_id)
 
         # Pitcher handedness for platoon logic (MLB only)
         if sport_id == 1:
@@ -127,9 +144,9 @@ def process_single_game(args):
         print(f"  [F5 Form] {home}: {home_form_info['factor']}x "
               f"(avg {home_form_info['raw_avg']} F5 runs, {home_form_info['games_used']} games)")
 
-        top_down = grade_matchup(
-            away, ap_fip, away_bp, ap_ip, away_wrc,
-            home, hp_fip, home_bp, hp_ip, home_wrc,
+        top_down = grade_matchup_v6(
+            away, ap_siera, away_bp, ap_ip, away_splits['vsR'], away_splits['vsL'],
+            home, hp_siera, home_bp, hp_ip, home_splits['vsR'], home_splits['vsL'],
             park_factor=pf,
             weather_multiplier=weather_mult,
             away_pitcher_hand=ap_hand,
@@ -158,7 +175,7 @@ def process_single_game(args):
 
         mc = run_full_game_mc(
             lineups['away'], lineups['home'],
-            ap, hp, ap_fip, hp_fip,
+            ap, hp, ap_xfip, hp_xfip,
             away_team_name=away, home_team_name=home,
             away_projected_ip=ap_ip, home_projected_ip=hp_ip,
             iterations=10000, park_factor=pf, weather_context=weather, sport_id=sport_id,

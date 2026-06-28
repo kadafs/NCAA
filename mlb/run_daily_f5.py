@@ -5,7 +5,7 @@ import os
 import sys
 
 # Import our grading engine
-from grade_f5 import grade_matchup
+from grade_f5 import grade_matchup_v6
 
 # Velocity trend engine (Statcast — silent fallback if unavailable)
 try:
@@ -799,7 +799,17 @@ def main():
         home_wrc = get_team_wrc_proxy(home)
         
         # Park factor defaults to 1.0 for V1
-        result = grade_matchup(away, ap_fip, away_wrc, home, hp_fip, home_wrc)
+        ap_ip = get_pitcher_projected_ip(ap, player_id=ap_id)
+        hp_ip = get_pitcher_projected_ip(hp, player_id=hp_id)
+        away_bp = get_team_bullpen_fip(away)
+        home_bp = get_team_bullpen_fip(home)
+        away_splits = get_team_wrc_splits(away)
+        home_splits = get_team_wrc_splits(home)
+
+        result = grade_matchup_v6(
+            away, ap_fip, away_bp, ap_ip, away_splits['vsR'], away_splits['vsL'],
+            home, hp_fip, home_bp, hp_ip, home_splits['vsR'], home_splits['vsL']
+        )
         
         report_lines.append(f"### {away} ({ap}) @ {home} ({hp})")
         report_lines.append(f"- **Pitching Matchup:** {ap} (FIP: {ap_fip}) vs {hp} (FIP: {hp_fip})")

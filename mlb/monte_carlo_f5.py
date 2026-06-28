@@ -2,7 +2,7 @@ from mlb_time import get_mlb_now
 import random
 import numpy as np
 from fetch_lineups import (
-    get_batter_pa_rates, get_pitcher_pa_modifiers,
+    get_batter_pa_rates, get_pitcher_pa_modifiers_xfip,
     get_batter_hand, get_pitcher_hand
 )
 from live_state import get_runner_speed_tier
@@ -565,8 +565,8 @@ def run_monte_carlo_f5(
     away_pitcher_id = get_pitcher_id(away_pitcher_name, sport_id)
     home_pitcher_id = get_pitcher_id(home_pitcher_name, sport_id)
 
-    away_pitcher_mods = get_pitcher_pa_modifiers(away_pitcher_fip, away_pitcher_id)
-    home_pitcher_mods = get_pitcher_pa_modifiers(home_pitcher_fip, home_pitcher_id)
+    away_pitcher_mods = get_pitcher_pa_modifiers_xfip(away_pitcher_fip, away_pitcher_id)
+    home_pitcher_mods = get_pitcher_pa_modifiers_xfip(home_pitcher_fip, home_pitcher_id)
 
     # Resolve pitcher handedness (used for generic lineup platoon logic)
     if away_pitcher_hand is None:
