@@ -72,7 +72,7 @@ jobs:
       - name: Commit Generated Files to ncaa-api
         run: |
           cd ncaa-api
-          git add mlb/*.md data/baseball/*.json
+          git add mlb/*.md data/baseball/*.json data/umpires.json
           # Only commit if there are changes
           if ! git diff --cached --quiet; then
             git commit -m "Auto-generate daily MLB consensus reports"
