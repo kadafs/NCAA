@@ -122,32 +122,22 @@ def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_h
             elif batter_hand == 'L': # Lefties hit a crosswind pushing balls foul
                 hr_wind_modifier -= (base_effect * 0.3)
 
-    # Convert to deltas for Additive Stacking (Prevents exponential compounding)
-    # Convert to deltas for Additive Stacking (Prevents exponential compounding)
-    temp_delta = temp_modifier - 1.0
-    wind_delta = hr_wind_modifier - 1.0
-    pf_delta = park_factor - 1.0
-    
-    # Total Environmental Factor (No artificial 15% cap anymore)
-    total_env_delta = temp_delta + wind_delta + pf_delta
-    
-    final_hr_scalar = 1.0 + total_env_delta
+    # Force pure compounding multiplication to eliminate model divergence vs grade_f5.py
+    # HR: compound all three environmental factors (temp * wind * park)
+    final_hr_scalar = temp_modifier * hr_wind_modifier * park_factor
     adjusted['hr'] = max(0.0001, adjusted.get('hr', 0) * final_hr_scalar)
-    
+
     # 5. Apply the scaling downward through the extra-base carry matrix and BABIP (Singles)
-    # Doubles receive 50% of the total aerodynamic drift, Triples receive 30%
-    double_scale = 1.0 + (total_env_delta * 0.5)
-    triple_scale = 1.0 + ((temp_delta + pf_delta) * 0.3) # wind helps less
-    
-    # Singles (BABIP) are largely influenced by Park Factor (e.g. Coors huge outfield)
-    # They receive 60% of the Park Factor delta, and 30% of the temperature delta.
-    single_scale = 1.0 + (pf_delta * 0.6) + (temp_delta * 0.3)
-    
-    # Walks and Strikeouts: Pitchers struggle to locate in extreme heat/altitude
-    # If weather/pf is extreme (+), BBs go up slightly, Ks go down slightly.
-    bb_scale = 1.0 + (total_env_delta * 0.2)
-    k_scale = 1.0 - (total_env_delta * 0.15)
-    
+    # Scale secondary contact metrics symmetrically using compound roots
+    double_scale = temp_modifier * max(1.0, park_factor) ** 0.5
+    triple_scale = temp_modifier * max(1.0, park_factor) ** 0.3
+    single_scale = max(1.0, park_factor) ** 0.6 * temp_modifier ** 0.3
+
+    # Walks and Strikeouts: derive from combined compound factor for consistency
+    total_env_factor = temp_modifier * hr_wind_modifier * park_factor
+    bb_scale = 1.0 + ((total_env_factor - 1.0) * 0.2)
+    k_scale  = 1.0 - ((total_env_factor - 1.0) * 0.15)
+
     adjusted['double'] = max(0.0001, adjusted.get('double', 0) * double_scale)
     adjusted['triple'] = max(0.0001, adjusted.get('triple', 0) * triple_scale)
     adjusted['single'] = max(0.0001, adjusted.get('single', 0) * single_scale)
@@ -201,9 +191,10 @@ def create_cdf_array(adjusted_rates):
 
 def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices, outs, runs, base1, base2, base3, lineup_speed_tiers, tto_states):
     """
-    Simulates plate appearances for all currently active games until all have 3 outs.
-    Modifies arrays IN PLACE.
-    
+    Simulates plate appearances for all currently active games using high-performance
+    direct-parent memory index arrays. Eliminates all intermediate masked array copies
+    to prevent NumPy boolean-mask slice-copy leakage and base-clearing ordering bugs.
+
     active_games: boolean mask of shape (iterations,)
     lineup_states: list of CDF arrays [shape (9, 7)] for each TTTO state.
     batter_indices: int array of shape (iterations,)
@@ -214,135 +205,119 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
     tto_states: int array of shape (iterations,) tracking TTTO penalty state for the pitcher.
     """
     lineup_length = len(lineup_speed_tiers)
-    if lineup_length == 0: return
-    
-    stacked_lineups = np.stack(lineup_states) # shape (3, 9, 7)
-    
+    if lineup_length == 0:
+        return
+
+    stacked_lineups = np.stack(lineup_states)  # Shape (3, 9, 7)
+
     while np.any(active_games):
-        num_active = np.count_nonzero(active_games)
-        
-        # 1. Fetch CDFs for the current batter in each active game
-        active_tto = tto_states[active_games]
-        active_batters = batter_indices[active_games]
-        active_cdfs = stacked_lineups[active_tto, active_batters] # shape (num_active, 7)
-        
-        # 2. Roll random numbers and resolve events
-        r = np.random.rand(num_active)
-        events = (r[:, None] > active_cdfs).sum(axis=1) # 0=out, 1=k, 2=bb, 3=1b, 4=2b, 5=3b, 6=hr
-        
-        # 3. Apply events to states using subsets
-        a_outs = outs[active_games]
-        a_runs = runs[active_games]
-        a_b1 = base1[active_games]
-        a_b2 = base2[active_games]
-        a_b3 = base3[active_games]
-        batter_speeds = lineup_speed_tiers[active_batters]
-        
+        # 1. Isolate game indices that are actively playing (< 3 outs)
+        global_active_idx = np.where(active_games)[0]
+
+        active_tto = tto_states[global_active_idx]
+        active_batters = batter_indices[global_active_idx]
+        active_cdfs = stacked_lineups[active_tto, active_batters]  # shape (num_active, 7)
+
+        # 2. Roll random variables across the active dimension
+        r = np.random.rand(len(global_active_idx))
+        events = (r[:, None] > active_cdfs).sum(axis=1)  # 0=out, 1=k, 2=bb, 3=1b, 4=2b, 5=3b, 6=hr
+
+        # 3. Create sub-event boolean masks relative to the active slice
         ev_out = (events == 0) | (events == 1)
         ev_bb  = (events == 2)
         ev_1b  = (events == 3)
         ev_2b  = (events == 4)
         ev_3b  = (events == 5)
         ev_hr  = (events == 6)
-        
+
+        batter_speeds = lineup_speed_tiers[active_batters]
+
+        # --- RULE A: OUTS RESOLUTION (Direct parent-array manipulation) ---
         if np.any(ev_out):
-            a_outs[ev_out] += 1
-            
+            outs[global_active_idx[ev_out]] += 1
+
+        # --- RULE B: WALKS RESOLUTION (Reverse chronological shift prevents overwrite) ---
         if np.any(ev_bb):
-            bb_loaded = ev_bb & (a_b1 != -1) & (a_b2 != -1) & (a_b3 != -1)
-            a_runs[bb_loaded] += 1
-            a_b3[bb_loaded] = a_b2[bb_loaded]
-            a_b2[bb_loaded] = a_b1[bb_loaded]
-            a_b1[bb_loaded] = batter_speeds[bb_loaded]
-            
-            bb_12 = ev_bb & (a_b1 != -1) & (a_b2 != -1) & (a_b3 == -1)
-            a_b3[bb_12] = a_b2[bb_12]
-            a_b2[bb_12] = a_b1[bb_12]
-            a_b1[bb_12] = batter_speeds[bb_12]
-            
-            bb_1 = ev_bb & (a_b1 != -1) & (a_b2 == -1)
-            a_b2[bb_1] = a_b1[bb_1]
-            a_b1[bb_1] = batter_speeds[bb_1]
-            
-            bb_empty = ev_bb & (a_b1 == -1)
-            a_b1[bb_empty] = batter_speeds[bb_empty]
-            
+            idx = global_active_idx[ev_bb]
+
+            # Runs score only if bases are fully loaded
+            bb_loaded = (base1[idx] != -1) & (base2[idx] != -1) & (base3[idx] != -1)
+            runs[idx[bb_loaded]] += 1
+
+            # Step backward through basepaths to prevent state overwriting
+            base3[idx] = np.where((base1[idx] != -1) & (base2[idx] != -1), base2[idx], base3[idx])
+            base2[idx] = np.where(base1[idx] != -1, base1[idx], base2[idx])
+            base1[idx] = batter_speeds[ev_bb]
+
+        # --- RULE C: SINGLES RESOLUTION (Chronological isolation, no blanket clears) ---
         if np.any(ev_1b):
-            b3_scores = ev_1b & (a_b3 != -1)
-            a_runs[b3_scores] += 1
-            a_b3[ev_1b] = -1
-            
-            b2_exists = ev_1b & (a_b2 != -1)
-            if np.any(b2_exists):
-                speeds = a_b2[b2_exists]
-                curr_outs = a_outs[b2_exists]
+            idx = global_active_idx[ev_1b]
+
+            # Anyone on 3B scores automatically
+            runs[idx[base3[idx] != -1]] += 1
+            base3[idx] = -1  # 3B cleared; will be re-populated by 2B runner if they hold
+
+            # Evaluate runner on 2B advancement
+            b2_mask = base2[idx] != -1
+            if np.any(b2_mask):
+                b2_idx = idx[b2_mask]
+                speeds = base2[b2_idx]
+                curr_outs = outs[b2_idx]
                 thresholds = RUNNER_SCORE_FROM_2ND_ON_SINGLE[speeds, curr_outs]
-                advances = np.random.rand(len(speeds)) <= thresholds
-                
-                b2_scores = np.zeros_like(b2_exists)
-                b2_scores[b2_exists] = advances
-                a_runs[b2_scores] += 1
-                
-                b2_holds = np.zeros_like(b2_exists)
-                b2_holds[b2_exists] = ~advances
-                a_b3[b2_holds] = a_b2[b2_holds]
-                
-            a_b2[ev_1b] = -1
-            
-            b1_exists = ev_1b & (a_b1 != -1)
-            a_b2[b1_exists] = a_b1[b1_exists]
-            a_b1[ev_1b] = batter_speeds[ev_1b]
-            
+                advances = np.random.rand(len(b2_idx)) <= thresholds
+                runs[b2_idx[advances]] += 1
+                base3[b2_idx[~advances]] = base2[b2_idx[~advances]]  # holds at 3rd
+
+            # Advance runner on 1B to 2B safely, isolated before 2B is cleared
+            base2[idx] = np.where(base1[idx] != -1, base1[idx], -1)
+            base1[idx] = batter_speeds[ev_1b]
+
+        # --- RULE D: DOUBLES RESOLUTION ---
         if np.any(ev_2b):
-            b3_scores = ev_2b & (a_b3 != -1)
-            a_runs[b3_scores] += 1
-            a_b3[ev_2b] = -1
-            
-            b2_scores = ev_2b & (a_b2 != -1)
-            a_runs[b2_scores] += 1
-            a_b2[ev_2b] = -1
-            
-            b1_exists = ev_2b & (a_b1 != -1)
-            if np.any(b1_exists):
-                speeds = a_b1[b1_exists]
-                curr_outs = a_outs[b1_exists]
+            idx = global_active_idx[ev_2b]
+
+            # Runners on 2B and 3B score automatically
+            runs[idx[base3[idx] != -1]] += 1
+            runs[idx[base2[idx] != -1]] += 1
+            base3[idx] = -1
+            base2[idx] = -1
+
+            # Evaluate runner on 1B advancement
+            b1_mask = base1[idx] != -1
+            if np.any(b1_mask):
+                b1_idx = idx[b1_mask]
+                speeds = base1[b1_idx]
+                curr_outs = outs[b1_idx]
                 thresholds = RUNNER_SCORE_FROM_1ST_ON_DOUBLE[speeds, curr_outs]
-                advances = np.random.rand(len(speeds)) <= thresholds
-                
-                b1_scores = np.zeros_like(b1_exists)
-                b1_scores[b1_exists] = advances
-                a_runs[b1_scores] += 1
-                
-                b1_holds = np.zeros_like(b1_exists)
-                b1_holds[b1_exists] = ~advances
-                a_b3[b1_holds] = a_b1[b1_holds]
-                
-            a_b1[ev_2b] = -1
-            a_b2[ev_2b] = batter_speeds[ev_2b]
-            
+                advances = np.random.rand(len(b1_idx)) <= thresholds
+                runs[b1_idx[advances]] += 1
+                base3[b1_idx[~advances]] = base1[b1_idx[~advances]]  # holds at 3rd
+
+            base1[idx] = -1
+            base2[idx] = batter_speeds[ev_2b]
+
+        # --- RULE E: TRIPLES RESOLUTION ---
         if np.any(ev_3b):
-            a_runs[ev_3b] += (a_b1[ev_3b] != -1).astype(int) + (a_b2[ev_3b] != -1).astype(int) + (a_b3[ev_3b] != -1).astype(int)
-            a_b1[ev_3b] = -1
-            a_b2[ev_3b] = -1
-            a_b3[ev_3b] = batter_speeds[ev_3b]
-            
+            idx = global_active_idx[ev_3b]
+            runs[idx] += ((base1[idx] != -1).astype(np.int32) +
+                          (base2[idx] != -1).astype(np.int32) +
+                          (base3[idx] != -1).astype(np.int32))
+            base1[idx] = -1
+            base2[idx] = -1
+            base3[idx] = batter_speeds[ev_3b]
+
+        # --- RULE F: HOME RUNS RESOLUTION ---
         if np.any(ev_hr):
-            a_runs[ev_hr] += (a_b1[ev_hr] != -1).astype(int) + (a_b2[ev_hr] != -1).astype(int) + (a_b3[ev_hr] != -1).astype(int) + 1
-            a_b1[ev_hr] = -1
-            a_b2[ev_hr] = -1
-            a_b3[ev_hr] = -1
-            
-        # 4. Write modified slices back
-        outs[active_games] = a_outs
-        runs[active_games] = a_runs
-        base1[active_games] = a_b1
-        base2[active_games] = a_b2
-        base3[active_games] = a_b3
-        
-        # Advance batter index
+            idx = global_active_idx[ev_hr]
+            runs[idx] += ((base1[idx] != -1).astype(np.int32) +
+                          (base2[idx] != -1).astype(np.int32) +
+                          (base3[idx] != -1).astype(np.int32) + 1)
+            base1[idx] = -1
+            base2[idx] = -1
+            base3[idx] = -1
+
+        # 4. Cycle batting lineups forward and recalculate mask directly on parent memory
         batter_indices[active_games] = (batter_indices[active_games] + 1) % lineup_length
-        
-        # Recalculate mask (active_games is modified in place technically, but we're creating a new boolean array)
         active_games &= (outs < 3)
 
 def get_pitcher_id(pitcher_name, sport_id=1):
