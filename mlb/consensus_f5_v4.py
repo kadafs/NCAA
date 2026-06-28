@@ -59,6 +59,8 @@ def process_single_game(args):
     home_id = game.get('home_id')
     ap_id = game.get('away_pitcher_id')
     hp_id = game.get('home_pitcher_id')
+    away_abbr = game.get('away_abbr', away[:3].upper())
+    home_abbr = game.get('home_abbr', home[:3].upper())
     venue = game.get('venue_name', 'Unknown Venue')
     pf = get_park_factor(venue)
     
@@ -77,7 +79,7 @@ def process_single_game(args):
         weather_mult    = 1.0
         effective_pf    = pf
         if sport_id == 1:
-            weather      = get_weather_modifier(venue, away_abbr=away, home_abbr=home)
+            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr)
             weather_mult = weather.get('weather_multiplier', 1.0)
             effective_pf = round(pf * weather_mult, 4)
 
