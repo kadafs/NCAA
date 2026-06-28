@@ -9,20 +9,17 @@ Pipeline (runs once each morning inside consensus_f5.py):
      per reliever using the MLB Stats API boxscore endpoint.
   2. Apply back-to-back and 3-day fatigue FIP penalties per reliever.
   3. Filter to only F5-eligible (high-leverage) relievers.
-  4. Return an adjusted team bullpen FIP as a drop-in replacement for the
-     static get_team_bullpen_fip() call.
+  4. Return an IP-WEIGHTED adjusted team bullpen FIP as a drop-in replacement 
+     for the static get_team_bullpen_fip() call.
 
-Penalty Scale (sabermetric evidence-based):
-  - Pitched 1 day ago (fresh): no penalty
-  - Pitched yesterday (back-to-back): FIP × 1.12
-  - Pitched yesterday AND 2 days ago (consecutive): FIP × 1.12 × 1.20
-  - Pitched all 3 of the last 3 days: marked UNAVAILABLE (training staff shuts down)
-
-High-Leverage F5 Filter:
-  - Only the top 60% of relievers by season FIP are considered F5-eligible.
-  - Mop-up pitchers are excluded, as managers won't deploy them in tight 5th innings.
+ Sabermetric Corrections Implemented:
+  - FIXED: Innings-Pitched Workload Weighting replaces flat arithmetic means.
+  - FIXED: Non-overlapping conditional branches block high-volume double-penalties.
+  - FIXED: Dynamic short-outing Opener checks protect bullpen day data tracking.
 """
 
+import os
+import json
 import datetime
 import statsapi
 from run_daily_f5 import (
@@ -32,41 +29,34 @@ from run_daily_f5 import (
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-# Fatigue multipliers applied to a reliever's effective FIP
 _BACKTOBACK_PENALTY     = 1.12   # pitched yesterday
 _CONSECUTIVE_2D_PENALTY = 1.20   # pitched yesterday AND 2 days ago (stacked)
 _CONSECUTIVE_3D_DAYS    = 3      # if pitched 3 consecutive days → unavailable
 
 # Only the top X% of relievers (by season FIP) are F5-eligible (high-leverage)
 _HL_RELIEVER_PERCENTILE = 0.60
-
-# Minimum pitches in a game to count as "used".
-# Lowered to 5 so high-stress short outings (e.g. 11-pitch bases-loaded jam)
-# are tracked. The consecutive-day multiplier governs fatigue severity.
 _MIN_PITCHES_TO_COUNT = 5
 
-# High-volume cumulative pitch penalty: if a reliever threw >35 total pitches
-# over the last 2 days, an extra 5% is stacked on top of the B2B penalty.
+# High-volume cumulative pitch threshold parameters
 _HIGH_VOLUME_2D_THRESHOLD = 35
 _HIGH_VOLUME_EXTRA_PENALTY = 1.05
 
-# If a reliever threw more than this many pitches in a single appearance yesterday,
-# they are likely unavailable for a high-leverage role today.
-# Apply an extra FIP penalty that effectively pushes them out of the HL filter.
+# High-leverage availability thresholds
 _HIGH_PITCH_SINGLE_GAME_THRESHOLD = 25
 _HIGH_PITCH_UNAVAILABLE_PENALTY   = 1.15
 
+_CACHE_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
+_rest_index_cache = None
+
 # ---------------------------------------------------------------------------
-# Internal helpers
+# Internal Helpers
 # ---------------------------------------------------------------------------
 def _date_str(offset_days: int) -> str:
-    """Return MM/DD/YYYY string for today - offset_days."""
     dt = get_mlb_now().date() - datetime.timedelta(days=offset_days)
     return dt.strftime('%m/%d/%Y')
 
 
 def _get_games_on_date(date_str: str) -> list:
-    """Return list of completed game dicts for a given MM/DD/YYYY date."""
     try:
         games = statsapi.schedule(start_date=date_str, end_date=date_str, sportId=1)
         return [g for g in games if g.get('status') == 'Final']
@@ -80,7 +70,7 @@ def _extract_reliever_pitches(game_pk: int) -> dict:
     for non-starter pitchers in the game.
 
     Format: {personId: {'name': str, 'pitches': int, 'ip': float,
-                        'away_team_id': int, 'home_team_id': int, 'side': str}}
+                        'team_id': int, 'side': str, 'is_starter': bool}}
     """
     result = {}
     try:
@@ -90,7 +80,6 @@ def _extract_reliever_pitches(game_pk: int) -> dict:
 
         for side, team_id in [('away', away_id), ('home', home_id)]:
             pitchers = box.get(f'{side}Pitchers', [])
-            # Row 0 is always the header row (personId == 0)
             for i, p in enumerate(pitchers):
                 pid = p.get('personId', 0)
                 if pid == 0:
@@ -102,15 +91,13 @@ def _extract_reliever_pitches(game_pk: int) -> dict:
                 if pitches < _MIN_PITCHES_TO_COUNT:
                     continue
 
-                # Index 1 (first real pitcher after header) is the starter.
-                # Also detect Openers via position note — e.g. "(W, 3-2)" is fine,
-                # but if the note says 'P' and i==1 we mark as starter.
                 is_starter = (i == 1)
 
-                # FIX 3: Cross-season opener leak guard.
-                # If the API note explicitly labels them as a starting pitcher
-                # role (opener = starting position 1 in lineup) skip them.
-                # We rely on i==1 as the primary signal (robust and fast).
+                # --- ADVANCED AUDIT FIX: DYNAMIC OPENER SHIELD ---
+                # Re-classify 'starters' as relievers if they threw a short
+                # bullpen-day opening assignment (<= 2.0 IP and < 35 pitches)
+                if is_starter and ip <= 2.0 and pitches < 35:
+                    is_starter = False
 
                 result[pid] = {
                     'name':       p.get('name', str(pid)),
@@ -126,18 +113,13 @@ def _extract_reliever_pitches(game_pk: int) -> dict:
     return result
 
 
-import os
-import json
-
-_rest_index_cache = None
-_CACHE_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
-
-def _build_rest_index(lookback_days: int = 3) -> dict:
+def _build_rest_index(lookback_days: int = 3) -> tuple[dict, dict]:
     """
     Builds a rest index: {personId: {1: pitches, 2: pitches, 3: pitches}}
     where the key is days_ago (1 = yesterday, 2 = two days ago, etc.)
 
     Only reliever entries are stored (is_starter == False).
+    Returns (index, team_map).
     """
     global _rest_index_cache
     if _rest_index_cache is not None:
@@ -150,7 +132,6 @@ def _build_rest_index(lookback_days: int = 3) -> dict:
         try:
             with open(cache_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Convert string keys back to int because JSON stringifies dict keys
                 index = {int(k): {int(dk): dv for dk, dv in v.items()} for k, v in data['index'].items()}
                 team_map = {int(k): v for k, v in data['team_map'].items()}
                 _rest_index_cache = (index, team_map)
@@ -158,8 +139,8 @@ def _build_rest_index(lookback_days: int = 3) -> dict:
         except Exception:
             pass
 
-    index: dict[int, dict] = {}   # pid -> {days_ago: pitches}  (additive per day)
-    team_map: dict[int, int] = {} # pid -> team_id
+    index = {}
+    team_map = {}
 
     for days_ago in range(1, lookback_days + 1):
         date = _date_str(days_ago)
@@ -171,14 +152,14 @@ def _build_rest_index(lookback_days: int = 3) -> dict:
 
             for pid, info in pitchers.items():
                 if info['is_starter']:
-                    continue  # only track relievers
+                    continue
 
                 if pid not in index:
                     index[pid] = {}
 
-                # FIX 1: Doubleheader additive aggregation.
-                # Use += so a pitcher who throws in both games of a doubleheader
-                # has their combined pitch count recorded, preventing RESTED misclassification.
+                # Doubleheader additive aggregation: use += so a pitcher who
+                # throws in both games of a doubleheader has their combined
+                # pitch count recorded, preventing RESTED misclassification.
                 if days_ago in index[pid]:
                     index[pid][days_ago] += info['pitches']
                 else:
@@ -199,10 +180,12 @@ def _build_rest_index(lookback_days: int = 3) -> dict:
     return index, team_map
 
 
-def _get_season_fip_for_relievers(pitcher_ids: list) -> dict:
+def _get_season_fip_for_relievers_v6(pitcher_ids: list) -> dict:
     """
-    Fetches season FIP for a list of pitcher IDs.
-    Returns {personId: fip_float}
+    V6 Ingestion Upgrade: Fetches season FIP metrics alongside total
+    Innings Pitched (workload volume) to drive downstream IP weighting.
+
+    Returns {personId: {'base_fip': float, 'season_ip': float}}
     """
     if not pitcher_ids:
         return {}
@@ -230,13 +213,18 @@ def _get_season_fip_for_relievers(pitcher_ids: list) -> dict:
             ip = _parse_ip(stats.get('inningsPitched', '0'))
             gs = int(stats.get('gamesStarted', 0) or 0)
             if ip < 1.0 or gs >= 3:
-                continue  # skip starters / empty lines
+                continue  # Skip raw starters
 
             k  = int(stats.get('strikeOuts',  0) or 0)
             bb = int(stats.get('baseOnBalls', 0) or 0)
             hr = int(stats.get('homeRuns',    0) or 0)
             fip = ((13 * hr) + (3 * bb) - (2 * k)) / ip + FIP_CONSTANT
-            fip_map[pid] = round(max(2.5, min(7.5, fip)), 2)
+
+            # Map workload scale as an internal key alongside the rate stat
+            fip_map[pid] = {
+                'base_fip':  round(max(2.5, min(7.5, fip)), 2),
+                'season_ip': ip
+            }
     except Exception:
         pass
 
@@ -250,14 +238,14 @@ _adjusted_bullpen_cache = {}
 
 def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
     """
-    Drop-in replacement for get_team_bullpen_fip() that applies real-world
-    rest and fatigue penalties to each reliever before computing the team FIP.
+    V6 Rest Engine: Computes a mathematically precise, Innings-Pitched weighted
+    average FIP for high-leverage bullpen profiles.
 
     Steps:
       1. Identify the team ID.
-      2. Build a 3-day rest index from yesterday's box scores.
-      3. Fetch season FIP per active reliever.
-      4. Apply back-to-back / consecutive-day FIP penalties.
+      2. Build a 3-day rest index from recent box scores.
+      3. Fetch season FIP + season IP per active reliever.
+      4. Apply mutually-exclusive fatigue penalties.
       5. Filter to F5-eligible (high-leverage) relievers only.
       6. Return the IP-weighted average effective FIP.
 
@@ -266,7 +254,7 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
     global _adjusted_bullpen_cache
     if team_name in _adjusted_bullpen_cache:
         return _adjusted_bullpen_cache[team_name]
-        
+
     try:
         teams = statsapi.lookup_team(team_name, sportIds=1)
         if not teams:
@@ -275,14 +263,9 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
             return res
 
         team_id = teams[0]['id']
-
-        # 1. Build rest index for all MLB relievers over the last 3 days
         rest_index, team_map = _build_rest_index(lookback_days=3)
-
-        # 2. Isolate relievers who belong to this team
         team_pids = [pid for pid, tid in team_map.items() if tid == team_id]
 
-        # Also get the active roster so we capture fully-rested pitchers too
         try:
             roster_data = statsapi.get('team_roster', {
                 'teamId': team_id, 'rosterType': 'active'
@@ -294,27 +277,25 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
         except Exception:
             roster_pids = []
 
-        # Union: all relievers on the roster, including rested ones
         all_pids = list(set(team_pids + roster_pids))
-
         if not all_pids:
             return get_team_bullpen_fip(team_name)
 
-        # 3. Fetch season FIP for all relevant relievers
-        fip_map = _get_season_fip_for_relievers(all_pids)
-
+        # Draw structured multi-season volume dictionary map
+        fip_map = _get_season_fip_for_relievers_v6(all_pids)
         if not fip_map:
             return get_team_bullpen_fip(team_name)
 
-        # 4. Apply fatigue penalties and filter availability
         effective_profiles = []
 
-        for pid, base_fip in fip_map.items():
-            usage = rest_index.get(pid, {})  # {1: pitches, 2: pitches, 3: pitches}
+        for pid, profile in fip_map.items():
+            base_fip  = profile['base_fip']
+            season_ip = profile['season_ip']
+            usage     = rest_index.get(pid, {})
 
-            pitched_yesterday    = 1 in usage
-            pitched_2_days_ago   = 2 in usage
-            pitched_3_days_ago   = 3 in usage
+            pitched_yesterday  = 1 in usage
+            pitched_2_days_ago = 2 in usage
+            pitched_3_days_ago = 3 in usage
 
             # Mark UNAVAILABLE if threw 3 consecutive days (training staff rule)
             if pitched_yesterday and pitched_2_days_ago and pitched_3_days_ago:
@@ -323,32 +304,40 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
                 continue
 
             effective_fip = base_fip
-
-            # Back-to-back penalty
-            if pitched_yesterday:
-                effective_fip *= _BACKTOBACK_PENALTY
-                # Stacked consecutive penalty if also pitched 2 days ago
-                if pitched_2_days_ago:
-                    effective_fip *= _CONSECUTIVE_2D_PENALTY
-
-            # FIX 4: High-volume cumulative pitch penalty.
-            # If total pitches thrown in the last 2 days exceeds 35,
-            # apply an extra 5% penalty on top of the B2B multiplier.
-            total_pitches_2d = usage.get(1, 0) + usage.get(2, 0)
-            if total_pitches_2d > _HIGH_VOLUME_2D_THRESHOLD:
-                effective_fip *= _HIGH_VOLUME_EXTRA_PENALTY
-
-            # High single-game pitch penalty:
-            # A reliever who threw >25 pitches yesterday is likely running on fumes
-            # and will not be available in a high-leverage situation today.
             yesterday_pitches = usage.get(1, 0)
+            total_pitches_2d  = yesterday_pitches + usage.get(2, 0)
+
+            # --- ADVANCED AUDIT FIX: ISOLATED MUTUAL EXCLUSION FILTER ---
+            # Lock out overlapping single-game and multi-game fatigue scales.
             if yesterday_pitches > _HIGH_PITCH_SINGLE_GAME_THRESHOLD:
+                # High single-game pitch load: pitcher is running on fumes.
+                # Apply this penalty in isolation — B2B stacking is blocked.
                 effective_fip *= _HIGH_PITCH_UNAVAILABLE_PENALTY
                 if verbose:
-                    print(f"    [{team_name}] PID {pid}: HIGH-PITCH ({yesterday_pitches}p yesterday) penalty applied")
+                    print(f"    [{team_name}] PID {pid}: HIGH-PITCH LOCKOUT ({yesterday_pitches}p yesterday). Stacking blocked.")
 
+            elif pitched_yesterday:
+                # Pitcher didn't break the single-game threshold but did throw yesterday.
+                effective_fip *= _BACKTOBACK_PENALTY
+
+                if pitched_2_days_ago:
+                    # Pitched yesterday AND two days ago (Consecutive)
+                    effective_fip *= _CONSECUTIVE_2D_PENALTY
+
+                    # Cumulative volume check only applies to multi-day workloads
+                    if total_pitches_2d > _HIGH_VOLUME_2D_THRESHOLD:
+                        effective_fip *= _HIGH_VOLUME_EXTRA_PENALTY
+                        if verbose:
+                            print(f"    [{team_name}] PID {pid}: Stacking Cumulative Volume (+5%) on top of Consecutive")
+
+            # Hard safety ceiling cap to prevent mathematical overflow distortion
             effective_fip = round(min(7.5, effective_fip), 2)
-            effective_profiles.append({'pid': pid, 'base_fip': base_fip, 'effective_fip': effective_fip})
+            effective_profiles.append({
+                'pid':          pid,
+                'base_fip':     base_fip,
+                'effective_fip': effective_fip,
+                'ip':           season_ip
+            })
 
             if verbose:
                 tag = ''
@@ -361,29 +350,35 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
         if not effective_profiles:
             return get_team_bullpen_fip(team_name)
 
-        # 5. High-leverage filter: only top 60% by base FIP (lower = better)
+        # 5. High-Leverage Selection Filter (Isolate Top 60% by Baseline Quality)
         effective_profiles.sort(key=lambda x: x['base_fip'])
         hl_cutoff = max(1, round(len(effective_profiles) * _HL_RELIEVER_PERCENTILE))
         hl_profiles = effective_profiles[:hl_cutoff]
 
         if verbose:
-            print(f"    [{team_name}] HL filter: {len(hl_profiles)}/{len(effective_profiles)} relievers eligible for F5")
+            print(f"    [{team_name}] HL filter: {len(hl_profiles)}/{len(effective_profiles)} relievers eligible for F5 workload calculations")
 
-        # 6. Simple average of effective FIPs (all relievers treated as equal IP proxies)
-        adjusted_fip = sum(p['effective_fip'] for p in hl_profiles) / len(hl_profiles)
-        adjusted_fip = round(max(2.5, min(7.5, adjusted_fip)), 2)
+        # --- ADVANCED AUDIT FIX: INNINGS-PITCHED WEIGHTED AVERAGE ---
+        # Replaces flat arithmetic means. Volume now dictates the baseline importance factor.
+        total_hl_ip = sum(p['ip'] for p in hl_profiles)
+        if total_hl_ip == 0:
+            return get_team_bullpen_fip(team_name)
+
+        weighted_fip_sum = sum(p['effective_fip'] * p['ip'] for p in hl_profiles)
+        adjusted_fip = round(max(2.5, min(7.5, weighted_fip_sum / total_hl_ip)), 2)
 
         if verbose:
             static_fip = get_team_bullpen_fip(team_name)
             delta = adjusted_fip - static_fip
             sign  = '+' if delta >= 0 else ''
-            print(f"    [{team_name}] Static FIP: {static_fip} → Rest-Adjusted FIP: {adjusted_fip} ({sign}{delta:.2f})")
+            print(f"    [{team_name}] Static Baseline: {static_fip} → Weighted Rest-Adjusted FIP: {adjusted_fip} ({sign}{delta:.2f})")
 
+        _adjusted_bullpen_cache[team_name] = adjusted_fip
         return adjusted_fip
 
     except Exception as e:
         if verbose:
-            print(f"    [{team_name}] Bullpen rest engine failed ({e}), falling back to static FIP.")
+            print(f"    [{team_name}] Bullpen rest engine fatal exception ({e}), forcing static fallback.")
         return get_team_bullpen_fip(team_name)
 
 
@@ -398,7 +393,7 @@ def get_bullpen_rest_report(team_name: str) -> dict:
         'adjusted_fip': float,
         'static_fip': float,
         'delta': float,
-        'relievers': [{pid, base_fip, effective_fip, status}]
+        'relievers': [{pid, base_fip, effective_fip, ip, status}]
     }
     """
     static_fip = get_team_bullpen_fip(team_name)
@@ -414,16 +409,22 @@ def get_bullpen_rest_report(team_name: str) -> dict:
 
         try:
             roster_data = statsapi.get('team_roster', {'teamId': team_id, 'rosterType': 'active'})
-            roster_pids = [p['person']['id'] for p in roster_data.get('roster', []) if p.get('position', {}).get('code') == '1']
+            roster_pids = [
+                p['person']['id'] for p in roster_data.get('roster', [])
+                if p.get('position', {}).get('code') == '1'
+            ]
         except Exception:
             roster_pids = []
 
         all_pids = list(set(team_pids + roster_pids))
-        fip_map = _get_season_fip_for_relievers(all_pids)
+        fip_map = _get_season_fip_for_relievers_v6(all_pids)
 
         relievers = []
-        for pid, base_fip in fip_map.items():
+        for pid, profile in fip_map.items():
+            base_fip  = profile['base_fip']
+            season_ip = profile['season_ip']
             usage = rest_index.get(pid, {})
+
             pitched_yesterday  = 1 in usage
             pitched_2_days_ago = 2 in usage
             pitched_3_days_ago = 3 in usage
@@ -432,28 +433,36 @@ def get_bullpen_rest_report(team_name: str) -> dict:
                 status = 'UNAVAILABLE'
                 effective_fip = None
             else:
-                effective_fip = base_fip
-                if pitched_yesterday:
+                effective_fip     = base_fip
+                yesterday_pitches = usage.get(1, 0)
+                total_pitches_2d  = yesterday_pitches + usage.get(2, 0)
+
+                if yesterday_pitches > _HIGH_PITCH_SINGLE_GAME_THRESHOLD:
+                    effective_fip *= _HIGH_PITCH_UNAVAILABLE_PENALTY
+                    status = f'HIGH-PITCH LOCKOUT ({yesterday_pitches}p)'
+                elif pitched_yesterday:
                     effective_fip *= _BACKTOBACK_PENALTY
                     if pitched_2_days_ago:
                         effective_fip *= _CONSECUTIVE_2D_PENALTY
-                effective_fip = round(min(7.5, effective_fip), 2)
-
-                if pitched_yesterday and pitched_2_days_ago:
-                    status = 'FATIGUED (B2B+1)'
-                elif pitched_yesterday:
-                    status = 'B2B'
+                        if total_pitches_2d > _HIGH_VOLUME_2D_THRESHOLD:
+                            effective_fip *= _HIGH_VOLUME_EXTRA_PENALTY
+                        status = 'FATIGUED (B2B+1)'
+                    else:
+                        status = 'B2B'
                 else:
                     status = 'RESTED'
 
+                effective_fip = round(min(7.5, effective_fip), 2)
+
             relievers.append({
-                'pid': pid,
-                'base_fip': base_fip,
+                'pid':          pid,
+                'base_fip':     base_fip,
                 'effective_fip': effective_fip,
-                'pitches_1d': usage.get(1, 0),
-                'pitches_2d': usage.get(2, 0),
-                'pitches_3d': usage.get(3, 0),
-                'status': status,
+                'ip':           season_ip,
+                'pitches_1d':   usage.get(1, 0),
+                'pitches_2d':   usage.get(2, 0),
+                'pitches_3d':   usage.get(3, 0),
+                'status':       status,
             })
 
         relievers.sort(key=lambda x: x['base_fip'])
@@ -461,9 +470,9 @@ def get_bullpen_rest_report(team_name: str) -> dict:
 
         return {
             'adjusted_fip': adjusted_fip,
-            'static_fip': static_fip,
-            'delta': round(adjusted_fip - static_fip, 2),
-            'relievers': relievers,
+            'static_fip':   static_fip,
+            'delta':        round(adjusted_fip - static_fip, 2),
+            'relievers':    relievers,
         }
 
     except Exception:
@@ -483,6 +492,7 @@ if __name__ == '__main__':
     print(f"Rest-Adjusted FIP:   {report['adjusted_fip']}  (delta: {report['delta']:+.2f})")
     print(f"\nReliever Breakdown ({len(report['relievers'])} tracked):")
     for r in report['relievers']:
-        eff = f"{r['effective_fip']}" if r['effective_fip'] else "N/A"
+        eff   = f"{r['effective_fip']}" if r['effective_fip'] is not None else "N/A"
+        ip    = f"{r['ip']:.1f}IP"
         p_str = f"  P(1d/2d/3d): {r['pitches_1d']}/{r['pitches_2d']}/{r['pitches_3d']}"
-        print(f"  PID {r['pid']:6d} | Base FIP: {r['base_fip']} | Eff FIP: {eff:>5} | {r['status']}{p_str}")
+        print(f"  PID {r['pid']:6d} | Base FIP: {r['base_fip']} | Eff FIP: {eff:>5} | {ip} | {r['status']}{p_str}")
