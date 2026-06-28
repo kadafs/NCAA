@@ -2,7 +2,7 @@ import statsapi
 import time
 from monte_carlo_f5 import get_pitcher_id
 
-def get_pitcher_advanced_metrics(pitcher_name, sport_id=1):
+def get_pitcher_advanced_metrics(pitcher_name, sport_id=1, player_id=None):
     """
     Fetches the advanced metrics for a given pitcher name.
     Returns K_Rate, BB_Rate, and HR_FB (approximated).
@@ -12,7 +12,7 @@ def get_pitcher_advanced_metrics(pitcher_name, sport_id=1):
         return default_metrics
         
     try:
-        pid = get_pitcher_id(pitcher_name)
+        pid = player_id if player_id else get_pitcher_id(pitcher_name)
         if not pid:
             return default_metrics
             

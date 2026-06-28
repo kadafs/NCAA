@@ -57,6 +57,8 @@ def process_single_game(args):
     gid = game['game_id']
     away_id = game.get('away_id')
     home_id = game.get('home_id')
+    ap_id = game.get('away_pitcher_id')
+    hp_id = game.get('home_pitcher_id')
     venue = game.get('venue_name', 'Unknown Venue')
     pf = get_park_factor(venue)
     
@@ -80,11 +82,11 @@ def process_single_game(args):
             effective_pf = round(pf * weather_mult, 4)
 
         # 1. Top-Down Model
-        ap_fip = _retry_call(get_pitcher_fip, ap, sport_id=sport_id)
-        hp_fip = _retry_call(get_pitcher_fip, hp, sport_id=sport_id)
+        ap_fip = _retry_call(get_pitcher_fip, ap, sport_id=sport_id, player_id=ap_id)
+        hp_fip = _retry_call(get_pitcher_fip, hp, sport_id=sport_id, player_id=hp_id)
 
-        ap_ip = _retry_call(get_pitcher_projected_ip, ap, sport_id=sport_id)
-        hp_ip = _retry_call(get_pitcher_projected_ip, hp, sport_id=sport_id)
+        ap_ip = _retry_call(get_pitcher_projected_ip, ap, sport_id=sport_id, player_id=ap_id)
+        hp_ip = _retry_call(get_pitcher_projected_ip, hp, sport_id=sport_id, player_id=hp_id)
 
         try:
             away_bp = _retry_call(get_adjusted_bullpen_fip, away)
@@ -163,8 +165,8 @@ def process_single_game(args):
             away_wrc=away_wrc, home_wrc=home_wrc,
         )
 
-        ap_adv = get_pitcher_advanced_metrics(ap, sport_id)
-        hp_adv = get_pitcher_advanced_metrics(hp, sport_id)
+        ap_adv = get_pitcher_advanced_metrics(ap, sport_id, player_id=ap_id)
+        hp_adv = get_pitcher_advanced_metrics(hp, sport_id, player_id=hp_id)
         
         from park_factors import get_park_factor_details
         pf_details = get_park_factor_details(venue)

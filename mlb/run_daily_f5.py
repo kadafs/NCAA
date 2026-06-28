@@ -334,7 +334,7 @@ def _get_pitcher_fip_single_season(player_id, season):
         _pitcher_cache[key] = None
         return None
 
-def get_pitcher_fip(pitcher_name, sport_id=1):
+def get_pitcher_fip(pitcher_name, sport_id=1, player_id=None):
     """Return a weighted multi-season FIP for the named pitcher.
 
     Issue 5 fix: if the pitcher has fewer than MIN_RELIABLE_IP innings in the
@@ -346,11 +346,11 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
     if pitcher_name in ('TBD', '', None):
         return FALLBACK_FIP
 
-    players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
-    if not players:
-        return FALLBACK_FIP
-
-    player_id = players[0]['id']
+    if player_id is None:
+        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        if not players:
+            return FALLBACK_FIP
+        player_id = players[0]['id']
     current_season = max(SEASON_WEIGHTS.keys())  # e.g. 2026
     prior_season   = current_season - 1           # e.g. 2025
 
@@ -430,7 +430,7 @@ def get_pitcher_fip(pitcher_name, sport_id=1):
 
 
 
-def get_pitcher_projected_ip(pitcher_name, sport_id=1):
+def get_pitcher_projected_ip(pitcher_name, sport_id=1, player_id=None):
     """
     Returns the projected F5 innings (capped at 5.0) based on the pitcher's
     recent game logs (last 5 starts), adjusted for days rest.
@@ -438,11 +438,11 @@ def get_pitcher_projected_ip(pitcher_name, sport_id=1):
     if pitcher_name in ('TBD', '', None):
         return 4.0  # generic projection
 
-    players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
-    if not players:
-        return 4.0
-
-    player_id = players[0]['id']
+    if player_id is None:
+        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        if not players:
+            return 4.0
+        player_id = players[0]['id']
     try:
         # Fetch game log
         data = statsapi.player_stat_data(player_id, group="pitching", type="gameLog", sportId=sport_id)
@@ -692,11 +692,15 @@ def main():
         ap = game['away_pitcher']
         hp = game['home_pitcher']
         
+        # Pass clean, verified IDs straight through the pipeline
+        ap_id = game.get('away_pitcher_id')
+        hp_id = game.get('home_pitcher_id')
+        
         print(f"Grading {away} @ {home}...")
         print(f"  Looking up {ap}...")
-        ap_fip = get_pitcher_fip(ap)
+        ap_fip = get_pitcher_fip(ap, player_id=ap_id)
         print(f"  Looking up {hp}...")
-        hp_fip = get_pitcher_fip(hp)
+        hp_fip = get_pitcher_fip(hp, player_id=hp_id)
         
         print(f"  Looking up {away} offense...")
         away_wrc = get_team_wrc_proxy(away)

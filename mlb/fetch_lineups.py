@@ -238,8 +238,10 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
     season_rates = {}   # season -> {'rates': {...}, 'pa': int}
     for season in MC_WEIGHTS:
         try:
+            # Force correct split translations for batters vs pitchers
             if pitcher_hand and pitcher_hand.upper() in ('L', 'R'):
-                sit_code = 'vl' if pitcher_hand.upper() == 'L' else 'vr'
+                # For hitting stats, 'vs Left pitcher' is 'vsL', 'vs Right pitcher' is 'vsR'
+                sit_code = 'vsL' if pitcher_hand.upper() == 'L' else 'vsR'
                 hydrate_str = f'stats(group=[hitting],type=statSplits,sitCodes={sit_code},season={season})'
             else:
                 hydrate_str = f'stats(group=[hitting],type=season,season={season})'

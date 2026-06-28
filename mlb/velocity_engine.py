@@ -85,12 +85,10 @@ def _fetch_statcast_velo(player_id: int, lookback_days: int = 90) -> list:
     params = urllib.parse.urlencode({
         'player_id':   player_id,
         'player_type': 'pitcher',
-        'type':        'details',
-        'start_speed': '85',       # velocity floor to exclude off-speed
-        'game_date_gt': start,
-        'game_date_lt': end,
-        'pitch_type':  'FF,SI,FC',
-        'csv':         'true',
+        'type':        'pitcher_game', # Slashes payload size by 99%
+        'start_date':  start,
+        'end_date':    end,
+        'csv':         'true'
     })
     url = f'https://baseballsavant.mlb.com/statcast_search/csv?{params}'
 

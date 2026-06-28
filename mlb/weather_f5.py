@@ -423,22 +423,15 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
     # --- Step 2: Fetch raw weather ---
     raw = None
 
-    # Try RotoWire cache first using team abbrs
-    if away_abbr and home_abbr and _rotowire_cache:
-        key = f"{away_abbr}@{home_abbr}"
+    # Clean abbreviation dictionary lookup map
+    ROTO_MAP = {'WAS': 'WSH', 'SDG': 'SD', 'SFO': 'SF', 'TAMP': 'TB', 'KC': 'KCR'}
+    
+    clean_away = ROTO_MAP.get(away_abbr, away_abbr) if away_abbr else None
+    clean_home = ROTO_MAP.get(home_abbr, home_abbr) if home_abbr else None
+    
+    if clean_away and clean_home and _rotowire_cache:
+        key = f"{clean_away}@{clean_home}"
         raw = _rotowire_cache.get(key)
-
-    # If no abbrs or not found in cache, try matching by partial key
-    if raw is None and _rotowire_cache:
-        # Try to find any key that references either abbreviation
-        if away_abbr or home_abbr:
-            for k, v in _rotowire_cache.items():
-                parts = k.split('@')
-                if len(parts) == 2:
-                    if (away_abbr and away_abbr in parts[0]) or \
-                       (home_abbr and home_abbr in parts[1]):
-                        raw = v
-                        break
 
     # Fallback: wttr.in
     if raw is None:
@@ -483,10 +476,8 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
         w_mult   = _wind_multiplier(wind_mph, wind_dir)
         fatigue_scaler = _temp_fatigue_scaler(temp_f)
 
-    # Top-Down model legacy multiplier: Convert to additive baseline shift
-    t_delta = t_mult - 1.0
-    w_delta = w_mult - 1.0
-    combined = round(1.0 + t_delta + w_delta, 4)
+    # Revert to compounding multiplication to prevent model calculation drift
+    combined = round(t_mult * w_mult, 4)
 
     # Build human-readable label
     if is_indoor:
