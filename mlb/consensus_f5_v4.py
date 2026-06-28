@@ -14,7 +14,7 @@ from weather_f5 import get_weather_modifier
 from umpire_engine import get_umpire_for_game, load_umpire_profile
 from bullpen_rest import get_adjusted_bullpen_fip
 from pitcher_advanced_stats import get_pitcher_advanced_metrics
-from gatekeeper_v5 import generate_v5_mathematical_gatekeeper
+from gatekeeper_v5 import generate_v6_premium_45_gatekeeper
 import pandas as pd
 
 def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
@@ -570,7 +570,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
         
     if gatekeeper_rows:
         df = pd.DataFrame(gatekeeper_rows)
-        gatekeeper_report, structured_data = generate_v5_mathematical_gatekeeper(df)
+        gatekeeper_report, structured_data = generate_v6_premium_45_gatekeeper(df)
         
         # Inject structured data back into the raw_json_data per game
         for g in raw_json_data:

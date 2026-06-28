@@ -1,22 +1,37 @@
 import pandas as pd
 import numpy as np
 
-def generate_v5_mathematical_gatekeeper(df):
+def generate_v6_premium_45_gatekeeper(df):
     """
-    V5 Gatekeeper Engine: Completely generalized logic using mathematical 
-    thresholds instead of hardcoded team strings.
+    V6 Premium Gatekeeper Engine: Restricts active betting executions exclusively 
+    to the 4.5 market line when available odds are at least 1.80.
+    Generalized mathematically to eliminate hardcoded team name constraints.
     """
+    # Foundational metrics
     df['Index'] = (df['TD'] - df['MC']).abs()
     df['Combined_Average'] = (df['TD'] + df['MC']) / 2.0
     
-    high_value_strategy = []
-    high_confidence = []
+    # Restrict script to your specific market parameters
+    TARGET_LINE = 4.5
+    MIN_ODDS = 1.80
+    
+    # Dynamic Veto Degradation based on season progression (Sample Size Check)
+    avg_games = df['Games'].mean() if 'Games' in df.columns else 40.0
+    if avg_games > 65:
+        veto_threshold = 0.10
+    elif avg_games > 45:
+        veto_threshold = 0.125
+    else:
+        veto_threshold = 0.150
+
+    betting_slate = []
     error_logs = []
     flagged_games = set()
-
     structured_data = {}
 
-    # 1. ERROR LOG LAYER: PROGRAMMATIC ASYMMETRIC FILTER
+    # -------------------------------------------------------------------------
+    # LAYER 1: AUTOMATED ERROR LOGGING & QUARANTINE
+    # -------------------------------------------------------------------------
     for idx, row in df.iterrows():
         game = row['Game']
         if abs(row['MCaw'] - row['MChm']) > 0.90 and abs(row['AwSP'] - row['HmSP']) < 0.60:
@@ -28,98 +43,94 @@ def generate_v5_mathematical_gatekeeper(df):
             )
             structured_data[game] = {
                 "category": "Quarantined",
+                "action": "SKIP",
                 "reason": "Distribution asymmetry detected. Review SP profiles."
             }
 
-    # 2. CONDITIONAL BETTING LAYER
+    # -------------------------------------------------------------------------
+    # LAYER 2: ELITE PREMIUM 4.5 FILTERING LOOP
+    # -------------------------------------------------------------------------
     strategy_counter = 1
     for idx, row in df.iterrows():
         game = row['Game']
         if game in flagged_games:
             continue
             
-        # -- HIGH DIVERGENCE MATHEMATICAL STRATEGY MATRIX --
-        if row['Index'] > 0.50:
-            game_report = f"{strategy_counter}. **{game}** (Index: {row['Index']:.2f})\n"
-            matrix_lines = []
-            structured_lines = {}
-            
-            for line in [3.5, 4.5, 5.5]:
-                # LINE-CROSSING VETO: Pure mathematical check
-                if (row['TD'] > line and row['MC'] < line) or (row['TD'] < line and row['MC'] > line):
-                    matrix_lines.append(f"    *   **IF Line is {line}:** Hard Skip (Models conflict across line)")
-                    structured_lines[str(line)] = {"action": "Skip", "reason": "Models conflict across line"}
-                    continue
-                
-                # Dynamic Check 1: Park Factor Noise Pollution
-                if abs(row['Realized_PF'] - row['Static_PF']) > 0.15:
-                    side = 'Under' if row['MC'] < line else 'Over'
-                    reason = f"Trust MC; TD blinded by extreme unregressed park variance ({abs(row['Realized_PF'] - row['Static_PF'])*100:.1f}%)."
-                    matrix_lines.append(f"    *   **IF Line is {line}:** BET F5 {side.upper()} ──► {reason}")
-                    structured_lines[str(line)] = {"action": f"BET F5 {side.upper()}", "reason": reason}
-                
-                # Dynamic Check 2: Explosive Fly-Ball Tail Risk
-                elif row['Blended_PF'] > 1.10 and (row['Aw_HR_FB'] > 0.14 or row['Hm_HR_FB'] > 0.14):
-                    side = 'Under' if row['MC'] < line else 'Over'
-                    reason = f"Trust MC; MC capturing non-linear tail risk of fly-ball profiles in a hitter-friendly park ({row['Blended_PF']:.3f}x)."
-                    matrix_lines.append(f"    *   **IF Line is {line}:** BET F5 {side.upper()} ──► {reason}")
-                    structured_lines[str(line)] = {"action": f"BET F5 {side.upper()}", "reason": reason}
-                
-                # Dynamic Check 3: Strikeout/Walk Volatility Noise
-                elif (row['Aw_K_Rate'] + row['Hm_K_Rate'] > 0.48) or (row['Aw_BB_Rate'] + row['Hm_BB_Rate'] > 0.20):
-                    side = 'Under' if row['TD'] < line else 'Over'
-                    reason = "Trust TD; High true-outcome pitcher metrics detected. MC vulnerable to sequence pacing noise."
-                    matrix_lines.append(f"    *   **IF Line is {line}:** BET F5 {side.upper()} ──► {reason}")
-                    structured_lines[str(line)] = {"action": f"BET F5 {side.upper()}", "reason": reason}
-                
-                # Default Generalized Backup
-                else:
-                    better_model = "MC" if abs(row['MC'] - line) > abs(row['TD'] - line) else "TD"
-                    side = 'Under' if row[better_model] < line else 'Over'
-                    reason = f"Trust {better_model} via pure distance edge."
-                    matrix_lines.append(f"    *   **IF Line is {line}:** BET F5 {side.upper()} ──► {reason}")
-                    structured_lines[str(line)] = {"action": f"BET F5 {side.upper()}", "reason": reason}
+        # Market validation checklist checks
+        market_line = row.get('Market_Line', 4.5)
+        market_odds = row.get('Market_Odds', 1.85)
+        
+        if market_line != TARGET_LINE or market_odds < MIN_ODDS:
+            structured_data[game] = {
+                "category": "Market Exclusion",
+                "action": "SKIP",
+                "reason": f"Line is {market_line} or odds ({market_odds}) under 1.80 threshold."
+            }
+            continue
 
-            if matrix_lines:
-                game_report += "\n".join(matrix_lines) + "\n"
-                high_value_strategy.append(game_report)
-                structured_data[game] = {
-                    "category": "High-Value Strategy",
-                    "index": row['Index'],
-                    "lines": structured_lines
-                }
+        # LINE-CROSSING VETO CHECK (Absolute Model Disagreement Shield)
+        if (row['TD'] > TARGET_LINE and row['MC'] < TARGET_LINE) or (row['TD'] < TARGET_LINE and row['MC'] > TARGET_LINE):
+            structured_data[game] = {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+            continue
+
+        # Determine direction based on your combined averages
+        side = "UNDER" if row['Combined_Average'] < TARGET_LINE else "OVER"
+        edge = abs(row['Combined_Average'] - TARGET_LINE)
+
+        # A. HIGH DIVERGENCE STRATEGY MATRIX (Index > 0.50)
+        if row['Index'] > 0.50:
+            # Case 1: Team Bias Veto (Park Noise Pollution)
+            if abs(row['Realized_PF'] - row['Static_PF']) > veto_threshold:
+                mc_side = "UNDER" if row['MC'] < TARGET_LINE else "OVER"
+                reason = f"Team Bias Veto Active. Trusting MC; TD blinded by unregressed park variance ({abs(row['Realized_PF'] - row['Static_PF'])*100:.1f}%)."
+                betting_slate.append(f"{strategy_counter}. **{game}** ──► **BET F5 {mc_side}** (Odds: {market_odds:.2f})\n    *   *System Note:* {reason}\n")
+                structured_data[game] = {"category": "High-Value Strategy", "action": f"BET F5 {mc_side}", "reason": reason, "odds": market_odds}
+                strategy_counter += 1
+                
+            # Case 2: Explosive Fly-Ball Tail Risk
+            elif row['Blended_PF'] > 1.10 and (row['Aw_HR_FB'] > 0.14 or row['Hm_HR_FB'] > 0.14):
+                reason = f"Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park ({row['Blended_PF']:.3f}x)."
+                betting_slate.append(f"{strategy_counter}. **{game}** ──► **BET F5 {side}** (Odds: {market_odds:.2f})\n    *   *System Note:* {reason}\n")
+                structured_data[game] = {"category": "High-Value Strategy", "action": f"BET F5 {side}", "reason": reason, "odds": market_odds}
+                strategy_counter += 1
+                
+            # Case 3: Strikeout/Walk Volatility Noise
+            elif (row['Aw_K_Rate'] + row['Hm_K_Rate'] > 0.48) or (row['Aw_BB_Rate'] + row['Hm_BB_Rate'] > 0.20):
+                td_side = "UNDER" if row['TD'] < TARGET_LINE else "OVER"
+                reason = "Volatility Veto: High true-outcome pitcher metrics. MC sequence noise flagged; trusting TD."
+                betting_slate.append(f"{strategy_counter}. **{game}** ──► **BET F5 {td_side}** (Odds: {market_odds:.2f})\n    *   *System Note:* {reason}\n")
+                structured_data[game] = {"category": "High-Value Strategy", "action": f"BET F5 {td_side}", "reason": reason, "odds": market_odds}
+                strategy_counter += 1
+                
+            # Case 4: Pure Distance Edge
+            elif edge >= 0.20:
+                better_model = "MC" if abs(row['MC'] - TARGET_LINE) > abs(row['TD'] - TARGET_LINE) else "TD"
+                dist_side = "UNDER" if row[better_model.upper()] < TARGET_LINE else "OVER"
+                reason = f"Divergent baseline alignment confirms line value. Trusting {better_model} via pure distance edge."
+                betting_slate.append(f"{strategy_counter}. **{game}** ──► **BET F5 {dist_side}** (Odds: {market_odds:.2f})\n    *   *System Note:* {reason}\n")
+                structured_data[game] = {"category": "High-Value Strategy", "action": f"BET F5 {dist_side}", "reason": reason, "odds": market_odds}
                 strategy_counter += 1
 
-        # -- HIGH-CONFIDENCE SYSTEMATIC ALIGNMENT --
-        elif row['Index'] < 0.25:
-            agree_report = f"*   **{game}** (Index: {row['Index']:.2f} | TD: {row['TD']:.2f} | MC: {row['MC']:.2f})\n"
-            matrix_lines = []
-            structured_lines = {}
-            
-            for line in [3.5, 4.5, 5.5]:
-                if abs(row['Combined_Average'] - line) >= 0.10:
-                    side = "UNDER" if row['Combined_Average'] < line else "OVER"
-                    reason = "Clean value engine agreement"
-                    matrix_lines.append(f"    *   IF Line is {line} ──► **BET F5 {side}** ({reason})")
-                    structured_lines[str(line)] = {"action": f"BET F5 {side}", "reason": reason}
-                else:
-                    reason = "No actionable betting margin"
-                    matrix_lines.append(f"    *   IF Line is {line} ──► SKIP ({reason})")
-                    structured_lines[str(line)] = {"action": "Skip", "reason": reason}
-            
-            agree_report += "\n".join(matrix_lines) + "\n"
-            high_confidence.append(agree_report)
-            structured_data[game] = {
-                "category": "High-Confidence",
-                "index": row['Index'],
-                "lines": structured_lines
-            }
+        # B. HIGH-CONFIDENCE SYSTEMATIC ALIGNMENT (Index < 0.25)
+        elif row['Index'] < 0.25 and edge >= 0.10:
+            reason = "Engine Convergence: Models perfectly aligned with measurable market edge."
+            betting_slate.append(f"*   **{game}** ──► **BET F5 {side}** (Odds: {market_odds:.2f})\n    *   *System Note:* {reason}\n")
+            structured_data[game] = {"category": "High-Confidence", "action": f"BET F5 {side}", "reason": reason, "odds": market_odds}
 
-    # REPORT PRINT BLOCK
-    report = ["# Automated V5 Mathematical F5 Gatekeeper Report\n", "## 1. Conditional High-Value Strategy Matrix"]
-    report.extend(high_value_strategy if high_value_strategy else ["No strategy matrix targets."])
-    report.append("\n## 2. High-Confidence Line Lookup (Index < 0.25)")
-    report.extend(high_confidence if high_confidence else ["No high-confidence alignments."])
-    if error_logs: report.extend(["\n"] + error_logs)
+    # -------------------------------------------------------------------------
+    # LAYER 3: REPORT COMPILATION
+    # -------------------------------------------------------------------------
+    report = ["# Automated V6 Premium 4.5 Gatekeeper Report\n", "## Active Portfolio Recommendations"]
+    if betting_slate:
+        report.extend(betting_slate)
+    else:
+        report.append("No games matched the precise 4.5 line and 1.80+ odds execution requirements for tonight.\n")
+        
+    if error_logs: 
+        report.extend(["\n"] + error_logs)
     
     return "\n".join(report), structured_data
