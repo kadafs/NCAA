@@ -107,8 +107,12 @@ def _get_pitcher_gb_ratio(pitcher_player_id: int, season: int = 2026) -> float:
                 if splits:
                     stat = splits[0].get('stat', {})
                     ratio = stat.get('groundOutsToAirOuts')
-                    if ratio is not None:
+                    if ratio in (None, "", "0", 0, 0.0, "-.--", "-"):
+                        return 1.0
+                    try:
                         return float(ratio)
+                    except (ValueError, TypeError):
+                        return 1.0
     except Exception:
         pass
     return 1.0
