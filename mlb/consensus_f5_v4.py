@@ -358,6 +358,12 @@ def process_single_game(args):
             "version": "v4"
         }
         
+        # Dynamic Games calculation
+        now = get_mlb_now()
+        opening_day = datetime.datetime(now.year, 3, 28, tzinfo=now.tzinfo)
+        days_elapsed = (now - opening_day).days
+        estimated_games = max(0, min(162, int(days_elapsed * 0.9)))
+        
         # Build gatekeeper input
         result['gatekeeper_data'] = {
             'Game': f"{away} @ {home}",
@@ -376,6 +382,9 @@ def process_single_game(args):
             'Hm_K_Rate': hp_adv.get('K_Rate', 0),
             'Aw_BB_Rate': ap_adv.get('BB_Rate', 0),
             'Hm_BB_Rate': hp_adv.get('BB_Rate', 0),
+            'Market_Line': 4.5,
+            'Market_Odds': 1.85,
+            'Games': estimated_games,
         }
         
         # 4. Format Output
