@@ -7,7 +7,6 @@ from fetch_lineups import (
 )
 from live_state import get_runner_speed_tier
 from umpire_engine import apply_umpire_sabermetric_layer
-from defense_f5 import calculate_defensive_hit_modifier
 import statsapi
 
 # ---------------------------------------------------------------------------
@@ -571,16 +570,17 @@ def run_monte_carlo_f5(
     If None, no umpire adjustment is applied.
     """
     # 1. Fetch Pitcher Modifiers
+    # The Away Pitcher pitches to the Home Batters. The defense backing him up is the Away Team.
     away_pitcher_id = get_pitcher_id(away_pitcher_name, sport_id)
     home_pitcher_id = get_pitcher_id(home_pitcher_name, sport_id)
 
     away_pitcher_mods = get_pitcher_pa_modifiers_xfip(
         away_pitcher_fip, away_pitcher_id,
-        defending_team=home_team_name, venue_name=venue_name
+        defending_team=away_team_name, venue_name=venue_name
     )
     home_pitcher_mods = get_pitcher_pa_modifiers_xfip(
         home_pitcher_fip, home_pitcher_id,
-        defending_team=away_team_name, venue_name=venue_name
+        defending_team=home_team_name, venue_name=venue_name
     )
 
     # Resolve pitcher handedness (used for generic lineup platoon logic)
@@ -668,32 +668,6 @@ def run_monte_carlo_f5(
     # ─────────────────────────────────────────────────────────────────────────
 
     temp_scaler = weather_context.get('temp_fatigue_scaler', 1.0) if weather_context else 1.0
-
-    # --- Defensive Hit Modifier (defense_f5) ---
-    # Compute once per game, before the TTTO CDF matrix build.
-    # home defense faces away batters → scales into away_pitcher_mods hit_mod
-    # away defense faces home batters → scales into home_pitcher_mods hit_mod
-    try:
-        home_def_mod = calculate_defensive_hit_modifier(
-            away_pitcher_id, home_team_name, venue_name
-        )
-        away_def_mod = calculate_defensive_hit_modifier(
-            home_pitcher_id, away_team_name, venue_name
-        )
-    except Exception:
-        home_def_mod = 1.0
-        away_def_mod = 1.0
-
-    # Apply defensive scaler to hit_mod in each handedness split of pitcher mods.
-    # away_pitcher_mods controls what home batters face; home defense affects those hits.
-    for _hand in list(away_pitcher_mods):
-        away_pitcher_mods[_hand]['hit_mod'] = round(
-            away_pitcher_mods[_hand].get('hit_mod', 1.0) * away_def_mod, 4
-        )
-    for _hand in list(home_pitcher_mods):
-        home_pitcher_mods[_hand]['hit_mod'] = round(
-            home_pitcher_mods[_hand].get('hit_mod', 1.0) * home_def_mod, 4
-        )
 
     # --- Pre-compute TTTO CDF Matrices ---
     away_lineup_states = []

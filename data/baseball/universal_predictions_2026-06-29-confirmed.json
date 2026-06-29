@@ -1,0 +1,190 @@
+{
+    "date": "2026-06-29",
+    "mode": "confirmed",
+    "total_predictions": 2,
+    "predictions": [
+        {
+            "away_team": "Los Angeles Dodgers",
+            "home_team": "Athletics",
+            "pitchers": {
+                "away": {
+                    "name": "Eric Lauer",
+                    "hand": "L",
+                    "fip": 6.04
+                },
+                "home": {
+                    "name": "Gage Jump",
+                    "hand": "L",
+                    "fip": 2.92
+                }
+            },
+            "environment": {
+                "venue": "Sutter Health Park",
+                "park_factor": 1.134,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Calm",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.003,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.003,
+                    "weather_label": "72F | Calm | Weather: +0.3%"
+                },
+                "effective_pf": 1.1374,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.7,
+                "mc_f5": 5.93,
+                "mc_f5_away": 2.21,
+                "mc_f5_home": 3.72,
+                "mc_late": 3.97,
+                "mc_full_game": 9.9,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.978,
+                    "raw_avg": 2.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        1,
+                        1,
+                        4,
+                        5,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        1,
+                        7,
+                        2,
+                        0,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.285,
+                "under_4_5": 0.399,
+                "under_5_5": 0.509,
+                "full_over_7_5": 0.77,
+                "full_over_8_5": 0.655,
+                "full_over_9_5": 0.529
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R1)",
+                "adv_4_5": "Skip (Under Lean - R1)",
+                "adv_5_5": "Skip"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Los Angeles Angels",
+            "home_team": "Seattle Mariners",
+            "pitchers": {
+                "away": {
+                    "name": "Ryan Johnson",
+                    "hand": "R",
+                    "fip": 5.3
+                },
+                "home": {
+                    "name": "George Kirby",
+                    "hand": "R",
+                    "fip": 3.81
+                }
+            },
+            "environment": {
+                "venue": "T-Mobile Park",
+                "park_factor": 0.867,
+                "weather": {
+                    "temp": 55,
+                    "wind_mph": 5,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 0.96,
+                    "temp_multiplier": 0.985,
+                    "wind_multiplier": 1.01,
+                    "weather_multiplier": 0.9949,
+                    "weather_label": "55F | 5 MPH Out | Weather: -0.5%"
+                },
+                "effective_pf": 0.8626,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.36,
+                "mc_f5": 5.13,
+                "mc_f5_away": 1.54,
+                "mc_f5_home": 3.59,
+                "mc_late": 2.98,
+                "mc_full_game": 8.11,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.978,
+                    "raw_avg": 2.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        2,
+                        3,
+                        2,
+                        5,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        0,
+                        1,
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.361,
+                "under_4_5": 0.483,
+                "under_5_5": 0.598,
+                "full_over_7_5": 0.563,
+                "full_over_8_5": 0.423,
+                "full_over_9_5": 0.298
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+        }
+    ]
+}
