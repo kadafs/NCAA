@@ -7,6 +7,7 @@ from fetch_lineups import (
 )
 from live_state import get_runner_speed_tier
 from umpire_engine import apply_umpire_sabermetric_layer
+from defense_f5 import calculate_defensive_hit_modifier
 import statsapi
 
 # ---------------------------------------------------------------------------
@@ -58,15 +59,17 @@ def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitch
     # Calculate the remaining probability as an out
     total_non_out = sum(adjusted.values())
     
-    # Cap total non-out at 0.95 to ensure at least some outs
+    # Cap total non-out at 1.0 to ensure at least some outs.
+    # Threshold is 1.0 (true overflow) — not 0.95 — so that pre-applied
+    # umpire/defense adjustments are not erased by a premature rescale.
     if total_non_out >= 1.0:
         scale = 0.95 / total_non_out
-        for k in adjusted:
-            adjusted[k] *= scale
+        for key in adjusted:
+            adjusted[key] *= scale
         adjusted['out_rate'] = 0.05
     else:
         adjusted['out_rate'] = 1.0 - total_non_out
-        
+
     return adjusted
 
 def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_hand='R'):
@@ -145,16 +148,19 @@ def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_h
     adjusted['k'] = max(0.0001, adjusted.get('k', 0) * k_scale)
 
     # 6. Strict Structural Floor & Re-Normalization Sink
-    total_non_out = sum(v for k, v in adjusted.items() if k != 'out_rate')
-    if total_non_out >= 0.95:
+    # Threshold is 1.0 (true overflow only). Using 0.95 caused the rescaler
+    # to fire in normal conditions and proportionally erase umpire/defense
+    # modifiers that were applied earlier in the pipeline.
+    total_non_out = sum(v for key, v in adjusted.items() if key != 'out_rate')
+    if total_non_out >= 1.0:
         scale = 0.95 / total_non_out
-        for k in adjusted:
-            if k != 'out_rate':
-                adjusted[k] *= scale
+        for key in adjusted:
+            if key != 'out_rate':
+                adjusted[key] *= scale
         adjusted['out_rate'] = 0.05
     else:
         adjusted['out_rate'] = 1.0 - total_non_out
-    
+
     return adjusted
 
 # Speed Tiers: 0=Sluggish, 1=Average, 2=Elite
@@ -663,10 +669,36 @@ def run_monte_carlo_f5(
 
     temp_scaler = weather_context.get('temp_fatigue_scaler', 1.0) if weather_context else 1.0
 
+    # --- Defensive Hit Modifier (defense_f5) ---
+    # Compute once per game, before the TTTO CDF matrix build.
+    # home defense faces away batters → scales into away_pitcher_mods hit_mod
+    # away defense faces home batters → scales into home_pitcher_mods hit_mod
+    try:
+        home_def_mod = calculate_defensive_hit_modifier(
+            away_pitcher_id, home_team_name, venue_name
+        )
+        away_def_mod = calculate_defensive_hit_modifier(
+            home_pitcher_id, away_team_name, venue_name
+        )
+    except Exception:
+        home_def_mod = 1.0
+        away_def_mod = 1.0
+
+    # Apply defensive scaler to hit_mod in each handedness split of pitcher mods.
+    # away_pitcher_mods controls what home batters face; home defense affects those hits.
+    for _hand in list(away_pitcher_mods):
+        away_pitcher_mods[_hand]['hit_mod'] = round(
+            away_pitcher_mods[_hand].get('hit_mod', 1.0) * away_def_mod, 4
+        )
+    for _hand in list(home_pitcher_mods):
+        home_pitcher_mods[_hand]['hit_mod'] = round(
+            home_pitcher_mods[_hand].get('hit_mod', 1.0) * home_def_mod, 4
+        )
+
     # --- Pre-compute TTTO CDF Matrices ---
     away_lineup_states = []
     home_lineup_states = []
-    
+
     # HFA input scaling keys: only offensive contact/walk outcomes, NOT strikeouts.
     # Applying at input level keeps k-rate ratios intact through the existing normalization.
     _HFA_KEYS = ('single', 'double', 'triple', 'hr', 'bb')
