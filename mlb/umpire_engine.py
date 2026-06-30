@@ -137,6 +137,9 @@ def update_umpire_db(verbose: bool = False) -> None:
         if verbose:
             print(f"    Found {len(pks)} new completed games in {season}.")
 
+        # Build a game_pk → date mapping so we can stamp each log entry.
+        pk_to_date = {g['game_id']: g.get('game_date', '') for g in raw_schedule}
+
         for i, pk in enumerate(pks):
             try:
                 # game_boxScore is a lightweight endpoint (no play-by-play)
@@ -176,12 +179,31 @@ def update_umpire_db(verbose: bool = False) -> None:
                     continue
 
                 if plate_ump not in agg:
-                    agg[plate_ump] = {'k': 0.0, 'bb': 0.0, 'ip': 0.0, 'games': 0.0}
+                    agg[plate_ump] = {'k': 0.0, 'bb': 0.0, 'ip': 0.0, 'games': 0}
 
                 agg[plate_ump]['k']     += total_k  * weight
                 agg[plate_ump]['bb']    += total_bb * weight
                 agg[plate_ump]['ip']    += total_ip * weight
-                agg[plate_ump]['games'] += 1.0 * weight
+                # FIX (2026-06-30): Track raw game count as integer.
+                # Previous code used `+= 1.0 * weight`, which diluted the
+                # Bayesian shrinkage denominator and over-regressed experienced
+                # umpires toward the league mean.
+                agg[plate_ump]['games'] += 1
+
+                # --- Append chronological game log for point-in-time backtest lookups ---
+                game_date_str = pk_to_date.get(pk, '')
+                if plate_ump not in db:
+                    db[plate_ump] = {}
+                if 'game_history_logs' not in db[plate_ump]:
+                    db[plate_ump]['game_history_logs'] = []
+                db[plate_ump]['game_history_logs'].append({
+                    'date': game_date_str,
+                    'k':    total_k,
+                    'bb':   total_bb,
+                    'ip':   total_ip,
+                    'weight': weight,
+                })
+
                 processed_pks.add(pk)
 
                 if verbose and (i + 1) % 50 == 0:
@@ -192,7 +214,8 @@ def update_umpire_db(verbose: bool = False) -> None:
                     print(f"    Warning: boxscore fetch failed for game {pk}: {e}")
                 continue
 
-    # Convert accumulated stats to modifier ratios and merge into DB
+    # Convert accumulated stats to modifier ratios and merge into DB.
+    # Preserve game_history_logs written during the inner loop above.
     for name, stats in agg.items():
         if stats['ip'] == 0:
             continue
@@ -201,10 +224,14 @@ def update_umpire_db(verbose: bool = False) -> None:
 
         existing = db.get(name, {})
         db[name] = {
-            'games_called': round(stats['games'], 1),
+            # FIX (2026-06-30): Store raw integer game count so Bayesian
+            # shrinkage weight = games / (games + 40) uses real experience.
+            'games_called': int(stats['games']),
             'raw_k_mod':    round(ump_k9  / LEAGUE_K_PER_9,  4),
             'raw_bb_mod':   round(ump_bb9 / LEAGUE_BB_PER_9, 4),
-            'last_updated': today
+            'last_updated': today,
+            # Preserve chronological log entries written during the scrape loop.
+            'game_history_logs': existing.get('game_history_logs', []),
         }
 
     # Persist the processed PKs index so weekly re-runs skip old games
@@ -283,31 +310,40 @@ def apply_umpire_sabermetric_layer(
     stabilization_games: int = STABILIZATION_GAMES
 ) -> dict:
     """
-    Applies Bayesian-stabilized umpire strike-zone modifiers to a batter's
-    raw plate appearance input rates.
+    Calculates Bayesian-stabilized umpire modifiers and stores them as
+    passthrough keys ('ump_k_mod', 'ump_bb_mod') in the returned dict.
 
-    Must be called BEFORE adjust_batter_rates() (pitcher/fatigue) and
-    BEFORE apply_environmental_physics() so the existing out_rate normalization
-    absorbs the adjustment cleanly.
+    FIX (2026-06-30): The previous implementation scaled 'k' and 'bb' directly
+    on the batter's raw input rates. Because all hit types are proportional to
+    prob_bip = 1 - (prob_k + prob_bb), an elite strike-zone umpire accidentally
+    suppressed singles, doubles, triples, and home runs equally — the "Out-Rate
+    Erasure" bug. The fix stores multipliers as neutral passthrough keys so that
+    adjust_batter_rates() can apply them strictly to prob_k and prob_bb AFTER
+    the log-odds blend, leaving the batted-ball distribution intact.
 
     Parameters
     ----------
-    base_rates        : Raw batter PA rate dict (keys: k, bb, hr, single, double, triple).
+    base_rates        : Raw batter PA rate dict (keys: k, bb, hr, single, …).
     umpire_profile    : Dict from load_umpire_profile(). Needs 'games_called',
                         'raw_k_mod', 'raw_bb_mod'.
     stabilization_games : Bayesian shrinkage threshold. Default 40 games.
 
     Returns
     -------
-    Adjusted rate dict with stabilized k and bb values. All other keys unchanged.
+    Dict with all original keys plus 'ump_k_mod' and 'ump_bb_mod'.
+    When no umpire data exists both keys default to 1.0 (no effect).
     """
-    # 1. Handle missing/unannounced umpires smoothly — return pristine rates
+    adjusted = dict(base_rates)
+    # Always inject defaults so adjust_batter_rates() can read them unconditionally.
+    adjusted['ump_k_mod']  = 1.0
+    adjusted['ump_bb_mod'] = 1.0
+
     if not umpire_profile or umpire_profile.get('games_called', 0) == 0:
-        return base_rates
+        return adjusted
 
     games = umpire_profile['games_called']
 
-    # 2. Bayesian Shrinkage: regress small sample sizes back to the league mean (1.0)
+    # Bayesian Shrinkage: regress small sample sizes back to the league mean (1.0).
     # At games=40, weight=0.50 (equal credibility between data and prior).
     # At games=200, weight=0.83 (data dominates).
     weight = games / (games + stabilization_games)
@@ -315,14 +351,9 @@ def apply_umpire_sabermetric_layer(
     stabilized_k_mod  = (umpire_profile.get('raw_k_mod',  1.0) * weight) + (1.0 * (1.0 - weight))
     stabilized_bb_mod = (umpire_profile.get('raw_bb_mod', 1.0) * weight) + (1.0 * (1.0 - weight))
 
-    # 3. Apply modifiers directly to the input rate dictionary
-    adjusted = dict(base_rates)
-    adjusted['k']  = adjusted.get('k',  0.22) * stabilized_k_mod
-    adjusted['bb'] = adjusted.get('bb', 0.08) * stabilized_bb_mod
-
-    # 4. Strict Bound Safeguards (prevent extreme out-of-bounds metrics)
-    adjusted['k']  = max(0.05, min(0.45, adjusted['k']))
-    adjusted['bb'] = max(0.02, min(0.20, adjusted['bb']))
+    # Strict boundary safeguards.
+    adjusted['ump_k_mod']  = max(0.80, min(1.20, stabilized_k_mod))
+    adjusted['ump_bb_mod'] = max(0.75, min(1.25, stabilized_bb_mod))
 
     return adjusted
 

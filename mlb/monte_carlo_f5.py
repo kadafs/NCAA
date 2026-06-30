@@ -75,8 +75,17 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     # Log-Odds Blending
     prob_bb = log_odds_blend(pitcher_bb_rate, b_bb, 0.085)
     prob_k = log_odds_blend(pitcher_k_rate, b_k, 0.225)
-    
-    # Safety Check: Enforce a strict Strikeout Floor
+
+    # Apply umpire modifiers strictly to Tier 1 plate appearance outcomes.
+    # FIX (2026-06-30, Flaw 1): Previously applied at the raw-talent input layer
+    # via apply_umpire_sabermetric_layer(), which caused prob_bip compression:
+    # a strikeout-heavy umpire also suppressed singles/doubles/HRs equally.
+    # Applying AFTER the log-odds blend isolates the umpire's effect to the
+    # K/BB ratio, leaving the batted-ball profile intact.
+    prob_bb *= batter.get('ump_bb_mod', 1.0)
+    prob_k  *= batter.get('ump_k_mod',  1.0)
+
+    # Safety Check: Enforce a strict Strikeout Floor AFTER umpire overlay
     min_k_floor = b_k * 0.70
     if prob_k < min_k_floor: prob_k = min_k_floor
 
@@ -768,7 +777,11 @@ def run_monte_carlo_f5(
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * _AWAY_SCALE
-            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=home_defense_factor)
+            # Inject ump_k_mod / ump_bb_mod so adjust_batter_rates applies them at Tier 1.
+            # Previously umpire_profile was passed as a dead arg to adjust_batter_rates;
+            # now the modifiers flow through the batter dict as passthrough keys.
+            b_scaled = apply_umpire_sabermetric_layer(b_scaled, umpire_profile)
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler, defense_factor=home_defense_factor)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             a_cdf_matrix.append(create_cdf_array(adj))
         away_lineup_states.append(np.array(a_cdf_matrix))
@@ -784,7 +797,8 @@ def run_monte_carlo_f5(
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * HOME_ADVANTAGE_FACTOR
-            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=away_defense_factor)
+            b_scaled = apply_umpire_sabermetric_layer(b_scaled, umpire_profile)
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler, defense_factor=away_defense_factor)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             h_cdf_matrix.append(create_cdf_array(adj))
         home_lineup_states.append(np.array(h_cdf_matrix))
