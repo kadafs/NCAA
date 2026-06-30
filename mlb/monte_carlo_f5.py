@@ -15,9 +15,11 @@ import statsapi
 # Calibration constant
 # ---------------------------------------------------------------------------
 # Mild global dampener to correct for slight MC OVER bias.
-# Derived from season-to-date average: actual F5 / MC projected F5 ~ 0.97.
+# Recalibrated 2026-06-30: SIERA-aligned 3-Tier batted ball engine generates
+# +1.3% to +2.5% more hits per PA vs old direct PA rate approach (cumulative
+# BABIP pass-through in Tier 3). Formula: 0.97 / 1.015 ~= 0.955
 # Set to 1.0 to disable. Reassess monthly as season progresses.
-MLB_F5_CALIBRATION = 0.97
+MLB_F5_CALIBRATION = 0.955
 
 # Offensive outcome keys affected by form/calibration adjustments
 _OFFENSE_KEYS = ('bb', 'hr', 'single', 'double', 'triple')
