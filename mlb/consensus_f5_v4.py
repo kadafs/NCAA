@@ -496,8 +496,8 @@ def process_single_game(args):
         result['game_blocks'].extend(block_lines)
         
     except Exception as e:
-        print(f"  ⚠️  SKIPPED {away} @ {home}: {type(e).__name__}: {e}")
-        result['game_blocks'].append(f"### {away} @ {home} — ⚠️ Data Error (skipped)")
+        print(f"  [SKIPPED] {away} @ {home}: {type(e).__name__}: {e}")
+        result['game_blocks'].append(f"### {away} @ {home} - [Data Error] (skipped)")
         result['game_blocks'].append(f"Error: {type(e).__name__}: {e}")
         result['game_blocks'].append("")
     

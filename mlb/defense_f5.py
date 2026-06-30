@@ -206,15 +206,14 @@ def calculate_defensive_hit_modifier(
     # --- Step 3: Resolve defending team ID ---
     try:
         team_lookup = statsapi.lookup_team(defending_team_name, sportIds=sport_id)
-        if not team_lookup:
-            result = turf_mult
-            _def_cache[cache_key] = result
-            return result
-        team_id = team_lookup[0]['id']
-    except Exception:
+    except (Exception, json.JSONDecodeError):
+        team_lookup = None
+    
+    if not team_lookup:
         result = turf_mult
         _def_cache[cache_key] = result
         return result
+    team_id = team_lookup[0]['id']
 
     # --- Step 4: Fetch fielding stats ---
     f_stats = _get_team_fielding_stats(team_id, season=season)

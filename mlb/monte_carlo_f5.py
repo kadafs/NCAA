@@ -2,9 +2,11 @@ from mlb_time import get_mlb_now
 import random
 import numpy as np
 from fetch_lineups import (
-    get_batter_pa_rates, get_pitcher_pa_modifiers_xfip,
+    get_batter_pa_rates,
     get_batter_hand, get_pitcher_hand
 )
+from fetch_pitcher_batted_ball import fetch_and_profile_pitcher
+from defense_f5 import calculate_defensive_hit_modifier
 from live_state import get_runner_speed_tier
 from umpire_engine import apply_umpire_sabermetric_layer
 import statsapi
@@ -20,56 +22,124 @@ MLB_F5_CALIBRATION = 0.97
 # Offensive outcome keys affected by form/calibration adjustments
 _OFFENSE_KEYS = ('bb', 'hr', 'single', 'double', 'triple')
 
-def adjust_batter_rates(batter_rates, pitcher_modifiers, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None):
-    """
-    Adjusts a batter's raw outcome probabilities based on the pitcher's modifiers.
-    Applies dynamic TTTO Platoon Fatigue dilution (pitcher loses control against opp-hand when tired/hot).
-    """
-    adjusted = {}
-    
-    # Apply modifiers to the specific outcomes
-    adjusted['k'] = batter_rates.get('k', 0.22) * pitcher_modifiers.get('k', 1.0)
-    adjusted['bb'] = batter_rates.get('bb', 0.08) * pitcher_modifiers.get('bb', 1.0)
-    adjusted['hr'] = batter_rates.get('hr', 0.03) * pitcher_modifiers.get('hr', 1.0)
-    
-    # Pitcher's overall quality affects base hits
-    hit_mod = pitcher_modifiers.get('hit_mod', 1.0)
-    adjusted['single'] = batter_rates.get('single', 0.15) * hit_mod
-    adjusted['double'] = batter_rates.get('double', 0.05) * hit_mod
-    adjusted['triple'] = batter_rates.get('triple', 0.005) * hit_mod
-    
-    # Dynamic Platoon Fatigue Dilution
-    # True baseline platoon advantages are now perfectly handled by API StatSplits.
-    # This logic only applies an *additional* penalty when the pitcher is fatigued (tto > 0),
-    # simulating how a tired pitcher's breaking ball flattens out against opposite-handed batters.
-    if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
-        # tto=1 (2nd time) gives +1.5% base boost. tto=2 gives +3% base boost. Multiplied by heat.
-        platoon_boost = 1.0 + (tto * 0.015 * temp_scaler)
-        adjusted['bb'] *= platoon_boost
-        adjusted['hr'] *= platoon_boost
-        adjusted['single'] *= platoon_boost
-        
-    # Safety Check: Enforce a strict Strikeout Floor (Trap 2 Fix)
-    # Prevents simulated K-rates from dropping so low that it causes an unrealistic defensive meltdown
-    min_k_floor = batter_rates.get('k', 0.22) * 0.70
-    if adjusted['k'] < min_k_floor:
-        adjusted['k'] = min_k_floor
-    
-    # Calculate the remaining probability as an out
-    total_non_out = sum(adjusted.values())
-    
-    # Cap total non-out at 1.0 to ensure at least some outs.
-    # Threshold is 1.0 (true overflow) — not 0.95 — so that pre-applied
-    # umpire/defense adjustments are not erased by a premature rescale.
-    if total_non_out >= 1.0:
-        scale = 0.95 / total_non_out
-        for key in adjusted:
-            adjusted[key] *= scale
-        adjusted['out_rate'] = 0.05
-    else:
-        adjusted['out_rate'] = 1.0 - total_non_out
+# Global League Environment Baselines (Update annually based on run environment)
+LEAGUE_HR_FB = 0.125
+LEAGUE_GB_BABIP = 0.240
+LEAGUE_LD_BABIP = 0.680
+LEAGUE_OFFB_BABIP = 0.150 # Outfield Fly Balls that do NOT go over the fence
 
-    return adjusted
+def log_odds_blend(pitcher_rate: float, batter_rate: float, league_rate: float) -> float:
+    """Combines pitcher and batter rates against league baseline using Log-Odds formulation."""
+    pitcher_rate = max(0.001, min(0.999, pitcher_rate))
+    batter_rate = max(0.001, min(0.999, batter_rate))
+    league_rate = max(0.001, min(0.999, league_rate))
+    
+    p_odds = pitcher_rate / (1 - pitcher_rate)
+    b_odds = batter_rate / (1 - batter_rate)
+    l_odds = league_rate / (1 - league_rate)
+    
+    combined_odds = (p_odds * b_odds) / l_odds
+    return combined_odds / (1 + combined_odds)
+
+def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None, defense_factor=1.0) -> dict:
+    """
+    Executes a 3-Tier SIERA/xFIP Hybrid Monte Carlo plate appearance simulation.
+    defense_factor: Multiplier for BABIP adjustments (e.g., 0.95 represents elite defense).
+    Returns an outcomes dictionary matching the old CDF generation format.
+    """
+    if pitcher is None:
+        pitcher = {}
+        
+    pitcher_bb_rate = pitcher.get('bb_rate', 0.085)
+    pitcher_k_rate = pitcher.get('k_rate', 0.225)
+    pitcher_gb_rate = pitcher.get('gb_rate', 0.43)
+    pitcher_ld_rate = pitcher.get('ld_rate', 0.25)
+    pitcher_iffb_rate = pitcher.get('iffb_rate', 0.07)
+    pitcher_offb_rate = pitcher.get('offb_rate', 0.25)
+    pitcher_hr_fb_rate = pitcher.get('hr_fb_rate', 0.125)
+    
+    # -------------------------------------------------------------
+    # TIER 1: The Plate Appearance Core Outcome
+    # -------------------------------------------------------------
+    # Apply Platoon Fatigue (TTO) to the Batter's innate rates prior to blending
+    b_k = batter.get('k', 0.22)
+    b_bb = batter.get('bb', 0.08)
+    if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
+        platoon_boost = 1.0 + (tto * 0.015 * temp_scaler)
+        b_bb *= platoon_boost
+        b_k *= (1.0 - (tto * 0.01 * temp_scaler))
+
+    # Log-Odds Blending
+    prob_bb = log_odds_blend(pitcher_bb_rate, b_bb, 0.085)
+    prob_k = log_odds_blend(pitcher_k_rate, b_k, 0.225)
+    
+    # Safety Check: Enforce a strict Strikeout Floor
+    min_k_floor = b_k * 0.70
+    if prob_k < min_k_floor: prob_k = min_k_floor
+
+    # Ensure total non-batted-ball events don't exceed 1.0
+    if prob_bb + prob_k >= 0.95:
+        scale = 0.95 / (prob_bb + prob_k)
+        prob_bb *= scale
+        prob_k *= scale
+        
+    prob_bip = 1.0 - (prob_bb + prob_k)
+    
+    # -------------------------------------------------------------
+    # TIER 2: Batted Ball Profile Generation
+    # -------------------------------------------------------------
+    gb_prob = pitcher_gb_rate * prob_bip
+    ld_prob = pitcher_ld_rate * prob_bip
+    iffb_prob = pitcher_iffb_rate * prob_bip
+    offb_prob = pitcher_offb_rate * prob_bip
+    
+    # -------------------------------------------------------------
+    # TIER 3: The Ball-In-Play Event Resolution
+    # -------------------------------------------------------------
+    out_from_iffb = iffb_prob
+    
+    # GB
+    adjusted_gb_babip = LEAGUE_GB_BABIP * defense_factor
+    single_from_gb = gb_prob * adjusted_gb_babip * 0.92
+    double_from_gb = gb_prob * adjusted_gb_babip * 0.08
+    out_from_gb = gb_prob * (1 - adjusted_gb_babip)
+    
+    # LD
+    adjusted_ld_babip = LEAGUE_LD_BABIP * defense_factor
+    single_from_ld = ld_prob * adjusted_ld_babip * 0.75
+    double_from_ld = ld_prob * adjusted_ld_babip * 0.21
+    triple_from_ld = ld_prob * adjusted_ld_babip * 0.04
+    out_from_ld = ld_prob * (1 - adjusted_ld_babip)
+    
+    # OFFB
+    # Stabilize HR using xFIP-mechanism (0.25 Pitcher / 0.75 League)
+    regressed_hr_fb = (0.25 * pitcher_hr_fb_rate) + (0.75 * LEAGUE_HR_FB)
+    
+    # Platoon HR fatigue
+    if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
+        regressed_hr_fb *= (1.0 + (tto * 0.015 * temp_scaler))
+        
+    hr_from_offb = offb_prob * regressed_hr_fb
+    
+    remaining_offb_prob = offb_prob * (1 - regressed_hr_fb)
+    adjusted_offb_babip = LEAGUE_OFFB_BABIP * defense_factor
+    
+    single_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.40
+    double_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.52
+    triple_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.08
+    out_from_offb = remaining_offb_prob * (1 - adjusted_offb_babip)
+    
+    out_rate = out_from_iffb + out_from_gb + out_from_ld + out_from_offb
+    
+    return {
+        'k': prob_k,
+        'bb': prob_bb,
+        'hr': hr_from_offb,
+        'single': single_from_gb + single_from_ld + single_from_offb,
+        'double': double_from_gb + double_from_ld + double_from_offb,
+        'triple': triple_from_ld + triple_from_offb,
+        'out_rate': out_rate
+    }
 
 def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_hand='R'):
     """
@@ -445,29 +515,27 @@ _FIP_SINGLE_SENSITIVITY =  0.010
 _FIP_DOUBLE_SENSITIVITY =  0.003
 _FIP_TRIPLE_SENSITIVITY =  0.001
 
-def fip_to_bullpen_pa_rates(fip: float) -> dict:
+def fip_to_bullpen_batted_ball_profile(fip: float) -> dict:
     fip = max(2.80, min(6.50, fip))
     delta = fip - _LEAGUE_FIP
-
-    k      = max(0.10, _BP_BASE_K      + (delta * _FIP_K_SENSITIVITY))
-    bb     = max(0.02, _BP_BASE_BB     + (delta * _FIP_BB_SENSITIVITY))
-    hr     = max(0.01, _BP_BASE_HR     + (delta * _FIP_HR_SENSITIVITY))
-    single = max(0.05, _BP_BASE_SINGLE + (delta * _FIP_SINGLE_SENSITIVITY))
-    double = max(0.01, _BP_BASE_DOUBLE + (delta * _FIP_DOUBLE_SENSITIVITY))
-    triple = max(0.00, _BP_BASE_TRIPLE + (delta * _FIP_TRIPLE_SENSITIVITY))
-
-    total = k + bb + hr + single + double + triple
-    if total > 0.95:
-        scale = 0.95 / total
-        k *= scale; bb *= scale; hr *= scale
-        single *= scale; double *= scale; triple *= scale
-        out_rate = 0.05
-    else:
-        out_rate = max(0.0001, 1.0 - total)
-
+    
+    # Delta > 0 means pitcher is WORSE than league average
+    # Higher FIP -> lower K, higher BB, higher HR/FB, lower GB%, higher LD%
+    
+    k_rate = max(0.10, 0.225 + (delta * -0.015))
+    bb_rate = max(0.02, 0.085 + (delta * 0.008))
+    hr_fb_rate = max(0.05, 0.125 + (delta * 0.015))
+    gb_rate = max(0.30, min(0.60, 0.43 + (delta * -0.02)))
+    ld_rate = max(0.15, min(0.35, 0.25 + (delta * 0.015)))
+    
     return {
-        'bb': bb, 'k': k, 'hr': hr, 'single': single, 'double': double,
-        'triple': triple, 'out_rate': out_rate, 'hand': 'R', 'speed_tier': 1,
+        'bb_rate': bb_rate,
+        'k_rate': k_rate,
+        'gb_rate': gb_rate,
+        'ld_rate': ld_rate,
+        'iffb_rate': 0.07,
+        'offb_rate': 1.0 - (gb_rate + ld_rate + 0.07),
+        'hr_fb_rate': hr_fb_rate
     }
 
 def _build_bullpen_lineup_states(
@@ -478,16 +546,7 @@ def _build_bullpen_lineup_states(
     umpire_profile: dict = None,
     is_home: bool = False,
 ) -> list:
-    bp_rates = fip_to_bullpen_pa_rates(opposing_bp_fip)
-    
-    def _bp_to_mods(bp: dict) -> dict:
-        return {
-            'hit_mod': bp['single'] / _BP_BASE_SINGLE,
-            'hr': bp['hr'] / _BP_BASE_HR,
-            'k': bp['k'] / _BP_BASE_K,
-            'bb': bp['bb'] / _BP_BASE_BB,
-        }
-    bp_mods = _bp_to_mods(bp_rates)
+    bp_profile = fip_to_bullpen_batted_ball_profile(opposing_bp_fip)
     cdf_matrix = []
     
     _HFA_KEYS = ('single', 'double', 'triple', 'hr', 'bb')
@@ -502,7 +561,7 @@ def _build_bullpen_lineup_states(
             for key in _HFA_KEYS:
                 if key in b_adj: b_adj[key] *= _AWAY_SCALE
                 
-        adj = adjust_batter_rates(b_adj, bp_mods, batter_hand=b.get('hand', 'R'), pitcher_hand='R', tto=0)
+        adj = adjust_batter_rates(b_adj, bp_profile, batter_hand=b.get('hand', 'R'), pitcher_hand='R', tto=0)
         adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b.get('hand', 'R'))
         cdf_matrix.append(create_cdf_array(adj))
     return [np.array(cdf_matrix)]
@@ -512,28 +571,24 @@ def _build_bullpen_lineup_states(
 HOME_ADVANTAGE_FACTOR = 1.03
 
 
-def apply_ttto_penalty(pitcher_mods: dict, times_through: int, temp_scaler: float = 1.0) -> dict:
-    """
-    Safely applies TTTO penalties across a dual-keyed dictionary 
-    without causing in-place reference mutations.
-    """
+def apply_ttto_penalty(pitcher_profile: dict, times_through: int, temp_scaler: float = 1.0) -> dict:
     tto = min(times_through, 2)
-    
-    # Apply temp_scaler to the penalties (base 1.0, so we scale the part above 1.0)
     hit_pen = 1.0 + ((TTTO_HIT_PENALTY[tto] - 1.0) * temp_scaler)
     hr_pen  = 1.0 + ((TTTO_HR_PENALTY[tto] - 1.0) * temp_scaler)
-    # K reduction (base 1.0, scale the reduction)
     k_red = 1.0 - ((1.0 - TTTO_K_REDUCTION[tto]) * temp_scaler)
     bb_pen = 1.0 + ((tto * 0.04) * temp_scaler)
+    
+    # To penalize hits in the batted ball model, we decrease GB% and increase LD%/OFFB%
+    gb_red = 1.0 - ((1.0 - TTTO_K_REDUCTION[tto]) * temp_scaler * 0.5)
 
     return {
-        hand: {
-            'hit_mod': round(metrics.get('hit_mod', 1.0) * hit_pen, 4),
-            'hr':      round(metrics.get('hr',       1.0) * hr_pen,  4),
-            'k':       round(metrics.get('k',        1.0) * k_red,   4),
-            'bb':      round(metrics.get('bb',       1.0) * bb_pen,  4)
-        }
-        for hand, metrics in pitcher_mods.items()
+        'bb_rate': pitcher_profile.get('bb_rate', 0.085) * bb_pen,
+        'k_rate': pitcher_profile.get('k_rate', 0.225) * k_red,
+        'gb_rate': pitcher_profile.get('gb_rate', 0.43) * gb_red,
+        'ld_rate': pitcher_profile.get('ld_rate', 0.25) * hit_pen,
+        'iffb_rate': pitcher_profile.get('iffb_rate', 0.07),
+        'offb_rate': pitcher_profile.get('offb_rate', 0.25) * hit_pen,
+        'hr_fb_rate': pitcher_profile.get('hr_fb_rate', 0.125) * hr_pen
     }
 
 def run_monte_carlo_f5(
@@ -574,14 +629,11 @@ def run_monte_carlo_f5(
     away_pitcher_id = get_pitcher_id(away_pitcher_name, sport_id)
     home_pitcher_id = get_pitcher_id(home_pitcher_name, sport_id)
 
-    away_pitcher_mods = get_pitcher_pa_modifiers_xfip(
-        away_pitcher_fip, away_pitcher_id,
-        defending_team=away_team_name, venue_name=venue_name
-    )
-    home_pitcher_mods = get_pitcher_pa_modifiers_xfip(
-        home_pitcher_fip, home_pitcher_id,
-        defending_team=home_team_name, venue_name=venue_name
-    )
+    away_pitcher_mods = fetch_and_profile_pitcher(away_pitcher_id)
+    home_pitcher_mods = fetch_and_profile_pitcher(home_pitcher_id)
+    
+    away_defense_factor = calculate_defensive_hit_modifier(away_pitcher_id, away_team_name, venue_name)
+    home_defense_factor = calculate_defensive_hit_modifier(home_pitcher_id, home_team_name, venue_name)
 
     # Resolve pitcher handedness (used for generic lineup platoon logic)
     if away_pitcher_hand is None:
@@ -684,29 +736,21 @@ def run_monte_carlo_f5(
         
         a_cdf_matrix = []
         for b in away_raw_lineup:
-            if b.get('hand', 'R') == 'S':
-                pitcher_mod_hand = 'R' if home_pitcher_hand == 'L' else 'L'
-            else:
-                pitcher_mod_hand = b.get('hand', 'R')
-            current_pitcher_mods = away_inning_mods.get(pitcher_mod_hand, away_inning_mods.get('R'))  # Away batters face HOME pitcher (away_inning_mods = home SP + TTTO)
+            current_pitcher_mods = away_inning_mods
 
             # Scale away batter input rates down symmetrically (0.97x) before normalization
             b_scaled = dict(b)
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * _AWAY_SCALE
-            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler)
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=home_defense_factor)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             a_cdf_matrix.append(create_cdf_array(adj))
         away_lineup_states.append(np.array(a_cdf_matrix))
         
         h_cdf_matrix = []
         for b in home_raw_lineup:
-            if b.get('hand', 'R') == 'S':
-                pitcher_mod_hand = 'R' if away_pitcher_hand == 'L' else 'L'
-            else:
-                pitcher_mod_hand = b.get('hand', 'R')
-            current_pitcher_mods = home_inning_mods.get(pitcher_mod_hand, home_inning_mods.get('R'))  # Home batters face AWAY pitcher (home_inning_mods = away SP + TTTO)
+            current_pitcher_mods = home_inning_mods
 
             # Scale home batter input rates up (1.03x) BEFORE adjust_batter_rates().
             # This lets the existing out_rate normalization proportionally shrink ALL
@@ -715,7 +759,7 @@ def run_monte_carlo_f5(
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * HOME_ADVANTAGE_FACTOR
-            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler)
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=away_defense_factor)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             h_cdf_matrix.append(create_cdf_array(adj))
         home_lineup_states.append(np.array(h_cdf_matrix))
