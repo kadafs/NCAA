@@ -1,6 +1,98 @@
 {
     "date": "2026-06-30",
     "mode": "confirmed",
-    "total_predictions": 0,
-    "predictions": []
+    "total_predictions": 1,
+    "predictions": [
+        {
+            "away_team": "Washington Nationals",
+            "home_team": "Boston Red Sox",
+            "pitchers": {
+                "away": {
+                    "name": "Cade Cavalli",
+                    "hand": "R",
+                    "fip": 3.82
+                },
+                "home": {
+                    "name": "Connelly Early",
+                    "hand": "L",
+                    "fip": 4.21
+                }
+            },
+            "environment": {
+                "venue": "Fenway Park",
+                "park_factor": 1.012,
+                "weather": {
+                    "temp": 82,
+                    "wind_mph": 14,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 14,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.018,
+                    "wind_multiplier": 1.0407,
+                    "weather_multiplier": 1.0594,
+                    "weather_label": "82F | 14 MPH Out | Weather: +5.9%"
+                },
+                "effective_pf": 1.0721,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.16,
+                "mc_f5": 5.4,
+                "mc_f5_away": 2.0,
+                "mc_f5_home": 3.4,
+                "mc_late": 3.53,
+                "mc_full_game": 8.93,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.978,
+                    "raw_avg": 2.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        5,
+                        2,
+                        1,
+                        5,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.225,
+                    "raw_avg": 4.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        6,
+                        2,
+                        4,
+                        4,
+                        4,
+                        6
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.345,
+                "under_4_5": 0.464,
+                "under_5_5": 0.573,
+                "full_over_7_5": 0.668,
+                "full_over_8_5": 0.535,
+                "full_over_9_5": 0.403
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (MODERATE)",
+                "adv_5_5": "Skip (Team Bias Veto - Realized Pitcher Edge)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Quarantined",
+                "action": "SKIP",
+                "reason": "Distribution asymmetry detected. Review SP profiles."
+            }
+        }
+    ]
 }

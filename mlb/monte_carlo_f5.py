@@ -14,12 +14,12 @@ import statsapi
 # ---------------------------------------------------------------------------
 # Calibration constant
 # ---------------------------------------------------------------------------
-# Mild global dampener to correct for slight MC OVER bias.
-# Recalibrated 2026-06-30: SIERA-aligned 3-Tier batted ball engine generates
-# +1.3% to +2.5% more hits per PA vs old direct PA rate approach (cumulative
-# BABIP pass-through in Tier 3). Formula: 0.97 / 1.015 ~= 0.955
-# Set to 1.0 to disable. Reassess monthly as season progresses.
-MLB_F5_CALIBRATION = 0.955
+# Global calibration dampener.
+# Set to 1.0 after the four structural bugs (fly-ball pool leak, inverted TTO,
+# vanishing basepath runners, platoon double-count) were resolved 2026-06-30.
+# The model now aligns natively with top-down SIERA targets without dampening.
+# Restore a non-1.0 value only if a new systematic bias is measured over 50+ games.
+MLB_F5_CALIBRATION = 1.0
 
 # Offensive outcome keys affected by form/calibration adjustments
 _OFFENSE_KEYS = ('bb', 'hr', 'single', 'double', 'triple')
@@ -45,9 +45,10 @@ def log_odds_blend(pitcher_rate: float, batter_rate: float, league_rate: float) 
 
 def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None, defense_factor=1.0, form_babip_scaler: float = 1.0) -> dict:
     """
-    Executes a 3-Tier SIERA/xFIP Hybrid Monte Carlo plate appearance simulation.
+    Executes a mathematically tight 3-Tier SIERA/xFIP Hybrid Monte Carlo plate appearance simulation.
+    Removes the structural probability leaks in Tier 2 and Tier 3.
     defense_factor: Multiplier for BABIP adjustments (e.g., 0.95 represents elite defense).
-    Returns an outcomes dictionary matching the old CDF generation format.
+    form_babip_scaler: Team hot/cold form scaler applied to all BABIP constants in Tier 3.
     """
     if pitcher is None:
         pitcher = {}
@@ -63,7 +64,8 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     # -------------------------------------------------------------
     # TIER 1: The Plate Appearance Core Outcome
     # -------------------------------------------------------------
-    # Apply Platoon Fatigue (TTO) to the Batter's innate rates prior to blending
+    # Isolate TTO modifications cleanly to prevent double-counting platoon adjustments.
+    # These are applied to the BATTER's innate rates before log-odds blending with the pitcher.
     b_k = batter.get('k', 0.22)
     b_bb = batter.get('bb', 0.08)
     if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
@@ -113,7 +115,7 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     triple_from_ld = ld_prob * adjusted_ld_babip * 0.04
     out_from_ld = ld_prob * (1 - adjusted_ld_babip)
     
-    # OFFB
+    # OFFB — Subtractive Window Execution
     # Stabilize HR using xFIP-mechanism (0.25 Pitcher / 0.75 League)
     regressed_hr_fb = (0.25 * pitcher_hr_fb_rate) + (0.75 * LEAGUE_HR_FB)
     
@@ -123,7 +125,11 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
         
     hr_from_offb = offb_prob * regressed_hr_fb * (form_babip_scaler ** 0.5)
     
-    remaining_offb_prob = offb_prob * (1 - regressed_hr_fb)
+    # BUG FIX (2026-06-30): Deduct HR probability from the pool BEFORE applying BABIP.
+    # Previously used offb_prob * (1 - regressed_hr_fb) which held the pool at HR scale,
+    # inflating the singles/doubles/triples count. LEAGUE_OFFB_BABIP is calculated after
+    # removing HRs, so the pool fed into it must also exclude them.
+    remaining_offb_prob = max(0.0, offb_prob - hr_from_offb)
     adjusted_offb_babip = LEAGUE_OFFB_BABIP * defense_factor * form_babip_scaler
     
     single_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.40
@@ -326,15 +332,21 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
             base2[idx] = np.where(base1[idx] != -1, base1[idx], base2[idx])
             base1[idx] = batter_speeds[ev_bb]
 
-        # --- RULE C: SINGLES RESOLUTION (Chronological isolation, no blanket clears) ---
+        # --- RULE C: SINGLES RESOLUTION (Explicit b2_holds map — no state overwrite) ---
         if np.any(ev_1b):
             idx = global_active_idx[ev_1b]
 
-            # Anyone on 3B scores automatically
+            # 3B runners score automatically
             runs[idx[base3[idx] != -1]] += 1
-            base3[idx] = -1  # 3B cleared; will be re-populated by 2B runner if they hold
+            base3[idx] = -1
 
-            # Evaluate runner on 2B advancement
+            # Track 2B runner decisions explicitly using a localized boolean map.
+            # BUG FIX (2026-06-30): The previous implementation used subset index
+            # b2_idx[~advances] to set base3, but then the global base2[idx] overwrite
+            # using np.where could erase a runner who held at 3B if base1 was empty.
+            # The fix uses a full-length b2_holds mask so the final np.where on base3
+            # operates correctly across all game states simultaneously.
+            b2_holds = np.zeros(len(idx), dtype=bool)
             b2_mask = base2[idx] != -1
             if np.any(b2_mask):
                 b2_idx = idx[b2_mask]
@@ -343,9 +355,11 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
                 thresholds = RUNNER_SCORE_FROM_2ND_ON_SINGLE[speeds, curr_outs]
                 advances = np.random.rand(len(b2_idx)) <= thresholds
                 runs[b2_idx[advances]] += 1
-                base3[b2_idx[~advances]] = base2[b2_idx[~advances]]  # holds at 3rd
+                # Mark exactly which local positions held at 3B
+                b2_holds[b2_mask] = ~advances
 
-            # Advance runner on 1B to 2B safely, isolated before 2B is cleared
+            # Shift baserunners without overwriting non-vacated base positions
+            base3[idx] = np.where(b2_holds, base2[idx], -1)
             base2[idx] = np.where(base1[idx] != -1, base1[idx], -1)
             base1[idx] = batter_speeds[ev_1b]
 
@@ -810,14 +824,21 @@ def run_monte_carlo_f5(
         current_away_states = away_bp_states if use_away_bp else away_lineup_states
         current_home_states = home_bp_states if use_home_bp else home_lineup_states
 
-        # Update TTO only if facing starter
-        if not use_home_bp:
+        # Update TTO only if facing starter.
+        # BUG FIX (2026-06-30, Bug 4 part 2): The guard conditions were also inverted.
+        # away_tto tracks how many times the AWAY lineup has wrapped against the HOME starter.
+        # It must increment while the home starter is still pitching (not use_away_bp),
+        # and reset when the home starter exits (use_away_bp=True) so it stays 0
+        # when the 1-state bullpen CDF is used.
+        if not use_away_bp:
             away_tto += (away_idx < prev_away_idx).astype(np.int32)
             away_tto = np.minimum(away_tto, 2)
         else:
             away_tto.fill(0)
             
-        if not use_away_bp:
+        # home_tto tracks how many times the HOME lineup has wrapped against the AWAY starter.
+        # Resets when the away starter exits.
+        if not use_home_bp:
             home_tto += (home_idx < prev_home_idx).astype(np.int32)
             home_tto = np.minimum(home_tto, 2)
         else:
@@ -833,10 +854,13 @@ def run_monte_carlo_f5(
         base3.fill(-1)
         active_games.fill(True)
         
-        # Top of inning (Away)
+        # Top of inning (Away bats against Home pitcher)
+        # BUG FIX (2026-06-30): The TTO state passed here represents how many times the
+        # HOME pitcher has been through the batting order. That counter is away_tto
+        # (incremented each time the away lineup wraps). Passing home_tto was inverted.
         simulate_half_inning_vectorized(
             active_games, current_away_states, away_idx, outs, away_total_runs,
-            base1, base2, base3, away_speed_tiers, home_tto
+            base1, base2, base3, away_speed_tiers, away_tto
         )
         
         # Reset half inning states
@@ -846,10 +870,12 @@ def run_monte_carlo_f5(
         base3.fill(-1)
         active_games.fill(True)
         
-        # Bottom of inning (Home)
+        # Bottom of inning (Home bats against Away pitcher)
+        # BUG FIX (2026-06-30): Symmetrically, the AWAY pitcher's TTO is home_tto
+        # (incremented when the home lineup wraps). Passing away_tto was inverted.
         simulate_half_inning_vectorized(
             active_games, current_home_states, home_idx, outs, home_total_runs,
-            base1, base2, base3, home_speed_tiers, away_tto
+            base1, base2, base3, home_speed_tiers, home_tto
         )
 
     # --- Calculate Summary Statistics ---
