@@ -1,0 +1,80 @@
+name: Daily Legacy Models Comparison
+
+on:
+  schedule:
+    # Run automatically every day at 13:45 UTC (9:45 AM Eastern Time)
+    # 15 minutes after the main model runs
+    - cron: '45 13 * * *'
+  workflow_dispatch:
+    # Allow manual triggering from the GitHub Actions UI
+
+jobs:
+  run_legacy_v3:
+    name: Run Legacy V3 (xFIP PA Rates)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout legacy-v3-model branch
+        uses: actions/checkout@v4
+        with:
+          ref: legacy-v3-model
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Legacy Engine
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          python mlb/daily_f5_park_factors.py
+          python mlb/consensus_f5_v4.py
+
+      - name: Upload V3 Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-v3-reports
+          path: mlb/*report*.md
+          retention-days: 7
+
+  run_legacy_v4_prefix:
+    name: Run Legacy V4 (Uncalibrated SIERA)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout legacy-v4-engine branch
+        uses: actions/checkout@v4
+        with:
+          ref: legacy-v4-engine
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Legacy Engine
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          python mlb/daily_f5_park_factors.py
+          python mlb/consensus_f5_v4.py
+
+      - name: Upload V4 (Pre-Fix) Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-v4-uncalibrated-reports
+          path: mlb/*report*.md
+          retention-days: 7
