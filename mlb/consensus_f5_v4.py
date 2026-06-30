@@ -183,8 +183,6 @@ def process_single_game(args):
             umpire_profile=ump_profile,
             away_wrc=away_wrc, home_wrc=home_wrc,
             venue_name=venue,
-            away_form_factor=away_form_info.get('factor', 1.0),
-            home_form_factor=home_form_info.get('factor', 1.0),
         )
 
 

@@ -43,12 +43,11 @@ def log_odds_blend(pitcher_rate: float, batter_rate: float, league_rate: float) 
     combined_odds = (p_odds * b_odds) / l_odds
     return combined_odds / (1 + combined_odds)
 
-def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None, defense_factor=1.0, form_babip_scaler: float = 1.0) -> dict:
+def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_hand=None, tto=0, temp_scaler=1.0, umpire_profile=None, defense_factor=1.0) -> dict:
     """
     Executes a mathematically tight 3-Tier SIERA/xFIP Hybrid Monte Carlo plate appearance simulation.
     Removes the structural probability leaks in Tier 2 and Tier 3.
     defense_factor: Multiplier for BABIP adjustments (e.g., 0.95 represents elite defense).
-    form_babip_scaler: Team hot/cold form scaler applied to all BABIP constants in Tier 3.
     """
     if pitcher is None:
         pitcher = {}
@@ -103,13 +102,13 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     out_from_iffb = iffb_prob
     
     # GB
-    adjusted_gb_babip = LEAGUE_GB_BABIP * defense_factor * form_babip_scaler
+    adjusted_gb_babip = LEAGUE_GB_BABIP * defense_factor
     single_from_gb = gb_prob * adjusted_gb_babip * 0.92
     double_from_gb = gb_prob * adjusted_gb_babip * 0.08
     out_from_gb = gb_prob * (1 - adjusted_gb_babip)
     
     # LD
-    adjusted_ld_babip = LEAGUE_LD_BABIP * defense_factor * form_babip_scaler
+    adjusted_ld_babip = LEAGUE_LD_BABIP * defense_factor
     single_from_ld = ld_prob * adjusted_ld_babip * 0.75
     double_from_ld = ld_prob * adjusted_ld_babip * 0.21
     triple_from_ld = ld_prob * adjusted_ld_babip * 0.04
@@ -123,14 +122,14 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
         regressed_hr_fb *= (1.0 + (tto * 0.015 * temp_scaler))
         
-    hr_from_offb = offb_prob * regressed_hr_fb * (form_babip_scaler ** 0.5)
+    hr_from_offb = offb_prob * regressed_hr_fb
     
     # BUG FIX (2026-06-30): Deduct HR probability from the pool BEFORE applying BABIP.
     # Previously used offb_prob * (1 - regressed_hr_fb) which held the pool at HR scale,
     # inflating the singles/doubles/triples count. LEAGUE_OFFB_BABIP is calculated after
     # removing HRs, so the pool fed into it must also exclude them.
     remaining_offb_prob = max(0.0, offb_prob - hr_from_offb)
-    adjusted_offb_babip = LEAGUE_OFFB_BABIP * defense_factor * form_babip_scaler
+    adjusted_offb_babip = LEAGUE_OFFB_BABIP * defense_factor
     
     single_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.40
     double_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.52
@@ -630,8 +629,6 @@ def run_monte_carlo_f5(
     away_team_name: str = None,
     home_team_name: str = None,
     venue_name: str = None,
-    away_form_factor: float = 1.0,
-    home_form_factor: float = 1.0,
 ) -> dict:
     """
     Runs Monte Carlo simulation for the F5 innings.
@@ -761,7 +758,7 @@ def run_monte_carlo_f5(
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * _AWAY_SCALE
-            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=home_defense_factor, form_babip_scaler=away_form_factor)
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=home_defense_factor)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             a_cdf_matrix.append(create_cdf_array(adj))
         away_lineup_states.append(np.array(a_cdf_matrix))
@@ -777,7 +774,7 @@ def run_monte_carlo_f5(
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * HOME_ADVANTAGE_FACTOR
-            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=away_defense_factor, form_babip_scaler=home_form_factor)
+            adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler, umpire_profile=umpire_profile, defense_factor=away_defense_factor)
             adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             h_cdf_matrix.append(create_cdf_array(adj))
         home_lineup_states.append(np.array(h_cdf_matrix))
