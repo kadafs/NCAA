@@ -335,18 +335,16 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
         if np.any(ev_1b):
             idx = global_active_idx[ev_1b]
 
-            # 3B runners score automatically
+            # Anyone on 3B scores automatically
             runs[idx[base3[idx] != -1]] += 1
-            base3[idx] = -1
 
-            # Track 2B runner decisions explicitly using a localized boolean map.
-            # BUG FIX (2026-06-30): The previous implementation used subset index
-            # b2_idx[~advances] to set base3, but then the global base2[idx] overwrite
-            # using np.where could erase a runner who held at 3B if base1 was empty.
-            # The fix uses a full-length b2_holds mask so the final np.where on base3
-            # operates correctly across all game states simultaneously.
-            b2_holds = np.zeros(len(idx), dtype=bool)
+            # Track 2B runner advancement choices explicitly using a localized boolean map.
+            # BUG FIX (2026-06-30): Original used subset index b2_idx[~advances] to set
+            # base3, but the global base2[idx] np.where overwrite could erase a runner
+            # who held at 3B if base1 was empty. The fix uses a full-length b2_holds mask
+            # so final state commits are computed in parallel before writing to parent arrays.
             b2_mask = base2[idx] != -1
+            b2_holds = np.zeros(len(idx), dtype=bool)
             if np.any(b2_mask):
                 b2_idx = idx[b2_mask]
                 speeds = base2[b2_idx]
@@ -354,26 +352,31 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
                 thresholds = RUNNER_SCORE_FROM_2ND_ON_SINGLE[speeds, curr_outs]
                 advances = np.random.rand(len(b2_idx)) <= thresholds
                 runs[b2_idx[advances]] += 1
-                # Mark exactly which local positions held at 3B
-                b2_holds[b2_mask] = ~advances
+                b2_holds[b2_mask] = ~advances  # True if runner held up at 3B
 
-            # Shift baserunners without overwriting non-vacated base positions
-            base3[idx] = np.where(b2_holds, base2[idx], -1)
-            base2[idx] = np.where(base1[idx] != -1, base1[idx], -1)
+            # Move runners sequentially using non-overlapping state mapping.
+            # 3B is populated ONLY by a runner from 2B who held up.
+            new_base3 = np.where(b2_holds, base2[idx], -1)
+            # 2B is populated by the runner from 1B (if any).
+            new_base2 = np.where(base1[idx] != -1, base1[idx], -1)
+            # Commit the fresh tracking states to memory atomically.
+            base3[idx] = new_base3
+            base2[idx] = new_base2
             base1[idx] = batter_speeds[ev_1b]
 
-        # --- RULE D: DOUBLES RESOLUTION ---
+        # --- RULE D: DOUBLES RESOLUTION (b1_holds map — no runner-erasing) ---
         if np.any(ev_2b):
             idx = global_active_idx[ev_2b]
 
             # Runners on 2B and 3B score automatically
             runs[idx[base3[idx] != -1]] += 1
             runs[idx[base2[idx] != -1]] += 1
-            base3[idx] = -1
-            base2[idx] = -1
 
-            # Evaluate runner on 1B advancement
+            # Track 1B runner advancement choices explicitly using a localized boolean map.
+            # Mirrors the Rule C b2_holds pattern to prevent a fast trailing runner from 1B
+            # from overwriting a slower runner who holds at 3B on the double.
             b1_mask = base1[idx] != -1
+            b1_holds = np.zeros(len(idx), dtype=bool)
             if np.any(b1_mask):
                 b1_idx = idx[b1_mask]
                 speeds = base1[b1_idx]
@@ -381,9 +384,16 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
                 thresholds = RUNNER_SCORE_FROM_1ST_ON_DOUBLE[speeds, curr_outs]
                 advances = np.random.rand(len(b1_idx)) <= thresholds
                 runs[b1_idx[advances]] += 1
-                base3[b1_idx[~advances]] = base1[b1_idx[~advances]]  # holds at 3rd
+                b1_holds[b1_mask] = ~advances  # True if runner from 1B held at 3B
+
+            # BUG FIX: Buffer new_base3 from base1 BEFORE clearing base1.
+            # The user-provided code had base1[idx] = -1 first, which caused
+            # np.where(b1_holds, base1[idx], -1) to always resolve to -1, silently
+            # erasing every runner who held at 3B on a double.
+            new_base3 = np.where(b1_holds, base1[idx], -1)
 
             base1[idx] = -1
+            base3[idx] = new_base3
             base2[idx] = batter_speeds[ev_2b]
 
         # --- RULE E: TRIPLES RESOLUTION ---
