@@ -107,55 +107,92 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     
     # -------------------------------------------------------------
     # TIER 3: The Ball-In-Play Event Resolution
+    # (SIERA Interaction Matrix — 2026-07-01)
     # -------------------------------------------------------------
     out_from_iffb = iffb_prob
-    
-    # GB
-    adjusted_gb_babip = LEAGUE_GB_BABIP * defense_factor
+
+    # -- SIERA GB Interaction --
+    # Core SIERA formula: High GB% pitchers suppress grounder BABIP because
+    # defensive positioning optimizes and contact velocity drops.
+    # For every 10% above league average (43%), BABIP drops ~0.015 points.
+    pitcher_gb_talent = pitcher.get('gb_rate', 0.43)
+    siera_gb_babip = LEAGUE_GB_BABIP - 0.15 * (pitcher_gb_talent - 0.43)
+    siera_gb_babip = max(0.200, min(0.275, siera_gb_babip))  # Guard boundaries
+
+    adjusted_gb_babip = siera_gb_babip * defense_factor
     single_from_gb = gb_prob * adjusted_gb_babip * 0.92
     double_from_gb = gb_prob * adjusted_gb_babip * 0.08
-    out_from_gb = gb_prob * (1 - adjusted_gb_babip)
-    
-    # LD
+    out_from_gb    = gb_prob * (1.0 - adjusted_gb_babip)
+
+    # -- LD: ISO Batter Interaction --
+    # Replace flat 75/21/4 with batter-specific power-driven allocation.
+    # High ISO shifts mass from singles to doubles/triples.
+    b_iso   = batter.get('iso', 0.160)
+    b_speed = batter.get('speed_tier', 1)  # 0=Sluggish, 1=Average, 2=Elite
+    power_factor = max(0.40, min(1.80, b_iso / 0.160))
+
+    ld_single_weight = max(0.60, min(0.85, 0.75 - 0.12 * (power_factor - 1.0)))
+    ld_double_weight = (1.0 - ld_single_weight) * 0.84
+    ld_triple_weight = 1.0 - (ld_single_weight + ld_double_weight)
+
     adjusted_ld_babip = LEAGUE_LD_BABIP * defense_factor
-    single_from_ld = ld_prob * adjusted_ld_babip * 0.75
-    double_from_ld = ld_prob * adjusted_ld_babip * 0.21
-    triple_from_ld = ld_prob * adjusted_ld_babip * 0.04
-    out_from_ld = ld_prob * (1 - adjusted_ld_babip)
-    
-    # OFFB — Subtractive Window Execution
-    # Stabilize HR using xFIP-mechanism (0.25 Pitcher / 0.75 League)
+    single_from_ld = ld_prob * adjusted_ld_babip * ld_single_weight
+    double_from_ld = ld_prob * adjusted_ld_babip * ld_double_weight
+    triple_from_ld = ld_prob * adjusted_ld_babip * ld_triple_weight
+    out_from_ld    = ld_prob * (1.0 - adjusted_ld_babip)
+
+    # -- OFFB: SIERA Fly-Ball Interaction + ISO Batter Power --
+    # SIERA Fly-Ball Proof: Extreme fly-ball pitchers induce weaker contact.
+    # For every 10% above average FB rate, lower OFFB BABIP.
+    pitcher_offb_talent = pitcher.get('offb_rate', 0.25)
+    siera_offb_babip = LEAGUE_OFFB_BABIP - 0.10 * (pitcher_offb_talent - 0.25)
+    siera_offb_babip = max(0.120, min(0.190, siera_offb_babip))
+
     regressed_hr_fb = (0.25 * pitcher_hr_fb_rate) + (0.75 * LEAGUE_HR_FB)
-    
-    # Platoon HR fatigue
     if tto > 0 and batter_hand and pitcher_hand and batter_hand != pitcher_hand and batter_hand != 'S':
         regressed_hr_fb *= (1.0 + (tto * 0.015 * temp_scaler))
-        
-    hr_from_offb = offb_prob * regressed_hr_fb
-    
-    # BUG FIX (2026-06-30): Deduct HR probability from the pool BEFORE applying BABIP.
-    # Previously used offb_prob * (1 - regressed_hr_fb) which held the pool at HR scale,
-    # inflating the singles/doubles/triples count. LEAGUE_OFFB_BABIP is calculated after
-    # removing HRs, so the pool fed into it must also exclude them.
-    remaining_offb_prob = max(0.0, offb_prob - hr_from_offb)
-    adjusted_offb_babip = LEAGUE_OFFB_BABIP * defense_factor
-    
-    single_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.40
-    double_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.52
-    triple_from_offb = remaining_offb_prob * adjusted_offb_babip * 0.08
-    out_from_offb = remaining_offb_prob * (1 - adjusted_offb_babip)
-    
-    out_rate = out_from_iffb + out_from_gb + out_from_ld + out_from_offb
-    
+
+    p_hr = offb_prob * regressed_hr_fb
+    remaining_offb_prob = max(0.0, offb_prob - p_hr)
+
+    adjusted_offb_babip = siera_offb_babip * defense_factor
+
+    # ISO/Speed-driven fly ball distribution (replaces flat 40/52/8)
+    fb_triple_weight = 0.04 * (1.5 if b_speed == 2 else (0.5 if b_speed == 0 else 1.0))
+    fb_single_weight = max(0.30, min(0.55, 0.40 - 0.10 * (power_factor - 1.0)))
+    fb_double_weight = max(0.05, 1.0 - (fb_single_weight + fb_triple_weight))
+
+    single_from_offb = remaining_offb_prob * adjusted_offb_babip * fb_single_weight
+    double_from_offb = remaining_offb_prob * adjusted_offb_babip * fb_double_weight
+    triple_from_offb = remaining_offb_prob * adjusted_offb_babip * fb_triple_weight
+
+    p_single = single_from_gb + single_from_ld + single_from_offb
+    p_double = double_from_gb + double_from_ld + double_from_offb
+    p_triple = triple_from_ld + triple_from_offb
+
+    # -------------------------------------------------------------
+    # TIER 4: Batter True Talent Log-Odds Blend
+    # -------------------------------------------------------------
+    # Blends pitcher-derived xFIP contact probabilities with each batter's
+    # true-talent rates so elite pitchers genuinely suppress good lineups,
+    # and weak contact hitters don't produce like league-average hitters.
+    final_hr     = log_odds_blend(p_hr,     batter.get('hr',     0.030), 0.030)
+    final_single = log_odds_blend(p_single, batter.get('single', 0.150), 0.150)
+    final_double = log_odds_blend(p_double, batter.get('double', 0.048), 0.048)
+    final_triple = log_odds_blend(p_triple, batter.get('triple', 0.005), 0.005)
+
+    out_rate = max(0.0001, 1.0 - (prob_bb + prob_k + final_hr + final_single + final_double + final_triple))
+
     return {
-        'k': prob_k,
-        'bb': prob_bb,
-        'hr': hr_from_offb,
-        'single': single_from_gb + single_from_ld + single_from_offb,
-        'double': double_from_gb + double_from_ld + double_from_offb,
-        'triple': triple_from_ld + triple_from_offb,
+        'k':        prob_k,
+        'bb':       prob_bb,
+        'hr':       final_hr,
+        'single':   final_single,
+        'double':   final_double,
+        'triple':   final_triple,
         'out_rate': out_rate
     }
+
 
 def apply_environmental_physics(batter_rates, park_factor, weather_ctx, batter_hand='R'):
     """

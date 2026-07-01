@@ -67,6 +67,19 @@ def parse_report(filepath, line=4.5, grading_mode='fixed'):
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
 
+    # --- Parse Gatekeeper V6 Recommendations (New Format) ---
+    gatekeeper_actions = {}
+    if '## Active Portfolio Recommendations' in content:
+        try:
+            gk_block = content.split('## Active Portfolio Recommendations')[1].split('---')[0]
+            # Match: **Chicago White Sox @ Baltimore Orioles** ──► **BET F5 OVER**
+            for m in re.finditer(r'\*\*(.*?)\*\*\s*──►\s*\*\*(.*?)\*\*', gk_block):
+                gk_matchup = m.group(1).strip()
+                gk_action = m.group(2).strip()
+                gatekeeper_actions[gk_matchup] = gk_action
+        except Exception:
+            pass
+
     games = []
     blocks = re.split(r'\n(?=###\s)', content.strip())
 
@@ -82,95 +95,66 @@ def parse_report(filepath, line=4.5, grading_mode='fixed'):
         # strip out any weird unicode/emoji prefixes (like dYs") before the first letter
         raw_header = re.sub(r'^[^\w]+', '', raw_header).strip()
         matchup = re.sub(r'\s*\([^)]*\)', '', raw_header).strip()
+        # Extract just the team vs team (strip out pitchers in parentheses for gatekeeper matching)
+        matchup_clean_match = re.match(r'^(.*?)\s*\(.*?\)\s*@\s*(.*?)\s*\(.*?\)$', raw_header)
+        if matchup_clean_match:
+            matchup_teams = f"{matchup_clean_match.group(1).strip()} @ {matchup_clean_match.group(2).strip()}"
+        else:
+            matchup_teams = matchup
 
         # --- Top-Down Total ---
         td_match = re.search(r'-\s*\*\*Top-Down Projected F5 Total:\*\*\s*(\d+\.?\d*)\s*Runs', block)
         td_total = float(td_match.group(1)) if td_match else None
 
-        if grading_mode == 'td':
+        # --- Check Gatekeeper (v4 format) first ---
+        gk_found_action = None
+        for gk_matchup, act in gatekeeper_actions.items():
+            if gk_matchup in matchup_teams:
+                gk_found_action = act
+                break
+        
+        if gk_found_action and grading_mode in ('fixed', 'all') and line == 4.5:
+            game_line = 4.5
+            action_raw = gk_found_action
+            if "OVER" in action_raw:
+                action_bet = "OVER"
+            elif "UNDER" in action_raw:
+                action_bet = "UNDER"
+            else:
+                action_bet = "SKIP"
+        else:
             game_line = line
+            action_raw = "Not Found / No Edge"
+            action_bet = "SKIP"
+
+        # --- Force Grade All Games (No Edge -> TD Forced) ---
+        if grading_mode == 'all' and action_bet == "SKIP":
             if td_total is not None:
                 if td_total > game_line:
                     action_bet = "OVER"
-                    action_raw = f"Bet **OVER** (TD: {td_total})"
+                    action_raw = f"Bet **OVER** (TD Forced: {td_total})"
                 elif td_total < game_line:
                     action_bet = "UNDER"
-                    action_raw = f"Bet **UNDER** (TD: {td_total})"
+                    action_raw = f"Bet **UNDER** (TD Forced: {td_total})"
                 else:
                     action_bet = "SKIP"
-                    action_raw = f"Skip (TD: {td_total} == Line)"
+                    action_raw = f"Skip (TD {td_total} == Line)"
             else:
                 action_bet = "SKIP"
                 action_raw = "TD Total Not Found"
-                
-        else:
-            # --- Parse Action Matrix ---
-            matches = []
-            for match in re.finditer(r'-\s*If Line is \*\*?(\d+\.?\d*)\*\*? -> (.*?)\s*\|\s*MC Under Probability:\s*(\d+)%', block):
-                matches.append({
-                    'line': float(match.group(1)),
-                    'raw': match.group(2).strip(),
-                    'mc_prob': int(match.group(3))
-                })
-
-        if grading_mode == 'highest' and matches:
-            best_action = None
-            best_score = -1
-            for m in matches:
-                a_raw = m['raw']
-                mc_prob = m['mc_prob']
-                
-                if "Skip" in a_raw:
-                    conf = 0
-                elif "(HIGH)" in a_raw:
-                    conf = 2
-                elif "(MODERATE)" in a_raw:
-                    conf = 1
+        # Fallback for old legacy logic removed since Gatekeeper handles all formatting now.
+        if grading_mode != 'all':
+            if getattr(locals(), 'action_bet', None) is None:  # Might be set by Gatekeeper
+                if "Skip" in action_raw or "Not Found" in action_raw:
+                    action_bet = "SKIP"
+                elif "UNDER" in action_raw:
+                    action_bet = "UNDER"
+                elif "FULL GAME OVER" in action_raw:
+                    action_bet = "FG_OVER"
+                elif "OVER" in action_raw:
+                    action_bet = "OVER"
                 else:
-                    conf = 1
-                
-                edge = abs(mc_prob - 50)
-                score = conf * 100 + edge
-                
-                if score > best_score:
-                    best_score = score
-                    best_action = m
-            
-            game_line = best_action['line']
-            action_raw = best_action['raw']
-
-        elif grading_mode == 'middle' and matches:
-            sorted_matches = sorted(matches, key=lambda x: x['line'])
-            mid_index = len(sorted_matches) // 2
-            mid_action = sorted_matches[mid_index]
-            game_line = mid_action['line']
-            action_raw = mid_action['raw']
-            
-            # Force OVER/UNDER based on MC Prob if it's a Skip
-            if "Skip" in action_raw:
-                mc_prob = mid_action['mc_prob']
-                forced_action = "UNDER" if mc_prob >= 50 else "OVER"
-                action_raw = f"Bet **{forced_action}** (FORCED | MC Under: {mc_prob}%)"
-
-        elif grading_mode == 'fixed':
-            game_line = line
-            action_match = re.search(rf'-\s*If Line is \*\*?{line}\*\*? -> (.*?)\s*\|', block)
-            if action_match:
-                action_raw = action_match.group(1).strip()
-            else:
-                action_raw = "Not Found"
-
-        if grading_mode != 'td':
-            if "Skip" in action_raw:
-                action_bet = "SKIP"
-            elif "UNDER" in action_raw:
-                action_bet = "UNDER"
-            elif "FULL GAME OVER" in action_raw:
-                action_bet = "FG_OVER"
-            elif "OVER" in action_raw:
-                action_bet = "OVER"
-            else:
-                action_bet = "SKIP"
+                    action_bet = "SKIP"
 
         fg_line_for_over = None
         if action_bet == "FG_OVER":
@@ -254,14 +238,10 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
         return
 
     print(f"\n{'='*60}")
-    if grading_mode == 'highest':
-        title = "ACTION MATRIX GRADER (Highest Confidence)"
-    elif grading_mode == 'middle':
-        title = "ACTION MATRIX GRADER (Middle Line)"
-    elif grading_mode == 'td':
-        title = f"TOP-DOWN PROJECTION GRADER (Line: {line})"
+    if grading_mode == 'all':
+        title = f"PORTFOLIO GRADER (ALL GAMES - Line: {line})"
     else:
-        title = f"ACTION MATRIX GRADER (Line: {line})"
+        title = f"PORTFOLIO GRADER (GATEKEEPER ONLY - Line: {line})"
         
     print(f"  {label} {title}")
     print(f"{'='*60}")
@@ -435,25 +415,33 @@ if __name__ == '__main__':
     parser.add_argument('--sportId', type=int, default=1, help='Grade a specific sport (1=MLB, 11=AAA, 12=AA)')
     parser.add_argument('--line', type=float, default=4.5, help='The F5 line to grade against (default 4.5)')
     parser.add_argument('--no-fg', action='store_true', help='Skip Full Game Probs grading')
+    parser.add_argument('--all', action='store_true', help='Grade all games, forcing a pick on skipped games using the Top-Down projection')
 
-    parser.add_argument('--highest', action='store_true', help='Grade the highest confidence line in the action matrix')
-    parser.add_argument('--middle', action='store_true', help='Grade the middle line in the action matrix')
-    parser.add_argument('--td', action='store_true', help='Grade solely based on the Top-Down Projected F5 Total')
-
-    # KST date for default (matching typical daily flow)
-    dt_kst = datetime.now(timezone(timedelta(hours=9)))
-    default_date = dt_kst.strftime('%m/%d/%Y')
-    parser.add_argument('--date', type=str, default=default_date, help='Date for API lookup (default: today KST)')
+    parser.add_argument('--date', type=str, default=None, help='Date for API lookup (default: auto-detected from file or today KST)')
     parser.add_argument('--file', type=str, default=None, help='Specific markdown report file to grade')
 
     args = parser.parse_args()
 
-    grading_mode = 'fixed'
-    if args.highest:
-        grading_mode = 'highest'
-    elif args.middle:
-        grading_mode = 'middle'
-    elif args.td:
-        grading_mode = 'td'
+    # Auto-detect date from file if not explicitly provided
+    resolved_date = args.date
+    if not resolved_date and args.file and os.path.exists(args.file):
+        try:
+            with open(args.file, 'r', encoding='utf-8') as f:
+                content = f.read()
+                # Look for "**Date:** 06/30/2026"
+                date_match = re.search(r'\*\*Date:\*\*\s*(\d{2}/\d{2}/\d{4})', content)
+                if date_match:
+                    resolved_date = date_match.group(1)
+        except Exception:
+            pass
+            
+    # Fallback to today KST
+    if not resolved_date:
+        dt_kst = datetime.now(timezone(timedelta(hours=9)))
+        resolved_date = dt_kst.strftime('%m/%d/%Y')
 
-    grade_report(args.sportId, args.line, args.date, filepath_override=args.file, grade_fg=not args.no_fg, grading_mode=grading_mode)
+    grading_mode = 'fixed'
+    if args.all:
+        grading_mode = 'all'
+
+    grade_report(args.sportId, args.line, resolved_date, filepath_override=args.file, grade_fg=not args.no_fg, grading_mode=grading_mode)

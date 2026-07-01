@@ -522,6 +522,12 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
             return
 
     report_date = date_str or get_mlb_now().strftime('%Y-%m-%d')
+    # Normalize date to YYYY-MM-DD for safe filename use (avoids slashes from MM/DD/YYYY)
+    try:
+        from datetime import datetime as _dt
+        report_date_safe = _dt.strptime(report_date, '%m/%d/%Y').strftime('%Y-%m-%d')
+    except ValueError:
+        report_date_safe = report_date  # already YYYY-MM-DD or unknown format
     _purge_old_caches(report_date)
     
     print(f"Generating Consensus Report for {len(games)} games on {report_date}...")
@@ -618,9 +624,9 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     # Use dated filename so reports never overwrite each other
     if team_filter:
         safe_team = team_filter.replace(' ', '_').lower()
-        filename = f"{safe_team}_consensus_f5_v3_report_{report_date}.md"
+        filename = f"{safe_team}_consensus_f5_v3_report_{report_date_safe}.md"
     else:
-        filename = f"consensus_f5_v3_report_{league_name}_{report_date}.md" if sport_id != 1 else f"consensus_f5_v3_report_{report_date}.md"
+        filename = f"consensus_f5_v3_report_{league_name}_{report_date_safe}.md" if sport_id != 1 else f"consensus_f5_v3_report_{report_date_safe}.md"
     output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(report_lines))
@@ -631,7 +637,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     
     # Always append date. Use report_date defined earlier in the function.
     mode_suffix = "generic" if force_generic else "confirmed"
-    json_filename = f"universal_predictions_{report_date}-{mode_suffix}.json"
+    json_filename = f"universal_predictions_{report_date_safe}-{mode_suffix}.json"
     json_output_path = os.path.join(data_dir, json_filename)
     
     # Frontend wrapper format expects {"predictions": [...]}

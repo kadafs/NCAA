@@ -233,6 +233,7 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
         'single': 0.150,
         'double': 0.048,
         'triple': 0.005,
+        'iso':    0.160,
     }
 
     # --- Pass 1: Collect raw rates per season ---
@@ -272,6 +273,11 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
             dbl = int(stats.get('doubles',     0) or 0)
             trp = int(stats.get('triples',     0) or 0)
             sng = h - hr - dbl - trp
+            ab  = int(stats.get('atBats',      0) or 0)
+
+            # ISO = SLG - AVG = (1B + 2B*2 + 3B*3 + HR*4)/AB - H/AB
+            # Simplified: (dbl + 2*trp + 3*hr) / ab
+            iso = (dbl + 2*trp + 3*hr) / ab if ab > 0 else 0.160
 
             season_rates[season] = {
                 'pa': pa,
@@ -282,6 +288,7 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
                     'single': max(sng, 0) / pa,
                     'double': dbl / pa,
                     'triple': trp / pa,
+                    'iso':    iso,
                 }
             }
         except Exception:
