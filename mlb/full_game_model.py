@@ -266,11 +266,13 @@ def run_full_game_mc(
             return generic_raw
         raw = []
         from fetch_lineups import get_batter_hand
-        from live_state import get_runner_speed_tier
         for pid in lineup_ids:
             rates = get_batter_pa_rates(pid, pitcher_hand=pitcher_hand)
             rates['hand']       = get_batter_hand(int(pid))
-            rates['speed_tier'] = get_runner_speed_tier(int(pid))
+            # Use average speed tier for late innings — individual speed tier is
+            # fetched for F5 innings via the main engine. Calling get_runner_speed_tier
+            # here spawns 18 serial statsapi calls inside the worker which stalls the sim.
+            rates['speed_tier'] = 1
             raw.append(rates)
         return raw
 

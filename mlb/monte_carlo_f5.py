@@ -122,15 +122,27 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     # -------------------------------------------------------------
     out_from_iffb = iffb_prob
 
+    # -----------------------------------------------------------------
+    # FIP-Quality BABIP Scalar
+    # -----------------------------------------------------------------
+    # The pitcher's FIP (relative to league 4.30) drives a global BABIP
+    # suppression/inflation factor. This corrects the core architectural
+    # flaw: previously ALL three BABIP constants were fixed regardless of
+    # pitcher quality, giving Gausman (FIP 2.99) and a AAAA pitcher the
+    # same hit rate on balls in play (only 0.7% difference).
+    #
+    # Calibration: FIP 3.00 vs FIP 4.30 → BABIP delta ≈ .025 (.270 vs .295)
+    # Linear: 0.025 / 1.30 FIP runs ≈ 0.019 BABIP per FIP run
+    # Scalar: FIP-BABIP suppression ≈ (league_FIP / pitcher_FIP)^0.35
+    # Clipped [0.82, 1.12] to prevent extremes.
+    _pitcher_fip = pitcher.get('_fip', 4.30)   # injected by FIP-anchor block
+    _fip_babip_scalar = max(0.82, min(1.12, (_pitcher_fip / 4.30) ** 0.35))
+
     # -- SIERA GB Interaction --
-    # Core SIERA formula: High GB% pitchers suppress grounder BABIP because
-    # defensive positioning optimizes and contact velocity drops.
-    # For every 10% above league average (43%), BABIP drops ~0.015 points.
     pitcher_gb_talent = pitcher.get('gb_rate', 0.43)
     siera_gb_babip = LEAGUE_GB_BABIP - 0.15 * (pitcher_gb_talent - 0.43)
-    siera_gb_babip = max(0.200, min(0.275, siera_gb_babip))  # Guard boundaries
-
-    adjusted_gb_babip = siera_gb_babip * defense_factor
+    siera_gb_babip = max(0.200, min(0.275, siera_gb_babip))
+    adjusted_gb_babip = siera_gb_babip * defense_factor * _fip_babip_scalar
     single_from_gb = gb_prob * adjusted_gb_babip * 0.92
     double_from_gb = gb_prob * adjusted_gb_babip * 0.08
     out_from_gb    = gb_prob * (1.0 - adjusted_gb_babip)
@@ -146,7 +158,7 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     ld_double_weight = (1.0 - ld_single_weight) * 0.84
     ld_triple_weight = 1.0 - (ld_single_weight + ld_double_weight)
 
-    adjusted_ld_babip = LEAGUE_LD_BABIP * defense_factor
+    adjusted_ld_babip = LEAGUE_LD_BABIP * defense_factor * _fip_babip_scalar
     single_from_ld = ld_prob * adjusted_ld_babip * ld_single_weight
     double_from_ld = ld_prob * adjusted_ld_babip * ld_double_weight
     triple_from_ld = ld_prob * adjusted_ld_babip * ld_triple_weight
@@ -166,7 +178,7 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     p_hr = offb_prob * regressed_hr_fb
     remaining_offb_prob = max(0.0, offb_prob - p_hr)
 
-    adjusted_offb_babip = siera_offb_babip * defense_factor
+    adjusted_offb_babip = siera_offb_babip * defense_factor * _fip_babip_scalar
 
     # ISO/Speed-driven fly ball distribution (replaces flat 40/52/8)
     fb_triple_weight = 0.04 * (1.5 if b_speed == 2 else (0.5 if b_speed == 0 else 1.0))
@@ -608,8 +620,8 @@ def fip_to_bullpen_batted_ball_profile(fip: float) -> dict:
     # Delta > 0 means pitcher is WORSE than league average
     # Higher FIP -> lower K, higher BB, higher HR/FB, lower GB%, higher LD%
     
-    k_rate = max(0.10, 0.225 + (delta * -0.015))
-    bb_rate = max(0.02, 0.085 + (delta * 0.008))
+    k_rate = max(0.10, 0.225 + (delta * -0.028))  # Recalibrated: 0.028 per FIP run (was 0.015)
+    bb_rate = max(0.02, 0.085 + (delta * 0.010))   # Recalibrated: 0.010 per FIP run (was 0.008)
     hr_fb_rate = max(0.05, 0.125 + (delta * 0.015))
     gb_rate = max(0.30, min(0.60, 0.43 + (delta * -0.02)))
     ld_rate = max(0.15, min(0.35, 0.25 + (delta * 0.015)))
@@ -674,7 +686,8 @@ def apply_ttto_penalty(pitcher_profile: dict, times_through: int, temp_scaler: f
         'ld_rate': pitcher_profile.get('ld_rate', 0.25) * hit_pen,
         'iffb_rate': pitcher_profile.get('iffb_rate', 0.07),
         'offb_rate': pitcher_profile.get('offb_rate', 0.25) * hit_pen,
-        'hr_fb_rate': pitcher_profile.get('hr_fb_rate', 0.125) * hr_pen
+        'hr_fb_rate': pitcher_profile.get('hr_fb_rate', 0.125) * hr_pen,
+        '_fip': pitcher_profile.get('_fip', 4.30),  # carry FIP-quality scalar through TTO
     }
 
 def run_monte_carlo_f5(
@@ -735,6 +748,10 @@ def run_monte_carlo_f5(
 
     away_pitcher_mods = _fip_anchor_profile(away_pitcher_mods, away_pitcher_fip)
     home_pitcher_mods = _fip_anchor_profile(home_pitcher_mods, home_pitcher_fip)
+    # Inject the raw FIP into each profile so adjust_batter_rates can compute the
+    # FIP-quality BABIP scalar (used to suppress/inflate LD/GB/OFFB BABIP for aces vs journeymen).
+    away_pitcher_mods['_fip'] = away_pitcher_fip
+    home_pitcher_mods['_fip'] = home_pitcher_fip
     # ─────────────────────────────────────────────────────────────────────────
 
     away_defense_factor = calculate_defensive_hit_modifier(away_pitcher_id, away_team_name, venue_name)

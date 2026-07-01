@@ -22,19 +22,19 @@
                 "venue": "Rogers Centre",
                 "park_factor": 0.97,
                 "weather": {
-                    "temp": 73,
-                    "wind_mph": 7,
+                    "temp": 72,
+                    "wind_mph": 8,
                     "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0045,
-                    "wind_multiplier": 1.018,
-                    "weather_multiplier": 1.0226,
-                    "weather_label": "73F | 7 MPH Out | Weather: +2.3%"
+                    "temp_multiplier": 1.003,
+                    "wind_multiplier": 1.022,
+                    "weather_multiplier": 1.0251,
+                    "weather_label": "72F | 8 MPH Out | Weather: +2.5%"
                 },
-                "effective_pf": 0.9919,
+                "effective_pf": 0.9943,
                 "umpire": {
                     "name": "Sean Barber",
                     "profile": {
@@ -47,12 +47,12 @@
             },
             "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.02,
-                "mc_f5": 4.66,
-                "mc_f5_away": 2.46,
-                "mc_f5_home": 2.2,
-                "mc_late": 2.86,
-                "mc_full_game": 7.52,
+                "top_down_f5": 4.03,
+                "mc_f5": 4.21,
+                "mc_f5_away": 2.22,
+                "mc_f5_home": 1.98,
+                "mc_late": 2.74,
+                "mc_full_game": 6.94,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.775,
@@ -83,23 +83,24 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.421,
-                "under_4_5": 0.546,
-                "under_5_5": 0.657,
-                "full_over_7_5": 0.478,
-                "full_over_8_5": 0.341,
-                "full_over_9_5": 0.226
+                "under_3_5": 0.482,
+                "under_4_5": 0.608,
+                "under_5_5": 0.707,
+                "full_over_7_5": 0.393,
+                "full_over_8_5": 0.264,
+                "full_over_9_5": 0.164
             },
             "action_matrix": {
-                "adv_3_5": "Skip (Under Lean - R2)",
-                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_3_5": "Skip",
+                "adv_4_5": "Bet **UNDER** (HIGH)",
                 "adv_5_5": "Bet **UNDER** (HIGH)"
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "Line-Crossing Veto",
-                "action": "SKIP",
-                "reason": "Models conflict across the 4.5 line."
+                "category": "High-Confidence",
+                "action": "BET F5 UNDER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
             }
         }
     ]
