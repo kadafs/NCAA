@@ -265,10 +265,12 @@ def run_full_game_mc(
                         v for key, v in b.items() if key not in ('out_rate', 'hand', 'speed_tier')))
             return generic_raw
         raw = []
+        from fetch_lineups import get_batter_hand
+        from live_state import get_runner_speed_tier
         for pid in lineup_ids:
             rates = get_batter_pa_rates(pid, pitcher_hand=pitcher_hand)
-            rates['hand'] = 'L'   # default; platoon is embedded in the per-PA rates
-            rates['speed_tier'] = 1
+            rates['hand']       = get_batter_hand(int(pid))
+            rates['speed_tier'] = get_runner_speed_tier(int(pid))
             raw.append(rates)
         return raw
 

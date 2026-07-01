@@ -100,11 +100,22 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     # -------------------------------------------------------------
     # TIER 2: Batted Ball Profile Generation
     # -------------------------------------------------------------
-    gb_prob = pitcher_gb_rate * prob_bip
-    ld_prob = pitcher_ld_rate * prob_bip
+    # Normalize pitcher batted ball rates to sum to 1.0.
+    # Real Statcast profiles vary and the rates may not add up precisely,
+    # leaving "ghost" probability mass that never resolves to an out or hit.
+    _bb_sum = pitcher_gb_rate + pitcher_ld_rate + pitcher_iffb_rate + pitcher_offb_rate
+    if _bb_sum > 0 and abs(_bb_sum - 1.0) > 0.01:
+        _norm = 1.0 / _bb_sum
+        pitcher_gb_rate   *= _norm
+        pitcher_ld_rate   *= _norm
+        pitcher_iffb_rate *= _norm
+        pitcher_offb_rate *= _norm
+
+    gb_prob   = pitcher_gb_rate   * prob_bip
+    ld_prob   = pitcher_ld_rate   * prob_bip
     iffb_prob = pitcher_iffb_rate * prob_bip
     offb_prob = pitcher_offb_rate * prob_bip
-    
+
     # -------------------------------------------------------------
     # TIER 3: The Ball-In-Play Event Resolution
     # (SIERA Interaction Matrix — 2026-07-01)
@@ -169,17 +180,21 @@ def adjust_batter_rates(batter: dict, pitcher: dict, batter_hand=None, pitcher_h
     p_single = single_from_gb + single_from_ld + single_from_offb
     p_double = double_from_gb + double_from_ld + double_from_offb
     p_triple = triple_from_ld + triple_from_offb
+    out_from_bip = out_from_iffb + out_from_gb + out_from_ld + (remaining_offb_prob * (1.0 - adjusted_offb_babip))
 
     # -------------------------------------------------------------
-    # TIER 4: Batter True Talent Log-Odds Blend
+    # TIER 4: Final Rate Assembly
     # -------------------------------------------------------------
-    # Blends pitcher-derived xFIP contact probabilities with each batter's
-    # true-talent rates so elite pitchers genuinely suppress good lineups,
-    # and weak contact hitters don't produce like league-average hitters.
-    final_hr     = log_odds_blend(p_hr,     batter.get('hr',     0.030), 0.030)
-    final_single = log_odds_blend(p_single, batter.get('single', 0.150), 0.150)
-    final_double = log_odds_blend(p_double, batter.get('double', 0.048), 0.048)
-    final_triple = log_odds_blend(p_triple, batter.get('triple', 0.005), 0.005)
+    # The pitcher's batted-ball profile (Tiers 1-3) already correctly
+    # suppresses hits via a higher K rate (fewer BIPs) and SIERA-adjusted BABIP.
+    # A secondary log-odds blend with batter true talent is NOT applied here —
+    # doing so pulls pitcher-suppressed probabilities back up toward league average
+    # for above-average hitters, which inflates MC totals for elite pitchers.
+    # Batter contact identity is preserved via ISO-driven hit-type weights in Tier 3.
+    final_hr     = p_hr
+    final_single = p_single
+    final_double = p_double
+    final_triple = p_triple
 
     out_rate = max(0.0001, 1.0 - (prob_bb + prob_k + final_hr + final_single + final_double + final_triple))
 
