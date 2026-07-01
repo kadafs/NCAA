@@ -717,7 +717,26 @@ def run_monte_carlo_f5(
 
     away_pitcher_mods = fetch_and_profile_pitcher(away_pitcher_id)
     home_pitcher_mods = fetch_and_profile_pitcher(home_pitcher_id)
-    
+
+    # ── FIP-Anchor: Override K/BB rates to current-season performance ─────────
+    # The Statcast profile correctly captures the pitcher's batted ball SHAPE
+    # (GB/LD/IFFB/OFFB). However, the historical K and BB rate averages fail to
+    # reflect peak-season or declining-season performance captured by xFIP.
+    # Fix: override K and BB rates using a 60/40 blend of FIP-implied vs Statcast.
+    # This anchors run suppression to 2026 actual stuff while keeping batted
+    # ball mix (which is more stable year-to-year) from the real Statcast data.
+    def _fip_anchor_profile(statcast_profile: dict, xfip: float) -> dict:
+        """Blend Statcast K/BB with FIP-implied K/BB (60% FIP, 40% Statcast)."""
+        fip_profile = fip_to_bullpen_batted_ball_profile(xfip)
+        blended = dict(statcast_profile)
+        blended['k_rate']  = (fip_profile['k_rate']  * 0.60) + (statcast_profile.get('k_rate',  0.225) * 0.40)
+        blended['bb_rate'] = (fip_profile['bb_rate'] * 0.60) + (statcast_profile.get('bb_rate', 0.085) * 0.40)
+        return blended
+
+    away_pitcher_mods = _fip_anchor_profile(away_pitcher_mods, away_pitcher_fip)
+    home_pitcher_mods = _fip_anchor_profile(home_pitcher_mods, home_pitcher_fip)
+    # ─────────────────────────────────────────────────────────────────────────
+
     away_defense_factor = calculate_defensive_hit_modifier(away_pitcher_id, away_team_name, venue_name)
     home_defense_factor = calculate_defensive_hit_modifier(home_pitcher_id, home_team_name, venue_name)
 
