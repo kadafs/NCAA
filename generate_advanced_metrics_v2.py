@@ -672,7 +672,7 @@ def process_leagues():
                 
         output_stats = []
         for team_name, data in srs_teams.items():
-            if data["games"] < 2: continue
+            if data["games"] < 1: continue
             
             w = data.get("weight_sum", data["games"])
             if w <= 0.001: continue

@@ -108,6 +108,30 @@ def _load_match_data(tour: str, min_year: int = 2019) -> pd.DataFrame:
 
 
 # ============================================================
+# Name Normalization
+# Tennis-Data.co.uk format: "Surname I." (e.g., "Sinner J.", "Alcaraz C.")
+# ============================================================
+
+def normalize_name(name: str) -> str:
+    """
+    Convert full player name to Tennis-Data.co.uk "Surname I." format.
+    "Jannik Sinner"  -> "Sinner J."
+    "Carlos Alcaraz" -> "Alcaraz C."
+    Already-normalized names are passed through unchanged.
+    """
+    name = name.strip()
+    parts = name.split()
+    if not parts:
+        return name
+    # Already "Surname I." format
+    if len(parts) == 2 and len(parts[-1]) <= 2 and parts[-1].endswith('.'):
+        return name
+    if len(parts) >= 2:
+        return f"{parts[-1]} {parts[0][0].upper()}."
+    return name
+
+
+# ============================================================
 # Elo Engine
 # ============================================================
 
@@ -168,16 +192,33 @@ def compute_elo_ratings(df: pd.DataFrame, surface_filter: str = None) -> dict:
 
 
 def _surface_win_rate(player_name: str, df: pd.DataFrame, surface: str) -> float:
-    """Compute a player's win rate on a specific surface."""
-    name_lower = player_name.lower().strip()
+    """Compute a player's win rate on a specific surface using normalized name matching."""
+    normalized = normalize_name(player_name).lower()
+    surname = normalized.split()[0].lower()
+
     surf_df = df[df['Surface'].str.lower() == surface.lower()] if 'Surface' in df.columns else df
 
-    wins = surf_df[surf_df.get('Winner', surf_df.get('winner_name', pd.Series())).str.lower().str.strip() == name_lower]
-    losses = surf_df[surf_df.get('Loser', surf_df.get('loser_name', pd.Series())).str.lower().str.strip() == name_lower]
+    if surf_df.empty:
+        return None
+
+    winner_col = 'Winner' if 'Winner' in surf_df.columns else 'winner_name'
+    loser_col  = 'Loser'  if 'Loser'  in surf_df.columns else 'loser_name'
+
+    w_names = surf_df[winner_col].astype(str).str.strip().str.lower()
+    l_names = surf_df[loser_col].astype(str).str.strip().str.lower()
+
+    # Exact normalized match
+    wins   = surf_df[w_names == normalized]
+    losses = surf_df[l_names == normalized]
+
+    # Surname-only fallback (handles spacing variants)
+    if len(wins) + len(losses) < 3:
+        wins   = surf_df[w_names.str.startswith(surname)]
+        losses = surf_df[l_names.str.startswith(surname)]
 
     total = len(wins) + len(losses)
     if total < 5:
-        return None  # insufficient sample
+        return None
     return len(wins) / total
 
 
@@ -198,33 +239,37 @@ def _expected_match_win_prob(serve_p1: float, serve_p2: float,
                               sets_target: int = 2) -> float:
     """
     Estimate P(player 1 wins match) given serve point probabilities.
-    Uses simplified set-level calculation (not full MC).
+
+    Uses the normalized break-point ratio for P(set win):
+      P(A wins set) = hA*(1-hB) / (hA*(1-hB) + (1-hA)*hB)
+    where hA = P(A holds), hB = P(B holds).
+
+    This correctly captures serve dominance: at 97.9% vs 86% hold,
+    player A wins the set ~88% of the time.
     """
-    g1 = _p_server_wins_game(serve_p1)   # P1 holds
-    g2 = _p_server_wins_game(serve_p2)   # P2 holds
+    hA = _p_server_wins_game(serve_p1)   # P1 hold rate
+    hB = _p_server_wins_game(serve_p2)   # P2 hold rate
 
-    # P1 wins a service game, P2 breaks:
-    p1_wins_serve_game = g1
-    p1_breaks_p2 = 1.0 - g2
+    # P1 breaks P2
+    bA = 1.0 - hB
+    # P2 breaks P1
+    bB = 1.0 - hA
 
-    # Simplified: compute P(P1 wins a set) via average of holding/breaking scenarios
-    # Approximate: treat set as sequence of games with alternating serves
-    # P(P1 wins set) ≈ based on relative hold rates
-    hold_advantage = (p1_wins_serve_game + p1_breaks_p2) / 2.0
+    numerator   = hA * bA          # P1 holds AND breaks
+    denominator = hA * bA + bB * hB  # same + P2 holds AND breaks
 
-    # Convert to match win prob using Bradley-Terry-style formula
-    if hold_advantage <= 0.5:
-        p_set = max(0.01, hold_advantage)
+    if denominator < 1e-9:
+        p_set = 0.5
     else:
-        p_set = hold_advantage
+        p_set = max(0.01, min(0.99, numerator / denominator))
 
-    # Match: P(win >= sets_target sets out of <= 2*sets_target-1)
+    # Match probability
     if sets_target == 2:  # Best of 3
-        return p_set ** 2 + 2 * p_set ** 2 * (1 - p_set)
+        q = 1.0 - p_set
+        return p_set ** 2 + 2.0 * p_set ** 2 * q
     else:  # Best of 5
-        q = 1 - p_set
-        return (p_set ** 3 + 3 * p_set ** 3 * q +
-                6 * p_set ** 3 * q ** 2)
+        q = 1.0 - p_set
+        return p_set ** 3 + 3.0 * p_set ** 3 * q + 6.0 * p_set ** 3 * q ** 2
 
 
 def implied_serve_prob_from_win_rate(
@@ -257,7 +302,7 @@ def implied_serve_prob_from_win_rate(
     league_serve = LEAGUE_SERVE_PROFILES[tour]['_implied_serve_prob']
     sets_target = 2  # use Best-of-3 for calibration (most matches)
 
-    lo, hi = 0.35, 0.85
+    lo, hi = 0.35, 0.85  # raised ceiling to 0.85 for elite grass players
     for _ in range(50):
         mid = (lo + hi) / 2.0
         # Surface adjustment applied symmetrically
@@ -274,7 +319,7 @@ def implied_serve_prob_from_win_rate(
         else:
             hi = mid
 
-    return max(0.40, min(0.75, mid))
+    return max(0.40, min(0.84, mid))
 
 
 def _serve_prob_to_profile(serve_prob: float, tour: str) -> dict:

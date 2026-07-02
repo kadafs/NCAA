@@ -33,6 +33,29 @@ LEAGUE_HOLD = {
 }
 
 # ---------------------------------------------------------------------------
+# League Baseline Point-Win Probabilities
+# The serve point probability p such that p_server_wins_game(p) ≈ league hold rate
+#   ATP: p=0.630 → 80% hold    WTA: p=0.540 → 62% hold
+# ---------------------------------------------------------------------------
+LEAGUE_POINT_PROB = {
+    'ATP': 0.630,
+    'WTA': 0.540,
+}
+
+# ---------------------------------------------------------------------------
+# Surface Point Adjustments: ADDITIVE shifts to serve point probability.
+# Applied AFTER log-odds blend so raw serve stats are not inflated.
+# ---------------------------------------------------------------------------
+SURFACE_POINT_ADJUSTMENTS = {
+    ('ATP', 'Hard'):   0.000,
+    ('ATP', 'Clay'):  -0.030,   # Slower surface: server loses ~3 pp
+    ('ATP', 'Grass'):  0.040,   # Fast surface:   server gains ~4 pp
+    ('WTA', 'Hard'):   0.000,
+    ('WTA', 'Clay'):  -0.020,
+    ('WTA', 'Grass'):  0.025,
+}
+
+# ---------------------------------------------------------------------------
 # Tournament Level Metadata
 # ---------------------------------------------------------------------------
 GRAND_SLAMS = {
