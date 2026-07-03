@@ -111,16 +111,22 @@ def blended_serve_win_prob(
     # 3. Returner's implied point-win rate from server's perspective
     returner_adj = max(0.01, min(0.99, 1.0 - returner_rpw))
 
-    # 4. League game-level hold rate as log-odds anchor
-    league_hold = get_league_hold(tour)
+    # 4. League point-level probability as log-odds anchor (Fix: do NOT use game-level hold rate)
+    from surface_engine import get_league_point_prob
+    league_point_prob = get_league_point_prob(tour)
 
     # 5. Power-compress all three inputs, then log-odds blend.
     #    The 0.55 exponent is a shrinkage factor: boundary-preserving, non-linear in centre.
     s_point = server_adj  ** 0.55
     r_point = returner_adj ** 0.55
-    l_point = league_hold  ** 0.55
+    l_point = league_point_prob ** 0.55
 
-    return max(0.01, min(0.99, log_odds_blend(s_point, r_point, l_point)))
+    blended_compressed = log_odds_blend(s_point, r_point, l_point)
+    
+    # 6. Un-transform the probability back to normal space
+    blended_final = blended_compressed ** (1.0 / 0.55)
+
+    return max(0.01, min(0.99, blended_final))
 
 
 
