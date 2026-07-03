@@ -447,19 +447,19 @@ def implied_serve_prob_from_win_rate(
     -------
     float : implied serve point probability
     """
-    from surface_engine import SURFACE_POINT_ADJUSTMENTS
+    from surface_engine import SURFACE_MODIFIERS
 
     # League average opponent serve prob
     league_serve = LEAGUE_SERVE_PROFILES[tour]['_implied_serve_prob']
     sets_target = 2  # use Best-of-3 for calibration (most matches)
 
-    lo, hi = 0.35, 0.85  # raised ceiling to 0.85 for elite grass players
+    lo, hi = 0.35, 0.84
     for _ in range(50):
         mid = (lo + hi) / 2.0
-        # Surface adjustment applied symmetrically
-        surf_adj = SURFACE_POINT_ADJUSTMENTS.get((tour, surface), 0.00)
-        p_adjusted = max(0.01, min(0.99, mid + surf_adj))
-        opp_adjusted = max(0.01, min(0.99, league_serve + surf_adj))
+        # Apply surface multiplicatively (audit Finding 1 — no additive shifts)
+        surf_mod     = SURFACE_MODIFIERS.get((tour, surface), 1.00)
+        p_adjusted   = max(0.01, min(0.99, mid          * surf_mod))
+        opp_adjusted = max(0.01, min(0.99, league_serve * surf_mod))
 
         predicted = _expected_match_win_prob(p_adjusted, opp_adjusted, sets_target)
 

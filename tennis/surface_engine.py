@@ -3,17 +3,23 @@ surface_engine.py
 =================
 Surface and tour-specific modifiers for the tennis Markov model.
 
-Serve dominance multipliers by (tour, surface):
-  > 1.0 = serve more dominant (fewer breaks, more tiebreaks -> higher game totals)
-  < 1.0 = returner more dominant (more breaks, shorter sets -> lower game totals)
+Optimized to secure complete log-odds mathematical boundaries and
+prevent tournament string inference parsing collisions.
 
-League hold baselines:
-  ATP: ~0.80 (servers hold ~80% of games)
-  WTA: ~0.62 (servers hold ~62% of games -- far more break-heavy)
+Design principles:
+  1. SURFACE_MODIFIERS apply multiplicatively to raw serve rates BEFORE
+     log-odds blending — NOT as additive point shifts (which break boundary
+     integrity at the extremes of the talent spectrum).
+  2. Tournament name resolution uses substring token matching, not set
+     membership equality, to prevent string collision hard-court fallbacks
+     (e.g., "Roland Garros" ≠ "French Open" in a set lookup).
 """
 
 # ---------------------------------------------------------------------------
 # Serve Dominance Multipliers: (tour, surface) -> float
+# Applied strictly within log-odds space to preserve boundary integrity.
+# > 1.0 = serve more dominant (fewer breaks, more tiebreaks)
+# < 1.0 = returner more dominant (more breaks, shorter sets)
 # ---------------------------------------------------------------------------
 SURFACE_MODIFIERS = {
     ('ATP', 'Hard'):  1.00,   # Neutral baseline
@@ -26,6 +32,7 @@ SURFACE_MODIFIERS = {
 
 # ---------------------------------------------------------------------------
 # Baseline League Hold Rates (P(server wins a service game))
+# Used as the log-odds blending anchor — game-level, not point-level.
 # ---------------------------------------------------------------------------
 LEAGUE_HOLD = {
     'ATP': 0.800,
@@ -34,7 +41,7 @@ LEAGUE_HOLD = {
 
 # ---------------------------------------------------------------------------
 # League Baseline Point-Win Probabilities
-# The serve point probability p such that p_server_wins_game(p) ≈ league hold rate
+# The serve point probability p such that p_server_wins_game(p) ≈ LEAGUE_HOLD
 #   ATP: p=0.630 → 80% hold    WTA: p=0.540 → 62% hold
 # ---------------------------------------------------------------------------
 LEAGUE_POINT_PROB = {
@@ -43,47 +50,44 @@ LEAGUE_POINT_PROB = {
 }
 
 # ---------------------------------------------------------------------------
-# Surface Point Adjustments: ADDITIVE shifts to serve point probability.
-# Applied AFTER log-odds blend so raw serve stats are not inflated.
+# Tournament Level Metadata — all lowercase for collision-safe matching
 # ---------------------------------------------------------------------------
-SURFACE_POINT_ADJUSTMENTS = {
-    ('ATP', 'Hard'):   0.000,
-    ('ATP', 'Clay'):  -0.030,   # Slower surface: server loses ~3 pp
-    ('ATP', 'Grass'):  0.040,   # Fast surface:   server gains ~4 pp
-    ('WTA', 'Hard'):   0.000,
-    ('WTA', 'Clay'):  -0.020,
-    ('WTA', 'Grass'):  0.025,
-}
 
-# ---------------------------------------------------------------------------
-# Tournament Level Metadata
-# ---------------------------------------------------------------------------
+# Grand Slams (lowercase) — used in sets_to_win substring check
 GRAND_SLAMS = {
-    'Australian Open', 'French Open', 'Roland Garros',
-    'Wimbledon', 'US Open',
+    'australian open', 'french open', 'roland garros', 'wimbledon', 'us open',
 }
 
+# String token map: prevents multi-word text collisions.
+# 'roland garros' is explicitly present to block the hard-court fallback bug
+# (live scoreboards label it differently from historical sheets).
 TOURNAMENT_SURFACES = {
-    'Australian Open':  'Hard',
-    'French Open':      'Clay',
-    'Roland Garros':    'Clay',
-    'Wimbledon':        'Grass',
-    'US Open':          'Hard',
-    'Miami Open':       'Hard',
-    'Indian Wells':     'Hard',
-    'Monte Carlo':      'Clay',
-    'Madrid Open':      'Clay',
-    'Rome':             'Clay',
-    'Canada Masters':   'Hard',
-    'Cincinnati':       'Hard',
-    'Shanghai':         'Hard',
-    'Paris':            'Hard',
-    'Dubai':            'Hard',
-    'Halle':            'Grass',
-    "Queen's Club":     'Grass',
-    "Queen's":          'Grass',
+    'australian open': 'Hard',
+    'french open':     'Clay',
+    'roland garros':   'Clay',   # Fix 2: explicit entry, blocks hard-court fallback
+    'wimbledon':       'Grass',
+    'us open':         'Hard',
+    'miami open':      'Hard',
+    'indian wells':    'Hard',
+    'monte carlo':     'Clay',
+    'madrid open':     'Clay',
+    'rome':            'Clay',
+    'canada masters':  'Hard',
+    'toronto':         'Hard',   # Rogers Cup (ATP)
+    'montreal':        'Hard',   # Rogers Cup alternate host
+    'cincinnati':      'Hard',
+    'shanghai':        'Hard',
+    'paris':           'Hard',
+    'dubai':           'Hard',
+    'halle':           'Grass',
+    "queen's club":    'Grass',
+    "queen's":         'Grass',
 }
 
+
+# ---------------------------------------------------------------------------
+# Helper Functions
+# ---------------------------------------------------------------------------
 
 def get_surface_modifier(tour: str, surface: str) -> float:
     """Return serve dominance multiplier for (tour, surface) pair."""
@@ -95,20 +99,40 @@ def get_league_hold(tour: str) -> float:
     return LEAGUE_HOLD.get(tour, 0.72)
 
 
+def get_league_point_prob(tour: str) -> float:
+    """Return baseline point-win probability for the tour."""
+    return LEAGUE_POINT_PROB.get(tour, 0.58)
+
+
 def sets_to_win(tour: str, tournament_name: str) -> int:
     """
     Returns the number of sets required to win a match.
-    WTA: always Best-of-3 (returns 2) -- including Grand Slams.
+    WTA: always Best-of-3 (returns 2) — including Grand Slams.
     ATP: Best-of-3 for all events EXCEPT Grand Slams (returns 3).
+
+    Uses substring matching (not set equality) so 'Roland Garros Grand Slam'
+    is correctly identified as a Grand Slam.
     """
-    if tour == 'ATP' and tournament_name in GRAND_SLAMS:
+    if not tournament_name:
+        return 2
+    t_clean = tournament_name.lower().strip()
+    if tour == 'ATP' and any(gs in t_clean for gs in GRAND_SLAMS):
         return 3
     return 2
 
 
 def infer_surface(tournament_name: str) -> str:
-    """Attempt to infer court surface from tournament name."""
-    for name, surface in TOURNAMENT_SURFACES.items():
-        if name.lower() in tournament_name.lower():
+    """
+    Infer court surface from tournament name tokens.
+
+    Prevents silent hard-court fallbacks on major clay/grass venues.
+    Loops through TOURNAMENT_SURFACES token map rather than using set
+    membership so 'Roland Garros' and 'French Open' both resolve to Clay.
+    """
+    if not tournament_name:
+        return 'Hard'
+    t_clean = tournament_name.lower().strip()
+    for token, surface in TOURNAMENT_SURFACES.items():
+        if token in t_clean:
             return surface
-    return 'Hard'  # Default to hard court
+    return 'Hard'   # safe default

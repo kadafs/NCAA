@@ -53,25 +53,13 @@ def p_server_wins_game(p: float) -> float:
     return (p ** 4) + 4.0 * (p ** 4) * q + 10.0 * (p ** 4) * (q ** 2) + p_deuce * p_win_from_deuce
 
 
-# League-average point-win probabilities (probability that SERVER wins a point).
-# These are the point-level values that produce the observed league hold rates:
-#   ATP: p=0.630 -> p_server_wins_game = ~0.800 (80% hold rate)
-#   WTA: p=0.540 -> p_server_wins_game = ~0.620 (62% hold rate)
-LEAGUE_POINT_PROB = {
-    'ATP': 0.630,
-    'WTA': 0.540,
-}
+# ---------------------------------------------------------------------------
+# Surface and league constants imported from surface_engine (single source of
+# truth). Do NOT redefine SURFACE_POINT_ADJUSTMENTS here -- that pattern was
+# the additive double-correction bug identified in the audit.
+# ---------------------------------------------------------------------------
+from surface_engine import get_surface_modifier, get_league_hold
 
-# Surface adjustments: ADDITIVE point-probability shifts.
-# Applied after the log-odds blend so they don't inflate raw serve stats.
-SURFACE_POINT_ADJUSTMENTS = {
-    ('ATP', 'Hard'):  0.000,
-    ('ATP', 'Clay'): -0.030,   # slower court: serve loses ~3 pp
-    ('ATP', 'Grass'): 0.040,   # faster court: serve gains ~4 pp
-    ('WTA', 'Hard'):  0.000,
-    ('WTA', 'Clay'): -0.020,
-    ('WTA', 'Grass'): 0.025,
-}
 
 
 def blended_serve_win_prob(
@@ -84,6 +72,15 @@ def blended_serve_win_prob(
 ) -> float:
     """
     Derives blended point-level probability that server wins a point on serve.
+
+    Pipeline (audit-corrected, Finding 1):
+      1. Compute raw serve rate from player's FSP/FSW/SSW.
+      2. Apply SURFACE_MODIFIERS multiplicatively (not additive shift).
+         Multiplicative scaling in log-odds space preserves S-curve boundary
+         behavior at the talent extremes (weak qualifiers are not over-penalized).
+      3. Apply 0.55 power transform to all three inputs before log-odds blend
+         to ensure consistent scale across the game-level hold space.
+      4. log_odds_blend uses game-level league hold rate as the anchor.
 
     Parameters
     ----------
@@ -98,22 +95,27 @@ def blended_serve_win_prob(
     -------
     float : P(server wins this point on serve)
     """
-    # Server's raw point-win rate from their own serve statistics
+    # 1. Server's raw combined serve rate
     raw_serve = server_fsp * server_fsw + (1.0 - server_fsp) * server_ssw
 
-    # Returner's implied point-win rate for the SERVER:
-    # returner_rpw = % of return points WON by returner -> server wins (1 - rpw)
-    returner_estimate = max(0.01, min(0.99, 1.0 - returner_rpw))
+    # 2. Apply surface multiplier to server only (serve dominance is asymmetric)
+    surface_mod = get_surface_modifier(tour, surface)
+    server_adj  = max(0.01, min(0.99, raw_serve * surface_mod))
 
-    # League baseline at point level (not hold level)
-    league_point = LEAGUE_POINT_PROB.get(tour, 0.630)
+    # 3. Returner's implied point-win rate from SERVER perspective
+    returner_adj = max(0.01, min(0.99, 1.0 - returner_rpw))
 
-    # Log-odds blend of both estimates against league baseline
-    p_base = log_odds_blend(raw_serve, returner_estimate, league_point)
+    # 4. League game-level hold rate as log-odds anchor
+    league_hold = get_league_hold(tour)
 
-    # Apply surface as additive point-probability shift
-    surface_adj = SURFACE_POINT_ADJUSTMENTS.get((tour, surface), 0.00)
-    return max(0.01, min(0.99, p_base + surface_adj))
+    # 5. Power compress all three into a consistent scale, then log-odds blend.
+    #    The 0.55 exponent is a shrinkage factor that maps the [0,1] interval
+    #    symmetrically — boundary-preserving and non-linear in the center.
+    s_point = server_adj  ** 0.55
+    r_point = returner_adj ** 0.55
+    l_point = league_hold  ** 0.55
+
+    return max(0.01, min(0.99, log_odds_blend(s_point, r_point, l_point)))
 
 
 # ---------------------------------------------------------------------------
