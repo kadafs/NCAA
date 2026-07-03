@@ -48,7 +48,7 @@ def _purge_old_caches(date_str: str):
 
 
 def process_single_game(args):
-    game, sport_id, force_generic = args
+    game, sport_id, force_generic, date_str = args
     
     away = game['away_team']
     home = game['home_team']
@@ -79,7 +79,7 @@ def process_single_game(args):
         weather_mult    = 1.0
         effective_pf    = pf
         if sport_id == 1:
-            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr)
+            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr, target_date=date_str)
             weather_mult = weather.get('weather_multiplier', 1.0)
             effective_pf = round(pf * weather_mult, 4)
 
@@ -580,7 +580,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
 
     # MULTIPROCESSING POOL
     # Windows requires the main module idiom, which is safely guarded by the if __name__ block
-    pool_args = [(g, sport_id, force_generic) for g in games]
+    pool_args = [(g, sport_id, force_generic, date_str) for g in games]
     
     num_processes = min(8, cpu_count() or 4)
     with Pool(processes=num_processes) as pool:

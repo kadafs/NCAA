@@ -356,7 +356,7 @@ def _scrape_rotowire() -> dict:
 # ---------------------------------------------------------------------------
 # wttr.in fallback
 # ---------------------------------------------------------------------------
-def _get_wttr_weather(venue_name: str) -> dict:
+def _get_wttr_weather(venue_name: str, target_date: str = None) -> dict:
     """Fetches raw temp + wind for a stadium via wttr.in JSON."""
     # Find closest match in coords table
     coords = None
@@ -374,10 +374,32 @@ def _get_wttr_weather(venue_name: str) -> dict:
     try:
         r = requests.get(url, timeout=8)
         data = r.json()
-        current = data['current_condition'][0]
-        temp_f   = round((int(current['temp_C']) * 9/5) + 32)
-        wind_mph = int(current['windspeedMiles'])
-        wind_deg = int(current['winddirDegree'])
+        
+        target_weather = None
+        if target_date and 'weather' in data:
+            for day in data['weather']:
+                if day.get('date') == target_date:
+                    hourlies = day.get('hourly', [])
+                    for h in hourlies:
+                        # Grab 1800 (6 PM) forecast, or 1500 (3 PM) as fallback
+                        if h.get('time') in ('1500', '1800'):
+                            target_weather = h
+                            if h.get('time') == '1800':
+                                break
+                    if not target_weather and hourlies:
+                        target_weather = hourlies[0]
+                    break
+
+        if target_weather:
+            temp_f   = round((int(target_weather['tempC']) * 9/5) + 32)
+            wind_mph = int(target_weather['windspeedMiles'])
+            wind_deg = int(target_weather['winddirDegree'])
+        else:
+            current = data['current_condition'][0]
+            temp_f   = round((int(current['temp_C']) * 9/5) + 32)
+            wind_mph = int(current['windspeedMiles'])
+            wind_deg = int(current['winddirDegree'])
+
         # Map compass degrees to stadium-relative direction
         # Issue 9 fix: uses per-stadium CF bearing instead of a single global quadrant.
         wind_dir   = _wind_relative_to_stadium(wind_deg, venue_name)
@@ -414,7 +436,7 @@ def _load_rotowire_cache():
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str = None) -> dict:
+def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str = None, target_date: str = None) -> dict:
     """
     Returns a weather context dict for a given venue.
 
@@ -423,6 +445,7 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
     venue_name : str   e.g. "Wrigley Field"
     away_abbr  : str   2-3 letter team abbreviation from RotoWire (e.g. "CHC")
     home_abbr  : str
+    target_date: str   e.g. "2026-07-04"
 
     Returns dict with keys:
         temp, wind_mph, wind_dir, is_indoor,
@@ -442,13 +465,15 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
     clean_away = ROTO_MAP.get(away_abbr, away_abbr) if away_abbr else None
     clean_home = ROTO_MAP.get(home_abbr, home_abbr) if home_abbr else None
     
-    if clean_away and clean_home and _rotowire_cache:
+    today_str = get_mlb_now().strftime('%Y-%m-%d')
+    # RotoWire only works for today
+    if clean_away and clean_home and _rotowire_cache and (not target_date or target_date == today_str):
         key = f"{clean_away}@{clean_home}"
         raw = _rotowire_cache.get(key)
 
-    # Fallback: wttr.in
+    # Fallback: wttr.in (supports multi-day forecast if target_date is provided)
     if raw is None:
-        raw = _get_wttr_weather(venue_name)
+        raw = _get_wttr_weather(venue_name, target_date)
 
     # If all else fails, use neutral defaults
     if raw is None:
