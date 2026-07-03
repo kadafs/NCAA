@@ -11,6 +11,11 @@ on:
         type: boolean
         required: false
         default: false
+      target_date:
+        description: 'Target Date (YYYY-MM-DD)'
+        type: string
+        required: false
+        default: ''
 
 jobs:
   run_mlb_engine:
@@ -67,7 +72,11 @@ jobs:
         run: |
           cd ncaa-api
           python mlb/daily_f5_park_factors.py
-          python mlb/consensus_f5_v4.py
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            python mlb/consensus_f5_v4.py --date "${{ github.event.inputs.target_date }}"
+          else
+            python mlb/consensus_f5_v4.py
+          fi
 
       - name: Push Data to Baseball Dashboard
         run: |
