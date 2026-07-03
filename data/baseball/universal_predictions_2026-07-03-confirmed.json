@@ -1,0 +1,1193 @@
+{
+    "date": "2026-07-03",
+    "mode": "confirmed",
+    "total_predictions": 13,
+    "predictions": [
+        {
+            "away_team": "St. Louis Cardinals",
+            "home_team": "Chicago Cubs",
+            "pitchers": {
+                "away": {
+                    "name": "Andre Pallante",
+                    "hand": "R",
+                    "fip": 4.82
+                },
+                "home": {
+                    "name": "David Peterson",
+                    "hand": "L",
+                    "fip": 3.52
+                }
+            },
+            "environment": {
+                "venue": "Wrigley Field",
+                "park_factor": 1.001,
+                "weather": {
+                    "temp": 73,
+                    "wind_mph": 7,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0045,
+                    "wind_multiplier": 1.018,
+                    "weather_multiplier": 1.0226,
+                    "weather_label": "73F | 7 MPH Out | Weather: +2.3%"
+                },
+                "effective_pf": 1.0236,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.36,
+                "mc_f5": 4.3,
+                "mc_f5_away": 2.25,
+                "mc_f5_home": 2.05,
+                "mc_late": 3.35,
+                "mc_full_game": 7.65,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        1,
+                        4,
+                        2,
+                        0,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.065,
+                    "raw_avg": 2.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        13,
+                        8,
+                        2,
+                        0,
+                        2,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.462,
+                "under_4_5": 0.586,
+                "under_5_5": 0.695,
+                "full_over_7_5": 0.497,
+                "full_over_8_5": 0.358,
+                "full_over_9_5": 0.241
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (MODERATE)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+        },
+        {
+            "away_team": "Pittsburgh Pirates",
+            "home_team": "Washington Nationals",
+            "pitchers": {
+                "away": {
+                    "name": "Mitch Keller",
+                    "hand": "R",
+                    "fip": 3.68
+                },
+                "home": {
+                    "name": "Foster Griffin",
+                    "hand": "L",
+                    "fip": 4.72
+                }
+            },
+            "environment": {
+                "venue": "Nationals Park",
+                "park_factor": 1.07,
+                "weather": {
+                    "temp": 99,
+                    "wind_mph": 7,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 2,
+                    "temp_fatigue_scaler": 1.14,
+                    "temp_multiplier": 1.0435,
+                    "wind_multiplier": 0.982,
+                    "weather_multiplier": 1.0247,
+                    "weather_label": "99F | 7 MPH In | Weather: +2.5%"
+                },
+                "effective_pf": 1.0964,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.23,
+                "mc_f5": 5.26,
+                "mc_f5_away": 2.33,
+                "mc_f5_home": 2.93,
+                "mc_late": 3.49,
+                "mc_full_game": 8.75,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.109,
+                    "raw_avg": 2.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        4,
+                        0,
+                        8,
+                        5,
+                        4
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        7,
+                        1,
+                        1,
+                        5,
+                        2,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.347,
+                "under_4_5": 0.467,
+                "under_5_5": 0.583,
+                "full_over_7_5": 0.646,
+                "full_over_8_5": 0.511,
+                "full_over_9_5": 0.379
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Team Bias Veto - Realized Hitter Edge)",
+                "adv_4_5": "Skip (Team Bias Veto - Realized Hitter Edge)",
+                "adv_5_5": "Bet **UNDER** (MODERATE)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Minnesota Twins",
+            "home_team": "New York Yankees",
+            "pitchers": {
+                "away": {
+                    "name": "Mike Paredes",
+                    "hand": "R",
+                    "fip": 5.2
+                },
+                "home": {
+                    "name": "Gerrit Cole",
+                    "hand": "R",
+                    "fip": 4.37
+                }
+            },
+            "environment": {
+                "venue": "Yankee Stadium",
+                "park_factor": 0.998,
+                "weather": {
+                    "temp": 84,
+                    "wind_mph": 6,
+                    "wind_dir": "R-L",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.021,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.021,
+                    "weather_label": "84F | 6 MPH R-L | Weather: +2.1%"
+                },
+                "effective_pf": 1.019,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.57,
+                "mc_f5": 5.84,
+                "mc_f5_away": 2.62,
+                "mc_f5_home": 3.22,
+                "mc_late": 3.04,
+                "mc_full_game": 8.88,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.196,
+                    "raw_avg": 3.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        7,
+                        4,
+                        2,
+                        2,
+                        1,
+                        7
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        1,
+                        0,
+                        0,
+                        1,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.296,
+                "under_4_5": 0.412,
+                "under_5_5": 0.523,
+                "full_over_7_5": 0.662,
+                "full_over_8_5": 0.528,
+                "full_over_9_5": 0.397
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (HIGH)",
+                "adv_5_5": "Skip"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        },
+        {
+            "away_team": "Baltimore Orioles",
+            "home_team": "Cincinnati Reds",
+            "pitchers": {
+                "away": {
+                    "name": "Trevor Rogers",
+                    "hand": "L",
+                    "fip": 3.69
+                },
+                "home": {
+                    "name": "Brady Singer",
+                    "hand": "R",
+                    "fip": 4.61
+                }
+            },
+            "environment": {
+                "venue": "Great American Ball Park",
+                "park_factor": 1.09,
+                "weather": {
+                    "temp": 94,
+                    "wind_mph": 3,
+                    "wind_dir": "Cross",
+                    "wind_lateral": "R-L",
+                    "is_indoor": false,
+                    "rain_pct": 13,
+                    "temp_fatigue_scaler": 1.09,
+                    "temp_multiplier": 1.036,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.036,
+                    "weather_label": "94F | Calm | Weather: +3.6%"
+                },
+                "effective_pf": 1.1292,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 6.0,
+                "mc_f5": 5.63,
+                "mc_f5_away": 3.21,
+                "mc_f5_home": 2.42,
+                "mc_late": 3.94,
+                "mc_full_game": 9.57,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        3,
+                        2,
+                        2,
+                        1,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.109,
+                    "raw_avg": 2.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        2,
+                        1,
+                        3,
+                        4,
+                        4
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.312,
+                "under_4_5": 0.431,
+                "under_5_5": 0.546,
+                "full_over_7_5": 0.739,
+                "full_over_8_5": 0.617,
+                "full_over_9_5": 0.488
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (MODERATE)",
+                "adv_5_5": "Skip"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        },
+        {
+            "away_team": "Chicago White Sox",
+            "home_team": "Cleveland Guardians",
+            "pitchers": {
+                "away": {
+                    "name": "Anthony Kay",
+                    "hand": "L",
+                    "fip": 5.79
+                },
+                "home": {
+                    "name": "Gavin Williams",
+                    "hand": "R",
+                    "fip": 4.09
+                }
+            },
+            "environment": {
+                "venue": "Progressive Field",
+                "park_factor": 0.951,
+                "weather": {
+                    "temp": 82,
+                    "wind_mph": 5,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.018,
+                    "wind_multiplier": 1.01,
+                    "weather_multiplier": 1.0282,
+                    "weather_label": "82F | 5 MPH Out | Weather: +2.8%"
+                },
+                "effective_pf": 0.9778,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.5,
+                "mc_f5": 4.85,
+                "mc_f5_away": 1.98,
+                "mc_f5_home": 2.88,
+                "mc_late": 2.9,
+                "mc_full_game": 7.76,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        1,
+                        9,
+                        2,
+                        4,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.978,
+                    "raw_avg": 2.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        5,
+                        2,
+                        2,
+                        1,
+                        4
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.402,
+                "under_4_5": 0.519,
+                "under_5_5": 0.633,
+                "full_over_7_5": 0.513,
+                "full_over_8_5": 0.374,
+                "full_over_9_5": 0.254
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        },
+        {
+            "away_team": "New York Mets",
+            "home_team": "Atlanta Braves",
+            "pitchers": {
+                "away": {
+                    "name": "Christian Scott",
+                    "hand": "R",
+                    "fip": 4.32
+                },
+                "home": {
+                    "name": "Grant Holmes",
+                    "hand": "R",
+                    "fip": 4.48
+                }
+            },
+            "environment": {
+                "venue": "Truist Park",
+                "park_factor": 0.961,
+                "weather": {
+                    "temp": 79,
+                    "wind_mph": 2,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0135,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0135,
+                    "weather_label": "79F | Calm | Weather: +1.4%"
+                },
+                "effective_pf": 0.974,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.55,
+                "mc_f5": 4.9,
+                "mc_f5_away": 2.58,
+                "mc_f5_home": 2.32,
+                "mc_late": 2.66,
+                "mc_full_game": 7.56,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        1,
+                        0,
+                        1,
+                        0,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        2,
+                        1,
+                        0,
+                        0,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.389,
+                "under_4_5": 0.516,
+                "under_5_5": 0.626,
+                "full_over_7_5": 0.484,
+                "full_over_8_5": 0.346,
+                "full_over_9_5": 0.23
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R2)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        },
+        {
+            "away_team": "San Francisco Giants",
+            "home_team": "Colorado Rockies",
+            "pitchers": {
+                "away": {
+                    "name": "",
+                    "hand": "R",
+                    "fip": 4.5
+                },
+                "home": {
+                    "name": "Ryan Feltner",
+                    "hand": "R",
+                    "fip": 5.42
+                }
+            },
+            "environment": {
+                "venue": "Coors Field",
+                "park_factor": 1.171,
+                "weather": {
+                    "temp": 68,
+                    "wind_mph": 5,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
+                    "wind_multiplier": 1.01,
+                    "weather_multiplier": 1.01,
+                    "weather_label": "68F | 5 MPH Out | Weather: +1.0%"
+                },
+                "effective_pf": 1.1827,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 6.67,
+                "mc_f5": 6.05,
+                "mc_f5_away": 3.05,
+                "mc_f5_home": 3.0,
+                "mc_late": 4.39,
+                "mc_full_game": 10.44,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        0,
+                        1,
+                        0,
+                        5,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.152,
+                    "raw_avg": 3.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        5,
+                        1,
+                        5,
+                        1,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.279,
+                "under_4_5": 0.391,
+                "under_5_5": 0.5,
+                "full_over_7_5": 0.817,
+                "full_over_8_5": 0.714,
+                "full_over_9_5": 0.596
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R1)",
+                "adv_4_5": "Skip (Under Lean - R1)",
+                "adv_5_5": "Skip"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Value Strategy",
+                "action": "BET F5 OVER",
+                "reason": "Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park (1.183x).",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Tampa Bay Rays",
+            "home_team": "Houston Astros",
+            "pitchers": {
+                "away": {
+                    "name": "Nick Martinez",
+                    "hand": "R",
+                    "fip": 4.06
+                },
+                "home": {
+                    "name": "Spencer Arrighetti",
+                    "hand": "R",
+                    "fip": 4.17
+                }
+            },
+            "environment": {
+                "venue": "Daikin Park",
+                "park_factor": 1.067,
+                "weather": {
+                    "temp": 81,
+                    "wind_mph": 3,
+                    "wind_dir": "L-R",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0165,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0165,
+                    "weather_label": "81F | Calm | Weather: +1.6%"
+                },
+                "effective_pf": 1.0846,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.81,
+                "mc_f5": 6.37,
+                "mc_f5_away": 3.34,
+                "mc_f5_home": 3.03,
+                "mc_late": 3.35,
+                "mc_full_game": 9.72,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.225,
+                    "raw_avg": 3.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        2,
+                        8,
+                        4,
+                        3,
+                        3
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        6,
+                        1,
+                        0,
+                        4,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.249,
+                "under_4_5": 0.359,
+                "under_5_5": 0.463,
+                "full_over_7_5": 0.754,
+                "full_over_8_5": 0.635,
+                "full_over_9_5": 0.507
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R1)",
+                "adv_4_5": "Skip (Under Lean - R1)",
+                "adv_5_5": "Skip (Under Lean - R1)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Value Strategy",
+                "action": "BET F5 OVER",
+                "reason": "Team Bias Veto Active. Trusting MC; TD blinded by unregressed park variance (15.8%).",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Boston Red Sox",
+            "home_team": "Los Angeles Angels",
+            "pitchers": {
+                "away": {
+                    "name": "Jake Bennett",
+                    "hand": "L",
+                    "fip": 3.17
+                },
+                "home": {
+                    "name": "Reid Detmers",
+                    "hand": "L",
+                    "fip": 3.21
+                }
+            },
+            "environment": {
+                "venue": "Angel Stadium",
+                "park_factor": 0.992,
+                "weather": {
+                    "temp": 63,
+                    "wind_mph": 3,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 0.992,
+                    "temp_multiplier": 0.997,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 0.997,
+                    "weather_label": "63F | Calm | Weather: -0.3%"
+                },
+                "effective_pf": 0.989,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.45,
+                "mc_f5": 3.29,
+                "mc_f5_away": 1.93,
+                "mc_f5_home": 1.36,
+                "mc_late": 2.91,
+                "mc_full_game": 6.2,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.978,
+                    "raw_avg": 2.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        1,
+                        6,
+                        2,
+                        4,
+                        4
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        0,
+                        2,
+                        4,
+                        2,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.604,
+                "under_4_5": 0.721,
+                "under_5_5": 0.818,
+                "full_over_7_5": 0.284,
+                "full_over_8_5": 0.174,
+                "full_over_9_5": 0.098
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Value Strategy",
+                "action": "BET F5 UNDER",
+                "reason": "Divergent baseline alignment confirms line value. Trusting MC via pure distance edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Miami Marlins",
+            "home_team": "Athletics",
+            "pitchers": {
+                "away": {
+                    "name": "Tyler Phillips",
+                    "hand": "R",
+                    "fip": 4.84
+                },
+                "home": {
+                    "name": "Jack Perkins",
+                    "hand": "R",
+                    "fip": 4.58
+                }
+            },
+            "environment": {
+                "venue": "Sutter Health Park",
+                "park_factor": 1.136,
+                "weather": {
+                    "temp": 91,
+                    "wind_mph": 8,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.06,
+                    "temp_multiplier": 1.0315,
+                    "wind_multiplier": 0.978,
+                    "weather_multiplier": 1.0088,
+                    "weather_label": "91F | 8 MPH In | Weather: +0.9%"
+                },
+                "effective_pf": 1.146,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.69,
+                "mc_f5": 5.45,
+                "mc_f5_away": 2.6,
+                "mc_f5_home": 2.85,
+                "mc_late": 3.79,
+                "mc_full_game": 9.24,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.196,
+                    "raw_avg": 3.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        2,
+                        5,
+                        6,
+                        1,
+                        4
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.022,
+                    "raw_avg": 2.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        6,
+                        1,
+                        3,
+                        1,
+                        1,
+                        7
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.332,
+                "under_4_5": 0.449,
+                "under_5_5": 0.564,
+                "full_over_7_5": 0.703,
+                "full_over_8_5": 0.575,
+                "full_over_9_5": 0.444
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (MODERATE)",
+                "adv_5_5": "Skip"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Milwaukee Brewers",
+            "home_team": "Arizona Diamondbacks",
+            "pitchers": {
+                "away": {
+                    "name": "Kyle Harrison",
+                    "hand": "L",
+                    "fip": 3.35
+                },
+                "home": {
+                    "name": "Jose Cabrera",
+                    "hand": "R",
+                    "fip": 4.47
+                }
+            },
+            "environment": {
+                "venue": "Chase Field",
+                "park_factor": 1.039,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Indoor",
+                    "wind_lateral": null,
+                    "is_indoor": true,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0,
+                    "weather_label": "Indoor / Roof Closed | No weather adjustment"
+                },
+                "effective_pf": 1.039,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.78,
+                "mc_f5": 4.78,
+                "mc_f5_away": 2.64,
+                "mc_f5_home": 2.13,
+                "mc_late": 2.94,
+                "mc_full_game": 7.71,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        2,
+                        6,
+                        0,
+                        1,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        6,
+                        4,
+                        0,
+                        1,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.402,
+                "under_4_5": 0.522,
+                "under_5_5": 0.633,
+                "full_over_7_5": 0.506,
+                "full_over_8_5": 0.367,
+                "full_over_9_5": 0.248
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R2)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "San Diego Padres",
+            "home_team": "Los Angeles Dodgers",
+            "pitchers": {
+                "away": {
+                    "name": "Michael King",
+                    "hand": "R",
+                    "fip": 3.99
+                },
+                "home": {
+                    "name": "Shohei Ohtani",
+                    "hand": "R",
+                    "fip": 2.68
+                }
+            },
+            "environment": {
+                "venue": "UNIQLO Field at Dodger Stadium",
+                "park_factor": 0.963,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Calm",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.003,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.003,
+                    "weather_label": "72F | Calm | Weather: +0.3%"
+                },
+                "effective_pf": 0.9659,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.66,
+                "mc_f5": 3.82,
+                "mc_f5_away": 1.54,
+                "mc_f5_home": 2.28,
+                "mc_late": 2.76,
+                "mc_full_game": 6.58,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        6,
+                        2,
+                        3,
+                        2,
+                        1,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.196,
+                    "raw_avg": 3.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        10,
+                        1,
+                        5,
+                        5,
+                        4,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.525,
+                "under_4_5": 0.649,
+                "under_5_5": 0.751,
+                "full_over_7_5": 0.339,
+                "full_over_8_5": 0.218,
+                "full_over_9_5": 0.13
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+        },
+        {
+            "away_team": "Toronto Blue Jays",
+            "home_team": "Seattle Mariners",
+            "pitchers": {
+                "away": {
+                    "name": "Dylan Cease",
+                    "hand": "R",
+                    "fip": 2.86
+                },
+                "home": {
+                    "name": "Luis Castillo",
+                    "hand": "R",
+                    "fip": 3.79
+                }
+            },
+            "environment": {
+                "venue": "T-Mobile Park",
+                "park_factor": 0.856,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Indoor",
+                    "wind_lateral": null,
+                    "is_indoor": true,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0,
+                    "weather_label": "Indoor / Roof Closed | No weather adjustment"
+                },
+                "effective_pf": 0.856,
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 3.46,
+                "mc_f5": 3.58,
+                "mc_f5_away": 2.06,
+                "mc_f5_home": 1.51,
+                "mc_late": 2.54,
+                "mc_full_game": 6.11,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        0,
+                        2,
+                        0,
+                        2,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        0,
+                        3,
+                        3,
+                        0,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.558,
+                "under_4_5": 0.688,
+                "under_5_5": 0.784,
+                "full_over_7_5": 0.271,
+                "full_over_8_5": 0.164,
+                "full_over_9_5": 0.092
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Team Bias Veto - Realized Pitcher Edge)",
+                "adv_4_5": "Skip (Team Bias Veto - Realized Pitcher Edge)",
+                "adv_5_5": "Skip (Team Bias Veto - Realized Pitcher Edge)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 UNDER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        }
+    ]
+}
