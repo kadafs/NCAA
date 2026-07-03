@@ -98,11 +98,10 @@ def download_year(tour: str, year: int, dest_dir: str) -> bool:
             print(f"  [SKIP] {year_code}.{ext} — historical year, already cached.")
             return True
 
-        # Bug 1 fix: active year = flat root file; historical = subdir.
-        if is_active:
-            url = f"{ATP_BASE}/{year_code}.{ext}"               # /2026.xlsx
-        else:
-            url = f"{ATP_BASE}/{year_code}/{year_code}.{ext}"   # /2024/2024.xlsx
+        # All years use the same subdir pattern: /2026/2026.xlsx
+        # (The flat-root URL /2026.xlsx times out — it does not exist.)
+        # WTA 2026 redirects: /2026w/2026w.xlsx -> /2026w/2026.xlsx (followed automatically)
+        url = f"{ATP_BASE}/{year_code}/{year_code}.{ext}"
 
         content = _fetch(url)
         if content:
