@@ -328,8 +328,8 @@ def simulate_match_monte_carlo(
                 # correctly treats the set as 13 games (odd -> flip server)
                 game_num[tb_sub] += 1
 
-                p1_wins_set = (p1_games[s_idx] >= 7) | ((p1_games[s_idx] >= 6) & ((p1_games[s_idx] - p2_games[s_idx]) >= 2))
-                p2_wins_set = (p2_games[s_idx] >= 7) | ((p2_games[s_idx] >= 6) & ((p2_games[s_idx] - p1_games[s_idx]) >= 2))
+                p1_wins_set = (p1_games[s_idx] == 7) & (p2_games[s_idx] == 6)
+                p2_wins_set = (p2_games[s_idx] == 7) & (p1_games[s_idx] == 6)
 
             set_complete = p1_wins_set | p2_wins_set
             set_active[s_idx[set_complete]] = False
