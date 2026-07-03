@@ -40,7 +40,7 @@ os.makedirs(_CACHE_DIR, exist_ok=True)
 # Calibrated so that p_server_wins_game(serve_prob) ≈ league hold rate
 # ============================================================
 LEAGUE_SERVE_PROFILES = {
-    # ATP: ~80% hold rate → serve point prob ~0.630
+    # ATP: ~80% hold rate -> _p_server_wins_game(0.633) = 0.8002
     'ATP': {
         'first_serve_pct':       0.61,
         'first_serve_win_pct':   0.72,
@@ -48,9 +48,9 @@ LEAGUE_SERVE_PROFILES = {
         'return_points_won_pct': 0.37,
         'ace_rate':              0.07,
         'df_rate':               0.04,
-        '_implied_serve_prob':   0.630,
+        '_implied_serve_prob':   0.633,   # Bug 3 fix: was 0.630 -> gave 0.795 hold
     },
-    # WTA: ~62% hold rate → serve point prob ~0.540
+    # WTA: ~62% hold rate -> _p_server_wins_game(0.549) = 0.6208
     'WTA': {
         'first_serve_pct':       0.59,
         'first_serve_win_pct':   0.64,
@@ -58,7 +58,7 @@ LEAGUE_SERVE_PROFILES = {
         'return_points_won_pct': 0.42,
         'ace_rate':              0.03,
         'df_rate':               0.05,
-        '_implied_serve_prob':   0.540,
+        '_implied_serve_prob':   0.549,   # Bug 3 fix: was 0.540 -> gave 0.599 hold
     },
 }
 
@@ -128,26 +128,26 @@ def _load_match_data(tour: str, min_year: int = 2019) -> pd.DataFrame:
 
     combined = pd.concat(frames, ignore_index=True)
 
-    # --- Fix 1: Quarantine incomplete matches ---
+    # --- Bug 2 + Fix 1: Quarantine incomplete matches, single-pass count ---
     comment_col = next((c for c in combined.columns if c.strip().lower() == 'comment'), None)
     if comment_col:
+
         is_incomplete = combined[comment_col].astype(str).str.contains(
             _INCOMPLETE_PATTERNS, regex=True, na=False
         )
-        # Track retirement counts per player (for risk flagging)
         ret_df = combined[is_incomplete]
+
+        # Bug 2 fix: single combined pass prevents multi-call over-count.
+        # Both retirement and total counts accumulated in one iteration.
         for col in ['Winner', 'Loser']:
             if col in ret_df.columns:
-                for raw_name in ret_df[col].dropna().astype(str):
-                    key = normalize_tennis_name(raw_name)
-                    _retirement_counts[key] = _retirement_counts.get(key, 0) + 1
-
-        # Count total matches per player
-        for col in ['Winner', 'Loser']:
+                for r_name in ret_df[col].dropna().astype(str):
+                    k = normalize_tennis_name(r_name)
+                    _retirement_counts[k] = _retirement_counts.get(k, 0) + 1
             if col in combined.columns:
-                for raw_name in combined[col].dropna().astype(str):
-                    key = normalize_tennis_name(raw_name)
-                    _match_counts[key] = _match_counts.get(key, 0) + 1
+                for r_name in combined[col].dropna().astype(str):
+                    k = normalize_tennis_name(r_name)
+                    _match_counts[k] = _match_counts.get(k, 0) + 1
 
         n_removed = is_incomplete.sum()
         if n_removed:
@@ -230,27 +230,54 @@ def normalize_tennis_name(name_str: str) -> str:
     nfd = unicodedata.normalize('NFD', str(name_str))
     ascii_only = ''.join(c for c in nfd if unicodedata.category(c) != 'Mn')
 
+    # 1b. Pre-clean alias check: catches 'M.Berrettini' BEFORE the dot is stripped.
+    #     The post-clean check below handles fully-stripped variants.
+    pre_clean = re.sub(r'\s+', ' ', ascii_only.lower().strip())
+    if pre_clean in TOP_50_ALIASES:
+        return TOP_50_ALIASES[pre_clean]
+
     # 2. Lowercase + strip non-alphanumeric (keeps spaces)
     cleaned = re.sub(r'[^a-z\s]', '', ascii_only.lower()).strip()
     cleaned = re.sub(r'\s+', ' ', cleaned)  # collapse multiple spaces
 
-    # 3. Check alias map (catches 'M.Berrettini' -> 'berrettini-m' etc.)
+    # 3. Post-clean alias check (catches already-clean variants like 'de minaur a')
     if cleaned in TOP_50_ALIASES:
         return TOP_50_ALIASES[cleaned]
 
     # 4. Parse into canonical form
+    # Multi-word surname prefixes: 'de', 'del', 'van', 'von', 'di', 'le'
+    # Audit Finding 2: without this, 'Alex de Minaur' -> 'minaur-a' while
+    # the sheet has 'de minaur a' -> 'de minaur-a'. These WOULD NOT match.
+    SURNAME_PREFIXES = {'de', 'del', 'van', 'von', 'di', 'le'}
+
     parts = cleaned.split()
     if not parts:
         return 'unknown'
+
     if len(parts) >= 2:
-        # Standard: 'firstname surname' OR 'surname i' (Tennis-Data format)
-        # Heuristic: if last token is a single letter, it's already 'surname initial'
+        # Scenario A: Tennis-Data sheet format ('de minaur a', 'van de zandschulp b')
+        #   Last token is a single initial letter -> already 'surname initial' form
         if len(parts[-1]) == 1:
-            # Already 'surname initial' form from the data sheet
             return f"{' '.join(parts[:-1])}-{parts[-1]}"
-        # Standard full name: take last word as surname, first letter of first word
+
+        # Scenario B: ESPN/full-name feed with compound surname ('alex de minaur',
+        #   'juan martin del potro', 'alex van de zandschulp').
+        #   Scan ALL parts from index 1 onwards for the first surname prefix.
+        #   Everything from that prefix to the end becomes the compound surname.
+        prefix_idx = next(
+            (i for i in range(1, len(parts)) if parts[i] in SURNAME_PREFIXES),
+            None
+        )
+        if prefix_idx is not None:
+            surname_compound = ' '.join(parts[prefix_idx:])
+            initial = parts[0][0]
+            return f"{surname_compound}-{initial}"
+
+        # Scenario C: Standard 'firstname surname' ('jannik sinner' -> 'sinner-j')
         return f"{parts[-1]}-{parts[0][0]}"
-    # Single word — return as-is
+
+
+    # Single word token
     return parts[0]
 
 
@@ -484,10 +511,16 @@ def _serve_prob_to_profile(serve_prob: float, tour: str) -> dict:
     league_sp = league['_implied_serve_prob']
     scale = serve_prob / league_sp if league_sp > 0 else 1.0
 
-    # Scale FSW% and SSW% proportionally; clamp to realistic bounds
+    # Scale serving attributes proportionally; clamp to realistic bounds
     fsw = min(0.88, league['first_serve_win_pct'] * scale)
     ssw = min(0.72, league['second_serve_win_pct'] * scale)
-    rpw = max(0.20, league['return_points_won_pct'] / scale)
+
+    # Audit Finding 1 fix: RPW is NOT the mathematical inverse of serve dominance.
+    # Djokovic is an elite server AND an elite returner. Forcing rpw = league/scale
+    # artificially crushes return capability for every dominant server, inflating
+    # hold rates toward 100% and blowing up Total Games O/U projections.
+    # Fix: anchor RPW to the tour baseline unless explicit sheet data overrides it.
+    rpw = league['return_points_won_pct']
 
     return {
         'first_serve_pct':       league['first_serve_pct'],  # stable stat

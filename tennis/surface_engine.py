@@ -41,12 +41,13 @@ LEAGUE_HOLD = {
 
 # ---------------------------------------------------------------------------
 # League Baseline Point-Win Probabilities
-# The serve point probability p such that p_server_wins_game(p) ≈ LEAGUE_HOLD
-#   ATP: p=0.630 → 80% hold    WTA: p=0.540 → 62% hold
+# Calibrated so _p_server_wins_game(p) == LEAGUE_HOLD[tour]:
+#   ATP: p=0.633 -> hold=0.8002  (was 0.630 -> 0.7947, off by 0.005)
+#   WTA: p=0.549 -> hold=0.6208  (was 0.540 -> 0.5990, off by 0.021)
 # ---------------------------------------------------------------------------
 LEAGUE_POINT_PROB = {
-    'ATP': 0.630,
-    'WTA': 0.540,
+    'ATP': 0.633,
+    'WTA': 0.549,
 }
 
 # ---------------------------------------------------------------------------
