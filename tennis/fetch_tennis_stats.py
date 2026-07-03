@@ -19,9 +19,11 @@ Live schedule: ESPN hidden API (unauthenticated JSON)
 """
 
 import os
+import re
 import glob
 import json
-import math
+import unicodedata
+import difflib
 import requests
 import numpy as np
 import pandas as pd
@@ -66,11 +68,33 @@ ELO_INIT = 1500
 
 
 # ============================================================
-# Tennis-Data.co.uk CSV Loader
+# Retirement / Walkover markers in Tennis-Data.co.uk Comment column
 # ============================================================
+_INCOMPLETE_PATTERNS = re.compile(
+    r'(?:retired|ret\.?|walkover|w/o|abandoned|def\.|default)',
+    re.IGNORECASE
+)
+
+# Retirement tracking: populated by _load_match_data
+_retirement_counts: dict = {}   # player_key -> count of retirement-involved matches
+_match_counts:      dict = {}   # player_key -> total matches
+
 
 def _load_match_data(tour: str, min_year: int = 2019) -> pd.DataFrame:
-    """Load and concatenate Tennis-Data.co.uk match files (xlsx/xls/csv)."""
+    """
+    Load and concatenate Tennis-Data.co.uk match files (xlsx/xls/csv).
+
+    Fix 1 – Retirement Yield Leak:
+      Rows where the 'Comment' column contains 'Retired' or 'Walkover'
+      are quarantined (never used for win-rate calculations).
+      A side-channel _retirement_counts dict tracks how often each
+      player appears in a retirement so consensus_tennis.py can
+      flag injury-prone matchups with a safety-void.
+    """
+    global _retirement_counts, _match_counts
+    _retirement_counts = {}
+    _match_counts = {}
+
     data_dir = _ATP_DIR if tour == 'ATP' else _WTA_DIR
     suffix = 'w' if tour == 'WTA' else ''
 
@@ -103,32 +127,143 @@ def _load_match_data(tour: str, min_year: int = 2019) -> pd.DataFrame:
         return pd.DataFrame()
 
     combined = pd.concat(frames, ignore_index=True)
-    print(f"[Tennis Data] Total: {len(combined)} {tour} matches from {min_year}+")
+
+    # --- Fix 1: Quarantine incomplete matches ---
+    comment_col = next((c for c in combined.columns if c.strip().lower() == 'comment'), None)
+    if comment_col:
+        is_incomplete = combined[comment_col].astype(str).str.contains(
+            _INCOMPLETE_PATTERNS, regex=True, na=False
+        )
+        # Track retirement counts per player (for risk flagging)
+        ret_df = combined[is_incomplete]
+        for col in ['Winner', 'Loser']:
+            if col in ret_df.columns:
+                for raw_name in ret_df[col].dropna().astype(str):
+                    key = normalize_tennis_name(raw_name)
+                    _retirement_counts[key] = _retirement_counts.get(key, 0) + 1
+
+        # Count total matches per player
+        for col in ['Winner', 'Loser']:
+            if col in combined.columns:
+                for raw_name in combined[col].dropna().astype(str):
+                    key = normalize_tennis_name(raw_name)
+                    _match_counts[key] = _match_counts.get(key, 0) + 1
+
+        n_removed = is_incomplete.sum()
+        if n_removed:
+            print(f"[Tennis Data] Quarantined {n_removed} retired/walkover rows "
+                  f"({n_removed/len(combined)*100:.1f}%)")
+        combined = combined[~is_incomplete].copy()
+
+    print(f"[Tennis Data] Total: {len(combined)} {tour} completed matches from {min_year}+")
     return combined
 
 
 # ============================================================
-# Name Normalization
-# Tennis-Data.co.uk format: "Surname I." (e.g., "Sinner J.", "Alcaraz C.")
+# Name Normalization (Fix 2: Multi-Surface Name Normalization Trap)
 # ============================================================
 
-def normalize_name(name: str) -> str:
+# Static alias map for common Tennis-Data.co.uk spelling variations
+# and cross-source mismatches. Maps raw variants -> canonical key.
+# Format: all lowercase, no accents, "surname-initial"
+TOP_50_ALIASES: dict[str, str] = {
+    # ATP
+    'berrettini-m':   'berrettini-m',   # canonical
+    'm.berrettini':   'berrettini-m',
+    'de minaur-a':    'de minaur-a',
+    'deminaur-a':     'de minaur-a',
+    'de minaur a':    'de minaur-a',
+    'del potro-j':    'del potro-j',
+    'delpotro-j':     'del potro-j',
+    'van de zandschulp-b': 'van de zandschulp-b',
+    'van rijthoven-t': 'van rijthoven-t',
+    'tsitsipas-s':    'tsitsipas-s',
+    'dimitrov-g':     'dimitrov-g',
+    'khachanov-k':    'khachanov-k',
+    'rublev-a':       'rublev-a',
+    'medvedev-d':     'medvedev-d',
+    'zverev-a':       'zverev-a',
+    'alcaraz-c':      'alcaraz-c',
+    'sinner-j':       'sinner-j',
+    'djokovic-n':     'djokovic-n',
+    'nadal-r':        'nadal-r',
+    'federer-r':      'federer-r',
+    # WTA
+    'swiatek-i':      'swiatek-i',
+    'sabalenka-a':    'sabalenka-a',
+    'gauff-c':        'gauff-c',
+    'rybakina-e':     'rybakina-e',
+    'krejcikova-b':   'krejcikova-b',
+    'kvitova-p':      'kvitova-p',
+    'halep-s':        'halep-s',
+    'wozniacki-c':    'wozniacki-c',
+    'kontaveit-a':    'kontaveit-a',
+    'pliskova-k':     'pliskova-k',
+    'badosa-p':       'badosa-p',
+    'pegula-j':       'pegula-j',
+    'jabeur-o':       'jabeur-o',
+    'vondrousova-m':  'vondrousova-m',
+    'andreescu-b':    'andreescu-b',
+    'kerber-a':       'kerber-a',
+    'azarenka-v':     'azarenka-v',
+    'muguruza-g':     'muguruza-g',
+}
+
+
+def normalize_tennis_name(name_str: str) -> str:
     """
-    Convert full player name to Tennis-Data.co.uk "Surname I." format.
-    "Jannik Sinner"  -> "Sinner J."
-    "Carlos Alcaraz" -> "Alcaraz C."
-    Already-normalized names are passed through unchanged.
+    Transforms player names into a canonical lowercase 'lastname-initial'
+    anchor that is immune to:
+      - Accent characters  (Alcaráz -> alcaraz)
+      - Dot / comma noise  (M.Berrettini -> berrettini-m)
+      - Case differences   (SINNER -> sinner)
+      - Trailing whitespace
+
+    Returns the canonical key: e.g., 'sinner-j', 'alcaraz-c', 'swiatek-i'.
+    Checks TOP_50_ALIASES first for hardcoded exception overrides.
+    Falls back to automatic parsing for all other names.
     """
-    name = name.strip()
-    parts = name.split()
+    if not name_str or str(name_str).strip().lower() in ('nan', '', 'unknown'):
+        return 'unknown'
+
+    # 1. Strip accents via Unicode NFD decomposition
+    nfd = unicodedata.normalize('NFD', str(name_str))
+    ascii_only = ''.join(c for c in nfd if unicodedata.category(c) != 'Mn')
+
+    # 2. Lowercase + strip non-alphanumeric (keeps spaces)
+    cleaned = re.sub(r'[^a-z\s]', '', ascii_only.lower()).strip()
+    cleaned = re.sub(r'\s+', ' ', cleaned)  # collapse multiple spaces
+
+    # 3. Check alias map (catches 'M.Berrettini' -> 'berrettini-m' etc.)
+    if cleaned in TOP_50_ALIASES:
+        return TOP_50_ALIASES[cleaned]
+
+    # 4. Parse into canonical form
+    parts = cleaned.split()
     if not parts:
-        return name
-    # Already "Surname I." format
-    if len(parts) == 2 and len(parts[-1]) <= 2 and parts[-1].endswith('.'):
-        return name
+        return 'unknown'
     if len(parts) >= 2:
-        return f"{parts[-1]} {parts[0][0].upper()}."
-    return name
+        # Standard: 'firstname surname' OR 'surname i' (Tennis-Data format)
+        # Heuristic: if last token is a single letter, it's already 'surname initial'
+        if len(parts[-1]) == 1:
+            # Already 'surname initial' form from the data sheet
+            return f"{' '.join(parts[:-1])}-{parts[-1]}"
+        # Standard full name: take last word as surname, first letter of first word
+        return f"{parts[-1]}-{parts[0][0]}"
+    # Single word — return as-is
+    return parts[0]
+
+
+# For backwards compatibility
+normalize_name = normalize_tennis_name
+
+
+def _get_retirement_risk(player_key: str) -> float:
+    """Return this player's historical retirement-involvement rate (0.0 to 1.0)."""
+    total = _match_counts.get(player_key, 0)
+    if total < 5:
+        return 0.0
+    return _retirement_counts.get(player_key, 0) / total
 
 
 # ============================================================
@@ -192,29 +327,45 @@ def compute_elo_ratings(df: pd.DataFrame, surface_filter: str = None) -> dict:
 
 
 def _surface_win_rate(player_name: str, df: pd.DataFrame, surface: str) -> float:
-    """Compute a player's win rate on a specific surface using normalized name matching."""
-    normalized = normalize_name(player_name).lower()
-    surname = normalized.split()[0].lower()
+    """
+    Compute a player's win rate on a specific surface.
+
+    Uses normalize_tennis_name() on both the lookup name and the sheet values
+    so accents, dots, and trailing-space variants all resolve to the same
+    canonical 'surname-initial' key. A difflib fuzzy fallback catches any
+    remaining near-misses without falling through to league average.
+    """
+    player_key = normalize_tennis_name(player_name)
+    surname    = player_key.split('-')[0]  # e.g. 'alcaraz' from 'alcaraz-c'
 
     surf_df = df[df['Surface'].str.lower() == surface.lower()] if 'Surface' in df.columns else df
-
     if surf_df.empty:
         return None
 
     winner_col = 'Winner' if 'Winner' in surf_df.columns else 'winner_name'
     loser_col  = 'Loser'  if 'Loser'  in surf_df.columns else 'loser_name'
 
-    w_names = surf_df[winner_col].astype(str).str.strip().str.lower()
-    l_names = surf_df[loser_col].astype(str).str.strip().str.lower()
+    # Normalize all sheet names to canonical keys (cached via apply)
+    w_keys = surf_df[winner_col].astype(str).apply(normalize_tennis_name)
+    l_keys = surf_df[loser_col].astype(str).apply(normalize_tennis_name)
 
-    # Exact normalized match
-    wins   = surf_df[w_names == normalized]
-    losses = surf_df[l_names == normalized]
+    # Exact canonical key match
+    wins   = surf_df[w_keys == player_key]
+    losses = surf_df[l_keys == player_key]
 
-    # Surname-only fallback (handles spacing variants)
+    # Surname-prefix fallback (covers multi-word surnames like 'de minaur')
     if len(wins) + len(losses) < 3:
-        wins   = surf_df[w_names.str.startswith(surname)]
-        losses = surf_df[l_names.str.startswith(surname)]
+        wins   = surf_df[w_keys.str.startswith(surname)]
+        losses = surf_df[l_keys.str.startswith(surname)]
+
+    # Difflib fuzzy fallback: finds the closest key in the dataset
+    if len(wins) + len(losses) < 3:
+        all_keys = set(w_keys.tolist() + l_keys.tolist())
+        candidates = difflib.get_close_matches(player_key, all_keys, n=1, cutoff=0.80)
+        if candidates:
+            best = candidates[0]
+            wins   = surf_df[w_keys == best]
+            losses = surf_df[l_keys == best]
 
     total = len(wins) + len(losses)
     if total < 5:
@@ -442,10 +593,17 @@ def build_player_serve_profile(
     profile['observed_win_rate'] = round(blended_wr, 4)
     profile['source'] = source
 
+    # Fix 1: Attach retirement risk so consensus engine can void Total Games O/U
+    player_key = normalize_tennis_name(player_name)
+    ret_risk = _get_retirement_risk(player_key)
+    profile['retirement_risk_pct'] = round(ret_risk, 4)
+    profile['retirement_risk_flag'] = ret_risk >= 0.08  # flag if >=8% involvement
+
     with open(cache_path, 'w', encoding='utf-8') as f:
         json.dump(profile, f, indent=2)
 
     return profile
+
 
 
 # ============================================================

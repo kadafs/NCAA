@@ -124,43 +124,60 @@ def simulate_tiebreak_vectorized(
     p_p1_serve: float,
     p_p2_serve: float,
     num_active: int,
+    p1_serves_first_in_tb: np.ndarray,
 ) -> np.ndarray:
     """
     Simulates a standard 7-point tennis tiebreak for a vector of active games.
 
-    Serving sequence: P1 serves point 1, then P2 serves 2-3, P1 serves 4-5, etc.
-    Mathematically: point n → server is P2 if ((n+1)//2) % 2 == 1, else P1.
+    Serving sequence in a tiebreak:
+      P1 serves point 1, P2 serves 2-3, P1 serves 4-5, P2 serves 6-7, ...
+      At deuce (6-6) the pair pattern continues (not single-point alternation).
 
     Parameters
     ----------
-    p_p1_serve : P(P1 wins point when serving)
-    p_p2_serve : P(P2 wins point when serving)
-    num_active : number of active tiebreaks to simulate
+    p_p1_serve         : P(P1 wins point when serving)
+    p_p2_serve         : P(P2 wins point when serving)
+    num_active         : number of active tiebreaks to simulate
+    p1_serves_first_in_tb : bool array (length=num_active); True where P1
+                            serves the first tiebreak point.  This is
+                            determined by the set's initial server and the
+                            game count at 6-6, NOT assumed to always be P1.
 
     Returns
     -------
     np.ndarray[bool] : True where Player 1 won the tiebreak
     """
-    p1_pts = np.zeros(num_active, dtype=np.int32)
-    p2_pts = np.zeros(num_active, dtype=np.int32)
+    p1_pts   = np.zeros(num_active, dtype=np.int32)
+    p2_pts   = np.zeros(num_active, dtype=np.int32)
     total_pts = np.zeros(num_active, dtype=np.int32)
     tb_active = np.ones(num_active, dtype=bool)
+
+    # P2-serves-first anchor (per simulation); fixed at tiebreak start.
+    p2_serves_first = ~p1_serves_first_in_tb  # shape: (num_active,)
 
     while np.any(tb_active):
         idx = np.where(tb_active)[0]
 
-        # Server determination: P2 serves if ((total_points + 1) // 2) is odd
-        is_p2_serving = ((total_pts[idx] + 1) // 2) % 2 == 1
+        # Sequence index: 0 → first server's turn, 1 → second server's turn
+        # Standard pattern: 1, 2, 2, 1, 1, 2, 2, 1, 1, ...
+        seq = ((total_pts[idx] + 1) // 2) % 2   # 0 = first server, 1 = second server
+
+        # is_p2_serving is True when it's the second server's turn AND P2 is the
+        # second server (p1_serves_first), OR when it's the first server's turn
+        # AND P2 is the first server (~p1_serves_first).
+        #   seq==1 XOR p2_serves_first => handles both orientations cleanly.
+        is_p2_serving = (seq == 1) ^ p2_serves_first[idx]
+
         p_win = np.where(is_p2_serving, 1.0 - p_p2_serve, p_p1_serve)
 
         r = np.random.rand(len(idx))
         p1_won = r < p_win
 
-        p1_pts[idx[p1_won]] += 1
+        p1_pts[idx[p1_won]]  += 1
         p2_pts[idx[~p1_won]] += 1
-        total_pts[idx] += 1
+        total_pts[idx]        += 1
 
-        # Must reach 7+ and lead by 2+
+        # Must reach 7+ and lead by 2+ (standard tiebreak)
         p1_wins = (p1_pts[idx] >= 7) & ((p1_pts[idx] - p2_pts[idx]) >= 2)
         p2_wins = (p2_pts[idx] >= 7) & ((p2_pts[idx] - p1_pts[idx]) >= 2)
         tb_active[idx[p1_wins | p2_wins]] = False
@@ -279,7 +296,17 @@ def simulate_match_monte_carlo(
             tiebreak_mask = (p1_games[s_idx] == 6) & (p2_games[s_idx] == 6)
             if np.any(tiebreak_mask):
                 tb_sub = s_idx[tiebreak_mask]
-                p1_won_tb = simulate_tiebreak_vectorized(p1_p, p2_p, len(tb_sub))
+
+                # Determine tiebreak opener: same player who serves game 13 in set.
+                # At 6-6, game_num[tb_sub] == 12; the rule mirrors the set-level logic:
+                #   P1 serves TB first iff P1 was the set's initial server
+                #   (since game_num=12 is even, and even games go to the initial server).
+                p1_serves_tb = p1_serves_first[idx[tb_sub]]
+
+                p1_won_tb = simulate_tiebreak_vectorized(
+                    p1_p, p2_p, len(tb_sub),
+                    p1_serves_first_in_tb=p1_serves_tb,
+                )
 
                 p1_games[tb_sub[p1_won_tb]] += 1
                 p2_games[tb_sub[~p1_won_tb]] += 1
