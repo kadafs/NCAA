@@ -645,7 +645,13 @@ def build_player_serve_profile(
 
 def fetch_espn_tennis_schedule(tour: str = 'ATP') -> list:
     """
-    Fetch current tennis schedule from ESPN's public API.
+    Fetch today's scheduled singles matches from ESPN's public API.
+
+    Fix: ESPN structures competitions inside groupings[], NOT directly on the
+    event object. Drilling into event.competitions[] always returns empty.
+    This parser targets the correct grouping slug (mens-singles / womens-singles)
+    and filters to STATUS_SCHEDULED matches only.
+
     Returns list of match dicts.
     """
     league_map = {'ATP': 'atp', 'WTA': 'wta'}
@@ -660,24 +666,47 @@ def fetch_espn_tennis_schedule(tour: str = 'ATP') -> list:
         print(f"[ESPN] Failed to fetch {tour} schedule: {e}")
         return []
 
+    # Target slug: only singles — doubles/mixed require a different model
+    target_slug = 'mens-singles' if tour == 'ATP' else 'womens-singles'
+
     matches = []
     for event in data.get('events', []):
         tournament_name = event.get('name', 'Unknown')
-        for comp in event.get('competitions', []):
-            competitors = comp.get('competitors', [])
-            if len(competitors) < 2:
+
+        for grouping_block in event.get('groupings', []):
+            g_slug = grouping_block.get('grouping', {}).get('slug', '')
+            if g_slug != target_slug:
                 continue
-            p1 = competitors[0].get('athlete', {})
-            p2 = competitors[1].get('athlete', {})
-            matches.append({
-                'match_id':        comp.get('id', ''),
-                'p1_name':         p1.get('displayName', 'Unknown'),
-                'p2_name':         p2.get('displayName', 'Unknown'),
-                'tournament_name': tournament_name,
-                'status':          comp.get('status', {}).get('type', {}).get('name', ''),
-                'tour':            tour,
-            })
+
+            for comp in grouping_block.get('competitions', []):
+                status = comp.get('status', {}).get('type', {}).get('name', '')
+
+                # Only surface matches still to be played
+                if status != 'STATUS_SCHEDULED':
+                    continue
+
+                competitors = comp.get('competitors', [])
+                if len(competitors) < 2:
+                    continue
+
+                # Sort by ESPN's 'order' field — lower = listed first
+                competitors = sorted(competitors, key=lambda x: x.get('order', 99))
+                p1 = competitors[0].get('athlete', {})
+                p2 = competitors[1].get('athlete', {})
+
+                matches.append({
+                    'match_id':        comp.get('id', ''),
+                    'p1_name':         p1.get('displayName', 'Unknown'),
+                    'p2_name':         p2.get('displayName', 'Unknown'),
+                    'tournament_name': tournament_name,
+                    'status':          status,
+                    'tour':            tour,
+                    'round':           comp.get('round', {}).get('number', 0),
+                    'date':            comp.get('date', ''),
+                })
+
     return matches
+
 
 
 # ============================================================

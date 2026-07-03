@@ -368,7 +368,7 @@ def simulate_match_monte_carlo(
         'p2_first_set_win_prob':  round(float(np.mean(first_set_winners == 2)), 3),
         'expected_total_games':   round(mean_games, 1),
 
-        # Over/Under probabilities for common lines
+        # Over/Under probabilities — Bo3 lines (22.5–24.5) + Bo5 lines (35.5–45.5)
         'over_20_5_prob':  round(float(np.mean(total_games > 20.5)), 3),
         'over_21_5_prob':  round(float(np.mean(total_games > 21.5)), 3),
         'over_22_5_prob':  round(float(np.mean(total_games > 22.5)), 3),
@@ -378,6 +378,21 @@ def simulate_match_monte_carlo(
         'under_21_5_prob': round(float(np.mean(total_games < 21.5)), 3),
         'under_22_5_prob': round(float(np.mean(total_games < 22.5)), 3),
         'under_23_5_prob': round(float(np.mean(total_games < 23.5)), 3),
+        'under_24_5_prob': round(float(np.mean(total_games < 24.5)), 3),
+
+        # Bo5 O/U lines (Grand Slams, ATP Finals)
+        'over_35_5_prob':  round(float(np.mean(total_games > 35.5)), 3),
+        'over_37_5_prob':  round(float(np.mean(total_games > 37.5)), 3),
+        'over_39_5_prob':  round(float(np.mean(total_games > 39.5)), 3),
+        'over_41_5_prob':  round(float(np.mean(total_games > 41.5)), 3),
+        'over_43_5_prob':  round(float(np.mean(total_games > 43.5)), 3),
+        'over_45_5_prob':  round(float(np.mean(total_games > 45.5)), 3),
+        'under_35_5_prob': round(float(np.mean(total_games < 35.5)), 3),
+        'under_37_5_prob': round(float(np.mean(total_games < 37.5)), 3),
+        'under_39_5_prob': round(float(np.mean(total_games < 39.5)), 3),
+        'under_41_5_prob': round(float(np.mean(total_games < 41.5)), 3),
+        'under_43_5_prob': round(float(np.mean(total_games < 43.5)), 3),
+        'under_45_5_prob': round(float(np.mean(total_games < 45.5)), 3),
 
         # Set score probabilities
         'p1_wins_2_0_prob': round(float(np.mean((p1_sets >= sets_target) & (p2_sets == 0))), 3),

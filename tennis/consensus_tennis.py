@@ -160,6 +160,10 @@ def generate_tennis_report(
         tournament = match['tournament_name']
         surface = infer_surface(tournament)
 
+        # Skip ESPN placeholder draw slots (draw not yet released)
+        if 'TBD' in (p1_name.upper(), p2_name.upper()) or p1_name == p2_name == 'Unknown':
+            continue
+
         print(f"  Analyzing: {p1_name} vs {p2_name} ({tournament}, {surface})")
 
         # Build profiles with surface filter
@@ -173,8 +177,12 @@ def generate_tennis_report(
             iterations=iterations,
         )
 
+        # Format-aware O/U line: Bo5 games average ~40-46, use 37.5; Bo3 use 22.5
+        sets_target = sets_to_win(tour, tournament)
+        default_line = 37.5 if sets_target == 3 else 22.5
+
         # Detect edges
-        edge_info = _detect_edge(sim)
+        edge_info = _detect_edge(sim, line_total=default_line)
 
         results.append({
             'p1_name': p1_name,
