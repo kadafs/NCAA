@@ -95,27 +95,33 @@ def blended_serve_win_prob(
     -------
     float : P(server wins this point on serve)
     """
-    # 1. Server's raw combined serve rate
+    # 1. Server's raw combined serve rate (bounded)
     raw_serve = server_fsp * server_fsw + (1.0 - server_fsp) * server_ssw
+    raw_serve = max(0.01, min(0.99, raw_serve))
 
-    # 2. Apply surface multiplier to server only (serve dominance is asymmetric)
-    surface_mod = get_surface_modifier(tour, surface)
-    server_adj  = max(0.01, min(0.99, raw_serve * surface_mod))
+    # 2. Convert to odds, apply surface modifier in odds space, convert back.
+    #    Critical: multiplying a raw probability by surface_mod (e.g. 0.679 * 1.20 = 0.815)
+    #    violates the [0,1] boundary for elite players and produces impossible hold rates.
+    #    Applying to odds preserves the S-curve: 0.679 → odds 2.115 → ×1.20 → 2.538 → 0.717
+    surface_mod      = get_surface_modifier(tour, surface)
+    raw_serve_odds   = raw_serve / (1.0 - raw_serve)
+    adj_serve_odds   = raw_serve_odds * surface_mod
+    server_adj       = max(0.01, min(0.99, adj_serve_odds / (1.0 + adj_serve_odds)))
 
-    # 3. Returner's implied point-win rate from SERVER perspective
+    # 3. Returner's implied point-win rate from server's perspective
     returner_adj = max(0.01, min(0.99, 1.0 - returner_rpw))
 
     # 4. League game-level hold rate as log-odds anchor
     league_hold = get_league_hold(tour)
 
-    # 5. Power compress all three into a consistent scale, then log-odds blend.
-    #    The 0.55 exponent is a shrinkage factor that maps the [0,1] interval
-    #    symmetrically — boundary-preserving and non-linear in the center.
+    # 5. Power-compress all three inputs, then log-odds blend.
+    #    The 0.55 exponent is a shrinkage factor: boundary-preserving, non-linear in centre.
     s_point = server_adj  ** 0.55
     r_point = returner_adj ** 0.55
     l_point = league_hold  ** 0.55
 
     return max(0.01, min(0.99, log_odds_blend(s_point, r_point, l_point)))
+
 
 
 # ---------------------------------------------------------------------------
