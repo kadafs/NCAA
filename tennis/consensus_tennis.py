@@ -219,7 +219,16 @@ def generate_tennis_report(
 
 
 def _write_report(path: str, tour: str, date_str: str, results: list):
-    """Write the formatted markdown report."""
+    """
+    Write the formatted markdown report.
+
+    Bug fixes applied:
+      Bug 1: Format computed via sets_to_win() — never reads sim['sets_to_win']
+      Bug 2: Over probs computed as 1 - under_prob with .get() fallbacks
+      Bug 3: Hold rate + serve point win read from p1/p2 profile dicts, not sim
+    """
+    from tennis_markov import p_server_wins_game as _p_game
+
     lines = []
     lines.append(f"# {'ATP' if tour == 'ATP' else 'WTA'} Tennis Prediction Report")
     lines.append(f"**Date:** {date_str}")
@@ -233,7 +242,7 @@ def _write_report(path: str, tour: str, date_str: str, results: list):
         lines.append("## TOP PRIORITY MATCHES")
         for r in priority:
             conf = r['edges']['confidence']
-            emoji = "HIGH CONFIDENCE" if conf == 'High' else "Medium Edge"
+            emoji = "🔥 HIGH CONFIDENCE" if conf == 'High' else "⚡ Medium Edge"
             lines.append(f"- **{r['p1_name']} vs {r['p2_name']}:** {emoji}")
             for e in r['edges']['edges']:
                 lines.append(f"  - {e['market']}: {e['model_prob']:.1%} (Fair: {e['fair_odds']})")
@@ -243,45 +252,66 @@ def _write_report(path: str, tour: str, date_str: str, results: list):
 
     # Individual match details
     for r in results:
-        sim = r['simulation']
+        sim  = r['simulation']
         edge = r['edges']
+        p1p  = r['p1_profile']
+        p2p  = r['p2_profile']
 
-        flag = " EDGE" if edge['has_edge'] else ""
+        # Bug 1 fix: derive format from surface_engine, not sim dict
+        target_sets  = sets_to_win(tour, r['tournament'])
+        best_of_fmt  = 5 if target_sets == 3 else 3
+
+        flag = " 🎯 EDGE DETECTED" if edge['has_edge'] else ""
         lines.append(f"### {r['p1_name']} vs {r['p2_name']}{flag}")
-        lines.append(f"**{r['tournament']}** | Surface: {r['surface']} | "
-                      f"Format: Best-of-{sim['sets_to_win'] * 2 - 1}")
+        lines.append(
+            f"**{r['tournament']}** | Surface: {r['surface']} "
+            f"| Format: Best-of-{best_of_fmt}"
+        )
         lines.append("")
 
-        # Win probabilities
+        # Bug 3 fix: pull serve/hold metrics from profile, not sim diagnostics
+        p1_point = p1p.get('_implied_serve_prob', 0.60)
+        p2_point = p2p.get('_implied_serve_prob', 0.60)
+        p1_hold  = _p_game(p1_point)
+        p2_hold  = _p_game(p2_point)
+
+        # Win probabilities table
         lines.append(f"| Metric | {r['p1_name']} | {r['p2_name']} |")
         lines.append("|--------|--------|--------|")
         lines.append(f"| Match Win | {sim['p1_match_win_prob']:.1%} | {sim['p2_match_win_prob']:.1%} |")
-        lines.append(f"| 1st Set Win | {sim['p1_first_set_win_prob']:.1%} | {sim['p2_first_set_win_prob']:.1%} |")
-        lines.append(f"| Hold Rate | {sim['p1_hold_game_prob']:.1%} | {sim['p2_hold_game_prob']:.1%} |")
-        lines.append(f"| Serve Point Win | {sim['p1_serve_point_prob']:.1%} | {sim['p2_serve_point_prob']:.1%} |")
+        lines.append(f"| 1st Set Win | {sim['p1_first_set_win_prob']:.1%} | {1.0 - sim['p1_first_set_win_prob']:.1%} |")
+        lines.append(f"| Hold Game Rate | {p1_hold:.1%} | {p2_hold:.1%} |")
+        lines.append(f"| Serve Point Win | {p1_point:.1%} | {p2_point:.1%} |")
         lines.append("")
 
-        # Total games
-        lines.append(f"**Expected Total Games:** {sim['expected_total_games']}")
-        lines.append(f"- Over 21.5: {sim['over_21_5_prob']:.1%}")
-        lines.append(f"- Over 22.5: {sim['over_22_5_prob']:.1%}")
-        lines.append(f"- Over 23.5: {sim['over_23_5_prob']:.1%}")
-        lines.append(f"- Over 24.5: {sim['over_24_5_prob']:.1%}")
+        # Bug 2 fix: Over = 1 - under_prob using .get() fallbacks for missing lines
+        lines.append(f"**Expected Total Games:** {sim['expected_total_games']:.1f}")
+        lines.append(f"- Over 20.5: {1.0 - sim.get('under_20_5_prob', 0.5):.1%}")
+        lines.append(f"- Over 22.5: {1.0 - sim.get('under_22_5_prob', 0.5):.1%}")
+        lines.append(f"- Over 24.5: {1.0 - sim.get('under_24_5_prob', 0.5):.1%}")
         lines.append("")
 
-        # Player profiles
-        p1p = r['p1_profile']
-        p2p = r['p2_profile']
-        lines.append(f"**Profiles:** {r['p1_name']} ({p1p.get('matches_total', 0)} matches) | "
-                      f"{r['p2_name']} ({p2p.get('matches_total', 0)} matches)")
+        # Player profile section (enriched with history and risk flags)
+        lines.append(f"**Profiles:** {r['p1_name']} | {r['p2_name']} ({r['surface']} History Base)")
+        lines.append(f"- P1 Observed Surface Win Rate: {p1p.get('observed_win_rate', 0.5):.2%}")
+        lines.append(f"- P2 Observed Surface Win Rate: {p2p.get('observed_win_rate', 0.5):.2%}")
+        lines.append(
+            f"- Retirement Risk: P1 ({p1p.get('retirement_risk_pct', 0.0):.1%}) "
+            f"| P2 ({p2p.get('retirement_risk_pct', 0.0):.1%})"
+        )
+        # Retirement safety void flag
+        if p1p.get('retirement_risk_flag') or p2p.get('retirement_risk_flag'):
+            lines.append("  ⚠️ **Total Games O/U voided** — retirement risk ≥8% for at least one player")
         lines.append("")
 
-        # Edge flags
+        # Edge section
         if edge['has_edge']:
-            lines.append(f"**EDGE DETECTED** ({edge['confidence']} Confidence)")
+            lines.append(f"**EDGE ANALYSIS** ({edge['confidence']} Confidence)")
             for e in edge['edges']:
-                lines.append(f"- **{e['market']}**: Model {e['model_prob']:.1%}, "
-                              f"Edge +{e['edge_pct']}%, Fair Odds {e['fair_odds']}")
+                lines.append(
+                    f"- **{e['market']}**: Model {e['model_prob']:.1%}, "
+                    f"Edge +{e['edge_pct']}%, Fair Odds {e['fair_odds']}"
+                )
             lines.append("")
 
         lines.append("---")
@@ -289,6 +319,7 @@ def _write_report(path: str, tour: str, date_str: str, results: list):
 
     with open(path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
+
 
 
 # ---------------------------------------------------------------------------
