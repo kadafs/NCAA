@@ -1,6 +1,6 @@
 # ⚾ V3 Tuned F5 Prediction Report (Sport ID: 1)
 **Date:** 07/03/2026
-**Generated:** 17:26:28
+**Generated:** 18:15:15
 **Model Mode:** Standard (Confirmed if available)
 
 ## 🚨 TOP PRIORITY GAMES 🚨
@@ -10,7 +10,7 @@
 - **Baltimore Orioles @ Cincinnati Reds:** Extreme Weather (+12.8%)
 - **New York Mets @ Atlanta Braves:** Under Lean R2 (Both Teams Cold — skip OVER)
 - **San Francisco Giants @ Colorado Rockies:** Under Lean R1 (EW+Cold Form — skip OVER), Extreme Weather (+17.1%)
-- **Tampa Bay Rays @ Houston Astros:** Under Lean R1 (EW+Cold Form — skip OVER), Extreme Weather (+10.1%)
+- **Tampa Bay Rays @ Houston Astros:** Extreme Weather (+10.1%), Under Lean R1 (EW+Cold Form — skip OVER)
 - **Boston Red Sox @ Los Angeles Angels:** High Confidence Edge
 - **Miami Marlins @ Athletics:** Extreme Weather (+14.6%)
 - **Milwaukee Brewers @ Arizona Diamondbacks:** Under Lean R2 (Both Teams Cold — skip OVER)
@@ -26,9 +26,6 @@
     *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
 
 *   **Minnesota Twins @ New York Yankees** ──► **BET F5 OVER** (Odds: 1.85)
-    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
-
-*   **Baltimore Orioles @ Cincinnati Reds** ──► **BET F5 OVER** (Odds: 1.85)
     *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
 
 1. **San Francisco Giants @ Colorado Rockies** ──► **BET F5 OVER** (Odds: 1.85)
@@ -49,16 +46,16 @@
 ### 🚨 St. Louis Cardinals (Andre Pallante) @ Chicago Cubs (David Peterson)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **Wrigley Field** (Park Factor: 1.001x)
-🌤️ **Weather:** 72F | 6 MPH R-L | Weather: +0.3% | Effective PF: 1.004x (+0.4%)
+🌤️ **Weather:** 73F | 6 MPH Out | Weather: +1.9% | Effective PF: 1.0196x (+2.0%)
 ⚖️ **Umpire:** Dan Bellino (K: -2.1%, BB: +4.8%)
 - **Pitcher Matchup:** Andre Pallante (RHP, FIP: 4.82) vs David Peterson (LHP, FIP: 3.53)
-- **Top-Down Projected F5 Total:** 5.28 Runs
-- **Monte Carlo Simulated F5 Total:** 4.3 Runs (Lineups: Confirmed)
+- **Top-Down Projected F5 Total:** 5.41 Runs
+- **Monte Carlo Simulated F5 Total:** 4.41 Runs (Lineups: Confirmed)
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold St. Louis Cardinals offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.44 Runs (Away BP FIP: 4.01 | Home BP FIP: 4.16)
-- **Monte Carlo FULL GAME Total:** 7.74 Runs
-- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 37% | Over 9.5: 25%
+- **Monte Carlo Late Innings (6-9):** 3.47 Runs (Away BP FIP: 4.01 | Home BP FIP: 4.25)
+- **Monte Carlo FULL GAME Total:** 7.88 Runs
+- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 26%
 
 ### 🚨 Pittsburgh Pirates (Mitch Keller) @ Washington Nationals (Foster Griffin)
 **🔥 FLAGGED:** Extreme Weather (+9.3%)
@@ -67,9 +64,9 @@
 ⚖️ **Umpire:** Nate Tomlinson (K: -1.4%, BB: +2.8%)
 - **Pitcher Matchup:** Mitch Keller (RHP, FIP: 3.68) vs Foster Griffin (LHP, FIP: 4.72)
 - **Top-Down Projected F5 Total:** 5.21 Runs
-- **Monte Carlo Simulated F5 Total:** 5.34 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 3.33 | Home BP FIP: 3.88)
-- **Monte Carlo FULL GAME Total:** 8.88 Runs
+- **Monte Carlo Simulated F5 Total:** 5.31 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.56 Runs (Away BP FIP: 3.33 | Home BP FIP: 3.88)
+- **Monte Carlo FULL GAME Total:** 8.87 Runs
 - **Full Game Probs:** Over 7.5: 66% | Over 8.5: 52% | Over 9.5: 39%
 
 ### 🚨 Minnesota Twins (Mike Paredes) @ New York Yankees (Gerrit Cole)
@@ -79,13 +76,13 @@
 ⚖️ **Umpire:** D.J. Reyburn (Neutral - Insufficient Data)
 - **Pitcher Matchup:** Mike Paredes (RHP, FIP: 5.2) vs Gerrit Cole (RHP, FIP: 4.37)
 - **Top-Down Projected F5 Total:** 5.71 Runs
-- **Monte Carlo Simulated F5 Total:** 5.81 Runs (Lineups: Confirmed)
+- **Monte Carlo Simulated F5 Total:** 5.87 Runs (Lineups: Confirmed)
 - 📊 **F5 Offense Form Adjustment:**
   📈 Hot Minnesota Twins offense: 1.196x (recent avg 3.2 F5 runs, 5 games)
   📉 Cold New York Yankees offense: 0.775x (recent avg 0.2 F5 runs, 5 games)
 - **Monte Carlo Late Innings (6-9):** 3.17 Runs (Away BP FIP: 3.76 | Home BP FIP: 3.08)
-- **Monte Carlo FULL GAME Total:** 8.97 Runs
-- **Full Game Probs:** Over 7.5: 67% | Over 8.5: 54% | Over 9.5: 40%
+- **Monte Carlo FULL GAME Total:** 9.04 Runs
+- **Full Game Probs:** Over 7.5: 68% | Over 8.5: 54% | Over 9.5: 41%
 
 ### 🚨 Baltimore Orioles (Trevor Rogers) @ Cincinnati Reds (Brady Singer)
 **🔥 FLAGGED:** Extreme Weather (+12.8%)
@@ -94,10 +91,10 @@
 ⚖️ **Umpire:** Laz Diaz (K: -0.1%, BB: +5.7%)
 - **Pitcher Matchup:** Trevor Rogers (LHP, FIP: 3.69) vs Brady Singer (RHP, FIP: 4.61)
 - **Top-Down Projected F5 Total:** 5.99 Runs
-- **Monte Carlo Simulated F5 Total:** 5.77 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 4.0 Runs (Away BP FIP: 3.17 | Home BP FIP: 5.07)
-- **Monte Carlo FULL GAME Total:** 9.77 Runs
-- **Full Game Probs:** Over 7.5: 75% | Over 8.5: 64% | Over 9.5: 51%
+- **Monte Carlo Simulated F5 Total:** 5.7 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.99 Runs (Away BP FIP: 3.17 | Home BP FIP: 5.07)
+- **Monte Carlo FULL GAME Total:** 9.7 Runs
+- **Full Game Probs:** Over 7.5: 75% | Over 8.5: 63% | Over 9.5: 50%
 
 ### Chicago White Sox (Anthony Kay) @ Cleveland Guardians (Gavin Williams)
 🏙️ **Progressive Field** (Park Factor: 0.951x)
@@ -105,10 +102,10 @@
 ⚖️ **Umpire:** Edwin Moscoso (K: -0.6%, BB: +3.9%)
 - **Pitcher Matchup:** Anthony Kay (LHP, FIP: 5.79) vs Gavin Williams (RHP, FIP: 4.09)
 - **Top-Down Projected F5 Total:** 4.46 Runs
-- **Monte Carlo Simulated F5 Total:** 4.85 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 2.92 Runs (Away BP FIP: 3.52 | Home BP FIP: 3.02)
-- **Monte Carlo FULL GAME Total:** 7.78 Runs
-- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 37% | Over 9.5: 25%
+- **Monte Carlo Simulated F5 Total:** 4.79 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 2.91 Runs (Away BP FIP: 3.52 | Home BP FIP: 3.02)
+- **Monte Carlo FULL GAME Total:** 7.7 Runs
+- **Full Game Probs:** Over 7.5: 50% | Over 8.5: 36% | Over 9.5: 24%
 
 ### 🚨 New York Mets (Christian Scott) @ Atlanta Braves (Grant Holmes)
 **🔥 FLAGGED:** Under Lean R2 (Both Teams Cold — skip OVER)
@@ -117,12 +114,12 @@
 ⚖️ **Umpire:** Malachi Moore (K: -2.1%, BB: +3.6%)
 - **Pitcher Matchup:** Christian Scott (RHP, FIP: 4.32) vs Grant Holmes (RHP, FIP: 4.48)
 - **Top-Down Projected F5 Total:** 4.53 Runs
-- **Monte Carlo Simulated F5 Total:** 5.0 Runs (Lineups: Confirmed)
+- **Monte Carlo Simulated F5 Total:** 5.02 Runs (Lineups: Confirmed)
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold New York Mets offense: 0.775x (recent avg 0.4 F5 runs, 5 games)
   📉 Cold Atlanta Braves offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.73 Runs (Away BP FIP: 2.64 | Home BP FIP: 3.04)
-- **Monte Carlo FULL GAME Total:** 7.74 Runs
+- **Monte Carlo Late Innings (6-9):** 2.72 Runs (Away BP FIP: 2.64 | Home BP FIP: 3.04)
+- **Monte Carlo FULL GAME Total:** 7.73 Runs
 - **Full Game Probs:** Over 7.5: 50% | Over 8.5: 37% | Over 9.5: 25%
 
 ### 🚨 San Francisco Giants (Logan Webb) @ Colorado Rockies (Ryan Feltner)
@@ -132,16 +129,16 @@
 ⚖️ **Umpire:** Ron Kulpa (K: +1.9%, BB: -0.6%)
 - **Pitcher Matchup:** Logan Webb (RHP, FIP: 3.29) vs Ryan Feltner (RHP, FIP: 5.42)
 - **Top-Down Projected F5 Total:** 6.22 Runs
-- **Monte Carlo Simulated F5 Total:** 5.28 Runs (Lineups: Confirmed)
+- **Monte Carlo Simulated F5 Total:** 5.26 Runs (Lineups: Confirmed)
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold San Francisco Giants offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
   📈 Hot Colorado Rockies offense: 1.152x (recent avg 3.0 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 4.37 Runs (Away BP FIP: 4.03 | Home BP FIP: 4.71)
-- **Monte Carlo FULL GAME Total:** 9.65 Runs
-- **Full Game Probs:** Over 7.5: 74% | Over 8.5: 62% | Over 9.5: 49%
+- **Monte Carlo Late Innings (6-9):** 4.33 Runs (Away BP FIP: 4.03 | Home BP FIP: 4.71)
+- **Monte Carlo FULL GAME Total:** 9.58 Runs
+- **Full Game Probs:** Over 7.5: 73% | Over 8.5: 61% | Over 9.5: 48%
 
 ### 🚨 Tampa Bay Rays (Nick Martinez) @ Houston Astros (Spencer Arrighetti)
-**🔥 FLAGGED:** Under Lean R1 (EW+Cold Form — skip OVER), Extreme Weather (+10.1%)
+**🔥 FLAGGED:** Extreme Weather (+10.1%), Under Lean R1 (EW+Cold Form — skip OVER)
 🏙️ **Daikin Park** (Park Factor: 1.067x)
 🌤️ **Weather:** 91F | 8 MPH L-R | Weather: +3.2% | Effective PF: 1.1006x (+10.1%)
 ⚖️ **Umpire:** Andy Fletcher (K: -0.8%, BB: +6.6%)
@@ -151,62 +148,66 @@
 - 📊 **F5 Offense Form Adjustment:**
   📈 Hot Tampa Bay Rays offense: 1.225x (recent avg 3.4 F5 runs, 5 games)
   📉 Cold Houston Astros offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.42 Runs (Away BP FIP: 3.66 | Home BP FIP: 3.36)
-- **Monte Carlo FULL GAME Total:** 9.4 Runs
+- **Monte Carlo Late Innings (6-9):** 3.44 Runs (Away BP FIP: 3.66 | Home BP FIP: 3.36)
+- **Monte Carlo FULL GAME Total:** 9.43 Runs
 - **Full Game Probs:** Over 7.5: 72% | Over 8.5: 59% | Over 9.5: 46%
 
 ### 🚨 Boston Red Sox (Jake Bennett) @ Los Angeles Angels (Reid Detmers)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **Angel Stadium** (Park Factor: 0.992x)
-🌤️ **Weather:** 73F | 8 MPH Out | Weather: +2.7% | Effective PF: 1.0184x (+1.8%)
+🌤️ **Weather:** 82F | 10 MPH Out | Weather: +4.8% | Effective PF: 1.0401x (+4.0%)
+⚖️ **Umpire:** Adam Beck (K: -0.7%, BB: +0.5%)
 - **Pitcher Matchup:** Jake Bennett (LHP, FIP: 3.17) vs Reid Detmers (LHP, FIP: 3.21)
-- **Top-Down Projected F5 Total:** 4.58 Runs
-- **Monte Carlo Simulated F5 Total:** 3.44 Runs (Lineups: Projected (Generic))
+- **Top-Down Projected F5 Total:** 4.67 Runs
+- **Monte Carlo Simulated F5 Total:** 3.6 Runs (Lineups: Confirmed)
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold Los Angeles Angels offense: 0.804x (recent avg 1.4 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.02 Runs (Away BP FIP: 3.36 | Home BP FIP: 3.55)
-- **Monte Carlo FULL GAME Total:** 6.46 Runs
-- **Full Game Probs:** Over 7.5: 32% | Over 8.5: 20% | Over 9.5: 11%
+- **Monte Carlo Late Innings (6-9):** 3.09 Runs (Away BP FIP: 3.36 | Home BP FIP: 3.55)
+- **Monte Carlo FULL GAME Total:** 6.69 Runs
+- **Full Game Probs:** Over 7.5: 35% | Over 8.5: 23% | Over 9.5: 13%
 
 ### 🚨 Miami Marlins (Tyler Phillips) @ Athletics (Jack Perkins)
 **🔥 FLAGGED:** Extreme Weather (+14.6%)
 🏙️ **Sutter Health Park** (Park Factor: 1.136x)
 🌤️ **Weather:** 91F | 8 MPH In | Weather: +0.9% | Effective PF: 1.146x (+14.6%)
+⚖️ **Umpire:** Rob Drake (K: 0.0%, BB: +0.5%)
 - **Pitcher Matchup:** Tyler Phillips (RHP, FIP: 4.84) vs Jack Perkins (RHP, FIP: 4.58)
-- **Top-Down Projected F5 Total:** 5.67 Runs
-- **Monte Carlo Simulated F5 Total:** 5.4 Runs (Lineups: Projected (Generic))
+- **Top-Down Projected F5 Total:** 5.65 Runs
+- **Monte Carlo Simulated F5 Total:** 5.34 Runs (Lineups: Confirmed)
 - 📊 **F5 Offense Form Adjustment:**
   📈 Hot Miami Marlins offense: 1.196x (recent avg 3.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.67 Runs (Away BP FIP: 3.64 | Home BP FIP: 3.42)
-- **Monte Carlo FULL GAME Total:** 9.07 Runs
-- **Full Game Probs:** Over 7.5: 68% | Over 8.5: 55% | Over 9.5: 42%
+- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 3.31 | Home BP FIP: 3.42)
+- **Monte Carlo FULL GAME Total:** 8.9 Runs
+- **Full Game Probs:** Over 7.5: 66% | Over 8.5: 53% | Over 9.5: 39%
 
 ### 🚨 Milwaukee Brewers (Kyle Harrison) @ Arizona Diamondbacks (Jose Cabrera)
 **🔥 FLAGGED:** Under Lean R2 (Both Teams Cold — skip OVER)
 🏙️ **Chase Field** (Park Factor: 1.039x)
 🌤️ **Weather:** Indoor / Roof Closed | No weather adjustment | Effective PF: 1.039x (+3.9%)
+⚖️ **Umpire:** David Rackley (K: -1.1%, BB: +0.7%)
 - **Pitcher Matchup:** Kyle Harrison (LHP, FIP: 3.35) vs Jose Cabrera (RHP, FIP: 4.47)
 - **Top-Down Projected F5 Total:** 4.78 Runs
-- **Monte Carlo Simulated F5 Total:** 4.75 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Simulated F5 Total:** 4.86 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold Milwaukee Brewers offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
   📉 Cold Arizona Diamondbacks offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.93 Runs (Away BP FIP: 3.03 | Home BP FIP: 3.12)
-- **Monte Carlo FULL GAME Total:** 7.68 Runs
-- **Full Game Probs:** Over 7.5: 50% | Over 8.5: 36% | Over 9.5: 24%
+- **Monte Carlo Late Innings (6-9):** 2.94 Runs (Away BP FIP: 3.03 | Home BP FIP: 3.12)
+- **Monte Carlo FULL GAME Total:** 7.8 Runs
+- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 38% | Over 9.5: 25%
 
 ### 🚨 San Diego Padres (Michael King) @ Los Angeles Dodgers (Shohei Ohtani)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **UNIQLO Field at Dodger Stadium** (Park Factor: 0.963x)
-🌤️ **Weather:** 73F | 8 MPH Out | Weather: +2.7% | Effective PF: 0.9886x (-1.1%)
+🌤️ **Weather:** 84F | 11 MPH Out | Weather: +5.4% | Effective PF: 1.0154x (+1.5%)
+⚖️ **Umpire:** Tripp Gibson (K: -2.0%, BB: +4.7%)
 - **Pitcher Matchup:** Michael King (RHP, FIP: 3.99) vs Shohei Ohtani (RHP, FIP: 2.68)
-- **Top-Down Projected F5 Total:** 4.77 Runs
-- **Monte Carlo Simulated F5 Total:** 3.88 Runs (Lineups: Projected (Generic))
+- **Top-Down Projected F5 Total:** 4.9 Runs
+- **Monte Carlo Simulated F5 Total:** 4.03 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
   📈 Hot Los Angeles Dodgers offense: 1.196x (recent avg 3.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.81 Runs (Away BP FIP: 3.34 | Home BP FIP: 2.95)
-- **Monte Carlo FULL GAME Total:** 6.7 Runs
-- **Full Game Probs:** Over 7.5: 35% | Over 8.5: 23% | Over 9.5: 14%
+- **Monte Carlo Late Innings (6-9):** 2.96 Runs (Away BP FIP: 3.34 | Home BP FIP: 2.95)
+- **Monte Carlo FULL GAME Total:** 6.98 Runs
+- **Full Game Probs:** Over 7.5: 39% | Over 8.5: 26% | Over 9.5: 16%
 
 ### 🚨 Toronto Blue Jays (Dylan Cease) @ Seattle Mariners (Luis Castillo)
 **🔥 FLAGGED:** Extreme Weather (-14.4%)
@@ -214,10 +215,10 @@
 🌤️ **Weather:** Indoor / Roof Closed | No weather adjustment | Effective PF: 0.856x (-14.4%)
 - **Pitcher Matchup:** Dylan Cease (RHP, FIP: 2.86) vs Luis Castillo (RHP, FIP: 3.79)
 - **Top-Down Projected F5 Total:** 3.46 Runs
-- **Monte Carlo Simulated F5 Total:** 3.58 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Simulated F5 Total:** 3.56 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold Toronto Blue Jays offense: 0.775x (recent avg 0.8 F5 runs, 5 games)
   📉 Cold Seattle Mariners offense: 0.775x (recent avg 0.8 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.49 Runs (Away BP FIP: 2.83 | Home BP FIP: 3.24)
-- **Monte Carlo FULL GAME Total:** 6.07 Runs
-- **Full Game Probs:** Over 7.5: 26% | Over 8.5: 16% | Over 9.5: 8%
+- **Monte Carlo Late Innings (6-9):** 2.56 Runs (Away BP FIP: 2.83 | Home BP FIP: 3.24)
+- **Monte Carlo FULL GAME Total:** 6.13 Runs
+- **Full Game Probs:** Over 7.5: 27% | Over 8.5: 16% | Over 9.5: 9%
