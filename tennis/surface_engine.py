@@ -22,12 +22,23 @@ Design principles:
 # < 1.0 = returner more dominant (more breaks, shorter sets)
 # ---------------------------------------------------------------------------
 SURFACE_MODIFIERS = {
+    # Calibrated against real Tennis-Data.co.uk distributions (2022-2026)
+    # Target hold rates derived from observed mean games/set per surface:
+    #   Grass Bo5: mean 37.9 games / 3.77 sets = 10.05 games/set -> ~83% hold
+    #   Hard:      baseline 80% hold (model anchor)
+    #   Clay:      ~76-77% hold (more breaks, more upsets)
+    #
+    # Formula: modifier = target_odds / baseline_odds (in log-odds space)
+    #   ATP Grass: target p=0.652 -> odds=1.874 / baseline 1.725 = 1.087 -> 1.09
+    #   ATP Clay:  target p=0.610 -> odds=1.564 / baseline 1.725 = 0.907 -> 0.90
+    #   WTA Grass: target p=0.565 -> odds=1.299 / baseline 1.218 = 1.067 -> 1.07
+    #   WTA Clay:  target p=0.535 -> odds=1.151 / baseline 1.218 = 0.945 -> 0.94
     ('ATP', 'Hard'):  1.00,   # Neutral baseline
-    ('ATP', 'Clay'):  0.85,   # Slower surface: serve loses dominance, more upsets
-    ('ATP', 'Grass'): 1.20,   # Fast surface: serve-dominant, tiebreaks common
+    ('ATP', 'Clay'):  0.90,   # Slower surface: more breaks, more upsets
+    ('ATP', 'Grass'): 1.09,   # Fast surface: slight serve boost (was 1.20 -> over-inflated)
     ('WTA', 'Hard'):  1.00,   # Neutral baseline
-    ('WTA', 'Clay'):  0.92,   # Moderate returner advantage on clay
-    ('WTA', 'Grass'): 1.15,   # Fast courts amplify flat-ball hitters
+    ('WTA', 'Clay'):  0.94,   # Moderate returner advantage on clay
+    ('WTA', 'Grass'): 1.07,   # Flat-ball hitters gain slight edge (was 1.15 -> over-inflated)
 }
 
 # ---------------------------------------------------------------------------

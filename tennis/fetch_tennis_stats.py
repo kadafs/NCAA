@@ -461,18 +461,12 @@ def implied_serve_prob_from_win_rate(
     the player's expected match win rate against an average opponent
     equals the observed win rate.
 
-    Uses bisection search over p in [0.35, 0.80].
+    Uses bisection search over p in [0.35, 0.84].
 
-    Parameters
-    ----------
-    player_win_rate : observed win rate on surface (e.g. 0.68)
-    tour            : 'ATP' or 'WTA'
-    surface         : 'Hard', 'Clay', 'Grass'
-    tolerance       : bisection convergence tolerance
-
-    Returns
-    -------
-    float : implied serve point probability
+    Fix: apply surface modifier in log-odds space (consistent with
+    blended_serve_win_prob). Previous multiplicative application
+    (mid * surf_mod) was inconsistent and produced incorrect inversions
+    for extreme modifier values.
     """
     from surface_engine import SURFACE_MODIFIERS
 
@@ -480,13 +474,21 @@ def implied_serve_prob_from_win_rate(
     league_serve = LEAGUE_SERVE_PROFILES[tour]['_implied_serve_prob']
     sets_target = 2  # use Best-of-3 for calibration (most matches)
 
+    surf_mod = SURFACE_MODIFIERS.get((tour, surface), 1.00)
+
+    # Pre-compute surface-adjusted league opponent prob (log-odds, consistent with simulation)
+    league_odds     = league_serve / (1.0 - league_serve)
+    adj_league_odds = league_odds * surf_mod
+    opp_adjusted    = adj_league_odds / (1.0 + adj_league_odds)
+    opp_adjusted    = max(0.01, min(0.99, opp_adjusted))
+
     lo, hi = 0.35, 0.84
     for _ in range(50):
         mid = (lo + hi) / 2.0
-        # Apply surface multiplicatively (audit Finding 1 — no additive shifts)
-        surf_mod     = SURFACE_MODIFIERS.get((tour, surface), 1.00)
-        p_adjusted   = max(0.01, min(0.99, mid          * surf_mod))
-        opp_adjusted = max(0.01, min(0.99, league_serve * surf_mod))
+        # Apply surface modifier in log-odds space
+        p_odds    = mid / (1.0 - mid)
+        adj_odds  = p_odds * surf_mod
+        p_adjusted = max(0.01, min(0.99, adj_odds / (1.0 + adj_odds)))
 
         predicted = _expected_match_win_prob(p_adjusted, opp_adjusted, sets_target)
 
@@ -610,11 +612,37 @@ def build_player_serve_profile(
         blended_wr = recent_wr
         source = 'recent_only'
     else:
-        # No data — league average
-        profile = LEAGUE_SERVE_PROFILES[tour].copy()
-        profile['player_name'] = player_name
-        profile['source'] = 'league_average_no_matches'
-        return profile
+        # No surface-specific data. Try cross-surface talent anchor before
+        # falling back to league average.
+        #
+        # A player's ALL-SURFACE win rate is a better talent proxy than the
+        # flat 63.3% league baseline. Without this, Rinderknech (45% overall)
+        # gets the same profile as Djokovic (93% overall) when both have
+        # insufficient grass-specific records. This erases all skill differential
+        # and forces symmetric ~43-game expected totals for every matchup.
+        player_key = normalize_tennis_name(player_name)
+        all_wins   = len(df[df['Winner'].apply(normalize_tennis_name) == player_key])
+        all_losses = len(df[df['Loser'].apply(normalize_tennis_name) == player_key])
+        all_total  = all_wins + all_losses
+
+        if all_total >= 5:
+            all_wr = all_wins / all_total
+            # Regression factor: shrink talent advantage/disadvantage slightly
+            # toward 50% to account for surface uncertainty.
+            #   Grass: 0.92 — serve-dominant surface rewards big servers, mild regression
+            #   Clay:  0.95 — returner surface, moderate regression
+            #   Hard:  1.00 — baseline, no regression
+            surface_regression = {'Grass': 0.92, 'Clay': 0.95, 'Hard': 1.00}.get(surface, 0.95)
+            career_wr = 0.50 + (all_wr - 0.50) * surface_regression
+            blended_wr = career_wr
+            source = 'cross_surface_talent_anchor'
+        else:
+            # True unknown qualifier — no match history at all
+            profile = LEAGUE_SERVE_PROFILES[tour].copy()
+            profile['player_name'] = player_name
+            profile['source']      = 'league_average_true_fallback'
+            profile['observed_win_rate'] = 0.50
+            return profile
 
     # Invert Markov chain to get implied serve point probability
     serve_prob = implied_serve_prob_from_win_rate(blended_wr, tour, surface)
