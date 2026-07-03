@@ -126,51 +126,51 @@ def simulate_tiebreak_vectorized(
     p_p1_serve: float,
     p_p2_serve: float,
     num_active: int,
-    p1_serves_first_in_tb: np.ndarray,
+    p1_serves_first: np.ndarray,
 ) -> np.ndarray:
     """
     Simulates a standard 7-point tennis tiebreak for a vector of active games.
 
-    Serving sequence in a tiebreak:
-      P1 serves point 1, P2 serves 2-3, P1 serves 4-5, P2 serves 6-7, ...
-      At deuce (6-6) the pair pattern continues (not single-point alternation).
+    Serving sequence: P1 serves point 1, P2 serves 2-3, P1 serves 4-5, ...
+    seq = ((total_pts + 1) // 2) % 2  gives: 0,1,1,0,0,1,1,0,0 ...
+      seq=0 -> first server's turn
+      seq=1 -> second server's turn
+
+    is_p1_serving maps seq to actual player identity:
+      If P1 serves first: seq=0 -> P1 serves (is_p1_serving = seq==0)
+      If P2 serves first: seq=0 -> P2 serves (is_p1_serving = seq==1)
 
     Parameters
     ----------
-    p_p1_serve         : P(P1 wins point when serving)
-    p_p2_serve         : P(P2 wins point when serving)
-    num_active         : number of active tiebreaks to simulate
-    p1_serves_first_in_tb : bool array (length=num_active); True where P1
-                            serves the first tiebreak point.  This is
-                            determined by the set's initial server and the
-                            game count at 6-6, NOT assumed to always be P1.
+    p_p1_serve      : P(P1 wins point when serving)
+    p_p2_serve      : P(P2 wins point when serving)
+    num_active      : number of active tiebreaks to simulate
+    p1_serves_first : bool array (length=num_active); True where P1 opens
+                      the tiebreak. Anchored to the set's initial server
+                      at the 6-6 trigger point.
 
     Returns
     -------
     np.ndarray[bool] : True where Player 1 won the tiebreak
     """
-    p1_pts   = np.zeros(num_active, dtype=np.int32)
-    p2_pts   = np.zeros(num_active, dtype=np.int32)
+    p1_pts    = np.zeros(num_active, dtype=np.int32)
+    p2_pts    = np.zeros(num_active, dtype=np.int32)
     total_pts = np.zeros(num_active, dtype=np.int32)
     tb_active = np.ones(num_active, dtype=bool)
-
-    # P2-serves-first anchor (per simulation); fixed at tiebreak start.
-    p2_serves_first = ~p1_serves_first_in_tb  # shape: (num_active,)
 
     while np.any(tb_active):
         idx = np.where(tb_active)[0]
 
-        # Sequence index: 0 → first server's turn, 1 → second server's turn
-        # Standard pattern: 1, 2, 2, 1, 1, 2, 2, 1, 1, ...
-        seq = ((total_pts[idx] + 1) // 2) % 2   # 0 = first server, 1 = second server
+        # seq = 0 -> first server's turn, 1 -> second server's turn
+        seq = ((total_pts[idx] + 1) // 2) % 2
 
-        # is_p2_serving is True when it's the second server's turn AND P2 is the
-        # second server (p1_serves_first), OR when it's the first server's turn
-        # AND P2 is the first server (~p1_serves_first).
-        #   seq==1 XOR p2_serves_first => handles both orientations cleanly.
-        is_p2_serving = (seq == 1) ^ p2_serves_first[idx]
+        # Map sequence slot to actual player identity (audit fix: explicit, no XOR)
+        #   P1 serves first -> P1 occupies slot 0 (seq==0 means P1 serving)
+        #   P2 serves first -> P1 occupies slot 1 (seq==1 means P1 serving)
+        is_p1_serving = np.where(p1_serves_first[idx], seq == 0, seq == 1)
 
-        p_win = np.where(is_p2_serving, 1.0 - p_p2_serve, p_p1_serve)
+        # P(P1 wins this point): p_p1_serve when P1 serves, 1-p_p2_serve when P2 serves
+        p_win = np.where(is_p1_serving, p_p1_serve, 1.0 - p_p2_serve)
 
         r = np.random.rand(len(idx))
         p1_won = r < p_win
@@ -179,7 +179,7 @@ def simulate_tiebreak_vectorized(
         p2_pts[idx[~p1_won]] += 1
         total_pts[idx]        += 1
 
-        # Must reach 7+ and lead by 2+ (standard tiebreak)
+        # Win: reach 7 points and lead by 2 (standard tiebreak)
         p1_wins = (p1_pts[idx] >= 7) & ((p1_pts[idx] - p2_pts[idx]) >= 2)
         p2_wins = (p2_pts[idx] >= 7) & ((p2_pts[idx] - p1_pts[idx]) >= 2)
         tb_active[idx[p1_wins | p2_wins]] = False
@@ -264,22 +264,28 @@ def simulate_match_monte_carlo(
 
         p1_games = np.zeros(num_active, dtype=np.int32)
         p2_games = np.zeros(num_active, dtype=np.int32)
-        game_num = np.zeros(num_active, dtype=np.int32)
+        game_num  = np.zeros(num_active, dtype=np.int32)
         set_active = np.ones(num_active, dtype=bool)
+
+        # Snapshot which player starts this set (stable reference for tiebreak + server calc)
+        p1_start_mask = p1_serves_first[idx]
 
         while np.any(set_active):
             s_idx = np.where(set_active)[0]
 
-            # Determine who serves this game
-            # p1_serves_first toggles per set; within a set, odd/even game_num alternates
-            is_p1_serving_set = p1_serves_first[idx[s_idx]]
-            is_p1_serving = (game_num[s_idx] % 2 == 0) == is_p1_serving_set
+            # Who serves this game:
+            #   P1 started set -> P1 serves on even game_num (0,2,4,...)
+            #   P2 started set -> P1 serves on odd  game_num (1,3,5,...)
+            is_p1_serving = np.where(
+                p1_start_mask[s_idx],
+                game_num[s_idx] % 2 == 0,
+                game_num[s_idx] % 2 != 0,
+            )
 
-            # Game win probability from server's perspective
             p1_win_game_prob = np.where(
                 is_p1_serving,
-                p1_game_prob,              # P1 serving: P(P1 holds)
-                1.0 - p2_game_prob,        # P2 serving: P(P1 breaks)
+                p1_game_prob,          # P1 holds
+                1.0 - p2_game_prob,    # P1 breaks P2
             )
 
             r_game = np.random.rand(len(s_idx))
@@ -290,7 +296,7 @@ def simulate_match_monte_carlo(
             game_num[s_idx] += 1
             total_games[idx[s_idx]] += 1
 
-            # Standard set: must reach 6 games and lead by 2
+            # Standard set: must reach 6 and lead by 2
             p1_wins_set = (p1_games[s_idx] >= 6) & ((p1_games[s_idx] - p2_games[s_idx]) >= 2)
             p2_wins_set = (p2_games[s_idx] >= 6) & ((p2_games[s_idx] - p1_games[s_idx]) >= 2)
 
@@ -299,22 +305,23 @@ def simulate_match_monte_carlo(
             if np.any(tiebreak_mask):
                 tb_sub = s_idx[tiebreak_mask]
 
-                # Determine tiebreak opener: same player who serves game 13 in set.
-                # At 6-6, game_num[tb_sub] == 12; the rule mirrors the set-level logic:
-                #   P1 serves TB first iff P1 was the set's initial server
-                #   (since game_num=12 is even, and even games go to the initial server).
-                p1_serves_tb = p1_serves_first[idx[tb_sub]]
+                # At 6-6 (game_num=12), the initial set server opens the tiebreak
+                # (they would serve game 13 in standard alternation).
+                p1_serves_tb = p1_start_mask[tb_sub]
 
                 p1_won_tb = simulate_tiebreak_vectorized(
                     p1_p, p2_p, len(tb_sub),
-                    p1_serves_first_in_tb=p1_serves_tb,
+                    p1_serves_first=p1_serves_tb,
                 )
 
                 p1_games[tb_sub[p1_won_tb]] += 1
                 p2_games[tb_sub[~p1_won_tb]] += 1
-                total_games[idx[tb_sub]] += 1  # tiebreak = 1 additional game
+                total_games[idx[tb_sub]] += 1   # tiebreak counts as 1 game
 
-                # Re-check set completion after tiebreak
+                # Increment game_num for tiebreak sims so server alternation
+                # correctly treats the set as 13 games (odd -> flip server)
+                game_num[tb_sub] += 1
+
                 p1_wins_set = (p1_games[s_idx] >= 7) | ((p1_games[s_idx] >= 6) & ((p1_games[s_idx] - p2_games[s_idx]) >= 2))
                 p2_wins_set = (p2_games[s_idx] >= 7) | ((p2_games[s_idx] >= 6) & ((p2_games[s_idx] - p1_games[s_idx]) >= 2))
 
@@ -326,18 +333,22 @@ def simulate_match_monte_carlo(
         p1_sets[idx[p1_won_set]] += 1
         p2_sets[idx[~p1_won_set]] += 1
 
-        # First set winner tracking (isolated from fatigue noise)
         if current_set_num == 0:
             first_set_winners[idx[p1_won_set]] = 1
             first_set_winners[idx[~p1_won_set]] = 2
 
-        # Alternate server for next set
-        p1_serves_first[idx] = ~p1_serves_first[idx]
+        # Server alternation (audit fix: game_num-based, not simple flip).
+        # game_num = total games played in this set (including tiebreak if any).
+        # Odd game count -> the starting server served LAST -> opponent starts next set.
+        # Even game count -> the other player served last -> same player starts next set.
+        # Examples: 6-4 (10 games, even) -> same starter; 6-3 (9 games, odd) -> flip;
+        #           7-5 (12 games, even) -> same starter; 7-6 TB (13 games, odd) -> flip.
+        set_games_odd = (game_num % 2 == 1)
+        p1_serves_first[idx] = np.where(set_games_odd, ~p1_start_mask, p1_start_mask)
 
-        # Match completion check
-        p1_wins_match = p1_sets[idx] >= sets_target
-        p2_wins_match = p2_sets[idx] >= sets_target
-        match_active[idx[p1_wins_match | p2_wins_match]] = False
+        # Match completion
+        match_complete = (p1_sets[idx] >= sets_target) | (p2_sets[idx] >= sets_target)
+        match_active[idx[match_complete]] = False
         current_set_num += 1
 
     # -- Extract Distribution Statistics --
