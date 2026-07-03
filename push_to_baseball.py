@@ -138,6 +138,12 @@ def git_commit_and_push(copied_files: list[str], dashboard_root: Path):
         print("  Then re-run this script.")
         return
 
+    # Run sync-data.js to regenerate dates_index.json
+    sync_script = dashboard_root / "scripts" / "sync-data.js"
+    if sync_script.exists():
+        print("  🔄 Rebuilding dates_index.json...")
+        run(["node", "scripts/sync-data.js"], cwd=dashboard_root)
+
     # Stage all changes in public/data
     run(["git", "add", "public/data/"], cwd=dashboard_root)
 
