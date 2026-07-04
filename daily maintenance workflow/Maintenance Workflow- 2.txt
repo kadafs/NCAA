@@ -95,6 +95,24 @@ python push_to_dashboard.py --sport basketball
          python standard_confidence_audit.py 
 
 
+### Tennis Daily Workflow
+
+```powershell
+# Step 1 — Refresh in-season data (always re-downloads current year)
+python setup_tennis_data.py
+
+# Step 2 — Run ATP predictions
+python tennis/consensus_tennis.py --tour ATP --iterations 10000
+
+# Step 3 — Run WTA predictions
+python tennis/consensus_tennis.py --tour WTA --iterations 10000
+
+# Step 4 — Both tours in one pass
+python tennis/consensus_tennis.py --tour BOTH
+
+# Step 5 — Grade yesterday's predictions
+python tennis/grade_tennis_reports.py
+
 
 
 

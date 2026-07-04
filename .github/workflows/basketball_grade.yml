@@ -1,0 +1,101 @@
+name: 🏀 Basketball Grade Results
+
+on:
+  schedule:
+    - cron: '0 4 * * *'  # 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to grade (YYYY-MM-DD)'
+        required: false
+        default: ''
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Grade Basketball Results (v1 & v2)
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+        run: |
+          echo "Grading basketball results..."
+          
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            DATE_FLAG="--date ${{ github.event.inputs.date }}"
+          else
+            DATE_FLAG=""
+          fi
+          
+          echo "Using DATE_FLAG: $DATE_FLAG"
+          
+          echo "--- Running grade_basketball.py ---"
+          python grade_basketball.py $DATE_FLAG
+          
+          echo "--- Running aggregate_basketball_stats.py ---"
+          python aggregate_basketball_stats.py $DATE_FLAG
+          
+          echo "--- Running grade_basketball_v2.py ---"
+          python grade_basketball_v2.py $DATE_FLAG
+          
+          echo "--- Running aggregate_basketball_stats_v2.py ---"
+          python aggregate_basketball_stats_v2.py $DATE_FLAG
+
+      - name: Commit and push graded files
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add data/ *leaderboard.json || true
+          git diff --staged --quiet && echo "No changes to commit." || (
+            git commit -m "chore: grade basketball results $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Checkout Dashboard Repo
+        uses: actions/checkout@v4
+        with:
+          repository: kadafs/sports-analytics
+          token: ${{ secrets.GH_PAT }}
+          path: sports-analytics
+
+      - name: Sync to Dashboard
+        run: |
+          echo "Copying graded files to dashboard..."
+          mkdir -p sports-analytics/public/data/basketball
+          
+          # Copy up to 14 latest prediction files
+          ls -t data/basketball/universal_predictions_*.json 2>/dev/null | head -14 | xargs -I {} cp {} sports-analytics/public/data/basketball/ || true
+          
+          # Copy leaderboards
+          cp data/basketball/*leaderboard*.json sports-analytics/public/data/basketball/ 2>/dev/null || true
+          cp *leaderboard*.json sports-analytics/public/data/basketball/ 2>/dev/null || true
+          
+          # Commit and push
+          cd sports-analytics
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add public/data/basketball/
+          git diff --staged --quiet && echo "No changes to commit to dashboard." || (
+            git commit -m "data: push basketball grades $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Latest graded files ==="
+          ls -lht data/basketball/ | head -5
