@@ -195,6 +195,14 @@ def main():
         print(f"❌ Dashboard repo not found at: {DASHBOARD_ROOT}")
         print("   Make sure 'Sports Analytics' exists next to 'ncaa-api'.")
         sys.exit(1)
+        
+    print("--- Syncing with remote repository (pulling latest changes) ---")
+    try:
+        run(["git", "pull", "--rebase"], cwd=DASHBOARD_ROOT)
+        print()
+    except Exception as e:
+        print("  ⚠️ Warning: git pull failed. Proceeding anyway...")
+        print()
 
     all_copied = {}
     for sport in target_sports:
