@@ -263,7 +263,7 @@ def main():
         derived = derive_params(final_games, lid, league_name)
         
         # We process if we derived actual params or if the existing file is missing parameters entirely
-        if derived:
+        if derived or not existing_cfg:
             tier_name = KNOWN_TIER_MAP.get(lid, existing_cfg.get("_tier", "top_domestic"))
             
             # The heart of the magic:
@@ -289,9 +289,9 @@ def main():
                     teams = stats_data.get("teams", [])
                     if len(teams) >= 2:
                         avg_adj_off = sum(t.get("adj_off", 0) for t in teams) / len(teams)
-                        avg_adj_t   = sum(t.get("adj_t", derived.get("pace_pivot", 76.0)) for t in teams) / len(teams)
+                        avg_adj_t   = sum(t.get("adj_t", derived.get("pace_pivot", 76.0) if derived else 76.0) for t in teams) / len(teams)
                         derived_avg_per_team = (avg_adj_off * avg_adj_t) / 100
-                        target_per_team = derived["avg_total"] / 2
+                        target_per_team = (derived["avg_total"] if derived else existing_cfg.get("_avg_total", 152.0)) / 2
                         if derived_avg_per_team > 0:
                             correction = target_per_team / derived_avg_per_team
                             # Cap at ±25% to prevent over-correction
@@ -305,7 +305,10 @@ def main():
                     print(f"       Warning: xPTS correction skipped for {lid}: {e}")
 
             success_count += 1
-            print(f"  [+] Calibrated {lid:4d} ({league_name[:20]:20}) | {derived['n_games']:4d} games | Avg Tot: {derived['avg_total']:.1f}")
+            if derived:
+                print(f"  [+] Calibrated {lid:4d} ({league_name[:20]:20}) | {derived['n_games']:4d} games | Avg Tot: {derived['avg_total']:.1f}")
+            else:
+                print(f"  [+] Fallback   {lid:4d} ({league_name[:20]:20}) | < 10 games | Used Tier Template")
 
     print("======================================================")
     print(f"  SUCCESS! Locally Auto-Calibrated {success_count} leagues.")
