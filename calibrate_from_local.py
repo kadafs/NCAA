@@ -261,7 +261,7 @@ def main():
         derived = derive_params(final_games, lid, league_name)
         
         # We process if we derived actual params or if the existing file is missing parameters entirely
-        if derived:
+        if derived or not existing_cfg:
             tier_name = KNOWN_TIER_MAP.get(lid, existing_cfg.get("_tier", "top_domestic"))
             
             # The heart of the magic:
@@ -303,7 +303,10 @@ def main():
                     print(f"       Warning: xPTS correction skipped for {lid}: {e}")
 
             success_count += 1
-            print(f"  [+] Calibrated {lid:4d} ({league_name[:20]:20}) | {derived['n_games']:4d} games | Avg Tot: {derived['avg_total']:.1f}")
+            if derived:
+                print(f"  [+] Calibrated {lid:4d} ({league_name[:20]:20}) | {derived['n_games']:4d} games | Avg Tot: {derived['avg_total']:.1f}")
+            else:
+                print(f"  [+] Fallback   {lid:4d} ({league_name[:20]:20}) | < 10 games | Used Tier Template")
 
     print("======================================================")
     print(f"  SUCCESS! Locally Auto-Calibrated {success_count} leagues.")
