@@ -854,13 +854,10 @@ def main():
         except:
             pass
             
-        if not stats_srs:
-            msg = f"[{lid}] {lname} - SKIP: no team stats available"
-            print(f"    SKIP — no team stats available\n")
-            skipped_issues.append(msg)
-            total_skipped += len(games)
-            continue
-
+        if stats_srs is None:
+            stats_srs = {}
+        # We no longer skip the entire league if stats_srs is empty, 
+        # because predict_game might still find the teams via global_find_team.
         # Step 4: league standings
         # Removed API standings fetch
 
