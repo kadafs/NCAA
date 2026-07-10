@@ -22,29 +22,53 @@
                 "venue": "Comerica Park",
                 "park_factor": 0.941,
                 "weather": {
-                    "temp": 76,
+                    "temp": 77,
                     "wind_mph": 7,
                     "wind_dir": "Cross",
                     "wind_lateral": "L-R",
                     "is_indoor": false,
-                    "rain_pct": 7,
+                    "rain_pct": 6,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.009,
+                    "temp_multiplier": 1.0105,
                     "wind_multiplier": 1.0,
-                    "weather_multiplier": 1.009,
-                    "weather_label": "76F | 7 MPH Cross | Weather: +0.9%"
+                    "weather_multiplier": 1.0105,
+                    "weather_label": "77F | 7 MPH Cross | Weather: +1.0%"
                 },
-                "effective_pf": 0.9495,
-                "umpire": null
+                "effective_pf": 0.9509,
+                "umpire": {
+                    "name": "Hunter Wendelstedt",
+                    "profile": {
+                        "games_called": 17,
+                        "raw_k_mod": 0.9642,
+                        "raw_bb_mod": 1.1095,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 20.0,
+                                "bb": 14.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 13.0,
+                                "bb": 9.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.25,
-                "mc_f5": 4.5,
+                "top_down_f5": 4.26,
+                "mc_f5": 4.48,
                 "mc_f5_away": 2.29,
-                "mc_f5_home": 2.22,
-                "mc_late": 2.98,
-                "mc_full_game": 7.49,
+                "mc_f5_home": 2.19,
+                "mc_late": 3.03,
+                "mc_full_game": 7.51,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.848,
@@ -75,12 +99,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.435,
-                "under_4_5": 0.567,
-                "under_5_5": 0.676,
-                "full_over_7_5": 0.474,
-                "full_over_8_5": 0.336,
-                "full_over_9_5": 0.222
+                "under_3_5": 0.441,
+                "under_4_5": 0.572,
+                "under_5_5": 0.68,
+                "full_over_7_5": 0.477,
+                "full_over_8_5": 0.34,
+                "full_over_9_5": 0.225
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (MODERATE)",
@@ -89,8 +113,10 @@
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "No Edge",
-                "reason": "Did not meet divergence thresholds."
+                "category": "High-Confidence",
+                "action": "BET F5 UNDER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
             }
         },
         {
@@ -112,29 +138,46 @@
                 "venue": "PNC Park",
                 "park_factor": 1.027,
                 "weather": {
-                    "temp": 76,
+                    "temp": 79,
                     "wind_mph": 6,
                     "wind_dir": "Cross",
                     "wind_lateral": "R-L",
                     "is_indoor": false,
-                    "rain_pct": 71,
+                    "rain_pct": 56,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.009,
+                    "temp_multiplier": 1.0135,
                     "wind_multiplier": 1.0,
-                    "weather_multiplier": 1.009,
-                    "weather_label": "76F | 6 MPH Cross | Weather: +0.9%"
+                    "weather_multiplier": 1.0135,
+                    "weather_label": "79F | 6 MPH Cross | Weather: +1.4%"
                 },
-                "effective_pf": 1.0362,
-                "umpire": null
+                "effective_pf": 1.0409,
+                "umpire": {
+                    "name": "Lance Barrett",
+                    "profile": {
+                        "games_called": 24,
+                        "raw_k_mod": 0.9338,
+                        "raw_bb_mod": 1.0305,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 22.0,
+                                "bb": 6.0,
+                                "ip": 22.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.62,
-                "mc_f5": 4.08,
+                "top_down_f5": 4.65,
+                "mc_f5": 4.13,
                 "mc_f5_away": 1.7,
-                "mc_f5_home": 2.38,
-                "mc_late": 3.31,
-                "mc_full_game": 7.39,
+                "mc_f5_home": 2.43,
+                "mc_late": 3.43,
+                "mc_full_game": 7.56,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.775,
@@ -165,12 +208,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.489,
-                "under_4_5": 0.618,
-                "under_5_5": 0.726,
-                "full_over_7_5": 0.459,
-                "full_over_8_5": 0.323,
-                "full_over_9_5": 0.211
+                "under_3_5": 0.482,
+                "under_4_5": 0.607,
+                "under_5_5": 0.711,
+                "full_over_7_5": 0.484,
+                "full_over_8_5": 0.346,
+                "full_over_9_5": 0.23
             },
             "action_matrix": {
                 "adv_3_5": "Skip",
@@ -204,8 +247,8 @@
                 "park_factor": 1.094,
                 "weather": {
                     "temp": 84,
-                    "wind_mph": 7,
-                    "wind_dir": "R-L",
+                    "wind_mph": 2,
+                    "wind_dir": "In",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
@@ -213,19 +256,43 @@
                     "temp_multiplier": 1.021,
                     "wind_multiplier": 1.0,
                     "weather_multiplier": 1.021,
-                    "weather_label": "84F | 7 MPH R-L | Weather: +2.1%"
+                    "weather_label": "84F | Calm | Weather: +2.1%"
                 },
                 "effective_pf": 1.117,
-                "umpire": null
+                "umpire": {
+                    "name": "Nestor Ceja",
+                    "profile": {
+                        "games_called": 24,
+                        "raw_k_mod": 0.9914,
+                        "raw_bb_mod": 0.9959,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 22.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 11.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 5.31,
-                "mc_f5": 5.08,
-                "mc_f5_away": 2.65,
-                "mc_f5_home": 2.43,
-                "mc_late": 3.57,
-                "mc_full_game": 8.65,
+                "mc_f5": 5.04,
+                "mc_f5_away": 2.61,
+                "mc_f5_home": 2.44,
+                "mc_late": 3.53,
+                "mc_full_game": 8.58,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.935,
@@ -256,12 +323,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.37,
-                "under_4_5": 0.489,
-                "under_5_5": 0.603,
-                "full_over_7_5": 0.634,
-                "full_over_8_5": 0.498,
-                "full_over_9_5": 0.367
+                "under_3_5": 0.367,
+                "under_4_5": 0.488,
+                "under_5_5": 0.605,
+                "full_over_7_5": 0.625,
+                "full_over_8_5": 0.488,
+                "full_over_9_5": 0.357
             },
             "action_matrix": {
                 "adv_3_5": "Skip (Team Bias Veto - Realized Hitter Edge)",
@@ -270,10 +337,8 @@
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "High-Confidence",
-                "action": "BET F5 OVER",
-                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
-                "odds": 1.85
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
             }
         },
         {
@@ -295,29 +360,53 @@
                 "venue": "Oriole Park at Camden Yards",
                 "park_factor": 1.033,
                 "weather": {
-                    "temp": 88,
-                    "wind_mph": 7,
+                    "temp": 84,
+                    "wind_mph": 4,
                     "wind_dir": "R-L",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 1.03,
-                    "temp_multiplier": 1.027,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.021,
                     "wind_multiplier": 1.0,
-                    "weather_multiplier": 1.027,
-                    "weather_label": "88F | 7 MPH R-L | Weather: +2.7%"
+                    "weather_multiplier": 1.021,
+                    "weather_label": "84F | Calm | Weather: +2.1%"
                 },
-                "effective_pf": 1.0609,
-                "umpire": null
+                "effective_pf": 1.0547,
+                "umpire": {
+                    "name": "Nick Mahrley",
+                    "profile": {
+                        "games_called": 22,
+                        "raw_k_mod": 1.0057,
+                        "raw_bb_mod": 1.082,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 16.0,
+                                "bb": 2.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 19.0,
+                                "bb": 12.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 5.62,
-                "mc_f5": 4.81,
-                "mc_f5_away": 2.52,
-                "mc_f5_home": 2.29,
-                "mc_late": 3.42,
-                "mc_full_game": 8.23,
+                "top_down_f5": 5.65,
+                "mc_f5": 4.93,
+                "mc_f5_away": 2.68,
+                "mc_f5_home": 2.25,
+                "mc_late": 3.46,
+                "mc_full_game": 8.39,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.152,
@@ -348,12 +437,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.398,
-                "under_4_5": 0.524,
-                "under_5_5": 0.637,
-                "full_over_7_5": 0.579,
-                "full_over_8_5": 0.44,
-                "full_over_9_5": 0.313
+                "under_3_5": 0.388,
+                "under_4_5": 0.515,
+                "under_5_5": 0.628,
+                "full_over_7_5": 0.6,
+                "full_over_8_5": 0.462,
+                "full_over_9_5": 0.333
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (HIGH)",
@@ -387,29 +476,46 @@
                 "venue": "Great American Ball Park",
                 "park_factor": 1.083,
                 "weather": {
-                    "temp": 75,
-                    "wind_mph": 11,
+                    "temp": 88,
+                    "wind_mph": 7,
                     "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0075,
-                    "wind_multiplier": 1.0327,
-                    "weather_multiplier": 1.0404,
-                    "weather_label": "75F | 11 MPH Out | Weather: +4.0%"
+                    "temp_fatigue_scaler": 1.03,
+                    "temp_multiplier": 1.027,
+                    "wind_multiplier": 1.018,
+                    "weather_multiplier": 1.0455,
+                    "weather_label": "88F | 7 MPH Out | Weather: +4.6%"
                 },
-                "effective_pf": 1.1268,
-                "umpire": null
+                "effective_pf": 1.1323,
+                "umpire": {
+                    "name": "Jim Wolf",
+                    "profile": {
+                        "games_called": 21,
+                        "raw_k_mod": 0.978,
+                        "raw_bb_mod": 1.0918,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 16.0,
+                                "bb": 5.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.7,
-                "mc_f5": 5.25,
-                "mc_f5_away": 2.76,
-                "mc_f5_home": 2.48,
-                "mc_late": 4.22,
-                "mc_full_game": 9.46,
+                "top_down_f5": 4.79,
+                "mc_f5": 5.39,
+                "mc_f5_away": 2.83,
+                "mc_f5_home": 2.56,
+                "mc_late": 4.28,
+                "mc_full_game": 9.67,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.775,
@@ -440,23 +546,23 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.352,
-                "under_4_5": 0.471,
-                "under_5_5": 0.586,
-                "full_over_7_5": 0.727,
-                "full_over_8_5": 0.603,
-                "full_over_9_5": 0.473
+                "under_3_5": 0.332,
+                "under_4_5": 0.457,
+                "under_5_5": 0.57,
+                "full_over_7_5": 0.748,
+                "full_over_8_5": 0.628,
+                "full_over_9_5": 0.5
             },
             "action_matrix": {
                 "adv_3_5": "Skip (Under Lean - R1)",
                 "adv_4_5": "Skip (Under Lean - R1)",
-                "adv_5_5": "Bet **UNDER** (HIGH)"
+                "adv_5_5": "Bet **UNDER** (MODERATE)"
             },
             "version": "v4",
             "gatekeeper_logic": {
                 "category": "High-Value Strategy",
                 "action": "BET F5 OVER",
-                "reason": "Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park (1.127x).",
+                "reason": "Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park (1.132x).",
                 "odds": 1.85
             }
         },
@@ -492,16 +598,40 @@
                     "weather_label": "Indoor / Roof Closed | No weather adjustment"
                 },
                 "effective_pf": 0.965,
-                "umpire": null
+                "umpire": {
+                    "name": "Tom Hanahan",
+                    "profile": {
+                        "games_called": 23,
+                        "raw_k_mod": 0.9612,
+                        "raw_bb_mod": 1.1498,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 16.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 21.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 4.92,
-                "mc_f5": 5.21,
-                "mc_f5_away": 2.85,
-                "mc_f5_home": 2.36,
-                "mc_late": 2.81,
-                "mc_full_game": 8.02,
+                "mc_f5": 5.23,
+                "mc_f5_away": 2.86,
+                "mc_f5_home": 2.37,
+                "mc_late": 2.88,
+                "mc_full_game": 8.11,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.804,
@@ -532,16 +662,16 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.353,
-                "under_4_5": 0.472,
-                "under_5_5": 0.592,
-                "full_over_7_5": 0.55,
-                "full_over_8_5": 0.41,
-                "full_over_9_5": 0.286
+                "under_3_5": 0.363,
+                "under_4_5": 0.481,
+                "under_5_5": 0.59,
+                "full_over_7_5": 0.562,
+                "full_over_8_5": 0.422,
+                "full_over_9_5": 0.297
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (HIGH)",
-                "adv_4_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Skip",
                 "adv_5_5": "Bet **UNDER** (HIGH)"
             },
             "version": "v4",
@@ -582,14 +712,23 @@
                     "weather_label": "Indoor / Roof Closed | No weather adjustment"
                 },
                 "effective_pf": 0.972,
-                "umpire": null
+                "umpire": {
+                    "name": "Brian Walsh",
+                    "profile": {
+                        "games_called": 24,
+                        "raw_k_mod": 0.9796,
+                        "raw_bb_mod": 1.009,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": []
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 4.42,
-                "mc_f5": 4.43,
-                "mc_f5_away": 2.54,
-                "mc_f5_home": 1.89,
+                "mc_f5": 4.42,
+                "mc_f5_away": 2.51,
+                "mc_f5_home": 1.92,
                 "mc_late": 2.84,
                 "mc_full_game": 7.27,
                 "td_clamp_applied": false,
@@ -622,11 +761,11 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.444,
-                "under_4_5": 0.574,
-                "under_5_5": 0.687,
-                "full_over_7_5": 0.442,
-                "full_over_8_5": 0.307,
+                "under_3_5": 0.452,
+                "under_4_5": 0.572,
+                "under_5_5": 0.682,
+                "full_over_7_5": 0.441,
+                "full_over_8_5": 0.306,
                 "full_over_9_5": 0.198
             },
             "action_matrix": {
@@ -659,29 +798,46 @@
                 "venue": "Citi Field",
                 "park_factor": 0.983,
                 "weather": {
-                    "temp": 82,
-                    "wind_mph": 8,
-                    "wind_dir": "R-L",
+                    "temp": 88,
+                    "wind_mph": 10,
+                    "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.018,
-                    "wind_multiplier": 1.0,
-                    "weather_multiplier": 1.018,
-                    "weather_label": "82F | 8 MPH R-L | Weather: +1.8%"
+                    "temp_fatigue_scaler": 1.03,
+                    "temp_multiplier": 1.027,
+                    "wind_multiplier": 1.03,
+                    "weather_multiplier": 1.0578,
+                    "weather_label": "88F | 10 MPH Out | Weather: +5.8%"
                 },
-                "effective_pf": 1.0007,
-                "umpire": null
+                "effective_pf": 1.0398,
+                "umpire": {
+                    "name": "Alan Porter",
+                    "profile": {
+                        "games_called": 23,
+                        "raw_k_mod": 0.9851,
+                        "raw_bb_mod": 1.0427,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-02",
+                                "k": 10.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.15,
-                "mc_f5": 3.8,
-                "mc_f5_away": 1.79,
-                "mc_f5_home": 2.01,
-                "mc_late": 2.74,
-                "mc_full_game": 6.54,
+                "top_down_f5": 4.29,
+                "mc_f5": 3.86,
+                "mc_f5_away": 1.81,
+                "mc_f5_home": 2.05,
+                "mc_late": 2.88,
+                "mc_full_game": 6.74,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.225,
@@ -713,15 +869,15 @@
             },
             "probabilities": {
                 "under_3_5": 0.524,
-                "under_4_5": 0.652,
-                "under_5_5": 0.756,
-                "full_over_7_5": 0.333,
-                "full_over_8_5": 0.213,
-                "full_over_9_5": 0.126
+                "under_4_5": 0.648,
+                "under_5_5": 0.751,
+                "full_over_7_5": 0.362,
+                "full_over_8_5": 0.237,
+                "full_over_9_5": 0.144
             },
             "action_matrix": {
                 "adv_3_5": "Skip",
-                "adv_4_5": "Bet **UNDER** (HIGH)",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
                 "adv_5_5": "Bet **UNDER** (HIGH)"
             },
             "version": "v4",
@@ -749,29 +905,38 @@
                 "venue": "Rate Field",
                 "park_factor": 0.963,
                 "weather": {
-                    "temp": 73,
-                    "wind_mph": 6,
+                    "temp": 81,
+                    "wind_mph": 7,
                     "wind_dir": "In",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0045,
-                    "wind_multiplier": 0.986,
-                    "weather_multiplier": 0.9904,
-                    "weather_label": "73F | 6 MPH In | Weather: -1.0%"
+                    "temp_multiplier": 1.0165,
+                    "wind_multiplier": 0.982,
+                    "weather_multiplier": 0.9982,
+                    "weather_label": "81F | 7 MPH In | Weather: -0.2%"
                 },
-                "effective_pf": 0.9538,
-                "umpire": null
+                "effective_pf": 0.9613,
+                "umpire": {
+                    "name": "Emil Jimenez",
+                    "profile": {
+                        "games_called": 22,
+                        "raw_k_mod": 0.9956,
+                        "raw_bb_mod": 1.0133,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": []
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.88,
-                "mc_f5": 5.04,
-                "mc_f5_away": 2.22,
-                "mc_f5_home": 2.82,
-                "mc_late": 3.09,
-                "mc_full_game": 8.13,
+                "top_down_f5": 4.92,
+                "mc_f5": 5.02,
+                "mc_f5_away": 2.24,
+                "mc_f5_home": 2.78,
+                "mc_late": 3.12,
+                "mc_full_game": 8.14,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.775,
@@ -802,12 +967,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.372,
-                "under_4_5": 0.499,
-                "under_5_5": 0.61,
-                "full_over_7_5": 0.565,
-                "full_over_8_5": 0.425,
-                "full_over_9_5": 0.3
+                "under_3_5": 0.38,
+                "under_4_5": 0.502,
+                "under_5_5": 0.612,
+                "full_over_7_5": 0.567,
+                "full_over_8_5": 0.427,
+                "full_over_9_5": 0.301
             },
             "action_matrix": {
                 "adv_3_5": "Skip (Under Lean - R2)",
@@ -854,16 +1019,40 @@
                     "weather_label": "Indoor / Roof Closed | No weather adjustment"
                 },
                 "effective_pf": 0.997,
-                "umpire": null
+                "umpire": {
+                    "name": "Quinn Wolcott",
+                    "profile": {
+                        "games_called": 25,
+                        "raw_k_mod": 0.9519,
+                        "raw_bb_mod": 1.033,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 17.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-04",
+                                "k": 17.0,
+                                "bb": 3.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 5.06,
-                "mc_f5": 4.82,
+                "mc_f5": 4.84,
                 "mc_f5_away": 2.65,
-                "mc_f5_home": 2.18,
-                "mc_late": 2.93,
-                "mc_full_game": 7.76,
+                "mc_f5_home": 2.19,
+                "mc_late": 2.91,
+                "mc_full_game": 7.75,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.978,
@@ -894,12 +1083,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.398,
-                "under_4_5": 0.522,
-                "under_5_5": 0.639,
-                "full_over_7_5": 0.513,
-                "full_over_8_5": 0.374,
-                "full_over_9_5": 0.254
+                "under_3_5": 0.397,
+                "under_4_5": 0.523,
+                "under_5_5": 0.633,
+                "full_over_7_5": 0.512,
+                "full_over_8_5": 0.373,
+                "full_over_9_5": 0.253
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (HIGH)",
@@ -933,29 +1122,53 @@
                 "venue": "Target Field",
                 "park_factor": 1.014,
                 "weather": {
-                    "temp": 81,
-                    "wind_mph": 4,
-                    "wind_dir": "L-R",
+                    "temp": 84,
+                    "wind_mph": 2,
+                    "wind_dir": "R-L",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0165,
+                    "temp_multiplier": 1.021,
                     "wind_multiplier": 1.0,
-                    "weather_multiplier": 1.0165,
-                    "weather_label": "81F | Calm | Weather: +1.6%"
+                    "weather_multiplier": 1.021,
+                    "weather_label": "84F | Calm | Weather: +2.1%"
                 },
-                "effective_pf": 1.0307,
-                "umpire": null
+                "effective_pf": 1.0353,
+                "umpire": {
+                    "name": "Brian O'Nora",
+                    "profile": {
+                        "games_called": 20,
+                        "raw_k_mod": 0.9637,
+                        "raw_bb_mod": 0.9117,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 17.0,
+                                "bb": 0.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 12.0,
+                                "bb": 5.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 5.36,
-                "mc_f5": 6.07,
+                "top_down_f5": 5.38,
+                "mc_f5": 6.03,
                 "mc_f5_away": 2.71,
-                "mc_f5_home": 3.35,
-                "mc_late": 3.32,
-                "mc_full_game": 9.38,
+                "mc_f5_home": 3.32,
+                "mc_late": 3.29,
+                "mc_full_game": 9.32,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.804,
@@ -986,12 +1199,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.279,
-                "under_4_5": 0.384,
-                "under_5_5": 0.494,
-                "full_over_7_5": 0.719,
-                "full_over_8_5": 0.593,
-                "full_over_9_5": 0.462
+                "under_3_5": 0.278,
+                "under_4_5": 0.389,
+                "under_5_5": 0.502,
+                "full_over_7_5": 0.713,
+                "full_over_8_5": 0.586,
+                "full_over_9_5": 0.455
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (HIGH)",
@@ -1025,29 +1238,53 @@
                 "venue": "Busch Stadium",
                 "park_factor": 0.911,
                 "weather": {
-                    "temp": 79,
-                    "wind_mph": 7,
-                    "wind_dir": "Out",
+                    "temp": 88,
+                    "wind_mph": 5,
+                    "wind_dir": "L-R",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0135,
-                    "wind_multiplier": 1.018,
-                    "weather_multiplier": 1.0317,
-                    "weather_label": "79F | 7 MPH Out | Weather: +3.2%"
+                    "temp_fatigue_scaler": 1.03,
+                    "temp_multiplier": 1.027,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.027,
+                    "weather_label": "88F | 5 MPH L-R | Weather: +2.7%"
                 },
-                "effective_pf": 0.9399,
-                "umpire": null
+                "effective_pf": 0.9356,
+                "umpire": {
+                    "name": "Jeremie Rehak",
+                    "profile": {
+                        "games_called": 22,
+                        "raw_k_mod": 0.9891,
+                        "raw_bb_mod": 0.9645,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 9.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 24.0,
+                                "bb": 4.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.27,
-                "mc_f5": 4.13,
-                "mc_f5_away": 2.38,
-                "mc_f5_home": 1.75,
-                "mc_late": 2.97,
-                "mc_full_game": 7.1,
+                "top_down_f5": 4.25,
+                "mc_f5": 4.02,
+                "mc_f5_away": 2.33,
+                "mc_f5_home": 1.69,
+                "mc_late": 2.96,
+                "mc_full_game": 6.98,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.109,
@@ -1078,15 +1315,15 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.477,
-                "under_4_5": 0.605,
-                "under_5_5": 0.715,
-                "full_over_7_5": 0.417,
-                "full_over_8_5": 0.285,
-                "full_over_9_5": 0.18
+                "under_3_5": 0.502,
+                "under_4_5": 0.626,
+                "under_5_5": 0.731,
+                "full_over_7_5": 0.399,
+                "full_over_8_5": 0.269,
+                "full_over_9_5": 0.168
             },
             "action_matrix": {
-                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_3_5": "Skip",
                 "adv_4_5": "Bet **UNDER** (MODERATE)",
                 "adv_5_5": "Bet **UNDER** (HIGH)"
             },
@@ -1117,29 +1354,38 @@
                 "venue": "Petco Park",
                 "park_factor": 0.895,
                 "weather": {
-                    "temp": 64,
-                    "wind_mph": 5,
+                    "temp": 72,
+                    "wind_mph": 9,
                     "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 0.996,
-                    "temp_multiplier": 0.9985,
-                    "wind_multiplier": 1.01,
-                    "weather_multiplier": 1.0085,
-                    "weather_label": "64F | 5 MPH Out | Weather: +0.8%"
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.003,
+                    "wind_multiplier": 1.026,
+                    "weather_multiplier": 1.0291,
+                    "weather_label": "72F | 9 MPH Out | Weather: +2.9%"
                 },
-                "effective_pf": 0.9026,
-                "umpire": null
+                "effective_pf": 0.921,
+                "umpire": {
+                    "name": "Clint Vondrak",
+                    "profile": {
+                        "games_called": 22,
+                        "raw_k_mod": 0.92,
+                        "raw_bb_mod": 1.0226,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": []
+                    }
+                }
             },
             "lineups_status": "Projected (Generic)",
             "predictions": {
-                "top_down_f5": 4.17,
-                "mc_f5": 4.99,
-                "mc_f5_away": 2.54,
-                "mc_f5_home": 2.45,
-                "mc_late": 2.48,
-                "mc_full_game": 7.47,
+                "top_down_f5": 4.25,
+                "mc_f5": 5.25,
+                "mc_f5_away": 2.68,
+                "mc_f5_home": 2.57,
+                "mc_late": 2.65,
+                "mc_full_game": 7.9,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.804,
@@ -1170,12 +1416,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.377,
-                "under_4_5": 0.496,
-                "under_5_5": 0.619,
-                "full_over_7_5": 0.471,
-                "full_over_8_5": 0.334,
-                "full_over_9_5": 0.22
+                "under_3_5": 0.35,
+                "under_4_5": 0.471,
+                "under_5_5": 0.587,
+                "full_over_7_5": 0.533,
+                "full_over_8_5": 0.393,
+                "full_over_9_5": 0.271
             },
             "action_matrix": {
                 "adv_3_5": "Skip (Under Lean - R2)",
@@ -1199,38 +1445,55 @@
                     "fip": 2.93
                 },
                 "home": {
-                    "name": "Shohei Ohtani",
+                    "name": "Kyle Hurt",
                     "hand": "R",
-                    "fip": 2.68
+                    "fip": 4.06
                 }
             },
             "environment": {
                 "venue": "UNIQLO Field at Dodger Stadium",
                 "park_factor": 0.949,
                 "weather": {
-                    "temp": 66,
-                    "wind_mph": 2,
+                    "temp": 82,
+                    "wind_mph": 10,
                     "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0,
-                    "wind_multiplier": 1.0,
-                    "weather_multiplier": 1.0,
-                    "weather_label": "66F | Calm | Weather: +0.0%"
+                    "temp_multiplier": 1.018,
+                    "wind_multiplier": 1.03,
+                    "weather_multiplier": 1.0485,
+                    "weather_label": "82F | 10 MPH Out | Weather: +4.8%"
                 },
-                "effective_pf": 0.949,
-                "umpire": null
+                "effective_pf": 0.995,
+                "umpire": {
+                    "name": "Austin Jones",
+                    "profile": {
+                        "games_called": 17,
+                        "raw_k_mod": 1.0127,
+                        "raw_bb_mod": 1.0633,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-02",
+                                "k": 13.0,
+                                "bb": 4.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 3.79,
-                "mc_f5": 3.02,
-                "mc_f5_away": 1.49,
-                "mc_f5_home": 1.53,
-                "mc_late": 2.65,
-                "mc_full_game": 5.67,
+                "top_down_f5": 3.7,
+                "mc_f5": 3.34,
+                "mc_f5_away": 1.72,
+                "mc_f5_home": 1.61,
+                "mc_late": 2.75,
+                "mc_full_game": 6.08,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.848,
@@ -1261,12 +1524,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.645,
-                "under_4_5": 0.762,
-                "under_5_5": 0.844,
-                "full_over_7_5": 0.212,
-                "full_over_8_5": 0.12,
-                "full_over_9_5": 0.063
+                "under_3_5": 0.596,
+                "under_4_5": 0.716,
+                "under_5_5": 0.81,
+                "full_over_7_5": 0.267,
+                "full_over_8_5": 0.161,
+                "full_over_9_5": 0.089
             },
             "action_matrix": {
                 "adv_3_5": "Skip",
@@ -1275,10 +1538,8 @@
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "High-Value Strategy",
-                "action": "BET F5 UNDER",
-                "reason": "Team Bias Veto Active. Trusting MC; TD blinded by unregressed park variance (10.7%).",
-                "odds": 1.85
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
             }
         },
         {
@@ -1300,29 +1561,46 @@
                 "venue": "Oracle Park",
                 "park_factor": 0.946,
                 "weather": {
-                    "temp": 55,
-                    "wind_mph": 7,
+                    "temp": 63,
+                    "wind_mph": 13,
                     "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 0.96,
-                    "temp_multiplier": 0.985,
-                    "wind_multiplier": 1.018,
-                    "weather_multiplier": 1.0027,
-                    "weather_label": "55F | 7 MPH Out | Weather: +0.3%"
+                    "temp_fatigue_scaler": 0.992,
+                    "temp_multiplier": 0.997,
+                    "wind_multiplier": 1.038,
+                    "weather_multiplier": 1.0349,
+                    "weather_label": "63F | 13 MPH Out | Weather: +3.5%"
                 },
-                "effective_pf": 0.9486,
-                "umpire": null
+                "effective_pf": 0.979,
+                "umpire": {
+                    "name": "Ryan Wills",
+                    "profile": {
+                        "games_called": 23,
+                        "raw_k_mod": 1.0144,
+                        "raw_bb_mod": 1.0221,
+                        "last_updated": "2026-07-06",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-29",
+                                "k": 16.0,
+                                "bb": 6.0,
+                                "ip": 17.666666666666664,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
-                "top_down_f5": 4.57,
-                "mc_f5": 4.79,
-                "mc_f5_away": 2.55,
-                "mc_f5_home": 2.24,
-                "mc_late": 2.99,
-                "mc_full_game": 7.78,
+                "top_down_f5": 4.71,
+                "mc_f5": 4.97,
+                "mc_f5_away": 2.59,
+                "mc_f5_home": 2.39,
+                "mc_late": 3.12,
+                "mc_full_game": 8.1,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 0.935,
@@ -1353,12 +1631,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.401,
-                "under_4_5": 0.527,
-                "under_5_5": 0.639,
-                "full_over_7_5": 0.516,
-                "full_over_8_5": 0.377,
-                "full_over_9_5": 0.257
+                "under_3_5": 0.38,
+                "under_4_5": 0.503,
+                "under_5_5": 0.617,
+                "full_over_7_5": 0.56,
+                "full_over_8_5": 0.421,
+                "full_over_9_5": 0.295
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (HIGH)",
@@ -1367,10 +1645,8 @@
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "High-Confidence",
-                "action": "BET F5 OVER",
-                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
-                "odds": 1.85
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
             }
         }
     ]
