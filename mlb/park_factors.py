@@ -100,36 +100,52 @@ MLB_PARK_FACTORS = {
     "Sahlen Field":                         0.759,  # Buffalo Bisons
     "Constellation Field":                  0.734,  # Sugar Land Space Cowboys — empirically a pitcher's park
 
+    # ── AA — Empirically calibrated from 1,291 real 2026 games (April–July 12) ──
+    # League avg F5: 5.981 runs/game. Venue names match statsapi exactly.
+
     # ── AA — Eastern League (EL) ─────────────────────────────────────────────
-    "Delta Dental Stadium":             1.005,  # Portland Sea Dogs
-    "TD Bank Ballpark":                 1.000,  # Somerset Patriots
-    "Dunkin' Park":                     0.990,  # Hartford Yard Goats
-    "UPMC Park":                        0.985,  # Erie SeaWolves
-    "7 17 Credit Union Park":           0.980,  # Akron RubberDucks
-    "Peoples Natural Gas Field":        0.978,  # Altoona Curve
-    "Binghamton Rumble Ponies":         0.982,  # Mirabito Stadium
-    "Harrisburg Senators":              0.985,  # FNB Field
-    "Reading Fightin Phils":            1.000,  # FirstEnergy Stadium
+    "UPMC Park":                        1.178,  # Erie SeaWolves — hitter-friendly dimensions
+    "TD Bank Ballpark":                 1.144,  # Somerset Patriots
+    "FirstEnergy Stadium":              1.073,  # Reading Fightin Phils
+    "Dunkin' Park":                     1.033,  # Hartford Yard Goats
+    "Delta Dental Stadium":             1.026,  # Portland Sea Dogs
+    "Delta Dental Park":                1.016,  # Portland (alternate name)
+    "DABOS Park":                       0.999,  # (neutral)
+    "Binghamton Rumble Ponies":         0.924,  # Mirabito Stadium alias
+    "Mirabito Stadium":                 0.924,  # Binghamton Rumble Ponies
+    "Prince George's Stadium":          0.949,  # Bowie Baysox
+    "CarMax Park":                      0.958,  # (EL)
+    "FNB Field":                        0.899,  # Harrisburg Senators — strong pitcher's park
+    "Harrisburg Senators":              0.899,  # FNB Field alias
+    "7 17 Credit Union Park":           0.869,  # Akron RubberDucks
+    "Peoples Natural Gas Field":        0.865,  # Altoona Curve
+    "Reading Fightin Phils":            1.073,  # FirstEnergy Stadium alias
 
     # ── AA — Southern League (SL) ────────────────────────────────────────────
-    "Covenant Health Park":             1.005,  # Knoxville Smokies
-    "Synovus Park":                     1.015,  # Columbus Clingstones
-    "Blue Wahoos Stadium":              0.988,  # Pensacola Blue Wahoos
-    "Blue Wahoos":                      0.988,  # alias
-    "Riverwalk Stadium":                1.020,  # Montgomery Biscuits
+    "Keesler Federal Park":             1.198,  # Biloxi Shuckers — hitter-friendly
+    "Route 66 Stadium":                 1.099,  # Springfield Cardinals
+    "Regions Field":                    0.967,  # Birmingham Barons
+    "Blue Wahoos Stadium":              0.952,  # Pensacola Blue Wahoos
+    "Blue Wahoos":                      0.952,  # alias
+    "Synovus Park":                     0.935,  # Columbus Clingstones — NOT hitter-friendly empirically
+    "Covenant Health Park":             0.920,  # Knoxville Smokies
+    "Erlanger Park":                    0.906,  # Chattanooga Lookouts
+    "Toyota Field":                     0.903,  # Rocket City Trash Pandas — pitcher-friendly
+    "Riverwalk Stadium":                1.020,  # Montgomery Biscuits (small sample, keeping estimate)
 
     # ── AA — Texas League (TL) ───────────────────────────────────────────────
-    "Whataburger Field":                1.080,  # Corpus Christi Hooks
-    "ONEOK Field":                      1.070,  # Tulsa Drillers
-    "Hodgetown":                        1.140,  # Amarillo Sod Poodles
-    "Momentum Bank Ballpark":           1.100,  # Midland RockHounds
-    "Equity Bank Park":                 1.065,  # Wichita Wind Surge
-    "Arvest Ballpark":                  1.055,  # Northwest Arkansas Naturals
-    "Dickey-Stephens Park":             1.045,  # Arkansas Travelers
-    "Nelson Wolff Stadium":             1.090,  # San Antonio Missions
+    "Hodgetown":                        1.197,  # Amarillo Sod Poodles
+    "ONEOK Field":                      1.126,  # Tulsa Drillers
+    "Equity Bank Park":                 1.113,  # Wichita Wind Surge
+    "Riders Field":                     1.085,  # Frisco RoughRiders (statsapi name)
+    "Dr Pepper Ballpark":               1.085,  # Frisco alias
+    "Whataburger Field":                1.069,  # Corpus Christi Hooks
+    "Momentum Bank Ballpark":           1.059,  # Midland RockHounds
+    "Arvest Ballpark":                  0.971,  # Northwest Arkansas Naturals — NOT a hitter's park
+    "Nelson Wolff Stadium":             0.745,  # San Antonio Missions — strong pitcher's park empirically
+    "Dickey-Stephens Park":             0.734,  # Arkansas Travelers — strong pitcher's park empirically
+    "Springfield Cardinals":            1.099,  # Hammons Field / Route 66 Stadium alias
 
-    "Dr Pepper Ballpark":               1.075,  # Frisco RoughRiders (TX heat)
-    "Springfield Cardinals":            1.035,  # Hammons Field (alias fallback)
 }
 
 import os
