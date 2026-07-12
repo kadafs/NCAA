@@ -74,18 +74,23 @@ def process_single_game(args):
     }
     
     try:
-        # Weather modifier — enabled for all outdoor baseball (MLB + MiLB).
-        # For MiLB, weather_f5 bypasses RotoWire and uses wttr.in forecast instead.
+        # Weather modifier — MLB only.
+        # MiLB park factors are hand-crafted estimates that already encode the
+        # typical climate of each park (altitude, desert heat, etc.).  Applying
+        # a real-time weather modifier on top would double-count that effect.
+        # MLB PFs are derived from real game-result data averaged across all
+        # conditions, so weather correctly adds day-to-day deviation only there.
         weather         = None
         weather_mult    = 1.0
         effective_pf    = pf
-        try:
-            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr,
-                                                target_date=date_str)
-            weather_mult = weather.get('weather_multiplier', 1.0)
-            effective_pf = round(pf * weather_mult, 4)
-        except Exception as wx_err:
-            print(f"  [Weather] Skipped ({wx_err})")
+        if sport_id == 1:
+            try:
+                weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr,
+                                                    target_date=date_str)
+                weather_mult = weather.get('weather_multiplier', 1.0)
+                effective_pf = round(pf * weather_mult, 4)
+            except Exception as wx_err:
+                print(f"  [Weather] Skipped ({wx_err})")
 
         # 1. Top-Down Model
         ap_siera = _retry_call(get_pitcher_siera, ap, sport_id=sport_id, player_id=ap_id)
