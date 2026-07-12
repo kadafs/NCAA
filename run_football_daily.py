@@ -47,8 +47,9 @@ BASE_URL = "https://v3.football.api-sports.io"
 HEADERS  = {"x-apisports-key": API_KEY}
 ET_TZ    = timezone.utc
 
-# Stats cache max age in seconds (24 hours)
-CACHE_MAX_AGE = 86400
+# Stats cache max age in seconds
+# Team stats are valid for a full season week - no need to re-fetch daily
+CACHE_MAX_AGE = 7 * 86400  # 7 days
 
 # Minimum games a team must have played before we predict their game
 MIN_GAMES_PLAYED = 4
@@ -121,13 +122,20 @@ def save_json(path, data):
 
 
 def safe_get(url, params, retries=3, delay=0.4):
-    """Requests wrapper with retry and polite delay."""
+    """Requests wrapper with retry, polite delay, and 429 backoff."""
     for attempt in range(retries):
         try:
             time.sleep(delay)
             r = requests.get(url, headers=HEADERS, params=params, timeout=15)
             if r.status_code == 200:
                 return r.json()
+            if r.status_code == 429:
+                # Honour Retry-After header if present, else exponential backoff
+                retry_after = int(r.headers.get("Retry-After", 0))
+                wait = retry_after if retry_after > 0 else (2 ** (attempt + 2))  # 4s, 8s, 16s
+                print(f"    HTTP 429 rate-limited — waiting {wait}s (attempt {attempt + 1})...")
+                time.sleep(wait)
+                continue
             print(f"    HTTP {r.status_code} (attempt {attempt + 1}), retrying...")
         except Exception as e:
             print(f"    Request error (attempt {attempt + 1}): {e}")
@@ -245,37 +253,87 @@ def check_cache_valid_for_games(cached_data, games):
     return True
 
 
-def get_or_fetch_stats(league_id, season, games, refresh=False):
+def get_or_fetch_stats(league_id, season, games, refresh=False, refresh_stats=False):
     """
     Returns {team_name: stats_dict} for a league.
+    - Loads whatever cached stats exist (even partial/old), then fills in
+      only the missing teams from the API — minimising credit burn.
+    refresh_stats = force full re-fetch (wipes cache first)
     """
-    # Priority 1: Check existing stats
-    if not refresh:
-        for stats_file in glob("data/football/*_stats.json"):
-            cached = load_json(stats_file)
-            if cached and cached.get("league_id") == league_id and is_cache_fresh(stats_file):
-                if check_cache_valid_for_games(cached, games):
-                    return cached.get("teams", {}), cached.get("league_averages", {})
-
-    # Priority 2: Universal cache
     universal_cache = f"data/football/universal_{league_id}_stats.json"
-    if not refresh and is_cache_fresh(universal_cache):
+
+    # Load existing cache (if it's fresh)
+    base_teams = {}
+    base_avgs  = {}
+    if not refresh_stats and is_cache_fresh(universal_cache):
         cached = load_json(universal_cache)
-        if cached and check_cache_valid_for_games(cached, games):
-            return cached.get("teams", {}), cached.get("league_averages", {})
+        if cached:
+            base_teams = cached.get("teams", {})
+            base_avgs  = cached.get("league_averages", {})
 
-    # Priority 3: Fetch from API
-    return fetch_stats_from_api(league_id, season, games)
+    # Also scan legacy named stats files
+    if not refresh_stats and not base_teams:
+        for stats_file in glob("data/football/*_stats.json"):
+            if is_cache_fresh(stats_file):
+                cached = load_json(stats_file)
+                if cached and cached.get("league_id") == league_id:
+                    base_teams = cached.get("teams", {})
+                    base_avgs  = cached.get("league_averages", {})
+                    break
+
+    # Find which playing teams are missing from cache
+    cached_ids = {v.get("team_id") for v in base_teams.values() if v.get("team_id")}
+    missing_ids = set()
+    for g in games:
+        if g.get("home_id") and g["home_id"] not in cached_ids:
+            missing_ids.add(g["home_id"])
+        if g.get("away_id") and g["away_id"] not in cached_ids:
+            missing_ids.add(g["away_id"])
+
+    # If all teams are already cached — done
+    if not missing_ids and base_teams:
+        return base_teams, base_avgs
+
+    # Fetch only the missing teams from API (merge into base)
+    new_teams, new_avgs = fetch_stats_from_api(
+        league_id, season, games,
+        existing_teams=base_teams,
+        missing_ids=missing_ids if not refresh_stats else None
+    )
+
+    merged_teams = {**base_teams, **new_teams}
+    merged_avgs  = new_avgs if new_avgs else base_avgs
+    return merged_teams, merged_avgs
 
 
-def fetch_stats_from_api(league_id, season, games):
+def fetch_stats_from_api(league_id, season, games, existing_teams=None, missing_ids=None):
     """
-    Pulls /teams/statistics. To avoid rate-limit hangs on huge leagues (like Friendlies
-    with 2000+ teams), it only fetches stats for teams actually playing today.
+    Fetches /teams/statistics from the API.
+    - If missing_ids is provided, only fetches those specific team IDs (targeted mode).
+    - Otherwise fetches all playing teams (full mode, used on first run).
+    - Merges results into existing_teams cache and saves.
     """
+    existing_teams = existing_teams or {}
+
+    # Determine which team IDs we need to fetch
+    if missing_ids is not None and not missing_ids:
+        # Nothing missing — just recompute league averages from existing teams
+        return _build_from_raw([], league_id, season, existing_teams)
+
+    playing_team_ids = missing_ids
+    if playing_team_ids is None:
+        # Full mode: collect all playing team IDs
+        playing_team_ids = set()
+        for g in games:
+            if g.get("home_id"): playing_team_ids.add(g["home_id"])
+            if g.get("away_id"): playing_team_ids.add(g["away_id"])
+
+    if not playing_team_ids:
+        return {}, {}
+
+    # Try to resolve team IDs to entries via /teams endpoint
     teams_data = safe_get(f"{BASE_URL}/teams", {"league": league_id, "season": season})
     teams = teams_data.get("response", [])
-
     if not teams:
         prev = season - 1 if isinstance(season, int) else int(str(season)[:4]) - 1
         teams_data = safe_get(f"{BASE_URL}/teams", {"league": league_id, "season": prev})
@@ -285,128 +343,98 @@ def fetch_stats_from_api(league_id, season, games):
         else:
             return {}, {}
 
-    # Filter `teams` to only those playing in `games` to avoid massive API loops
-    playing_team_ids = set()
-    for g in games:
-        if g.get("home_id"): playing_team_ids.add(g.get("home_id"))
-        if g.get("away_id"): playing_team_ids.add(g.get("away_id"))
-        
-    filtered_teams = []
-    for t_entry in teams:
-        tid = t_entry.get("team", {}).get("id")
-        
-        # Exact ID matching eliminates textual mismatches entirely
-        if tid in playing_team_ids:
-            filtered_teams.append(t_entry)
-            
-    # If the filter is too tight, fallback to fetching all (capped at 80 to prevent total hangs)
+    filtered_teams = [t for t in teams if t.get("team", {}).get("id") in playing_team_ids]
     if not filtered_teams:
-        filtered_teams = teams[:80]
-    else:
-        # Also cap filtered just in case
-        filtered_teams = filtered_teams[:80]
+        filtered_teams = [t for t in teams if t.get("team", {}).get("id") in playing_team_ids]
+    # Cap to avoid runaway API calls
+    filtered_teams = filtered_teams[:20]
 
-    raw_stats = []
-
+    raw_new = []
     for team_entry in filtered_teams:
         team = team_entry.get("team", {})
         tid  = team.get("id")
         name = team.get("name", "Unknown")
-
         r = safe_get(f"{BASE_URL}/teams/statistics",
                      {"team": tid, "league": league_id, "season": season})
         stats = r.get("response", {})
         if not stats:
             continue
+        raw_new.append(_parse_team_stats(name, tid, league_id, season, stats))
 
-        games       = stats.get("fixtures", {})
-        goals       = stats.get("goals", {})
-        form_str    = stats.get("form", "")
+    return _build_from_raw(raw_new, league_id, season, existing_teams)
 
-        played_home = games.get("played", {}).get("home", 0)
-        played_away = games.get("played", {}).get("away", 0)
-        played_all  = games.get("played", {}).get("total", 0)
 
-        wins_home   = games.get("wins",  {}).get("home", 0)
-        wins_away   = games.get("wins",  {}).get("away", 0)
-        draws_home  = games.get("draws", {}).get("home", 0)
-        draws_away  = games.get("draws", {}).get("away", 0)
+def _parse_team_stats(name, tid, league_id, season, stats):
+    """Extract a normalised stats dict from a /teams/statistics API response."""
+    games_s   = stats.get("fixtures", {})
+    goals     = stats.get("goals", {})
+    form_str  = stats.get("form", "")
 
-        gf_home = goals.get("for",     {}).get("total", {}).get("home", 0) or 0
-        gf_away = goals.get("for",     {}).get("total", {}).get("away", 0) or 0
-        gf_all  = goals.get("for",     {}).get("total", {}).get("total", 0) or 0
-        ga_home = goals.get("against", {}).get("total", {}).get("home", 0) or 0
-        ga_away = goals.get("against", {}).get("total", {}).get("away", 0) or 0
-        ga_all  = goals.get("against", {}).get("total", {}).get("total", 0) or 0
+    played_home = games_s.get("played", {}).get("home", 0)
+    played_away = games_s.get("played", {}).get("away", 0)
+    played_all  = games_s.get("played", {}).get("total", 0)
 
-        cs          = stats.get("clean_sheet", {}).get("total", 0) or 0
-        failed      = stats.get("failed_to_score", {}).get("total", 0) or 0
-        btts_count  = played_all - cs - failed
+    wins_home  = games_s.get("wins",  {}).get("home", 0)
+    wins_away  = games_s.get("wins",  {}).get("away", 0)
+    draws_home = games_s.get("draws", {}).get("home", 0)
+    draws_away = games_s.get("draws", {}).get("away", 0)
 
-        def _(n, d): return round(n / d, 3) if d else 0
+    gf_home = goals.get("for",     {}).get("total", {}).get("home", 0) or 0
+    gf_away = goals.get("for",     {}).get("total", {}).get("away", 0) or 0
+    gf_all  = goals.get("for",     {}).get("total", {}).get("total", 0) or 0
+    ga_home = goals.get("against", {}).get("total", {}).get("home", 0) or 0
+    ga_away = goals.get("against", {}).get("total", {}).get("away", 0) or 0
+    ga_all  = goals.get("against", {}).get("total", {}).get("total", 0) or 0
 
-        raw_stats.append({
-            "name":         name,
-            "team_id":      tid,
-            "league_id":    league_id,
-            "season":       season,
-            "played_home":  played_home,
-            "played_away":  played_away,
-            "played_all":   played_all,
-            "goals_for_home": gf_home,
-            "goals_for_away": gf_away,
-            "goals_for_all":  gf_all,
-            "goals_ag_home":  ga_home,
-            "goals_ag_away":  ga_away,
-            "goals_ag_all":   ga_all,
-            "pgf_home":   _(gf_home, played_home),
-            "pgf_away":   _(gf_away, played_away),
-            "pgf_all":    _(gf_all,  played_all),
-            "pga_home":   _(ga_home, played_home),
-            "pga_away":   _(ga_away, played_away),
-            "pga_all":    _(ga_all,  played_all),
-            "wins_home":  wins_home,
-            "wins_away":  wins_away,
-            "draws_home": draws_home,
-            "draws_away": draws_away,
-            "win_pct":    _((wins_home + wins_away), played_all),
-            "clean_sheets":  cs,
-            "failed_to_score":  failed,
-            "btts_count":    btts_count,
-            "btts_rate":     _(btts_count, played_all),
-            "form":          form_str,
-            "form_wins":     form_str.upper().count("W") if form_str else 0,
-            "form_draws":    form_str.upper().count("D") if form_str else 0,
-            "_raw_goals": {
-                "for_home":     gf_home,
-                "for_away":     gf_away,
-                "against_home": ga_home,
-                "against_away": ga_away,
-            }
-        })
+    cs     = stats.get("clean_sheet",    {}).get("total", 0) or 0
+    failed = stats.get("failed_to_score",{}).get("total", 0) or 0
+    btts_count = played_all - cs - failed
 
-    if not raw_stats:
-        return {}, {}
+    def _(n, d): return round(n / d, 3) if d else 0
 
-    # Compute league averages
+    return {
+        "name": name, "team_id": tid, "league_id": league_id, "season": season,
+        "played_home": played_home, "played_away": played_away, "played_all": played_all,
+        "goals_for_home": gf_home, "goals_for_away": gf_away, "goals_for_all": gf_all,
+        "goals_ag_home": ga_home, "goals_ag_away": ga_away, "goals_ag_all": ga_all,
+        "pgf_home": _(gf_home, played_home), "pgf_away": _(gf_away, played_away),
+        "pgf_all":  _(gf_all,  played_all),
+        "pga_home": _(ga_home, played_home), "pga_away": _(ga_away, played_away),
+        "pga_all":  _(ga_all,  played_all),
+        "wins_home": wins_home, "wins_away": wins_away,
+        "draws_home": draws_home, "draws_away": draws_away,
+        "win_pct":     _((wins_home + wins_away), played_all),
+        "clean_sheets":    cs, "failed_to_score": failed,
+        "btts_count":      btts_count, "btts_rate": _(btts_count, played_all),
+        "form": form_str, "form_wins": form_str.upper().count("W") if form_str else 0,
+        "form_draws": form_str.upper().count("D") if form_str else 0,
+        "_raw_goals": {"for_home": gf_home, "for_away": gf_away,
+                       "against_home": ga_home, "against_away": ga_away},
+    }
+
+
+def _build_from_raw(raw_new, league_id, season, existing_teams):
+    """Merge newly fetched team stats into existing cache, recompute league avgs, save."""
+    # Build merged teams dict
+    teams_dict = dict(existing_teams)  # start from existing cache
+
+    # Compute league averages across ALL teams (existing + new)
+    all_stats = list(teams_dict.values()) + raw_new
+
     hgf_list, agf_list = [], []
-    for s in raw_stats:
-        ph = s["played_home"] or 1
-        pa = s["played_away"] or 1
-        g  = s["_raw_goals"]
-        if g["for_home"] > 0: hgf_list.append(g["for_home"] / ph)
-        if g["for_away"] > 0: agf_list.append(g["for_away"] / pa)
+    for s in all_stats:
+        raw = s.get("_raw_goals", {})
+        ph  = s.get("played_home") or 1
+        pa  = s.get("played_away") or 1
+        if raw.get("for_home", 0) > 0: hgf_list.append(raw["for_home"] / ph)
+        if raw.get("for_away", 0) > 0: agf_list.append(raw["for_away"] / pa)
 
     avg_home = round(sum(hgf_list) / len(hgf_list), 3) if hgf_list else 1.5
     avg_away = round(sum(agf_list) / len(agf_list), 3) if agf_list else 1.2
-    league_avgs = {
-        "avg_home_goals_for": avg_home,
-        "avg_away_goals_for": avg_away,
-    }
+    league_avgs = {"avg_home_goals_for": avg_home, "avg_away_goals_for": avg_away}
 
-    # Compute normalized attack/defense ratings
-    teams_dict = {}
-    for s in raw_stats:
+    # Finalize new entries
+    for s in raw_new:
         s.pop("_raw_goals", None)
         ph = s["pgf_home"]; pa = s["pgf_away"]
         dh = s["pga_home"]; da = s["pga_away"]
@@ -420,17 +448,18 @@ def fetch_stats_from_api(league_id, season, games):
         s["league_avg_away_goals"] = avg_away
         teams_dict[s["name"]] = s
 
-    # Save cache
+    if not teams_dict:
+        return {}, {}
+
+    # Save merged cache
     os.makedirs("data/football", exist_ok=True)
-    out = {
-        "league_id":       league_id,
-        "season":          season,
-        "fetched_at":      datetime.now(ET_TZ).isoformat(),
-        "team_count":      len(teams_dict),
+    save_json(f"data/football/universal_{league_id}_stats.json", {
+        "league_id": league_id, "season": season,
+        "fetched_at": datetime.now(ET_TZ).isoformat(),
+        "team_count": len(teams_dict),
         "league_averages": league_avgs,
-        "teams":           teams_dict,
-    }
-    save_json(f"data/football/universal_{league_id}_stats.json", out)
+        "teams": teams_dict,
+    })
     return teams_dict, league_avgs
 
 
@@ -717,11 +746,17 @@ def main():
     parser.add_argument("--mode",       choices=["safe", "full"], default="safe")
     parser.add_argument("--min_games",  type=int, default=1,
                         help="Skip leagues with fewer than this many fixtures today")
-    parser.add_argument("--refresh",    action="store_true", help="Re-fetch fixtures and stats")
+    parser.add_argument("--refresh",    action="store_true", help="Re-fetch today's fixtures (does NOT force stats re-fetch)")
+    parser.add_argument("--refresh-stats", action="store_true", help="Force re-fetch team stats from API (burns credits — use sparingly with --all-leagues!)")
     parser.add_argument("--trace",      action="store_true", help="Show engine math trace")
     parser.add_argument("--all-leagues",action="store_true", help="DISABLE Priority Filter and run EVERY league (WILL BURN API CREDITS!)")
     parser.add_argument("--low-data",   action="store_true", help="Skip expensive H2H/Recent for Match Center")
     args = parser.parse_args()
+
+    if args.all_leagues and args.refresh_stats:
+        print("  ⚠️  WARNING: --all-leagues + --refresh-stats will make 100s of API calls and likely hit your daily limit.")
+        print("  ⚠️  Consider running without --refresh-stats to reuse cached stats instead.")
+        print()
 
     date_str = get_today_str(args.date)
 
@@ -761,12 +796,17 @@ def main():
     total_predicted = 0
     total_skipped   = 0
 
+    skipped_no_stats = 0
     for entry in leagues:
         lid      = entry["league_id"]
         lname    = entry["league_name"]
         country  = entry.get("country", "")
         season   = entry.get("season")
         games    = entry["games"]
+
+        # Polite inter-league delay when running all leagues to avoid rate-limit bursts
+        if args.all_leagues:
+            time.sleep(1.0)
 
         # Only predict upcoming / not yet finished
         upcoming = [g for g in games if not g.get("is_completed")]
@@ -775,10 +815,10 @@ def main():
 
         print(f"  [{lid}] {lname} ({country}) — {len(games)} game(s)")
 
-        # Step 2: Team stats
-        teams, league_avgs = get_or_fetch_stats(lid, season, games, refresh=args.refresh)
+        # Step 2: Team stats (refresh_stats only if explicitly requested)
+        teams, league_avgs = get_or_fetch_stats(lid, season, games, refresh=args.refresh, refresh_stats=args.refresh_stats)
         if not teams:
-            print(f"    SKIP -- no team stats available\n")
+            skipped_no_stats += 1
             total_skipped += len(games)
             continue
 
@@ -942,6 +982,8 @@ def main():
     # Summary
     print("=" * 70)
     print(f"  COMPLETE: {total_predicted} predictions  |  {total_skipped} skipped")
+    if skipped_no_stats:
+        print(f"  ({skipped_no_stats} leagues had no API stats — typical for obscure/regional competitions)")
     print("=" * 70)
 
     if all_predictions:
