@@ -20,8 +20,8 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 SPORT_ID     = 11
-SEASON_START = "2026-04-01"
-MIN_GAMES    = 5
+SEASON_START = "2024-04-01"  # 3-year multi-season baseline (2024+2025+2026)
+MIN_GAMES    = 15             # higher threshold now that we have more data per venue
 
 CURRENT_PF = {
     # AAA PCL

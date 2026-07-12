@@ -52,53 +52,58 @@ MLB_PARK_FACTORS = {
     "T-Mobile Park": 0.898,
 
 
-    # ── AAA — Empirically calibrated from 1,324 real 2026 games (April–July 12) ──
-    # Sorted by empirical PF descending. Avg F5 total / league avg F5 (6.334 runs).
-    # Venue names match exactly what statsapi returns.
+    # ── AAA — Empirically calibrated from 5,850 real games (2024 + 2025 + 2026) ──
+    # League avg F5: 6.197 runs/game. 3-year baseline neutralises team quality confound.
+    # Venue names match statsapi exactly; historical aliases included for 2024/2025 seasons.
 
-    # Extreme hitter parks (altitude / ballpark dimensions)
-    "Las Vegas Ballpark":                   1.516,  # Las Vegas Aviators — extreme hitter's park
-    "Isotopes Park":                        1.340,  # Albuquerque (altitude ~5,300ft) — empirical
-    "Southwest University Park":            1.308,  # El Paso Chihuahuas — altitude ~3,700ft
-    "CHS Field":                            1.215,  # St. Paul Saints — hitter-friendly dimensions
-    "Louisville Slugger Field":             1.174,  # Louisville Bats
-    "The Ballpark at America First Square": 1.169,  # Salt Lake Bees
-    "America First Field":                  1.169,  # Salt Lake alias
+    # Hitter parks (altitude driven)
+    "Isotopes Park":                        1.317,  # Albuquerque (5,300ft altitude) — consistent across 3 yrs
+    "Southwest University Park":            1.286,  # El Paso (~3,700ft altitude)
+    "Las Vegas Ballpark":                   1.285,  # Las Vegas Aviators (1-yr was 1.516 — team quality confound)
+    "Greater Nevada Field":                 1.230,  # Reno Aces (~4,500ft altitude) — stronger than 1-yr
+    "The Ballpark at America First Square": 1.221,  # Salt Lake Bees (~4,200ft altitude)
+    "Smith's Ballpark":                     1.039,  # Salt Lake (historic name used 2024/2025)
+    "America First Field":                  1.221,  # Salt Lake alias
+    "CHS Field":                            1.136,  # St. Paul Saints
 
     # Mild hitter parks
-    "Principal Park":                       1.146,  # Iowa Cubs
-    "Truist Field":                         1.140,  # Charlotte Knights
-    "Coca-Cola Park":                       1.026,  # Lehigh Valley IronPigs
-    "Werner Park":                          1.013,  # Omaha Storm Chasers
+    "Truist Field":                         1.109,  # Charlotte Knights
+    "Principal Park":                       1.075,  # Iowa Cubs
+    "NBT Bank Stadium":                     1.032,  # Syracuse Mets
 
     # Near neutral
-    "Greater Nevada Field":                 1.105,  # Reno Aces (altitude)
-    "Dell Diamond":                         0.989,  # Round Rock Express
-    "Round Rock":                           0.989,  # alias
-    "Chickasaw Bricktown Ballpark":         0.982,  # OKC Comets — NOT hitter-friendly empirically
-    "NBT Bank Stadium":                     0.978,  # Syracuse Mets
-    "ESL Ballpark":                         0.970,  # Rochester Red Wings
-    "Sutter Health Park":                   0.968,  # Sacramento River Cats
+    "Louisville Slugger Field":             1.022,  # Louisville Bats (1-yr was 1.174 — 2026 outlier)
+    "Werner Park":                          1.011,  # Omaha Storm Chasers
+    "Polar Park":                           1.010,  # Worcester Red Sox — neutral over 3 yrs (was 0.932)
+    "PNC Field":                            1.003,  # Scranton/WB RailRiders — neutral (was 0.782!)
+    "Cheney Stadium":                       1.002,  # Tacoma Rainiers — neutral over 3 yrs (was 0.843)
+    "ESL Ballpark":                         0.992,  # Rochester Red Wings (2026 name)
+    "Innovative Field":                     0.946,  # Rochester (historic name used 2024/2025)
+    "Chickasaw Bricktown Ballpark":         0.980,  # OKC Comets — confirmed neutral across 3 yrs
+    "Huntington Park":                      0.972,  # Columbus Clippers
 
     # Pitcher-friendly
-    "Polar Park":                           0.932,  # Worcester Red Sox
-    "AutoZone Park":                        0.924,  # Memphis Redbirds
-    "Fifth Third Field":                    0.921,  # Toledo Mud Hens
-    "First Horizon Park":                   0.918,  # Nashville Sounds
-    "Durham Bulls Athletic Park":           0.913,  # Durham Bulls
-    "Huntington Park":                      0.886,  # Columbus Clippers
-    "Toyota Field":                         0.886,  # Rocket City Trash Pandas (alias used for AAA)
-    "Victory Field":                        0.876,  # Indianapolis Indians
+    "AutoZone Park":                        0.956,  # Memphis Redbirds
+    "Coca-Cola Park":                       0.918,  # Lehigh Valley IronPigs
+    "Dell Diamond":                         0.917,  # Round Rock Express
+    "Round Rock":                           0.917,  # alias
+    "Harbor Park":                          0.910,  # Norfolk Tides
+    "Durham Bulls Athletic Park":           0.904,  # Durham Bulls
+    "Sahlen Field":                         0.891,  # Buffalo Bisons (1-yr was 0.759 — too extreme)
+    "Victory Field":                        0.868,  # Indianapolis Indians
+    "Fifth Third Field":                    0.865,  # Toledo Mud Hens
+    "Sutter Health Park":                   0.857,  # Sacramento River Cats
+    "First Horizon Park":                   0.844,  # Nashville Sounds
+    "Toyota Field":                         0.844,  # Rocket City alias (AAA)
+    "Coolray Field":                        0.842,  # Gwinnett (historic name used 2024/2025)
 
     # Strong pitcher parks
-    "Cheney Stadium":                       0.843,  # Tacoma Rainiers
-    "Vystar Ballpark":                      0.835,  # Jacksonville Jumbo Shrimp
-    "VyStar Ballpark":                      0.835,  # alias
-    "Harbor Park":                          0.831,  # Norfolk Tides
-    "PNC Field":                            0.782,  # Scranton/WB RailRiders
-    "Gwinnett Field":                       0.767,  # Gwinnett Stripers
-    "Sahlen Field":                         0.759,  # Buffalo Bisons
-    "Constellation Field":                  0.734,  # Sugar Land Space Cowboys — empirically a pitcher's park
+    "121 Financial Ballpark":              0.872,  # Jacksonville (historic name used 2024/2025)
+    "Vystar Ballpark":                      0.813,  # Jacksonville Jumbo Shrimp (2026 name)
+    "VyStar Ballpark":                      0.813,  # alias
+    "Gwinnett Field":                       0.768,  # Gwinnett Stripers (2026 name)
+    "Constellation Field":                  0.821,  # Sugar Land Space Cowboys — pitcher's park (3-yr confirmed)
+
 
     # ── AA — Empirically calibrated from 1,291 real 2026 games (April–July 12) ──
     # League avg F5: 5.981 runs/game. Venue names match statsapi exactly.
