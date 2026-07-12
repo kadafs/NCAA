@@ -74,14 +74,18 @@ def process_single_game(args):
     }
     
     try:
-        # Weather modifier (MLB only — MiLB parks not covered by RotoWire)
+        # Weather modifier — enabled for all outdoor baseball (MLB + MiLB).
+        # For MiLB, weather_f5 bypasses RotoWire and uses wttr.in forecast instead.
         weather         = None
         weather_mult    = 1.0
         effective_pf    = pf
-        if sport_id == 1:
-            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr, target_date=date_str)
+        try:
+            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr,
+                                                target_date=date_str)
             weather_mult = weather.get('weather_multiplier', 1.0)
             effective_pf = round(pf * weather_mult, 4)
+        except Exception as wx_err:
+            print(f"  [Weather] Skipped ({wx_err})")
 
         # 1. Top-Down Model
         ap_siera = _retry_call(get_pitcher_siera, ap, sport_id=sport_id, player_id=ap_id)

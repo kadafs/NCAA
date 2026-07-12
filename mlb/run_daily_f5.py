@@ -255,8 +255,8 @@ def get_today_games(sport_id=1, date_str=None):
                 'home_id': game.get('home_id'),
                 'away_abbr': game.get('away_file_code', game['away_name'][:3].upper()),
                 'home_abbr': game.get('home_file_code', game['home_name'][:3].upper()),
-                'away_pitcher': game.get('away_probable_pitcher', 'TBD'),
-                'home_pitcher': game.get('home_probable_pitcher', 'TBD'),
+                'away_pitcher': game.get('away_probable_pitcher') or 'TBD',
+                'home_pitcher': game.get('home_probable_pitcher') or 'TBD',
                 'away_pitcher_id': game.get('away_pitcher_id'),
                 'home_pitcher_id': game.get('home_pitcher_id'),
                 'venue_name': game.get('venue_name', 'Unknown Venue')

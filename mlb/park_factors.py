@@ -1,10 +1,13 @@
 """
-Static Park Factor Matrix for MLB Stadiums.
+Static Park Factor Matrix for MLB, AAA, and AA Stadiums.
 Values represent a multiplier for total runs scored (e.g. 1.15 = +15% runs, 0.92 = -8% runs).
-These are based on multi-year rolling averages of Statcast Park Factors.
+MLB values based on multi-year rolling averages of Statcast Park Factors.
+MiLB values based on historical run-scoring data and altitude/climate factors.
 """
 
 MLB_PARK_FACTORS = {
+    # ── MLB ──────────────────────────────────────────────────────────────────
+
     # Extreme Hitter / Exceptions
     "Las Vegas Ballpark": 1.250,
     "Coors Field": 1.154,
@@ -46,7 +49,67 @@ MLB_PARK_FACTORS = {
     "Petco Park": 0.923,
     
     # Extreme Pitcher Friendly
-    "T-Mobile Park": 0.898
+    "T-Mobile Park": 0.898,
+
+    # ── AAA — Pacific Coast League (PCL) — Hitter Friendly ───────────────────
+    # High altitude, heat, and dry air inflate run scoring significantly
+    "Constellation Field":              1.185,  # Sugar Land Space Cowboys (Houston suburb, heat)
+    "Greater Nevada Field":             1.180,  # Reno Aces (altitude ~4,500ft + heat)
+    "Chickasaw Bricktown Ballpark":     1.160,  # OKC Comets (hot/dry climate)
+    "Isotopes Park":                    1.150,  # Albuquerque Isotopes (altitude ~5,300ft — extreme)
+    "Hodgetown":                        1.140,  # Amarillo Sod Poodles (heat/dry)
+    "Principal Park":                   1.110,  # Iowa Cubs (hitter-friendly dimensions)
+    "Momentum Bank Ballpark":           1.100,  # Midland RockHounds (TX heat)
+    "Round Rock":                       1.095,  # Dell Diamond (suburban TX)
+    "Toyota Field":                     1.070,  # Rocket City Trash Pandas (AL heat)
+
+    # ── AAA — International League (IL) — Closer to Neutral ─────────────────
+    "Truist Field":                     1.050,  # Charlotte Knights
+    "Louisville Slugger Field":         1.040,  # Louisville Bats
+    "Victory Field":                    1.030,  # Indianapolis Indians
+    "Harbor Park":                      1.025,  # Norfolk Tides
+    "Polar Park":                       1.020,  # Worcester Red Sox
+    "Louisville Slugger Field":         1.015,  # Louisville Bats (alias)
+    "Gwinnett Field":                   1.010,  # Gwinnett Stripers
+    "Sahlen Field":                     0.995,  # Buffalo Bisons (wind, cold)
+    "Coca-Cola Park":                   0.990,  # Lehigh Valley IronPigs
+    "VyStar Ballpark":                  0.988,  # Jacksonville Jumbo Shrimp
+    "Vystar Ballpark":                  0.988,  # alias (lowercase v)
+    "Durham Bulls Athletic Park":       0.985,  # Durham Bulls
+    "Dunkin' Park":                     0.982,  # Hartford Yard Goats (alternate name)
+    "AutoZone Park":                    1.015,  # Memphis Redbirds
+
+    # ── AA — Eastern League (EL) ─────────────────────────────────────────────
+    "Polar Park":                       1.020,  # (also AAA alias)
+    "Delta Dental Stadium":             1.005,  # Portland Sea Dogs
+    "TD Bank Ballpark":                 1.000,  # Somerset Patriots
+    "Dunkin' Park":                     0.990,  # Hartford Yard Goats
+    "UPMC Park":                        0.985,  # Erie SeaWolves
+    "7 17 Credit Union Park":           0.980,  # Akron RubberDucks (officially "Canal Park" area)
+    "Peoples Natural Gas Field":        0.978,  # Altoona Curve
+    "Binghamton Rumble Ponies":         0.982,  # Mirabito Stadium (alias fallback)
+    "Harrisburg Senators":              0.985,  # FNB Field (alias fallback)
+    "Reading Fightin Phils":            1.000,  # FirstEnergy Stadium (alias fallback)
+
+    # ── AA — Southern League (SL) ────────────────────────────────────────────
+    "Covenant Health Park":             1.005,  # Knoxville Smokies
+    "Synovus Park":                     1.015,  # Columbus Clingstones
+    "Blue Wahoos Stadium":              0.988,  # Pensacola Blue Wahoos
+    "Toyota Field":                     1.040,  # Rocket City Trash Pandas (also PCL alias)
+    "Riverwalk Stadium":                1.020,  # Montgomery Biscuits (Riverwalk alias)
+    "Blue Wahoos":                      0.988,  # alias
+
+    # ── AA — Texas League (TL) ───────────────────────────────────────────────
+    "Whataburger Field":                1.080,  # Corpus Christi Hooks (heat/coastal)
+    "ONEOK Field":                      1.070,  # Tulsa Drillers
+    "Hodgetown":                        1.140,  # Amarillo Sod Poodles (already above, alias OK)
+    "Momentum Bank Ballpark":           1.100,  # Midland RockHounds (already above)
+    "Equity Bank Park":                 1.065,  # Wichita Wind Surge
+    "Arvest Ballpark":                  1.055,  # Northwest Arkansas Naturals
+    "Dickey-Stephens Park":             1.045,  # Arkansas Travelers
+    "Nelson Wolff Stadium":             1.090,  # San Antonio Missions (TX heat)
+    "Dr Pepper Ballpark":               1.075,  # Frisco RoughRiders (TX heat)
+    "Springfield Cardinals":            1.035,  # Hammons Field (alias fallback)
 }
 
 import os
