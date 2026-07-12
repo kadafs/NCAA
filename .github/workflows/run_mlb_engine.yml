@@ -16,6 +16,11 @@ on:
         type: string
         required: false
         default: ''
+      run_milb:
+        description: 'Also run AAA & AA (MiLB)'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   run_mlb_engine:
@@ -78,6 +83,38 @@ jobs:
             python mlb/consensus_f5_v4.py
           fi
 
+      - name: Run AAA Consensus Engine (Optional)
+        if: ${{ github.event.inputs.run_milb == 'true' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          cd ncaa-api
+          echo "▶ Running AAA engine (sportId=11)..."
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            python mlb/consensus_f5_v4.py --sportId 11 --date "${{ github.event.inputs.target_date }}"
+          else
+            python mlb/consensus_f5_v4.py --sportId 11
+          fi
+
+      - name: Run AA Consensus Engine (Optional)
+        if: ${{ github.event.inputs.run_milb == 'true' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          cd ncaa-api
+          echo "▶ Running AA engine (sportId=12)..."
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            python mlb/consensus_f5_v4.py --sportId 12 --date "${{ github.event.inputs.target_date }}"
+          else
+            python mlb/consensus_f5_v4.py --sportId 12
+          fi
+
       - name: Push Data to Baseball Dashboard
         run: |
           cd ncaa-api
@@ -89,7 +126,7 @@ jobs:
           git add -f mlb/*.md data/baseball/*.json data/umpires.json
           # Only commit if there are changes
           if ! git diff --cached --quiet; then
-            git commit -m "Auto-generate daily MLB consensus reports"
+            git commit -m "Auto-generate daily MLB/MiLB consensus reports"
             git push
           else
             echo "No changes to commit to ncaa-api"

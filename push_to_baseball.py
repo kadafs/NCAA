@@ -48,9 +48,15 @@ def copy_baseball_data(date_filter: str | None = None):
     """
     Copy prediction files for baseball from ncaa-api/data/baseball
     into baseball-dashboard/public/data/baseball.
-    
-    If date_filter is provided (YYYY-MM-DD), only copies that date's file.
-    Otherwise copies the latest file (up to 14 recent ones).
+
+    Handles both league-prefixed files (new):
+        universal_predictions_MLB_2026-07-12.json
+        universal_predictions_AAA_2026-07-12.json
+    And legacy date-only files (old):
+        universal_predictions_2026-07-12-confirmed.json  →  universal_predictions_2026-07-12.json
+
+    If date_filter is provided (YYYY-MM-DD), only copies files for that date.
+    Otherwise copies up to 14 recent days.
     """
     src_dir  = NCAA_API_ROOT / "data" / "baseball"
     dest_dir = DASHBOARD_ROOT / "public" / "data" / "baseball"
@@ -66,33 +72,51 @@ def copy_baseball_data(date_filter: str | None = None):
         print(f"  ⚠️ No prediction files found in {src_dir}")
         return []
 
-    date_to_files = {}
+    # Match new league-prefixed format: universal_predictions_{LEAGUE}_{DATE}.json
+    LEAGUE_PREFIX_RE = re.compile(r"universal_predictions_([A-Za-z0-9\-]+)_(\d{4}-\d{2}-\d{2})\.json")
+    # Match legacy format: universal_predictions_{DATE}-{suffix}.json
+    LEGACY_RE        = re.compile(r"universal_predictions_(\d{4}-\d{2}-\d{2})-?\w*\.json")
+
+    # Build a map of dest_filename → source Path
+    dest_to_src: dict[str, Path] = {}
+    dates_seen: set[str] = set()
+
     for f in all_files:
-        match = re.search(r"(\d{4}-\d{2}-\d{2})", f.name)
-        if match:
-            date_to_files.setdefault(match.group(1), []).append(f)
+        m_league = LEAGUE_PREFIX_RE.match(f.name)
+        m_legacy = LEGACY_RE.match(f.name)
 
-    dates_to_process = sorted(date_to_files.keys(), reverse=True)
+        if m_league:
+            league, date_str = m_league.group(1), m_league.group(2)
+            dest_name = f"universal_predictions_{league}_{date_str}.json"
+        elif m_legacy:
+            date_str = m_legacy.group(1)
+            dest_name = f"universal_predictions_{date_str}.json"   # legacy fallback
+        else:
+            continue
 
+        dates_seen.add(date_str)
+        # Keep most recently modified if duplicates exist
+        if dest_name not in dest_to_src or f.stat().st_mtime > dest_to_src[dest_name].stat().st_mtime:
+            dest_to_src[dest_name] = f
+
+    # Apply date filter or limit to 14 most recent dates
+    sorted_dates = sorted(dates_seen, reverse=True)
     if date_filter:
-        dates_to_process = [d for d in dates_to_process if d == date_filter]
-        if not dates_to_process:
-            print(f"  ⚠️ No file found for date {date_filter} in {src_dir}")
-            return []
+        allowed_dates = {date_filter}
     else:
-        # Copy up to 14 recent days
-        dates_to_process = dates_to_process[:14]
+        allowed_dates = set(sorted_dates[:14])
 
     copied = []
-    for d in dates_to_process:
-        files_for_date = date_to_files[d]
-        # find the most recently modified file for this date
-        latest_file = max(files_for_date, key=lambda p: p.stat().st_mtime)
-        dest_file = dest_dir / f"universal_predictions_{d}.json"
-        
-        print(f"  📄 Copying: {latest_file.name} -> {dest_file.name}")
-        shutil.copy2(latest_file, dest_file)
-        copied.append(dest_file.name)
+    for dest_name, src_path in sorted(dest_to_src.items()):
+        # Extract date from dest_name to check allowed_dates
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", dest_name)
+        if not date_match or date_match.group(1) not in allowed_dates:
+            continue
+
+        dest_file = dest_dir / dest_name
+        print(f"  📄 Copying: {src_path.name} → {dest_name}")
+        shutil.copy2(src_path, dest_file)
+        copied.append(dest_name)
 
     print(f"  ✅ Copied {len(copied)} file(s) for baseball.")
     return copied
@@ -101,6 +125,7 @@ def cleanup_old_files(keep_days: int = 14):
     """
     Remove universal_predictions_*.json files older than keep_days
     from the dashboard repo to prevent git history from ballooning.
+    Handles both league-prefixed and legacy filenames.
     """
     from datetime import timedelta
     dest_dir = DASHBOARD_ROOT / "public" / "data" / "baseball"
@@ -110,17 +135,16 @@ def cleanup_old_files(keep_days: int = 14):
     cutoff = date.today() - timedelta(days=keep_days)
     removed = []
     for f in dest_dir.glob("universal_predictions_*.json"):
-        match = re.match(r"universal_predictions_(\d{4}-\d{2}-\d{2})\.json", f.name)
-        if not match: continue
-        
-        date_str = match.group(1)
+        date_match = re.search(r"(\d{4}-\d{2}-\d{2})", f.name)
+        if not date_match:
+            continue
         try:
-            file_date = date.fromisoformat(date_str)
+            file_date = date.fromisoformat(date_match.group(1))
             if file_date < cutoff:
                 f.unlink()
                 removed.append(f.name)
         except ValueError:
-            pass  # skip files with unexpected naming
+            pass
 
     if removed:
         print(f"  🗑️  Cleaned up {len(removed)} old baseball file(s): {', '.join(removed)}")

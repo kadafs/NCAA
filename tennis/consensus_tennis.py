@@ -230,10 +230,11 @@ def _write_report(path: str, tour: str, date_str: str, results: list):
     """
     Write the formatted markdown report.
 
-    Bug fixes applied:
-      Bug 1: Format computed via sets_to_win() — never reads sim['sets_to_win']
-      Bug 2: Over probs computed as 1 - under_prob with .get() fallbacks
-      Bug 3: Hold rate + serve point win read from p1/p2 profile dicts, not sim
+    Notes:
+      - Format computed via sets_to_win() — never reads sim['sets_to_win']
+      - Over probs read directly from sim's over_X_5_prob keys (not 1 - under)
+      - P2 first set win uses sim['p2_first_set_win_prob'] (not 1 - p1, avoids MC drift)
+      - Hold rate + serve point win read from p1/p2 profile dicts, not sim
     """
     from tennis_markov import p_server_wins_game as _p_game
 
@@ -287,16 +288,16 @@ def _write_report(path: str, tour: str, date_str: str, results: list):
         lines.append(f"| Metric | {r['p1_name']} | {r['p2_name']} |")
         lines.append("|--------|--------|--------|")
         lines.append(f"| Match Win | {sim['p1_match_win_prob']:.1%} | {sim['p2_match_win_prob']:.1%} |")
-        lines.append(f"| 1st Set Win | {sim['p1_first_set_win_prob']:.1%} | {1.0 - sim['p1_first_set_win_prob']:.1%} |")
+        lines.append(f"| 1st Set Win | {sim['p1_first_set_win_prob']:.1%} | {sim['p2_first_set_win_prob']:.1%} |")
         lines.append(f"| Hold Game Rate | {p1_hold:.1%} | {p2_hold:.1%} |")
         lines.append(f"| Serve Point Win | {p1_point:.1%} | {p2_point:.1%} |")
         lines.append("")
 
-        # Bug 2 fix: Over = 1 - under_prob using .get() fallbacks for missing lines
+        # Use direct over_X_5_prob values from sim (sim returns both over and under directly)
         lines.append(f"**Expected Total Games:** {sim['expected_total_games']:.1f}")
-        lines.append(f"- Over 20.5: {1.0 - sim.get('under_20_5_prob', 0.5):.1%}")
-        lines.append(f"- Over 22.5: {1.0 - sim.get('under_22_5_prob', 0.5):.1%}")
-        lines.append(f"- Over 24.5: {1.0 - sim.get('under_24_5_prob', 0.5):.1%}")
+        lines.append(f"- Over 20.5: {sim.get('over_20_5_prob', 0.5):.1%}")
+        lines.append(f"- Over 22.5: {sim.get('over_22_5_prob', 0.5):.1%}")
+        lines.append(f"- Over 24.5: {sim.get('over_24_5_prob', 0.5):.1%}")
         lines.append("")
 
         # Player profile section (enriched with history and risk flags)

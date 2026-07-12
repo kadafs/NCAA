@@ -635,14 +635,15 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'baseball')
     os.makedirs(data_dir, exist_ok=True)
     
-    # Always append date. Use report_date defined earlier in the function.
-    mode_suffix = "generic" if force_generic else "confirmed"
-    json_filename = f"universal_predictions_{report_date_safe}-{mode_suffix}.json"
+    # Use league-prefixed filename so MLB/AAA/AA files never overwrite each other
+    json_filename = f"universal_predictions_{league_name}_{report_date_safe}.json"
     json_output_path = os.path.join(data_dir, json_filename)
     
     # Frontend wrapper format expects {"predictions": [...]}
+    mode_suffix = "generic" if force_generic else "confirmed"
     frontend_payload = {
         "date": report_date,
+        "league": league_name,
         "mode": mode_suffix,
         "total_predictions": len(raw_json_data),
         "predictions": raw_json_data
