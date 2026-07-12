@@ -105,51 +105,62 @@ MLB_PARK_FACTORS = {
     "Constellation Field":                  0.821,  # Sugar Land Space Cowboys — pitcher's park (3-yr confirmed)
 
 
-    # ── AA — Empirically calibrated from 1,291 real 2026 games (April–July 12) ──
-    # League avg F5: 5.981 runs/game. Venue names match statsapi exactly.
+    # ── AA — Empirically calibrated from 5,495 real games (2024 + 2025 + 2026) ──
+    # League avg F5: 5.194 runs/game. 3-year baseline; historical name aliases included.
 
     # ── AA — Eastern League (EL) ─────────────────────────────────────────────
-    "UPMC Park":                        1.178,  # Erie SeaWolves — hitter-friendly dimensions
-    "TD Bank Ballpark":                 1.144,  # Somerset Patriots
-    "FirstEnergy Stadium":              1.073,  # Reading Fightin Phils
-    "Dunkin' Park":                     1.033,  # Hartford Yard Goats
-    "Delta Dental Stadium":             1.026,  # Portland Sea Dogs
-    "Delta Dental Park":                1.016,  # Portland (alternate name)
-    "DABOS Park":                       0.999,  # (neutral)
-    "Binghamton Rumble Ponies":         0.924,  # Mirabito Stadium alias
-    "Mirabito Stadium":                 0.924,  # Binghamton Rumble Ponies
-    "Prince George's Stadium":          0.949,  # Bowie Baysox
-    "CarMax Park":                      0.958,  # (EL)
-    "FNB Field":                        0.899,  # Harrisburg Senators — strong pitcher's park
-    "Harrisburg Senators":              0.899,  # FNB Field alias
-    "7 17 Credit Union Park":           0.869,  # Akron RubberDucks
-    "Peoples Natural Gas Field":        0.865,  # Altoona Curve
-    "Reading Fightin Phils":            1.073,  # FirstEnergy Stadium alias
+    "Hadlock Field":                    1.225,  # Portland Sea Dogs (historic name, 2024/2025)
+    "DABOS Park":                       1.151,  # (EL) — hitter-friendly over 3 yrs
+    "FirstEnergy Stadium":              1.140,  # Reading Fightin Phils
+    "Reading Fightin Phils":            1.140,  # Reading alias
+    "CarMax Park":                      1.119,  # (EL) — hitter-friendly over 3 yrs
+    "UPMC Park":                        1.060,  # Erie SeaWolves (1-yr was 1.178 — outlier)
+    "Prince George's Stadium":          1.009,  # Bowie Baysox — neutral over 3 yrs
+    "Dunkin' Park":                     1.032,  # Hartford Yard Goats
+    "Delta Dental Stadium":             1.027,  # Portland Sea Dogs (2026 name)
+    "TD Bank Ballpark":                 1.032,  # Somerset Patriots
+    "7 17 Credit Union Park":           1.000,  # Akron — only small sample in 3yr data
+    "Peoples Natural Gas Field":        0.960,  # Altoona Curve — less pitcher-friendly over 3 yrs
+    "Delta Dental Park":                0.988,  # Portland alternate name
+    "The Diamond":                      0.921,  # Richmond Flying Squirrels
+    "Riverfront Stadium":               0.873,  # (EL historic)
+    "Mirabito Stadium":                 0.884,  # Binghamton Rumble Ponies
+    "Binghamton Rumble Ponies":         0.884,  # alias
+    "Canal Park":                       0.853,  # Akron RubberDucks (historic name)
+    "FNB Field":                        0.865,  # Harrisburg Senators
+    "Harrisburg Senators":              0.865,  # FNB Field alias
 
     # ── AA — Southern League (SL) ────────────────────────────────────────────
-    "Keesler Federal Park":             1.198,  # Biloxi Shuckers — hitter-friendly
-    "Route 66 Stadium":                 1.099,  # Springfield Cardinals
-    "Regions Field":                    0.967,  # Birmingham Barons
-    "Blue Wahoos Stadium":              0.952,  # Pensacola Blue Wahoos
-    "Blue Wahoos":                      0.952,  # alias
-    "Synovus Park":                     0.935,  # Columbus Clingstones — NOT hitter-friendly empirically
-    "Covenant Health Park":             0.920,  # Knoxville Smokies
-    "Erlanger Park":                    0.906,  # Chattanooga Lookouts
-    "Toyota Field":                     0.903,  # Rocket City Trash Pandas — pitcher-friendly
-    "Riverwalk Stadium":                1.020,  # Montgomery Biscuits (small sample, keeping estimate)
+    "Route 66 Stadium":                 1.245,  # Springfield Cardinals — confirmed strong hitter's park
+    "Springfield Cardinals":            1.245,  # alias
+    "Hammons Field":                    1.074,  # Springfield / Hammons Field alternate name
+    "AT&T Field":                       1.057,  # Chattanooga (historic name, 2024/2025)
+    "Erlanger Park":                    1.043,  # Chattanooga Lookouts (2026 name)
+    "Keesler Federal Park":             1.082,  # Biloxi Shuckers
+    "Blue Wahoos Stadium":              0.958,  # Pensacola Blue Wahoos
+    "Blue Wahoos":                      0.958,  # alias
+    "Smokies Stadium":                  0.946,  # Knoxville (historic name)
+    "Synovus Park":                     0.899,  # Columbus Clingstones — pitcher-friendly over 3 yrs
+    "Toyota Field":                     0.910,  # Rocket City Trash Pandas (AA)
+    "Montgomery Riverwalk Stadium":     0.904,  # Montgomery Biscuits (3-yr name)
+    "Riverwalk Stadium":                0.904,  # alias
+    "Mirabito Stadium":                 0.884,  # (also SL alias if needed)
+    "Covenant Health Park":             0.848,  # Knoxville Smokies (2026 name)
+    "Regions Field":                    0.833,  # Birmingham Barons — strong pitcher's park over 3 yrs
+    "Trustmark Park":                   0.727,  # Mississippi Braves — extreme pitcher's park
 
     # ── AA — Texas League (TL) ───────────────────────────────────────────────
-    "Hodgetown":                        1.197,  # Amarillo Sod Poodles
-    "ONEOK Field":                      1.126,  # Tulsa Drillers
-    "Equity Bank Park":                 1.113,  # Wichita Wind Surge
-    "Riders Field":                     1.085,  # Frisco RoughRiders (statsapi name)
-    "Dr Pepper Ballpark":               1.085,  # Frisco alias
-    "Whataburger Field":                1.069,  # Corpus Christi Hooks
-    "Momentum Bank Ballpark":           1.059,  # Midland RockHounds
-    "Arvest Ballpark":                  0.971,  # Northwest Arkansas Naturals — NOT a hitter's park
-    "Nelson Wolff Stadium":             0.745,  # San Antonio Missions — strong pitcher's park empirically
-    "Dickey-Stephens Park":             0.734,  # Arkansas Travelers — strong pitcher's park empirically
-    "Springfield Cardinals":            1.099,  # Hammons Field / Route 66 Stadium alias
+    "Hodgetown":                        1.323,  # Amarillo Sod Poodles — one of biggest hitter parks in MiLB
+    "Equity Bank Park":                 1.265,  # Wichita Wind Surge — much higher than assumed
+    "Arvest Ballpark":                  1.131,  # Northwest Arkansas Naturals — confirmed hitter's park over 3 yrs
+    "Riders Field":                     1.080,  # Frisco RoughRiders (statsapi 2026 name)
+    "Dr Pepper Ballpark":               1.080,  # Frisco alias
+    "Momentum Bank Ballpark":           1.083,  # Midland RockHounds
+    "ONEOK Field":                      1.086,  # Tulsa Drillers
+    "Whataburger Field":                1.020,  # Corpus Christi Hooks — less hitter-friendly than assumed
+    "Nelson Wolff Stadium":             0.785,  # San Antonio Missions — confirmed strong pitcher's park
+    "Dickey-Stephens Park":             0.781,  # Arkansas Travelers — confirmed strong pitcher's park
+
 
 }
 
