@@ -74,23 +74,27 @@ def process_single_game(args):
     }
     
     try:
-        # Weather modifier — MLB only.
-        # MiLB park factors are hand-crafted estimates that already encode the
-        # typical climate of each park (altitude, desert heat, etc.).  Applying
-        # a real-time weather modifier on top would double-count that effect.
-        # MLB PFs are derived from real game-result data averaged across all
-        # conditions, so weather correctly adds day-to-day deviation only there.
+        # Weather modifier — all sports.
+        # MiLB park factors are now derived from 3-year multi-season empirical
+        # game data (5,800+ AAA games, 5,500+ AA games), so they represent the
+        # AVERAGE scoring environment at each venue.  Weather now correctly adds
+        # day-to-day DEVIATION on top of that average — the same logic as MLB.
+        # MiLB cap is tighter (±5%) than MLB (±10%) due to lower signal reliability.
         weather         = None
         weather_mult    = 1.0
         effective_pf    = pf
-        if sport_id == 1:
-            try:
-                weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr,
-                                                    target_date=date_str)
-                weather_mult = weather.get('weather_multiplier', 1.0)
-                effective_pf = round(pf * weather_mult, 4)
-            except Exception as wx_err:
-                print(f"  [Weather] Skipped ({wx_err})")
+        try:
+            weather      = get_weather_modifier(venue, away_abbr=away_abbr, home_abbr=home_abbr,
+                                                target_date=date_str)
+            raw_mult     = weather.get('weather_multiplier', 1.0)
+            # Tighter cap for MiLB (±5%) vs MLB (±10%)
+            if sport_id in (11, 12):
+                raw_mult = max(0.95, min(1.05, raw_mult))
+            weather_mult = raw_mult
+            effective_pf = round(pf * weather_mult, 4)
+        except Exception as wx_err:
+            print(f"  [Weather] Skipped ({wx_err})")
+
 
         # 1. Top-Down Model
         ap_siera = _retry_call(get_pitcher_siera, ap, sport_id=sport_id, player_id=ap_id)
