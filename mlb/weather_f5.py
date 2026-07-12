@@ -63,7 +63,62 @@ STADIUM_COORDS = {
     "American Family Field":          (43.0280, -87.9712),
     "Citi Field":                     (40.7571, -73.8458),
     "Tropicana Field":                (27.7683, -82.6534),
+    "Las Vegas Ballpark":             (36.1716, -115.1461),
+    "Sutter Health Park":             (38.5840, -121.5001),  # Sacramento
+
+    # ── AAA — Pacific Coast League (PCL) ─────────────────────────────────────
+    "Greater Nevada Field":           (39.5296, -119.7820),  # Reno (~4,400ft)
+    "Isotopes Park":                  (35.0956, -106.6500),  # Albuquerque (~5,300ft)
+    "Constellation Field":            (29.6111, -95.5583),  # Sugar Land TX
+    "Chickasaw Bricktown Ballpark":   (35.4676, -97.5164),  # Oklahoma City
+    "Principal Park":                 (41.5724, -93.6240),  # Des Moines IA
+    "Momentum Bank Ballpark":         (31.9968, -102.0779), # Midland TX
+    "Toyota Field":                   (34.7304, -86.5861),  # Madison AL (Rocket City)
+    "Round Rock":                     (30.5114, -97.6792),  # Dell Diamond, Round Rock TX
+
+    # ── AAA — International League (IL) ──────────────────────────────────────
+    "Truist Field":                   (35.2271, -80.8431),  # Charlotte NC
+    "Louisville Slugger Field":       (38.2570, -85.7438),  # Louisville KY
+    "Victory Field":                  (39.7782, -86.1625),  # Indianapolis IN
+    "Harbor Park":                    (36.8463, -76.3003),  # Norfolk VA
+    "Polar Park":                     (42.2636, -71.8022),  # Worcester MA
+    "Gwinnett Field":                 (33.8487, -84.0672),  # Lawrenceville GA
+    "Sahlen Field":                   (42.8866, -78.8765),  # Buffalo NY
+    "Coca-Cola Park":                 (40.6131, -75.4706),  # Lehigh Valley PA
+    "VyStar Ballpark":                (30.3232, -81.6557),  # Jacksonville FL
+    "Vystar Ballpark":                (30.3232, -81.6557),  # Jacksonville FL (alias)
+    "Durham Bulls Athletic Park":     (35.9796, -78.8913),  # Durham NC
+    "AutoZone Park":                  (35.1495, -90.0490),  # Memphis TN
+    "Dunkin' Park":                   (41.7659, -72.6733),  # Hartford CT
+
+    # ── AA — Eastern League (EL) ─────────────────────────────────────────────
+    "Delta Dental Stadium":           (43.6615, -70.2797),  # Portland ME
+    "TD Bank Ballpark":               (40.5709, -74.6138),  # Bridgewater NJ (Somerset)
+    "UPMC Park":                      (42.1292, -80.0859),  # Erie PA
+    "7 17 Credit Union Park":         (41.0748, -81.5187),  # Akron OH
+    "Peoples Natural Gas Field":      (40.5061, -78.3994),  # Altoona PA
+    "Mirabito Stadium":               (42.1015, -75.9182),  # Binghamton NY
+    "FNB Field":                      (40.2732, -76.8867),  # Harrisburg PA
+    "FirstEnergy Stadium":            (40.3360, -75.9274),  # Reading PA
+
+    # ── AA — Southern League (SL) ────────────────────────────────────────────
+    "Covenant Health Park":           (35.9906, -83.9391),  # Knoxville TN
+    "Synovus Park":                   (32.4609, -84.9877),  # Columbus GA
+    "Blue Wahoos Stadium":            (30.4243, -87.2169),  # Pensacola FL
+    "Riverwalk Stadium":              (32.3668, -86.2999),  # Montgomery AL
+
+    # ── AA — Texas League (TL) ────────────────────────────────────────────────
+    "Whataburger Field":              (27.7987, -97.4060),  # Corpus Christi TX
+    "ONEOK Field":                    (36.1546, -95.9946),  # Tulsa OK
+    "Hodgetown":                      (35.2212, -101.8313), # Amarillo TX
+    "Equity Bank Park":               (37.6872, -97.3301),  # Wichita KS
+    "Arvest Ballpark":                (36.3823, -94.2083),  # Springdale AR (NWA)
+    "Dickey-Stephens Park":           (34.7465, -92.2709),  # North Little Rock AR
+    "Nelson Wolff Stadium":           (29.4387, -98.5315),  # San Antonio TX
+    "Dr Pepper Ballpark":             (33.1476, -96.8231),  # Frisco TX
+    "Hammons Field":                  (37.2044, -93.2985),  # Springfield MO
 }
+
 
 # ---------------------------------------------------------------------------
 # Per-stadium center-field bearing (Issue 9 fix)
