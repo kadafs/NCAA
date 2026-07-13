@@ -207,6 +207,12 @@ def process_single_game(args):
         )
 
         # Layer 2 — Directional Filter: evaluate PF / weather / umpire as confidence weights
+        # Fetch pitcher advanced metrics FIRST so FB% can weight the effective park factor.
+        # MLB: real K_Rate/BB_Rate/HR_FB/FB_pct/GB_pct fetched from Stats API.
+        # MiLB: defaults used (league-average FB%=0.33) — batted-ball splits unavailable.
+        ap_adv = get_pitcher_advanced_metrics(ap, sport_id, player_id=ap_id)
+        hp_adv = get_pitcher_advanced_metrics(hp, sport_id, player_id=hp_id)
+
         env_conf = compute_env_confidence(
             park_factor=pf,
             weather_context=weather,
@@ -214,13 +220,14 @@ def process_single_game(args):
             pure_f5=mc.get('mc_total_runs', td_total),
             posted_line=4.5,
             sport_id=sport_id,
+            away_sp_fb_pct=ap_adv.get('FB_pct'),
+            home_sp_fb_pct=hp_adv.get('FB_pct'),
         )
+        eff_note = env_conf.get('effective_pf_note', '')
         print(f"  [EnvConf] {env_conf['env_note']}")
+        if eff_note:
+            print(f"  [EffPF]   {eff_note}")
 
-
-        ap_adv = get_pitcher_advanced_metrics(ap, sport_id, player_id=ap_id)
-        hp_adv = get_pitcher_advanced_metrics(hp, sport_id, player_id=hp_id)
-        
         from park_factors import get_park_factor_details
         pf_details = get_park_factor_details(venue)
         static_pf = pf_details.get('static', 1.0)
@@ -373,14 +380,24 @@ def process_single_game(args):
             "away_team": away,
             "home_team": home,
             "pitchers": {
-                "away": {"name": ap, "hand": ap_hand, "fip": ap_fip},
-                "home": {"name": hp, "hand": hp_hand, "fip": hp_fip}
+                "away": {
+                    "name": ap, "hand": ap_hand, "fip": ap_fip,
+                    "fb_pct": ap_adv.get('FB_pct'),
+                    "gb_pct": ap_adv.get('GB_pct'),
+                    "k_rate": round(ap_adv.get('K_Rate', 0.22), 4),
+                },
+                "home": {
+                    "name": hp, "hand": hp_hand, "fip": hp_fip,
+                    "fb_pct": hp_adv.get('FB_pct'),
+                    "gb_pct": hp_adv.get('GB_pct'),
+                    "k_rate": round(hp_adv.get('K_Rate', 0.22), 4),
+                }
             },
             "environment": {
                 "venue": venue,
                 "park_factor": pf,
                 "weather": weather,
-                "effective_pf": effective_pf,
+                "effective_pf": env_conf.get('effective_pf', pf),
                 "env_confidence": env_conf,
                 "env_display": {
                     "signal": env_conf.get('combined_signal', 'NEUTRAL'),
@@ -392,6 +409,8 @@ def process_single_game(args):
                     "umpire_flag": env_conf.get('umpire_flag', 'NEUTRAL'),
                     "umpire_signal": env_conf.get('umpire_signal', 'NEUTRAL'),
                     "lean": env_conf.get('lean', 'NEUTRAL'),
+                    "effective_pf": env_conf.get('effective_pf', pf),
+                    "effective_pf_note": env_conf.get('effective_pf_note', ''),
                     "summary": env_conf.get('env_note', ''),
                 },
                 "umpire": {

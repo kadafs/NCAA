@@ -54,6 +54,14 @@ _MIN_UMP_GAMES = 15           # below this, treat umpire as neutral
 _DELTA_UMPIRE = 6
 
 # ---------------------------------------------------------------------------
+# Batted-ball profile defaults (used when pitcher data unavailable)
+# ---------------------------------------------------------------------------
+_DEFAULT_FB_PCT = 0.33   # league-average fly-ball rate
+_FB_HIGH        = 0.42   # FB% above this → park-sensitive (FB archetype)
+_GB_HIGH        = 0.52   # GB% above this → park-immune   (GB archetype)
+_K_HIGH         = 0.28   # K%  above this → park-immune   (K  archetype)
+
+# ---------------------------------------------------------------------------
 # Combined signal boundaries
 # ---------------------------------------------------------------------------
 _STRONG_CONFIRM_THRESHOLD    =  20
@@ -74,23 +82,73 @@ def _classify_signal(delta: float) -> str:
     return "NEUTRAL"
 
 
-def _park_assessment(park_factor: float, lean: str) -> tuple[str, str, float, str]:
+def _compute_effective_pf(
+    raw_pf: float,
+    away_fb_pct: float | None,
+    home_fb_pct: float | None,
+) -> tuple[float, str]:
+    """
+    Weight the raw park factor by the average of both starters' fly-ball rates.
+
+    Rationale
+    ---------
+    Park factor primarily amplifies/suppresses HOME RUNS and hard fly-ball
+    contact. Strikeouts never enter the park; ground balls rarely leave the
+    infield regardless of dimensions.
+
+      Effective_PF = 1.0 + (raw_PF − 1.0) × avg_FB%
+
+    Examples
+    --------
+    GB pitcher (FB%=0.22) at Las Vegas (raw PF=1.375):
+      eff_PF = 1.0 + 0.375 × 0.22 = 1.083   (vs raw 1.375)
+
+    FB pitcher (FB%=0.47) at Las Vegas:
+      eff_PF = 1.0 + 0.375 × 0.47 = 1.176   (closer to raw, park matters more)
+
+    Returns (effective_pf, description_note)
+    """
+    fb_values = [x for x in [away_fb_pct, home_fb_pct] if x is not None]
+    if not fb_values:
+        return raw_pf, ""   # no batted-ball data → fall back to raw PF
+
+    avg_fb_pct = sum(fb_values) / len(fb_values)
+    # Clamp to sensible range (15%–60%)
+    avg_fb_pct = max(0.15, min(0.60, avg_fb_pct))
+
+    effective_pf = 1.0 + (raw_pf - 1.0) * avg_fb_pct
+    source = "both SPs" if len(fb_values) == 2 else "one SP"
+    note = (f"eff_PF={effective_pf:.3f} "
+            f"(avg_FB%={avg_fb_pct:.0%}, raw_PF={raw_pf:.3f}, {source})")
+    return effective_pf, note
+
+
+def _park_assessment(
+    park_factor:   float,
+    lean:          str,
+    effective_pf:  float | None = None,
+) -> tuple[str, str, float, str]:
     """
     Returns (park_flag, park_signal, delta, note).
     lean: 'OVER' or 'UNDER'
+
+    When effective_pf is supplied (computed from pitcher FB%), it is used
+    for the threshold check instead of the raw park_factor.  This means
+    GB/K pitchers rarely trigger park ENV flags even in extreme parks.
     """
-    deviation = park_factor - 1.0
+    pf_to_use = effective_pf if effective_pf is not None else park_factor
+    deviation = pf_to_use - 1.0
 
     if abs(deviation) > _PF_EXTREME:
         park_flag = "HITTERS_PARK" if deviation > 0 else "PITCHERS_PARK"
-        park_note = f"PF={park_factor:.3f} (extreme)"
+        park_note = f"PF={park_factor:.3f} eff={pf_to_use:.3f} (extreme)"
         delta_mag  = _DELTA_PF_EXTREME
     elif abs(deviation) > _PF_NOTABLE:
         park_flag = "HITTERS_PARK" if deviation > 0 else "PITCHERS_PARK"
-        park_note = f"PF={park_factor:.3f} (notable)"
+        park_note = f"PF={park_factor:.3f} eff={pf_to_use:.3f} (notable)"
         delta_mag  = _DELTA_PF_NOTABLE
     else:
-        return "NEUTRAL", "NEUTRAL", 0.0, f"PF={park_factor:.3f} (neutral)"
+        return "NEUTRAL", "NEUTRAL", 0.0, f"PF={park_factor:.3f} eff={pf_to_use:.3f} (neutral)"
 
     # Confirm when park direction matches bet direction
     confirms = (
@@ -198,24 +256,35 @@ def _umpire_assessment(umpire_profile: dict | None, lean: str) -> tuple[str, str
 # ---------------------------------------------------------------------------
 
 def compute_env_confidence(
-    park_factor:     float,
-    weather_context: dict | None,
-    umpire_profile:  dict | None,
-    pure_f5:         float,
-    posted_line:     float,
-    sport_id:        int = 1,
+    park_factor:      float,
+    weather_context:  dict | None,
+    umpire_profile:   dict | None,
+    pure_f5:          float,
+    posted_line:      float,
+    sport_id:         int = 1,
+    away_sp_fb_pct:   float | None = None,
+    home_sp_fb_pct:   float | None = None,
 ) -> dict:
     """
     Evaluate PF / weather / umpire as directional confidence weights.
 
     Parameters
     ----------
-    park_factor     : Blended park factor from get_park_factor()
-    weather_context : Output of weather_f5.get_weather_context() or None
-    umpire_profile  : Output of umpire_engine.load_umpire_profile() or None
-    pure_f5         : Talent-only F5 run total from pure MC model
-    posted_line     : The book's posted F5 total
-    sport_id        : 1=MLB, 11=AAA, 12=AA
+    park_factor      : Blended park factor from get_park_factor()
+    weather_context  : Output of weather_f5.get_weather_context() or None
+    umpire_profile   : Output of umpire_engine.load_umpire_profile() or None
+    pure_f5          : Talent-only F5 run total from pure MC model
+    posted_line      : The book's posted F5 total
+    sport_id         : 1=MLB, 11=AAA, 12=AA
+    away_sp_fb_pct   : Away starter fly-ball % (from pitcher_advanced_stats)
+    home_sp_fb_pct   : Home starter fly-ball % (from pitcher_advanced_stats)
+
+    The away_sp_fb_pct / home_sp_fb_pct inputs feed _compute_effective_pf(),
+    which adjusts the raw park factor to reflect how park-sensitive these
+    specific pitchers actually are:
+      • GB pitchers (low FB%) → effective PF ≈ 1.0 regardless of stadium
+      • FB pitchers (high FB%) → effective PF ≈ raw PF (fully park-sensitive)
+      • K pitchers (low balls-in-play) → partial sensitivity
 
     Returns
     -------
@@ -223,6 +292,8 @@ def compute_env_confidence(
       park_flag, park_signal, park_delta
       weather_flag, weather_signal, weather_delta
       umpire_flag, umpire_signal, umpire_delta
+      effective_pf     : float  (PF weighted by pitcher FB%)
+      effective_pf_note: str    (human-readable explanation)
       combined_signal  : str  (STRONG_CONFIRM / CONFIRM / NEUTRAL / CONTRADICT / STRONG_CONTRADICT)
       confidence_delta : float (net delta, +ve = more confidence in the bet)
       lean             : str  ('OVER' / 'UNDER' / 'PUSH')
@@ -238,8 +309,15 @@ def compute_env_confidence(
     else:
         lean = "PUSH"
 
+    # --- Effective Park Factor weighted by pitcher batted-ball profile ---
+    effective_pf, eff_pf_note = _compute_effective_pf(
+        raw_pf=park_factor,
+        away_fb_pct=away_sp_fb_pct,
+        home_fb_pct=home_sp_fb_pct,
+    )
+
     # --- Assess each factor ---
-    park_flag,    park_signal,    park_delta,    park_note    = _park_assessment(park_factor, lean)
+    park_flag,    park_signal,    park_delta,    park_note    = _park_assessment(park_factor, lean, effective_pf)
     weather_flag, weather_signal, weather_delta, weather_note = _weather_assessment(weather_context, lean)
     umpire_flag,  umpire_signal,  umpire_delta,  umpire_note  = _umpire_assessment(umpire_profile, lean)
 
@@ -257,25 +335,28 @@ def compute_env_confidence(
 
     return {
         # Park
-        "park_flag":        park_flag,
-        "park_signal":      park_signal,
-        "park_delta":       park_delta,
-        "park_note":        park_note,
+        "park_flag":          park_flag,
+        "park_signal":        park_signal,
+        "park_delta":         park_delta,
+        "park_note":          park_note,
+        # Effective PF (pitcher-profile-adjusted)
+        "effective_pf":       round(effective_pf, 4),
+        "effective_pf_note":  eff_pf_note,
         # Weather
-        "weather_flag":     weather_flag,
-        "weather_signal":   weather_signal,
-        "weather_delta":    weather_delta,
-        "weather_note":     weather_note,
+        "weather_flag":       weather_flag,
+        "weather_signal":     weather_signal,
+        "weather_delta":      weather_delta,
+        "weather_note":       weather_note,
         # Umpire
-        "umpire_flag":      umpire_flag,
-        "umpire_signal":    umpire_signal,
-        "umpire_delta":     umpire_delta,
-        "umpire_note":      umpire_note,
+        "umpire_flag":        umpire_flag,
+        "umpire_signal":      umpire_signal,
+        "umpire_delta":       umpire_delta,
+        "umpire_note":        umpire_note,
         # Summary
-        "lean":             lean,
-        "combined_signal":  combined_signal,
-        "confidence_delta": total_delta,
-        "env_note":         env_note,
+        "lean":               lean,
+        "combined_signal":    combined_signal,
+        "confidence_delta":   total_delta,
+        "env_note":           env_note,
     }
 
 
