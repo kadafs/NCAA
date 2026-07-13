@@ -466,14 +466,27 @@ if __name__ == '__main__':
         try:
             with open(args.file, 'r', encoding='utf-8') as f:
                 content = f.read()
-                # Look for "**Date:** 06/30/2026"
+                # Try MM/DD/YYYY format (old reports): **Date:** 06/30/2026
                 date_match = re.search(r'\*\*Date:\*\*\s*(\d{2}/\d{2}/\d{4})', content)
                 if date_match:
                     resolved_date = date_match.group(1)
+                else:
+                    # Try ISO format YYYY-MM-DD (v3/v4 reports): **Date:** 2026-07-12
+                    iso_match = re.search(r'\*\*Date:\*\*\s*(\d{4})-(\d{2})-(\d{2})', content)
+                    if iso_match:
+                        y, m, d = iso_match.group(1), iso_match.group(2), iso_match.group(3)
+                        resolved_date = f"{m}/{d}/{y}"
         except Exception:
             pass
-            
-    # Fallback to today KST
+
+    # Filename fallback: e.g. consensus_f5_v3_report_2026-07-12.md
+    if not resolved_date and args.file:
+        fn_match = re.search(r'(\d{4})-(\d{2})-(\d{2})', os.path.basename(args.file))
+        if fn_match:
+            y, m, d = fn_match.group(1), fn_match.group(2), fn_match.group(3)
+            resolved_date = f"{m}/{d}/{y}"
+
+    # Final fallback: today KST
     if not resolved_date:
         dt_kst = datetime.now(timezone(timedelta(hours=9)))
         resolved_date = dt_kst.strftime('%m/%d/%Y')
