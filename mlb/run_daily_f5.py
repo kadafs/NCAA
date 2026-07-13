@@ -437,7 +437,7 @@ def get_pitcher_fip(pitcher_name, sport_id=1, player_id=None):
         try:
             raw = statsapi.get('people', {
                 'personIds': player_id,
-                'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+                'hydrate':   f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'
             })
             stats = {}
             for person in raw.get('people', []):
@@ -879,7 +879,7 @@ def get_pitcher_xfip(pitcher_name, sport_id=1, player_id=None):
 
     def _fetch_season_xfip(season):
         try:
-            raw = statsapi.get('people', {'personIds': player_id, 'hydrate': f'stats(group=[pitching],type=season,season={season})'})
+            raw = statsapi.get('people', {'personIds': player_id, 'hydrate': f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'})
             stats = {}
             for person in raw.get('people', []):
                 for stat_grp in person.get('stats', []):
@@ -920,7 +920,7 @@ def get_pitcher_siera(pitcher_name, sport_id=1, player_id=None):
 
     def _fetch_season_siera(season):
         try:
-            raw = statsapi.get('people', {'personIds': player_id, 'hydrate': f'stats(group=[pitching],type=season,season={season})'})
+            raw = statsapi.get('people', {'personIds': player_id, 'hydrate': f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'})
             stats = {}
             for person in raw.get('people', []):
                 for stat_grp in person.get('stats', []):
