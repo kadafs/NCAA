@@ -197,7 +197,7 @@ def _fetch_recent_batter_rates(player_id, days=15):
         return None
 
 
-def get_batter_pa_rates(player_id, pitcher_hand=None):
+def get_batter_pa_rates(player_id, pitcher_hand=None, sport_id=1):
     """
     Returns a dict of plate appearance outcome rates for a batter,
     blended across 2024/2025/2026 seasons using the same weights as run_daily_f5.py.
@@ -244,9 +244,9 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
             if pitcher_hand and pitcher_hand.upper() in ('L', 'R'):
                 # For hitting stats, 'vs Left pitcher' is 'vsL', 'vs Right pitcher' is 'vsR'
                 sit_code = 'vsL' if pitcher_hand.upper() == 'L' else 'vsR'
-                hydrate_str = f'stats(group=[hitting],type=statSplits,sitCodes={sit_code},season={season})'
+                hydrate_str = f'stats(group=[hitting],type=statSplits,sitCodes={sit_code},season={season},sportId={sport_id})'
             else:
-                hydrate_str = f'stats(group=[hitting],type=season,season={season})'
+                hydrate_str = f'stats(group=[hitting],type=season,season={season},sportId={sport_id})'
                 
             raw = statsapi.get('people', {
                 'personIds': player_id,
@@ -393,8 +393,8 @@ def get_batter_pa_rates(player_id, pitcher_hand=None):
     return result
 
 
-def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None,
-                                  defending_team=None, venue_name=None):
+def get_pitcher_pa_modifiers(pitcher_xfip, pitcher_player_id=None,
+                                  defending_team=None, venue_name=None, sport_id=1):
     """
     V6 Monte Carlo Pitcher Modifier Engine: Uses xFIP as a true proxy for 
     base-hit suppression, completely eliminating home run double-counting.
@@ -447,7 +447,7 @@ def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None,
             try:
                 raw = statsapi.get('people', {
                     'personIds': pitcher_player_id,
-                    'hydrate':   f'stats(group=[pitching],type=statSplits,sitCodes={sit_code},season={season})'
+                    'hydrate':   f'stats(group=[pitching],type=statSplits,sitCodes={sit_code},season={season},sportId={sport_id})'
                 })
                 stats = {}
                 for person in raw.get('people', []):
@@ -483,7 +483,7 @@ def get_pitcher_pa_modifiers_xfip(pitcher_xfip, pitcher_player_id=None,
             try:
                 raw = statsapi.get('people', {
                     'personIds': pitcher_player_id,
-                    'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+                    'hydrate':   f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'
                 })
                 stats = {}
                 for person in raw.get('people', []):

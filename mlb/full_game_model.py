@@ -269,7 +269,7 @@ def run_full_game_mc(
         raw = []
         from fetch_lineups import get_batter_hand
         for pid in lineup_ids:
-            rates = get_batter_pa_rates(pid, pitcher_hand=pitcher_hand)
+            rates = get_batter_pa_rates(pid, pitcher_hand=pitcher_hand, sport_id=sport_id)
             rates['hand']       = get_batter_hand(int(pid))
             # Use average speed tier for late innings — individual speed tier is
             # fetched for F5 innings via the main engine. Calling get_runner_speed_tier

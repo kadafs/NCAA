@@ -778,7 +778,7 @@ def run_monte_carlo_f5(
     # API calls are batched once per player per session — no per-iteration overhead.
     away_raw_lineup = []
     for pid in away_lineup_ids:
-        raw = get_batter_pa_rates(pid, pitcher_hand=home_pitcher_hand)
+        raw = get_batter_pa_rates(pid, pitcher_hand=home_pitcher_hand, sport_id=sport_id)
         raw['hand']       = get_batter_hand(int(pid))         # 'L', 'R' (switch→'R')
         raw['speed_tier'] = get_runner_speed_tier(int(pid))   # 0=Sluggish,1=Avg,2=Elite
         # Umpire Layer: pure_core skips this (umpire is a directional filter, not a talent input)
@@ -788,7 +788,7 @@ def run_monte_carlo_f5(
 
     home_raw_lineup = []
     for pid in home_lineup_ids:
-        raw = get_batter_pa_rates(pid, pitcher_hand=away_pitcher_hand)
+        raw = get_batter_pa_rates(pid, pitcher_hand=away_pitcher_hand, sport_id=sport_id)
         raw['hand']       = get_batter_hand(int(pid))
         raw['speed_tier'] = get_runner_speed_tier(int(pid))
         if not pure_core:

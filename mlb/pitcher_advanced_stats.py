@@ -42,7 +42,7 @@ def get_pitcher_advanced_metrics(pitcher_name, sport_id=1, player_id=None):
         def _fetch_stats(season):
             raw = statsapi.get('people', {
                 'personIds': pid,
-                'hydrate': f'stats(group=[pitching],type=season,season={season})'
+                'hydrate': f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'
             })
             for p in raw.get('people', []):
                 for g in p.get('stats', []):

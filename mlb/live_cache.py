@@ -108,8 +108,8 @@ def build_morning_cache(sport_id: int = 1, date_str: str = None) -> dict:
         away_p_fip = _get_pitcher_fip(away_p_id)
         home_p_fip = _get_pitcher_fip(home_p_id)
         
-        away_p_mods = get_pitcher_pa_modifiers(away_p_fip, away_p_id)
-        home_p_mods = get_pitcher_pa_modifiers(home_p_fip, home_p_id)
+        away_p_mods = get_pitcher_pa_modifiers(away_p_fip, away_p_id, sport_id=sport_id)
+        home_p_mods = get_pitcher_pa_modifiers(home_p_fip, home_p_id, sport_id=sport_id)
         
         away_mop_up_mods = _get_mop_up_pitcher_mods(away_p_mods)
         home_mop_up_mods = _get_mop_up_pitcher_mods(home_p_mods)
@@ -319,7 +319,7 @@ def _get_pitcher_fip(pitcher_id: int | None) -> float:
         pass
     return 4.20
 
-def _build_raw_lineup(lineup_ids: list, opp_pitcher_hand: str) -> list:
+def _build_raw_lineup(lineup_ids: list, opp_pitcher_hand: str, sport_id: int = 1) -> list:
     """
     Fetches real PA rates if IDs exist, else returns generic platoon-aware lineup.
     Also resolves real batter handedness from the Stats API when IDs are available.
@@ -331,7 +331,7 @@ def _build_raw_lineup(lineup_ids: list, opp_pitcher_hand: str) -> list:
         
     raw_lineup = []
     for pid in lineup_ids:
-        raw = get_batter_pa_rates(pid)
+        raw = get_batter_pa_rates(pid, sport_id=sport_id)
         raw['hand'] = _get_batter_hand(pid)   # Real handedness, fallback 'R'
         
         from live_state import get_runner_speed_tier
