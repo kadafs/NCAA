@@ -99,8 +99,10 @@ def _calc_xfip(stats, league_season=2026):
 
 def _calc_siera(stats):
     """
-    Calculate an approximate SIERA using foundational components.
-    Approximation formula based on standard regressions for Top-Down model.
+    Calculate True SIERA using foundational components and batted-ball data.
+    The official formula relies on Net GB% (GB - FB - PU).
+    Since airOuts encompasses FB and PU, (groundOuts - airOuts) proxies NetGB.
+    We scale the out ratio to the total balls in play to derive true NetGB/PA.
     """
     try:
         ip = _parse_ip(stats.get('inningsPitched', '0'))
@@ -118,7 +120,36 @@ def _calc_siera(stats):
         k_pct = k / bf
         bb_pct = (bb + hbp) / bf
         
-        siera = 6.145 - (16.986 * k_pct) + (11.434 * bb_pct) + (7.653 * (k_pct ** 2))
+        # Batted Ball Extraction
+        gb_outs = float(stats.get('groundOuts', 0))
+        air_outs = float(stats.get('airOuts', 0)) # Includes FB and PU
+        
+        total_outs = gb_outs + air_outs
+        if total_outs > 0:
+            # Ratio of net groundballs to total out-producing batted balls
+            net_gb_ratio = (gb_outs - air_outs) / total_outs
+        else:
+            net_gb_ratio = 0.0 # Neutral fallback if no batted balls recorded
+            
+        # Total Balls in Play = PA - K - BB/HBP - HR
+        # (Using HR=0 as minor simplification if HR not fetched, but usually it is)
+        hr = int(stats.get('homeRuns', 0))
+        bip = max(0, bf - k - bb - hbp - hr)
+        
+        # NetGB / PA
+        net_gb_pa = (net_gb_ratio * bip) / bf
+        
+        # True SIERA Formula
+        siera = (
+            6.145 
+            - (16.986 * k_pct) 
+            + (11.434 * bb_pct) 
+            - (1.858 * net_gb_pa) 
+            + (7.653 * (k_pct ** 2)) 
+            - (6.664 * (net_gb_pa ** 2)) 
+            + (10.130 * k_pct * net_gb_pa) 
+            - (5.195 * bb_pct * net_gb_pa)
+        )
         return siera
     except Exception:
         return None

@@ -134,12 +134,9 @@ def process_single_game(args):
         away_splits = _retry_call(get_team_wrc_splits, away, sport_id)
         home_splits = _retry_call(get_team_wrc_splits, home, sport_id)
 
-        # Pitcher handedness for platoon logic (MLB only)
-        if sport_id == 1:
-            ap_hand = _retry_call(get_pitcher_hand, ap, sport_id=sport_id)
-            hp_hand = _retry_call(get_pitcher_hand, hp, sport_id=sport_id)
-        else:
-            ap_hand, hp_hand = 'R', 'R'
+        # Pitcher handedness for platoon logic (Works for MLB and MiLB)
+        ap_hand = _retry_call(get_pitcher_hand, ap, sport_id=sport_id)
+        hp_hand = _retry_call(get_pitcher_hand, hp, sport_id=sport_id)
 
         # ── F5 Recent Team Form Factors (MLB only) ───────────────────────────
         _neutral = {'factor': 1.0, 'raw_avg': 2.3, 'games_used': 0, 'games_raw': []}
@@ -545,7 +542,7 @@ def process_single_game(args):
             else:
                 block_lines.append(f"[Umpire Filter] {umpire_name}: Neutral — insufficient data")
 
-        block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, FIP: {ap_fip}) vs {hp} ({hp_hand}HP, FIP: {hp_fip})")
+        block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, SIERA: {ap_siera}) vs {hp} ({hp_hand}HP, SIERA: {hp_siera})")
         block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
         block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
         # consensus_f5 removed from report per user request

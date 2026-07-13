@@ -34,12 +34,8 @@ def get_pitcher_advanced_metrics(pitcher_name, sport_id=1, player_id=None):
         'FB_pct':  _DEFAULT_FB_PCT,
         'GB_pct':  _DEFAULT_GB_PCT,
     }
-    if sport_id != 1:
-        # MiLB Stats API rarely returns reliable batted-ball splits
-        return default_metrics
-
     try:
-        pid = player_id if player_id else get_pitcher_id(pitcher_name)
+        pid = player_id if player_id else get_pitcher_id(pitcher_name, sport_id=sport_id)
         if not pid:
             return default_metrics
 
