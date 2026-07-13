@@ -6,20 +6,24 @@ Umpire Strike-Zone Engine for the F5 Monte Carlo Model.
 
 Pipeline:
   1. Morning scrape: update_umpire_db() fetches per-umpire stats from the
-     MLB Stats API and writes them to data/umpires.json.
+     MLB Stats API (sport 1) AND MiLB (sports 11, 12), writing combined
+     profiles to data/umpires.json.
   2. Game-time lookup: get_umpire_for_game(game_pk) pulls today's plate
-     umpire assignment from the live game feed.
+     umpire assignment from the live game feed (works for all sports).
   3. Modifier application: apply_umpire_sabermetric_layer() injects
      Bayesian-stabilized K% / BB% modifiers into a batter's raw rates
      BEFORE the fatigue and environmental engines run.
 
-Modifiers are applied at the raw-talent input layer so that the existing
-out_rate = 1.0 - total_non_out normalization loop absorbs them cleanly.
+Rotating umpires who work both MLB and MiLB accumulate games across all
+levels, giving them stronger Bayesian profiles.  Dedicated MiLB umpires
+are profiled from minor-league data only.  Modifiers are applied at the
+raw-talent input layer so that the normalization loop absorbs them cleanly.
 """
 
 import os
 import json
 import datetime
+from datetime import date as _date, timedelta as _td
 import statsapi
 
 # ---------------------------------------------------------------------------
@@ -103,11 +107,18 @@ def update_umpire_db(verbose: bool = False) -> None:
             'games': historical_games
         }
 
-    # Season date ranges for regular season games
+    # Season date ranges — MLB
     season_dates = {
         2024: ('2024-03-20', '2024-09-29'),
         2025: ('2025-03-27', '2025-09-28'),
         2026: ('2026-03-26', '2026-09-27'),
+    }
+
+    # Season date ranges — MiLB (AAA=11, AA=12 share same calendar)
+    milb_season_dates = {
+        2024: ('2024-04-05', '2024-09-22'),
+        2025: ('2025-04-04', '2025-09-21'),
+        2026: ('2026-04-01', '2026-09-21'),
     }
 
     for season, weight in _SEASON_WEIGHTS.items():
@@ -213,6 +224,112 @@ def update_umpire_db(verbose: bool = False) -> None:
                 if verbose and "Failed to resolve" not in str(e):
                     print(f"    Warning: boxscore fetch failed for game {pk}: {e}")
                 continue
+
+    # ── MiLB scraping (AAA=11, AA=12) ────────────────────────────────────────
+    # Uses raw statsapi.get() since the high-level schedule() wrapper is MLB-only.
+    # Rotating umpires accumulate across MLB + MiLB in the same agg dict.
+    for milb_sport_id, milb_label in ((11, 'AAA'), (12, 'AA')):
+        for season, weight in _SEASON_WEIGHTS.items():
+            start_dt, end_dt_s = milb_season_dates[season]
+            if verbose:
+                print(f"  Fetching {milb_label} schedule for {season} ({start_dt} to {end_dt_s})...")
+
+            try:
+                current   = _date.fromisoformat(start_dt)
+                end_date  = min(_date.fromisoformat(end_dt_s), _date.today())
+                milb_pks  = []
+
+                # Weekly batches to stay within API rate limits
+                while current <= end_date:
+                    window_end = min(current + _td(days=6), end_date)
+                    data = statsapi.get('schedule', {
+                        'sportId':   milb_sport_id,
+                        'startDate': current.strftime('%Y-%m-%d'),
+                        'endDate':   window_end.strftime('%Y-%m-%d'),
+                    })
+                    for date_obj in data.get('dates', []):
+                        for g in date_obj.get('games', []):
+                            state = g.get('status', {}).get('abstractGameState')
+                            gpk   = g.get('gamePk')
+                            if state == 'Final' and gpk and gpk not in processed_pks:
+                                milb_pks.append(gpk)
+                                pk_to_date[gpk] = date_obj.get('date', '')
+                    current = window_end + _td(days=1)
+
+            except Exception as e:
+                if verbose:
+                    print(f"    Warning: {milb_label} schedule fetch failed for {season}: {e}")
+                continue
+
+            if verbose:
+                print(f"    Found {len(milb_pks)} new completed {milb_label} games in {season}.")
+
+            for i, pk in enumerate(milb_pks):
+                try:
+                    box = statsapi.boxscore_data(pk)
+
+                    # --- Plate umpire (officials list is populated for MiLB) ---
+                    plate_ump = None
+                    for o in box.get('officials', []):
+                        if isinstance(o, dict) and o.get('officialType') == 'Home Plate':
+                            plate_ump = o.get('official', {}).get('fullName')
+                            break
+                    # Fallback: gameBoxInfo text (MLB format, may appear in some MiLB boxscores)
+                    if not plate_ump:
+                        for item in box.get('gameBoxInfo', []):
+                            if isinstance(item, dict) and item.get('label') == 'Umpires':
+                                ump_str = item.get('value', '')
+                                if 'HP: ' in ump_str:
+                                    plate_ump = ump_str.split('HP: ')[1].split('.')[0].strip()
+                                break
+
+                    if not plate_ump:
+                        processed_pks.add(pk)
+                        continue
+
+                    # --- K / BB / IP from both pitching lines ---
+                    total_k = total_bb = total_ip = 0.0
+                    for side in ('away', 'home'):
+                        pitching  = box.get(side + 'PitchingTotals', {})
+                        total_k  += float(pitching.get('k',  0) or 0)
+                        total_bb += float(pitching.get('bb', 0) or 0)
+                        total_ip += _parse_ip(pitching.get('ip', '0'))
+
+                    if total_ip < 4:
+                        processed_pks.add(pk)
+                        continue
+
+                    if plate_ump not in agg:
+                        agg[plate_ump] = {'k': 0.0, 'bb': 0.0, 'ip': 0.0, 'games': 0}
+
+                    agg[plate_ump]['k']     += total_k  * weight
+                    agg[plate_ump]['bb']    += total_bb * weight
+                    agg[plate_ump]['ip']    += total_ip * weight
+                    agg[plate_ump]['games'] += 1
+
+                    game_date_str = pk_to_date.get(pk, '')
+                    if plate_ump not in db:
+                        db[plate_ump] = {}
+                    if 'game_history_logs' not in db[plate_ump]:
+                        db[plate_ump]['game_history_logs'] = []
+                    db[plate_ump]['game_history_logs'].append({
+                        'date':   game_date_str,
+                        'sport':  milb_label,
+                        'k':      total_k,
+                        'bb':     total_bb,
+                        'ip':     total_ip,
+                        'weight': weight,
+                    })
+
+                    processed_pks.add(pk)
+
+                    if verbose and (i + 1) % 100 == 0:
+                        print(f"    ... processed {i + 1}/{len(milb_pks)} {milb_label} games")
+
+                except Exception as e:
+                    if verbose and 'Failed to resolve' not in str(e):
+                        print(f"    Warning: {milb_label} boxscore {pk}: {e}")
+                    continue
 
     # Convert accumulated stats to modifier ratios and merge into DB.
     # Preserve game_history_logs written during the inner loop above.

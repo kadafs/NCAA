@@ -175,16 +175,17 @@ def process_single_game(args):
 
         lineups_status = "Confirmed" if lineups['away'] else "Projected (Generic)"
         
-        # Fetch Umpire (MLB Only)
+        # Fetch Umpire (all sports — MiLB assignments ARE returned by the Stats API)
+        # If the umpire is in our DB (MLB+MiLB), profile is applied; otherwise neutral.
         umpire_name = None
         ump_profile = None
-        if sport_id == 1:
-            try:
-                umpire_name = get_umpire_for_game(gid)
-                if umpire_name:
-                    ump_profile = load_umpire_profile(umpire_name)
-            except Exception as e:
-                print(f"  [Warning] Umpire fetch failed: {e}")
+        try:
+            umpire_name = get_umpire_for_game(gid)
+            if umpire_name:
+                ump_profile = load_umpire_profile(umpire_name)
+        except Exception as e:
+            print(f"  [Warning] Umpire fetch failed: {e}")
+
 
         mc = run_full_game_mc(
             lineups['away'], lineups['home'],
