@@ -1,0 +1,3069 @@
+{
+    "date": "2026-07-10",
+    "league": "MLB",
+    "mode": "confirmed",
+    "total_predictions": 14,
+    "predictions": [
+        {
+            "away_team": "Philadelphia Phillies",
+            "home_team": "Detroit Tigers",
+            "pitchers": {
+                "away": {
+                    "name": "Aaron Nola",
+                    "hand": "R",
+                    "fip": 4.31,
+                    "fb_pct": 0.5355,
+                    "gb_pct": 0.4645,
+                    "k_rate": 0.24
+                },
+                "home": {
+                    "name": "Jack Flaherty",
+                    "hand": "R",
+                    "fip": 4.39,
+                    "fb_pct": 0.6267,
+                    "gb_pct": 0.3733,
+                    "k_rate": 0.2642
+                }
+            },
+            "environment": {
+                "venue": "Comerica Park",
+                "park_factor": 0.937,
+                "weather": {
+                    "temp": 86,
+                    "wind_mph": 4,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.01,
+                    "temp_multiplier": 1.024,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.024,
+                    "weather_label": "86F | Calm | Weather: +2.4%"
+                },
+                "effective_pf": 0.9634,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.937 eff=0.963 (neutral)",
+                    "effective_pf": 0.9634,
+                    "effective_pf_note": "eff_PF=0.963 (avg_FB%=58%, raw_PF=0.937, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "weather_delta": -5.0,
+                    "weather_note": "86F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.036 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": -5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (86F) -> NEUTRAL (-5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": -5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9634,
+                    "effective_pf_note": "eff_PF=0.963 (avg_FB%=58%, raw_PF=0.937, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (86F) -> NEUTRAL (-5)"
+                },
+                "umpire": {
+                    "name": "Hunter Wendelstedt",
+                    "profile": {
+                        "games_called": 18,
+                        "raw_k_mod": 0.9642,
+                        "raw_bb_mod": 1.1164,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 20.0,
+                                "bb": 14.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 13.0,
+                                "bb": 9.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 16.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.34,
+                "mc_f5": 4.39,
+                "mc_f5_away": 2.35,
+                "mc_f5_home": 2.04,
+                "mc_late": 3.08,
+                "mc_full_game": 7.47,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        4,
+                        2,
+                        0,
+                        3,
+                        3
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.848,
+                    "raw_avg": 1.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        6,
+                        2
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.442,
+                "under_4_5": 0.573,
+                "under_5_5": 0.686,
+                "full_over_7_5": 0.47,
+                "full_over_8_5": 0.333,
+                "full_over_9_5": 0.22
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 UNDER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "New York Yankees",
+            "home_team": "Washington Nationals",
+            "pitchers": {
+                "away": {
+                    "name": "Ryan Weathers",
+                    "hand": "L",
+                    "fip": 3.69,
+                    "fb_pct": 0.5114,
+                    "gb_pct": 0.4886,
+                    "k_rate": 0.2689
+                },
+                "home": {
+                    "name": "Carson Palmquist",
+                    "hand": "L",
+                    "fip": 4.04,
+                    "fb_pct": 0.6667,
+                    "gb_pct": 0.3333,
+                    "k_rate": 0.275
+                }
+            },
+            "environment": {
+                "venue": "Nationals Park",
+                "park_factor": 1.086,
+                "weather": {
+                    "temp": 84,
+                    "wind_mph": 6,
+                    "wind_dir": "L-R",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.021,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.021,
+                    "weather_label": "84F | 6 MPH L-R | Weather: +2.1%"
+                },
+                "effective_pf": 1.0507,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.086 eff=1.051 (neutral)",
+                    "effective_pf": 1.0507,
+                    "effective_pf_note": "eff_PF=1.051 (avg_FB%=59%, raw_PF=1.086, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "84F | L-R",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.007 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 1.0507,
+                    "effective_pf_note": "eff_PF=1.051 (avg_FB%=59%, raw_PF=1.086, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Nestor Ceja",
+                    "profile": {
+                        "games_called": 25,
+                        "raw_k_mod": 0.9932,
+                        "raw_bb_mod": 0.9855,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 22.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 11.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 19.0,
+                                "bb": 3.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.9,
+                "mc_f5": 4.44,
+                "mc_f5_away": 2.44,
+                "mc_f5_home": 2.0,
+                "mc_late": 3.18,
+                "mc_full_game": 7.62,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        0,
+                        2,
+                        7,
+                        0,
+                        3
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.109,
+                    "raw_avg": 2.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        2,
+                        1,
+                        8,
+                        2,
+                        12
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.44,
+                "under_4_5": 0.571,
+                "under_5_5": 0.683,
+                "full_over_7_5": 0.493,
+                "full_over_8_5": 0.354,
+                "full_over_9_5": 0.237
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R1)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+        },
+        {
+            "away_team": "Kansas City Royals",
+            "home_team": "Baltimore Orioles",
+            "pitchers": {
+                "away": {
+                    "name": "Luinder Avila",
+                    "hand": "R",
+                    "fip": 5.47,
+                    "fb_pct": 0.4381,
+                    "gb_pct": 0.5619,
+                    "k_rate": 0.2016
+                },
+                "home": {
+                    "name": "Brandon Young",
+                    "hand": "R",
+                    "fip": 4.83,
+                    "fb_pct": 0.5444,
+                    "gb_pct": 0.4556,
+                    "k_rate": 0.1846
+                }
+            },
+            "environment": {
+                "venue": "Oriole Park at Camden Yards",
+                "park_factor": 1.031,
+                "weather": {
+                    "temp": 88,
+                    "wind_mph": 7,
+                    "wind_dir": "L-R",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.03,
+                    "temp_multiplier": 1.027,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.027,
+                    "weather_label": "88F | 7 MPH L-R | Weather: +2.7%"
+                },
+                "effective_pf": 1.0152,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.031 eff=1.015 (neutral)",
+                    "effective_pf": 1.0152,
+                    "effective_pf_note": "eff_PF=1.015 (avg_FB%=49%, raw_PF=1.031, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "weather_delta": -5.0,
+                    "weather_note": "88F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=+0.002 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": -5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (88F) -> NEUTRAL (-5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": -5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 1.0152,
+                    "effective_pf_note": "eff_PF=1.015 (avg_FB%=49%, raw_PF=1.031, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (88F) -> NEUTRAL (-5)"
+                },
+                "umpire": {
+                    "name": "Nick Mahrley",
+                    "profile": {
+                        "games_called": 23,
+                        "raw_k_mod": 1.0023,
+                        "raw_bb_mod": 1.0736,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 16.0,
+                                "bb": 2.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 19.0,
+                                "bb": 12.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 14.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 5.34,
+                "mc_f5": 4.37,
+                "mc_f5_away": 2.27,
+                "mc_f5_home": 2.1,
+                "mc_late": 3.26,
+                "mc_full_game": 7.63,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        0,
+                        2,
+                        2,
+                        0,
+                        9
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        4,
+                        3,
+                        1,
+                        3,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.455,
+                "under_4_5": 0.584,
+                "under_5_5": 0.686,
+                "full_over_7_5": 0.495,
+                "full_over_8_5": 0.356,
+                "full_over_9_5": 0.239
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (MODERATE)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+        },
+        {
+            "away_team": "Chicago Cubs",
+            "home_team": "Cincinnati Reds",
+            "pitchers": {
+                "away": {
+                    "name": "Shota Imanaga",
+                    "hand": "L",
+                    "fip": 3.68,
+                    "fb_pct": 0.5646,
+                    "gb_pct": 0.4354,
+                    "k_rate": 0.2397
+                },
+                "home": {
+                    "name": "Hunter Greene",
+                    "hand": "R",
+                    "fip": 3.56,
+                    "fb_pct": 0.7273,
+                    "gb_pct": 0.2727,
+                    "k_rate": 0.4222
+                }
+            },
+            "environment": {
+                "venue": "Great American Ball Park",
+                "park_factor": 1.078,
+                "weather": {
+                    "temp": 88,
+                    "wind_mph": 8,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.03,
+                    "temp_multiplier": 1.027,
+                    "wind_multiplier": 0.978,
+                    "weather_multiplier": 1.0044,
+                    "weather_label": "88F | 8 MPH In | Weather: +0.4%"
+                },
+                "effective_pf": 1.0468,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.078 eff=1.047 (neutral)",
+                    "effective_pf": 1.0468,
+                    "effective_pf_note": "eff_PF=1.047 (avg_FB%=60%, raw_PF=1.078, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "weather_delta": -5.0,
+                    "weather_note": "88F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.004 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": -5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (88F) -> NEUTRAL (-5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": -5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 1.0468,
+                    "effective_pf_note": "eff_PF=1.047 (avg_FB%=60%, raw_PF=1.078, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (88F) -> NEUTRAL (-5)"
+                },
+                "umpire": {
+                    "name": "Jim Wolf",
+                    "profile": {
+                        "games_called": 24,
+                        "raw_k_mod": 0.9955,
+                        "raw_bb_mod": 1.0759,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 16.0,
+                                "bb": 5.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-07",
+                                "k": 23.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 24.0,
+                                "bb": 2.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2024-04-24",
+                                "sport": "AAA",
+                                "k": 10.0,
+                                "bb": 6.0,
+                                "ip": 13.0,
+                                "weight": 0.2
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 3.81,
+                "mc_f5": 4.42,
+                "mc_f5_away": 2.3,
+                "mc_f5_home": 2.12,
+                "mc_late": 3.42,
+                "mc_full_game": 7.84,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.848,
+                    "raw_avg": 1.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        1,
+                        0,
+                        0,
+                        4,
+                        3
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        2,
+                        1,
+                        0,
+                        7,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.444,
+                "under_4_5": 0.567,
+                "under_5_5": 0.68,
+                "full_over_7_5": 0.524,
+                "full_over_8_5": 0.385,
+                "full_over_9_5": 0.263
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R1)",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Value Strategy",
+                "action": "BET F5 UNDER",
+                "reason": "Volatility Veto: High true-outcome pitcher metrics. MC sequence noise flagged; trusting TD.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Seattle Mariners",
+            "home_team": "Tampa Bay Rays",
+            "pitchers": {
+                "away": {
+                    "name": "Luis Castillo",
+                    "hand": "R",
+                    "fip": 3.81,
+                    "fb_pct": 0.5519,
+                    "gb_pct": 0.4481,
+                    "k_rate": 0.2077
+                },
+                "home": {
+                    "name": "Nick Martinez",
+                    "hand": "R",
+                    "fip": 4.08,
+                    "fb_pct": 0.5918,
+                    "gb_pct": 0.4082,
+                    "k_rate": 0.1449
+                }
+            },
+            "environment": {
+                "venue": "Tropicana Field",
+                "park_factor": 0.966,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Indoor",
+                    "wind_lateral": null,
+                    "is_indoor": true,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0,
+                    "weather_label": "Indoor / Roof Closed | No weather adjustment"
+                },
+                "effective_pf": 0.9806,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.966 eff=0.981 (neutral)",
+                    "effective_pf": 0.9806,
+                    "effective_pf_note": "eff_PF=0.981 (avg_FB%=57%, raw_PF=0.966, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "Indoor/no weather",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.027 (within threshold)",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.9806,
+                    "effective_pf_note": "eff_PF=0.981 (avg_FB%=57%, raw_PF=0.966, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Tom Hanahan",
+                    "profile": {
+                        "games_called": 45,
+                        "raw_k_mod": 0.973,
+                        "raw_bb_mod": 1.2014,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 16.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 21.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 11.0,
+                                "bb": 2.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2024-04-14",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 10.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-16",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 11.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-19",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-02",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 9.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-28",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-25",
+                                "sport": "AAA",
+                                "k": 26.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-28",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 10.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-30",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-03",
+                                "sport": "AAA",
+                                "k": 13.0,
+                                "bb": 8.0,
+                                "ip": 13.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-27",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-13",
+                                "sport": "AAA",
+                                "k": 25.0,
+                                "bb": 18.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-20",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2025-04-18",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-05-15",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 15.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-06-18",
+                                "sport": "AAA",
+                                "k": 22.0,
+                                "bb": 12.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-07-02",
+                                "sport": "AAA",
+                                "k": 13.0,
+                                "bb": 15.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-07-05",
+                                "sport": "AAA",
+                                "k": 15.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-07-31",
+                                "sport": "AAA",
+                                "k": 15.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-09-06",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 7.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-09-09",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 10.0,
+                                "ip": 19.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-09-19",
+                                "sport": "AAA",
+                                "k": 14.0,
+                                "bb": 4.0,
+                                "ip": 19.333333333333336,
+                                "weight": 0.3
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 5.12,
+                "mc_f5": 5.27,
+                "mc_f5_away": 2.89,
+                "mc_f5_home": 2.38,
+                "mc_late": 2.97,
+                "mc_full_game": 8.24,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        7,
+                        1,
+                        1,
+                        2,
+                        0,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.978,
+                    "raw_avg": 2.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        2,
+                        4,
+                        3,
+                        2,
+                        6
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.348,
+                "under_4_5": 0.463,
+                "under_5_5": 0.58,
+                "full_over_7_5": 0.58,
+                "full_over_8_5": 0.441,
+                "full_over_9_5": 0.314
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Cleveland Guardians",
+            "home_team": "Miami Marlins",
+            "pitchers": {
+                "away": {
+                    "name": "Parker Messick",
+                    "hand": "L",
+                    "fip": 2.99,
+                    "fb_pct": 0.5047,
+                    "gb_pct": 0.4953,
+                    "k_rate": 0.2472
+                },
+                "home": {
+                    "name": "Sandy Alcantara",
+                    "hand": "R",
+                    "fip": 4.35,
+                    "fb_pct": 0.4891,
+                    "gb_pct": 0.5109,
+                    "k_rate": 0.1842
+                }
+            },
+            "environment": {
+                "venue": "loanDepot park",
+                "park_factor": 0.967,
+                "weather": {
+                    "temp": 91,
+                    "wind_mph": 9,
+                    "wind_dir": "L-R",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.06,
+                    "temp_multiplier": 1.0315,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0315,
+                    "weather_label": "91F | 9 MPH L-R | Weather: +3.2%"
+                },
+                "effective_pf": 0.9836,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.967 eff=0.984 (neutral)",
+                    "effective_pf": 0.9836,
+                    "effective_pf_note": "eff_PF=0.984 (avg_FB%=50%, raw_PF=0.967, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "weather_delta": -5.0,
+                    "weather_note": "91F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.001 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": -5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (91F) -> NEUTRAL (-5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": -5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9836,
+                    "effective_pf_note": "eff_PF=0.984 (avg_FB%=50%, raw_PF=0.967, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (91F) -> NEUTRAL (-5)"
+                },
+                "umpire": {
+                    "name": "Brian Walsh",
+                    "profile": {
+                        "games_called": 40,
+                        "raw_k_mod": 0.9992,
+                        "raw_bb_mod": 1.0453,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-10",
+                                "k": 12.0,
+                                "bb": 5.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2024-05-08",
+                                "sport": "AAA",
+                                "k": 11.0,
+                                "bb": 6.0,
+                                "ip": 13.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-15",
+                                "sport": "AAA",
+                                "k": 17.0,
+                                "bb": 5.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-18",
+                                "sport": "AAA",
+                                "k": 20.0,
+                                "bb": 10.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-23",
+                                "sport": "AAA",
+                                "k": 26.0,
+                                "bb": 12.0,
+                                "ip": 20.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-02",
+                                "sport": "AAA",
+                                "k": 22.0,
+                                "bb": 4.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2025-04-15",
+                                "sport": "AAA",
+                                "k": 15.0,
+                                "bb": 9.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-04-19",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 7.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-05-01",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 12.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-05-29",
+                                "sport": "AAA",
+                                "k": 13.0,
+                                "bb": 5.0,
+                                "ip": 14.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-07-01",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 5.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-07-04",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 9.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-08-05",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-08-15",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 11.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-09-09",
+                                "sport": "AAA",
+                                "k": 32.0,
+                                "bb": 10.0,
+                                "ip": 22.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-09-12",
+                                "sport": "AAA",
+                                "k": 26.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.56,
+                "mc_f5": 4.21,
+                "mc_f5_away": 2.33,
+                "mc_f5_home": 1.88,
+                "mc_late": 2.84,
+                "mc_full_game": 7.05,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        2,
+                        3,
+                        1,
+                        3,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        0,
+                        0,
+                        6,
+                        2,
+                        4
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.472,
+                "under_4_5": 0.6,
+                "under_5_5": 0.708,
+                "full_over_7_5": 0.408,
+                "full_over_8_5": 0.277,
+                "full_over_9_5": 0.174
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
+            }
+        },
+        {
+            "away_team": "Boston Red Sox",
+            "home_team": "New York Mets",
+            "pitchers": {
+                "away": {
+                    "name": "Sonny Gray",
+                    "hand": "R",
+                    "fip": 4.19,
+                    "fb_pct": 0.4815,
+                    "gb_pct": 0.5185,
+                    "k_rate": 0.2225
+                },
+                "home": {
+                    "name": "Nolan McLean",
+                    "hand": "R",
+                    "fip": 2.94,
+                    "fb_pct": 0.4105,
+                    "gb_pct": 0.5895,
+                    "k_rate": 0.279
+                }
+            },
+            "environment": {
+                "venue": "Citi Field",
+                "park_factor": 0.974,
+                "weather": {
+                    "temp": 82,
+                    "wind_mph": 12,
+                    "wind_dir": "L-R",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.018,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.018,
+                    "weather_label": "82F | 12 MPH L-R | Weather: +1.8%"
+                },
+                "effective_pf": 0.9884,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.974 eff=0.988 (neutral)",
+                    "effective_pf": 0.9884,
+                    "effective_pf_note": "eff_PF=0.988 (avg_FB%=45%, raw_PF=0.974, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "82F | L-R",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.018 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9884,
+                    "effective_pf_note": "eff_PF=0.988 (avg_FB%=45%, raw_PF=0.974, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Alan Porter",
+                    "profile": {
+                        "games_called": 25,
+                        "raw_k_mod": 0.9819,
+                        "raw_bb_mod": 1.061,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-02",
+                                "k": 10.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-06",
+                                "k": 18.0,
+                                "bb": 12.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 13.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.12,
+                "mc_f5": 3.61,
+                "mc_f5_away": 1.7,
+                "mc_f5_home": 1.91,
+                "mc_late": 2.78,
+                "mc_full_game": 6.39,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        2,
+                        2,
+                        2,
+                        5,
+                        4
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        0,
+                        1,
+                        6,
+                        1,
+                        9
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.559,
+                "under_4_5": 0.687,
+                "under_5_5": 0.78,
+                "full_over_7_5": 0.311,
+                "full_over_8_5": 0.195,
+                "full_over_9_5": 0.113
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Bet **UNDER** (HIGH)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Value Strategy",
+                "action": "BET F5 UNDER",
+                "reason": "Volatility Veto: High true-outcome pitcher metrics. MC sequence noise flagged; trusting TD.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Athletics",
+            "home_team": "Chicago White Sox",
+            "pitchers": {
+                "away": {
+                    "name": "Jacob Lopez",
+                    "hand": "L",
+                    "fip": 5.75,
+                    "fb_pct": 0.6583,
+                    "gb_pct": 0.3417,
+                    "k_rate": 0.1641
+                },
+                "home": {
+                    "name": "Sean Burke",
+                    "hand": "R",
+                    "fip": 4.24,
+                    "fb_pct": 0.5979,
+                    "gb_pct": 0.4021,
+                    "k_rate": 0.2644
+                }
+            },
+            "environment": {
+                "venue": "Rate Field",
+                "park_factor": 0.963,
+                "weather": {
+                    "temp": 90,
+                    "wind_mph": 4,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.05,
+                    "temp_multiplier": 1.03,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.03,
+                    "weather_label": "90F | Calm | Weather: +3.0%"
+                },
+                "effective_pf": 0.9778,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.963 eff=0.978 (neutral)",
+                    "effective_pf": 0.9778,
+                    "effective_pf_note": "eff_PF=0.978 (avg_FB%=60%, raw_PF=0.963, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "weather_delta": 5.0,
+                    "weather_note": "90F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=+0.013 (within threshold)",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (90F) -> NEUTRAL (+5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.9778,
+                    "effective_pf_note": "eff_PF=0.978 (avg_FB%=60%, raw_PF=0.963, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (90F) -> NEUTRAL (+5)"
+                },
+                "umpire": {
+                    "name": "Emil Jimenez",
+                    "profile": {
+                        "games_called": 31,
+                        "raw_k_mod": 1.013,
+                        "raw_bb_mod": 1.0048,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-06",
+                                "k": 26.0,
+                                "bb": 2.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 20.0,
+                                "bb": 5.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2024-05-10",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 1.0,
+                                "ip": 17.666666666666664,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-14",
+                                "sport": "AAA",
+                                "k": 14.0,
+                                "bb": 11.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-16",
+                                "sport": "AAA",
+                                "k": 12.0,
+                                "bb": 7.0,
+                                "ip": 13.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-18",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-26",
+                                "sport": "AAA",
+                                "k": 17.0,
+                                "bb": 12.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-06",
+                                "sport": "AAA",
+                                "k": 22.0,
+                                "bb": 1.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-09",
+                                "sport": "AAA",
+                                "k": 22.0,
+                                "bb": 7.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.85,
+                "mc_f5": 4.92,
+                "mc_f5_away": 2.09,
+                "mc_f5_home": 2.83,
+                "mc_late": 2.95,
+                "mc_full_game": 7.87,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        0,
+                        0,
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        9,
+                        0,
+                        4,
+                        1,
+                        0,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.383,
+                "under_4_5": 0.514,
+                "under_5_5": 0.628,
+                "full_over_7_5": 0.529,
+                "full_over_8_5": 0.389,
+                "full_over_9_5": 0.267
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R2)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Houston Astros",
+            "home_team": "Texas Rangers",
+            "pitchers": {
+                "away": {
+                    "name": "Hunter Brown",
+                    "hand": "R",
+                    "fip": 3.54,
+                    "fb_pct": 0.4762,
+                    "gb_pct": 0.5238,
+                    "k_rate": 0.2549
+                },
+                "home": {
+                    "name": "Cal Quantrill",
+                    "hand": "R",
+                    "fip": 5.05,
+                    "fb_pct": 0.6636,
+                    "gb_pct": 0.3364,
+                    "k_rate": 0.1451
+                }
+            },
+            "environment": {
+                "venue": "Globe Life Field",
+                "park_factor": 0.999,
+                "weather": {
+                    "temp": 81,
+                    "wind_mph": 7,
+                    "wind_dir": "L-R",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0165,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0165,
+                    "weather_label": "81F | 7 MPH L-R | Weather: +1.6%"
+                },
+                "effective_pf": 0.9994,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.999 eff=0.999 (neutral)",
+                    "effective_pf": 0.9994,
+                    "effective_pf_note": "eff_PF=0.999 (avg_FB%=57%, raw_PF=0.999, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "81F | L-R",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.056 (within threshold)",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.9994,
+                    "effective_pf_note": "eff_PF=0.999 (avg_FB%=57%, raw_PF=0.999, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Quinn Wolcott",
+                    "profile": {
+                        "games_called": 26,
+                        "raw_k_mod": 0.9443,
+                        "raw_bb_mod": 1.036,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 17.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-04",
+                                "k": 17.0,
+                                "bb": 3.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 9.0,
+                                "bb": 7.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 5.3,
+                "mc_f5": 5.09,
+                "mc_f5_away": 2.94,
+                "mc_f5_home": 2.15,
+                "mc_late": 3.23,
+                "mc_full_game": 8.32,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.022,
+                    "raw_avg": 2.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        7,
+                        0,
+                        1,
+                        4,
+                        6
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        4,
+                        1,
+                        3,
+                        5,
+                        0,
+                        2
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.37,
+                "under_4_5": 0.492,
+                "under_5_5": 0.609,
+                "full_over_7_5": 0.59,
+                "full_over_8_5": 0.451,
+                "full_over_9_5": 0.323
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (MODERATE)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Los Angeles Angels",
+            "home_team": "Minnesota Twins",
+            "pitchers": {
+                "away": {
+                    "name": "Grayson Rodriguez",
+                    "hand": "R",
+                    "fip": 4.92,
+                    "fb_pct": 0.6364,
+                    "gb_pct": 0.3636,
+                    "k_rate": 0.1644
+                },
+                "home": {
+                    "name": "Zebby Matthews",
+                    "hand": "R",
+                    "fip": 4.54,
+                    "fb_pct": 0.5474,
+                    "gb_pct": 0.4526,
+                    "k_rate": 0.1964
+                }
+            },
+            "environment": {
+                "venue": "Target Field",
+                "park_factor": 1.014,
+                "weather": {
+                    "temp": 90,
+                    "wind_mph": 9,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.05,
+                    "temp_multiplier": 1.03,
+                    "wind_multiplier": 1.026,
+                    "weather_multiplier": 1.0568,
+                    "weather_label": "90F | 9 MPH Out | Weather: +5.7%"
+                },
+                "effective_pf": 1.0083,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.014 eff=1.008 (neutral)",
+                    "effective_pf": 1.0083,
+                    "effective_pf_note": "eff_PF=1.008 (avg_FB%=59%, raw_PF=1.014, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "weather_delta": 5.0,
+                    "weather_note": "90F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.046 (within threshold)",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (90F) -> NEUTRAL (+5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 1.0083,
+                    "effective_pf_note": "eff_PF=1.008 (avg_FB%=59%, raw_PF=1.014, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (90F) -> NEUTRAL (+5)"
+                },
+                "umpire": {
+                    "name": "Brian O'Nora",
+                    "profile": {
+                        "games_called": 21,
+                        "raw_k_mod": 0.9541,
+                        "raw_bb_mod": 0.9091,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 17.0,
+                                "bb": 0.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 12.0,
+                                "bb": 5.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 10.0,
+                                "bb": 5.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 5.31,
+                "mc_f5": 5.81,
+                "mc_f5_away": 2.46,
+                "mc_f5_home": 3.35,
+                "mc_late": 3.07,
+                "mc_full_game": 8.88,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        2,
+                        4,
+                        1,
+                        7,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        3,
+                        1,
+                        1,
+                        3,
+                        2
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.302,
+                "under_4_5": 0.417,
+                "under_5_5": 0.527,
+                "full_over_7_5": 0.662,
+                "full_over_8_5": 0.528,
+                "full_over_9_5": 0.397
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (HIGH)",
+                "adv_5_5": "Bet **UNDER** (MODERATE)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        },
+        {
+            "away_team": "Atlanta Braves",
+            "home_team": "St. Louis Cardinals",
+            "pitchers": {
+                "away": {
+                    "name": "Chris Sale",
+                    "hand": "L",
+                    "fip": 3.92,
+                    "fb_pct": 0.5,
+                    "gb_pct": 0.5,
+                    "k_rate": 0.2903
+                },
+                "home": {
+                    "name": "Kyle Leahy",
+                    "hand": "R",
+                    "fip": 4.95,
+                    "fb_pct": 0.4862,
+                    "gb_pct": 0.5138,
+                    "k_rate": 0.1933
+                }
+            },
+            "environment": {
+                "venue": "Busch Stadium",
+                "park_factor": 0.904,
+                "weather": {
+                    "temp": 88,
+                    "wind_mph": 9,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.03,
+                    "temp_multiplier": 1.027,
+                    "wind_multiplier": 0.974,
+                    "weather_multiplier": 1.0003,
+                    "weather_label": "88F | 9 MPH In | Weather: +0.0%"
+                },
+                "effective_pf": 0.9527,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.904 eff=0.953 (neutral)",
+                    "effective_pf": 0.9527,
+                    "effective_pf_note": "eff_PF=0.953 (avg_FB%=49%, raw_PF=0.904, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "weather_delta": -5.0,
+                    "weather_note": "88F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.009 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": -5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (88F) -> NEUTRAL (-5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": -5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONTRADICTS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9527,
+                    "effective_pf_note": "eff_PF=0.953 (avg_FB%=49%, raw_PF=0.904, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONTRADICTS (88F) -> NEUTRAL (-5)"
+                },
+                "umpire": {
+                    "name": "Jeremie Rehak",
+                    "profile": {
+                        "games_called": 23,
+                        "raw_k_mod": 0.9911,
+                        "raw_bb_mod": 0.9586,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-30",
+                                "k": 9.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-05",
+                                "k": 24.0,
+                                "bb": 4.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 18.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.46,
+                "mc_f5": 3.99,
+                "mc_f5_away": 2.29,
+                "mc_f5_home": 1.71,
+                "mc_late": 2.89,
+                "mc_full_game": 6.89,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        0,
+                        1,
+                        6,
+                        0,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        4,
+                        0,
+                        1,
+                        3,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.503,
+                "under_4_5": 0.625,
+                "under_5_5": 0.732,
+                "full_over_7_5": 0.386,
+                "full_over_8_5": 0.257,
+                "full_over_9_5": 0.159
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        },
+        {
+            "away_team": "Toronto Blue Jays",
+            "home_team": "San Diego Padres",
+            "pitchers": {
+                "away": {
+                    "name": "Shane Bieber",
+                    "hand": "R",
+                    "fip": 6.54,
+                    "fb_pct": 0.4865,
+                    "gb_pct": 0.5135,
+                    "k_rate": 0.1512
+                },
+                "home": {
+                    "name": "JP Sears",
+                    "hand": "L",
+                    "fip": 5.22,
+                    "fb_pct": 0.561,
+                    "gb_pct": 0.439,
+                    "k_rate": 0.1977
+                }
+            },
+            "environment": {
+                "venue": "Petco Park",
+                "park_factor": 0.908,
+                "weather": {
+                    "temp": 73,
+                    "wind_mph": 7,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0045,
+                    "wind_multiplier": 1.018,
+                    "weather_multiplier": 1.0226,
+                    "weather_label": "73F | 7 MPH Out | Weather: +2.3%"
+                },
+                "effective_pf": 0.9518,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.908 eff=0.952 (neutral)",
+                    "effective_pf": 0.9518,
+                    "effective_pf_note": "eff_PF=0.952 (avg_FB%=52%, raw_PF=0.908, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "73F | Out",
+                    "umpire_flag": "LOOSE_ZONE",
+                    "umpire_signal": "CONFIRMS",
+                    "umpire_delta": 6,
+                    "umpire_note": "K-dev=-0.082 (24G)",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 6.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Ump: LOOSE_ZONE CONFIRMS (K-dev=-0.082 (24G)) -> NEUTRAL (+6)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 6,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "LOOSE_ZONE",
+                    "umpire_signal": "CONFIRMS",
+                    "lean": "OVER",
+                    "effective_pf": 0.9518,
+                    "effective_pf_note": "eff_PF=0.952 (avg_FB%=52%, raw_PF=0.908, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Ump: LOOSE_ZONE CONFIRMS (K-dev=-0.082 (24G)) -> NEUTRAL (+6)"
+                },
+                "umpire": {
+                    "name": "Clint Vondrak",
+                    "profile": {
+                        "games_called": 24,
+                        "raw_k_mod": 0.9183,
+                        "raw_bb_mod": 1.0132,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-07",
+                                "k": 18.0,
+                                "bb": 5.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 13.0,
+                                "bb": 5.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.92,
+                "mc_f5": 5.14,
+                "mc_f5_away": 2.45,
+                "mc_f5_home": 2.7,
+                "mc_late": 2.87,
+                "mc_full_game": 8.02,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.225,
+                    "raw_avg": 3.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        4,
+                        5,
+                        5,
+                        8,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.109,
+                    "raw_avg": 2.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        7,
+                        2,
+                        1,
+                        4,
+                        4
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.363,
+                "under_4_5": 0.488,
+                "under_5_5": 0.596,
+                "full_over_7_5": 0.549,
+                "full_over_8_5": 0.41,
+                "full_over_9_5": 0.285
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 OVER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Arizona Diamondbacks",
+            "home_team": "Los Angeles Dodgers",
+            "pitchers": {
+                "away": {
+                    "name": "Eduardo Rodriguez",
+                    "hand": "R",
+                    "fip": 2.98,
+                    "fb_pct": 0.4588,
+                    "gb_pct": 0.5412,
+                    "k_rate": 0.2216
+                },
+                "home": {
+                    "name": "Kyle Hurt",
+                    "hand": "R",
+                    "fip": 4.06,
+                    "fb_pct": 0.4423,
+                    "gb_pct": 0.5577,
+                    "k_rate": 0.2815
+                }
+            },
+            "environment": {
+                "venue": "UNIQLO Field at Dodger Stadium",
+                "park_factor": 0.949,
+                "weather": {
+                    "temp": 75,
+                    "wind_mph": 7,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0075,
+                    "wind_multiplier": 1.018,
+                    "weather_multiplier": 1.0256,
+                    "weather_label": "75F | 7 MPH Out | Weather: +2.6%"
+                },
+                "effective_pf": 0.977,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.949 eff=0.977 (neutral)",
+                    "effective_pf": 0.977,
+                    "effective_pf_note": "eff_PF=0.977 (avg_FB%=45%, raw_PF=0.949, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "75F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=+0.050 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.977,
+                    "effective_pf_note": "eff_PF=0.977 (avg_FB%=45%, raw_PF=0.949, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Austin Jones",
+                    "profile": {
+                        "games_called": 77,
+                        "raw_k_mod": 1.0501,
+                        "raw_bb_mod": 1.1762,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-02",
+                                "k": 13.0,
+                                "bb": 4.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-06",
+                                "k": 15.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 21.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2024-04-05",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-09",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-12",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-16",
+                                "sport": "AAA",
+                                "k": 12.0,
+                                "bb": 14.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-19",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-23",
+                                "sport": "AAA",
+                                "k": 7.0,
+                                "bb": 7.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-26",
+                                "sport": "AAA",
+                                "k": 13.0,
+                                "bb": 0.0,
+                                "ip": 17.333333333333336,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-04-30",
+                                "sport": "AAA",
+                                "k": 17.0,
+                                "bb": 17.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-03",
+                                "sport": "AAA",
+                                "k": 26.0,
+                                "bb": 4.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-07",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-10",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-14",
+                                "sport": "AAA",
+                                "k": 20.0,
+                                "bb": 8.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-18",
+                                "sport": "AAA",
+                                "k": 13.0,
+                                "bb": 4.0,
+                                "ip": 14.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-21",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 10.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-23",
+                                "sport": "AAA",
+                                "k": 15.0,
+                                "bb": 4.0,
+                                "ip": 14.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-26",
+                                "sport": "AAA",
+                                "k": 14.0,
+                                "bb": 14.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-05-30",
+                                "sport": "AAA",
+                                "k": 12.0,
+                                "bb": 3.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-02",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-06",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-09",
+                                "sport": "AAA",
+                                "k": 24.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-14",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 12.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-18",
+                                "sport": "AAA",
+                                "k": 14.0,
+                                "bb": 13.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-21",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 7.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-25",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-06-28",
+                                "sport": "AAA",
+                                "k": 20.0,
+                                "bb": 20.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-02",
+                                "sport": "AAA",
+                                "k": 10.0,
+                                "bb": 6.0,
+                                "ip": 13.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-05",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 16.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-09",
+                                "sport": "AAA",
+                                "k": 17.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-12",
+                                "sport": "AAA",
+                                "k": 15.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-07-19",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-06",
+                                "sport": "AAA",
+                                "k": 21.0,
+                                "bb": 12.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-09",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 9.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-27",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-30",
+                                "sport": "AAA",
+                                "k": 10.0,
+                                "bb": 7.0,
+                                "ip": 14.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-08-30",
+                                "sport": "AAA",
+                                "k": 10.0,
+                                "bb": 7.0,
+                                "ip": 14.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-03",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 16.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-06",
+                                "sport": "AAA",
+                                "k": 24.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-10",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 7.0,
+                                "ip": 17.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2024-09-17",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 10.0,
+                                "ip": 18.0,
+                                "weight": 0.2
+                            },
+                            {
+                                "date": "2025-04-06",
+                                "sport": "AAA",
+                                "k": 26.0,
+                                "bb": 11.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-04-10",
+                                "sport": "AAA",
+                                "k": 24.0,
+                                "bb": 7.0,
+                                "ip": 17.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-06-10",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 9.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-06-13",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-07-18",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 7.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-08-19",
+                                "sport": "AAA",
+                                "k": 22.0,
+                                "bb": 5.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-08-23",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 4.0,
+                                "ip": 19.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2025-09-17",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.3
+                            },
+                            {
+                                "date": "2026-04-02",
+                                "sport": "AAA",
+                                "k": 15.0,
+                                "bb": 6.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-05-05",
+                                "sport": "AAA",
+                                "k": 28.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-05-12",
+                                "sport": "AAA",
+                                "k": 18.0,
+                                "bb": 10.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-05-16",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 13.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-05-19",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 6.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-06-02",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 7.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-06-06",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 4.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-06-09",
+                                "sport": "AAA",
+                                "k": 19.0,
+                                "bb": 8.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-06-12",
+                                "sport": "AAA",
+                                "k": 23.0,
+                                "bb": 10.0,
+                                "ip": 20.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-06-16",
+                                "sport": "AAA",
+                                "k": 16.0,
+                                "bb": 10.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-06-20",
+                                "sport": "AAA",
+                                "k": 20.0,
+                                "bb": 2.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.08,
+                "mc_f5": 3.38,
+                "mc_f5_away": 1.74,
+                "mc_f5_home": 1.63,
+                "mc_late": 2.79,
+                "mc_full_game": 6.16,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        1,
+                        6,
+                        2,
+                        1,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        0,
+                        2,
+                        3,
+                        2,
+                        6
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.583,
+                "under_4_5": 0.71,
+                "under_5_5": 0.804,
+                "full_over_7_5": 0.279,
+                "full_over_8_5": 0.17,
+                "full_over_9_5": 0.096
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Bet **UNDER** (HIGH)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Value Strategy",
+                "action": "BET F5 UNDER",
+                "reason": "Volatility Veto: High true-outcome pitcher metrics. MC sequence noise flagged; trusting TD.",
+                "odds": 1.85
+            }
+        },
+        {
+            "away_team": "Colorado Rockies",
+            "home_team": "San Francisco Giants",
+            "pitchers": {
+                "away": {
+                    "name": "Tanner Gordon",
+                    "hand": "R",
+                    "fip": 5.58,
+                    "fb_pct": 0.5918,
+                    "gb_pct": 0.4082,
+                    "k_rate": 0.2061
+                },
+                "home": {
+                    "name": "Robbie Ray",
+                    "hand": "L",
+                    "fip": 4.4,
+                    "fb_pct": 0.6147,
+                    "gb_pct": 0.3853,
+                    "k_rate": 0.2032
+                }
+            },
+            "environment": {
+                "venue": "Oracle Park",
+                "park_factor": 0.937,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 7,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.003,
+                    "wind_multiplier": 1.018,
+                    "weather_multiplier": 1.0211,
+                    "weather_label": "72F | 7 MPH Out | Weather: +2.1%"
+                },
+                "effective_pf": 0.9622,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.937 eff=0.962 (neutral)",
+                    "effective_pf": 0.9622,
+                    "effective_pf_note": "eff_PF=0.962 (avg_FB%=60%, raw_PF=0.937, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "72F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=+0.010 (within threshold)",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.9622,
+                    "effective_pf_note": "eff_PF=0.962 (avg_FB%=60%, raw_PF=0.937, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Ryan Wills",
+                    "profile": {
+                        "games_called": 25,
+                        "raw_k_mod": 1.01,
+                        "raw_bb_mod": 1.0266,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-06-29",
+                                "k": 16.0,
+                                "bb": 6.0,
+                                "ip": 17.666666666666664,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-06",
+                                "k": 20.0,
+                                "bb": 1.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-10",
+                                "k": 12.0,
+                                "bb": 13.0,
+                                "ip": 18.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.88,
+                "mc_f5": 5.17,
+                "mc_f5_away": 2.66,
+                "mc_f5_home": 2.5,
+                "mc_late": 3.12,
+                "mc_full_game": 8.28,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        1,
+                        1,
+                        2,
+                        3,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        1,
+                        1,
+                        4,
+                        0,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.357,
+                "under_4_5": 0.482,
+                "under_5_5": 0.593,
+                "full_over_7_5": 0.585,
+                "full_over_8_5": 0.446,
+                "full_over_9_5": 0.319
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R2)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "No Edge",
+                "reason": "Did not meet divergence thresholds."
+            }
+        }
+    ]
+}
