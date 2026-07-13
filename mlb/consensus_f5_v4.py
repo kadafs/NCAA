@@ -382,6 +382,18 @@ def process_single_game(args):
                 "weather": weather,
                 "effective_pf": effective_pf,
                 "env_confidence": env_conf,
+                "env_display": {
+                    "signal": env_conf.get('combined_signal', 'NEUTRAL'),
+                    "delta": round(env_conf.get('confidence_delta', 0)),
+                    "park_flag": env_conf.get('park_flag', 'NEUTRAL'),
+                    "park_signal": env_conf.get('park_signal', 'NEUTRAL'),
+                    "weather_flag": env_conf.get('weather_flag', 'NEUTRAL'),
+                    "weather_signal": env_conf.get('weather_signal', 'NEUTRAL'),
+                    "umpire_flag": env_conf.get('umpire_flag', 'NEUTRAL'),
+                    "umpire_signal": env_conf.get('umpire_signal', 'NEUTRAL'),
+                    "lean": env_conf.get('lean', 'NEUTRAL'),
+                    "summary": env_conf.get('env_note', ''),
+                },
                 "umpire": {
                     "name": umpire_name,
                     "profile": ump_profile
@@ -451,11 +463,14 @@ def process_single_game(args):
         is_priority = False
         flag_reasons = []
 
-        if weather:
-            eff_pct_val = (effective_pf - 1.0) * 100
-            if abs(eff_pct_val) >= 5.0:
-                is_priority = True
-                flag_reasons.append(f"Extreme Weather ({'+' if eff_pct_val>0 else ''}{round(eff_pct_val,1)}%)")
+        # Priority flag: use env_confidence signal instead of raw effective_pf %
+        env_signal = env_conf.get('combined_signal', 'NEUTRAL')
+        if env_signal in ('STRONG_CONFIRM', 'STRONG_CONTRADICT'):
+            is_priority = True
+            flag_reasons.append(f"ENV {env_signal} (delta={env_conf.get('confidence_delta', 0):+.0f})")
+        elif env_signal in ('CONFIRM', 'CONTRADICT') and weather:
+            is_priority = True
+            flag_reasons.append(f"ENV {env_signal} (delta={env_conf.get('confidence_delta', 0):+.0f})")
 
         for adv in [adv_3_5, adv_4_5, adv_5_5]:
             if "Bet" in adv and "Skip" not in adv:
@@ -479,10 +494,23 @@ def process_single_game(args):
             result['priority_flags'].append(f"- **{away} @ {home}:** {', '.join(set(flag_reasons))}")
 
         block_lines.append(f"🏙️ **{venue}** (Park Factor: {pf}x)")
+        # Layer 2: Directional ENV filters displayed — not applied to the pure core model
         if weather:
-            eff_pct = round((effective_pf - 1.0) * 100, 1)
-            sign = '+' if eff_pct >= 0 else ''
-            block_lines.append(f"🌤️ **Weather:** {weather['weather_label']} | Effective PF: {effective_pf}x ({sign}{eff_pct}%)")
+            block_lines.append(f"🌤️ **Weather:** {weather['weather_label']}")
+        # Display combined env_confidence signal with individual flags
+        env_signal = env_conf.get('combined_signal', 'NEUTRAL')
+        env_delta = env_conf.get('confidence_delta', 0)
+        env_parts = []
+        if env_conf.get('park_flag', 'NEUTRAL') != 'NEUTRAL':
+            env_parts.append(f"Park: {env_conf['park_flag']} {env_conf['park_signal']}")
+        if env_conf.get('weather_flag', 'NEUTRAL') != 'NEUTRAL':
+            env_parts.append(f"Weather: {env_conf['weather_flag']} {env_conf['weather_signal']}")
+        if env_conf.get('umpire_flag', 'NEUTRAL') != 'NEUTRAL':
+            env_parts.append(f"Umpire: {env_conf['umpire_flag']} {env_conf['umpire_signal']}")
+        if env_parts:
+            block_lines.append(f"🌍 **ENV Filters:** {' | '.join(env_parts)} -> {env_signal} ({env_delta:+.0f})")
+        else:
+            block_lines.append(f"🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection")
         
         if umpire_name and ump_profile:
             games_cnt = ump_profile.get('games_called', 0)
@@ -494,9 +522,9 @@ def process_single_game(args):
                 bb_pct = round((bb_mod - 1.0) * 100, 1)
                 k_sign = '+' if k_pct > 0 else ''
                 bb_sign = '+' if bb_pct > 0 else ''
-                block_lines.append(f"⚖️ **Umpire:** {umpire_name} (K: {k_sign}{k_pct}%, BB: {bb_sign}{bb_pct}%)")
+                block_lines.append(f"[Umpire Filter] {umpire_name}: K {k_sign}{k_pct}%, BB {bb_sign}{bb_pct}% (directional, not in core)")
             else:
-                block_lines.append(f"⚖️ **Umpire:** {umpire_name} (Neutral - Insufficient Data)")
+                block_lines.append(f"[Umpire Filter] {umpire_name}: Neutral — insufficient data")
 
         block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, FIP: {ap_fip}) vs {hp} ({hp_hand}HP, FIP: {hp_fip})")
         block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")

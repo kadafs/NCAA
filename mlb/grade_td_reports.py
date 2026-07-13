@@ -3,13 +3,16 @@ grade_td_reports.py
 ===================
 Grades the existing markdown reports based on:
   1. "Top-Down Projected F5 Total" vs a specific F5 line (e.g., 4.5)
-  2. "Full Game Probs" (Over 7.5 / 8.5 / 9.5) — graded against the actual full game total.
+  2. "Monte Carlo Simulated F5 Total" vs a specific F5 line (--mc mode)
+  3. "Full Game Probs" (Over 7.5 / 8.5 / 9.5) -- graded against the actual full game total.
 It does not re-run the model, making it incredibly fast.
 
 Usage:
-    python mlb/grade_td_reports.py                          # grades MLB against 4.5
-    python mlb/grade_td_reports.py --sportId 11             # grades AAA against 4.5
+    python mlb/grade_td_reports.py                          # grades MLB Gatekeeper vs 4.5
+    python mlb/grade_td_reports.py --sportId 11             # grades AAA Gatekeeper vs 4.5
     python mlb/grade_td_reports.py --line 5.5               # grades against 5.5
+    python mlb/grade_td_reports.py --mc                     # grade MC total only (pure Layer 1)
+    python mlb/grade_td_reports.py --mc --all               # MC forced on all games
     python mlb/grade_td_reports.py --no-fg                  # skip Full Game grading
 """
 import time
@@ -106,6 +109,10 @@ def parse_report(filepath, line=4.5, grading_mode='fixed'):
         td_match = re.search(r'-\s*\*\*Top-Down Projected F5 Total:\*\*\s*(\d+\.?\d*)\s*Runs', block)
         td_total = float(td_match.group(1)) if td_match else None
 
+        # --- MC Total (pure Layer 1 talent projection) ---
+        mc_match = re.search(r'-\s*\*\*Monte Carlo Simulated F5 Total:\*\*\s*(\d+\.?\d*)\s*Runs', block)
+        mc_total = float(mc_match.group(1)) if mc_match else None
+
         # --- Check Gatekeeper (v4 format) first ---
         gk_found_action = None
         for gk_matchup, act in gatekeeper_actions.items():
@@ -142,6 +149,24 @@ def parse_report(filepath, line=4.5, grading_mode='fixed'):
             else:
                 action_bet = "SKIP"
                 action_raw = "TD Total Not Found"
+
+        # --- MC Only Mode: grade the pure MC Layer 1 total ---
+        if grading_mode == 'mc':
+            game_line = line
+            if mc_total is not None:
+                if mc_total > game_line:
+                    action_bet = "OVER"
+                    action_raw = f"MC-Only: **OVER** (MC={mc_total} vs {game_line})"
+                elif mc_total < game_line:
+                    action_bet = "UNDER"
+                    action_raw = f"MC-Only: **UNDER** (MC={mc_total} vs {game_line})"
+                else:
+                    action_bet = "SKIP"
+                    action_raw = f"MC-Only: Skip (MC={mc_total} == Line)"
+            else:
+                action_bet = "SKIP"
+                action_raw = "MC Total Not Found in Report"
+
         # Fallback for old legacy logic removed since Gatekeeper handles all formatting now.
         if grading_mode != 'all':
             if getattr(locals(), 'action_bet', None) is None:  # Might be set by Gatekeeper
@@ -177,6 +202,8 @@ def parse_report(filepath, line=4.5, grading_mode='fixed'):
             'game_line':  game_line,
             'action_raw': action_raw,
             'action_bet': action_bet,
+            'td_total':   td_total,
+            'mc_total':   mc_total,
             'fg_line_for_over': fg_line_for_over,
             'fg_over_7_5': fg_over_7_5,
             'fg_over_8_5': fg_over_8_5,
@@ -240,6 +267,8 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
     print(f"\n{'='*60}")
     if grading_mode == 'all':
         title = f"PORTFOLIO GRADER (ALL GAMES - Line: {line})"
+    elif grading_mode == 'mc':
+        title = f"PORTFOLIO GRADER (MC-ONLY - Pure Layer 1 Talent - Line: {line})"
     else:
         title = f"PORTFOLIO GRADER (GATEKEEPER ONLY - Line: {line})"
         
@@ -266,6 +295,12 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
     if not games:
         print(f"  No Action Matrix projections parsed from report.")
         return
+
+    # MC vs TD accuracy comparison (shown when in MC mode)
+    if grading_mode == 'mc':
+        mc_found = sum(1 for g in games if g.get('mc_total') is not None)
+        td_found = sum(1 for g in games if g.get('td_total') is not None)
+        print(f"  MC totals found: {mc_found}/{len(games)} | TD totals found: {td_found}/{len(games)}")
 
     # F5 counters
     wins = 0
@@ -362,6 +397,8 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
 
         print(f"\n  {g['matchup']} (Line: {g['game_line']})")
         print(f"    Action  : {g['action_raw']}")
+        if grading_mode == 'mc' and g.get('mc_total') is not None and g.get('td_total') is not None:
+            print(f"    TD/MC   : TD={g['td_total']}  MC={g['mc_total']}")
         print(f"    Result  : {actual_str}  |  {verdict}{fg_str}")
 
         # --- Full Game grading ---
@@ -416,6 +453,7 @@ if __name__ == '__main__':
     parser.add_argument('--line', type=float, default=4.5, help='The F5 line to grade against (default 4.5)')
     parser.add_argument('--no-fg', action='store_true', help='Skip Full Game Probs grading')
     parser.add_argument('--all', action='store_true', help='Grade all games, forcing a pick on skipped games using the Top-Down projection')
+    parser.add_argument('--mc', action='store_true', help='Grade using the MC total only (pure Layer 1 talent signal, ignores Gatekeeper)')
 
     parser.add_argument('--date', type=str, default=None, help='Date for API lookup (default: auto-detected from file or today KST)')
     parser.add_argument('--file', type=str, default=None, help='Specific markdown report file to grade')
@@ -443,5 +481,7 @@ if __name__ == '__main__':
     grading_mode = 'fixed'
     if args.all:
         grading_mode = 'all'
+    elif args.mc:
+        grading_mode = 'mc'
 
     grade_report(args.sportId, args.line, resolved_date, filepath_override=args.file, grade_fg=not args.no_fg, grading_mode=grading_mode)
