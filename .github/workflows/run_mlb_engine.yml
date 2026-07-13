@@ -16,8 +16,18 @@ on:
         type: string
         required: false
         default: ''
-      run_milb:
-        description: 'Also run AAA & AA (MiLB)'
+      run_mlb:
+        description: 'Run MLB (Sport 1)'
+        type: boolean
+        required: false
+        default: true
+      run_aaa:
+        description: 'Run AAA (Sport 11)'
+        type: boolean
+        required: false
+        default: false
+      run_aa:
+        description: 'Run AA (Sport 12)'
         type: boolean
         required: false
         default: false
@@ -69,6 +79,7 @@ jobs:
           fi
 
       - name: Run MLB Consensus Engine (V4)
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.run_mlb == 'true' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -84,7 +95,7 @@ jobs:
           fi
 
       - name: Run AAA Consensus Engine (Optional)
-        if: ${{ github.event.inputs.run_milb == 'true' }}
+        if: ${{ github.event.inputs.run_aaa == 'true' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -100,7 +111,7 @@ jobs:
           fi
 
       - name: Run AA Consensus Engine (Optional)
-        if: ${{ github.event.inputs.run_milb == 'true' }}
+        if: ${{ github.event.inputs.run_aa == 'true' }}
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
