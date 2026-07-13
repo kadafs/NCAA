@@ -192,6 +192,7 @@ def run_full_game_mc(
     away_wrc: float = 100.0,
     home_wrc: float = 100.0,
     venue_name: str = None,
+    pure_core: bool = True,
 ) -> dict:
     """
     Runs a full 9-inning Monte Carlo simulation combining:
@@ -244,6 +245,7 @@ def run_full_game_mc(
         away_team_name=away_team_name,
         home_team_name=home_team_name,
         venue_name=venue_name,
+        pure_core=pure_core,
     )
 
 

@@ -643,6 +643,7 @@ def _build_bullpen_lineup_states(
     weather_context: dict = None,
     umpire_profile: dict = None,
     is_home: bool = False,
+    pure_core: bool = True,
 ) -> list:
     bp_profile = fip_to_bullpen_batted_ball_profile(opposing_bp_fip)
     cdf_matrix = []
@@ -651,7 +652,9 @@ def _build_bullpen_lineup_states(
     _AWAY_SCALE = 2.0 - HOME_ADVANTAGE_FACTOR
     
     for b in raw_lineup:
-        b_adj = apply_umpire_sabermetric_layer(dict(b), umpire_profile)
+        b_adj = dict(b)
+        if not pure_core:
+            b_adj = apply_umpire_sabermetric_layer(b_adj, umpire_profile)
         if is_home:
             for key in _HFA_KEYS:
                 if key in b_adj: b_adj[key] *= HOME_ADVANTAGE_FACTOR
@@ -660,7 +663,8 @@ def _build_bullpen_lineup_states(
                 if key in b_adj: b_adj[key] *= _AWAY_SCALE
                 
         adj = adjust_batter_rates(b_adj, bp_profile, batter_hand=b.get('hand', 'R'), pitcher_hand='R', tto=0)
-        adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b.get('hand', 'R'))
+        if not pure_core:
+            adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b.get('hand', 'R'))
         cdf_matrix.append(create_cdf_array(adj))
     return [np.array(cdf_matrix)]
 
@@ -713,6 +717,7 @@ def run_monte_carlo_f5(
     away_team_name: str = None,
     home_team_name: str = None,
     venue_name: str = None,
+    pure_core: bool = True,
 ) -> dict:
     """
     Runs Monte Carlo simulation for the F5 innings.
@@ -776,8 +781,9 @@ def run_monte_carlo_f5(
         raw = get_batter_pa_rates(pid, pitcher_hand=home_pitcher_hand)
         raw['hand']       = get_batter_hand(int(pid))         # 'L', 'R' (switch→'R')
         raw['speed_tier'] = get_runner_speed_tier(int(pid))   # 0=Sluggish,1=Avg,2=Elite
-        # Umpire Layer: applied to raw talent rates BEFORE fatigue/environment
-        raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
+        # Umpire Layer: pure_core skips this (umpire is a directional filter, not a talent input)
+        if not pure_core:
+            raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
         away_raw_lineup.append(raw)
 
     home_raw_lineup = []
@@ -785,8 +791,8 @@ def run_monte_carlo_f5(
         raw = get_batter_pa_rates(pid, pitcher_hand=away_pitcher_hand)
         raw['hand']       = get_batter_hand(int(pid))
         raw['speed_tier'] = get_runner_speed_tier(int(pid))
-        # Umpire Layer: applied to raw talent rates BEFORE fatigue/environment
-        raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
+        if not pure_core:
+            raw = apply_umpire_sabermetric_layer(raw, umpire_profile)
         home_raw_lineup.append(raw)
 
     # If lineups aren't posted, use platoon-aware league-average generic lineup.
@@ -865,12 +871,13 @@ def run_monte_carlo_f5(
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * _AWAY_SCALE
-            # Inject ump_k_mod / ump_bb_mod so adjust_batter_rates applies them at Tier 1.
-            # Previously umpire_profile was passed as a dead arg to adjust_batter_rates;
-            # now the modifiers flow through the batter dict as passthrough keys.
-            b_scaled = apply_umpire_sabermetric_layer(b_scaled, umpire_profile)
+            # Umpire: pure_core skips (directional filter only)
+            if not pure_core:
+                b_scaled = apply_umpire_sabermetric_layer(b_scaled, umpire_profile)
             adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=home_pitcher_hand, tto=tto, temp_scaler=temp_scaler, defense_factor=home_defense_factor)
-            adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
+            # Environmental physics: pure_core skips ball-carry effects (park/weather handled as directional filters)
+            if not pure_core:
+                adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             a_cdf_matrix.append(create_cdf_array(adj))
         away_lineup_states.append(np.array(a_cdf_matrix))
         
@@ -879,24 +886,24 @@ def run_monte_carlo_f5(
             current_pitcher_mods = home_inning_mods
 
             # Scale home batter input rates up (1.03x) BEFORE adjust_batter_rates().
-            # This lets the existing out_rate normalization proportionally shrink ALL
-            # outcomes including k, preserving strikeout ratios correctly.
             b_scaled = dict(b)
             for key in _HFA_KEYS:
                 if key in b_scaled:
                     b_scaled[key] = b_scaled[key] * HOME_ADVANTAGE_FACTOR
-            b_scaled = apply_umpire_sabermetric_layer(b_scaled, umpire_profile)
+            if not pure_core:
+                b_scaled = apply_umpire_sabermetric_layer(b_scaled, umpire_profile)
             adj = adjust_batter_rates(b_scaled, current_pitcher_mods, batter_hand=b['hand'], pitcher_hand=away_pitcher_hand, tto=tto, temp_scaler=temp_scaler, defense_factor=away_defense_factor)
-            adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
+            if not pure_core:
+                adj = apply_environmental_physics(adj, park_factor, weather_context, batter_hand=b['hand'])
             h_cdf_matrix.append(create_cdf_array(adj))
         home_lineup_states.append(np.array(h_cdf_matrix))
 
     if away_bp_fip is not None and home_bp_fip is not None:
         away_bp_states = _build_bullpen_lineup_states(
-            away_raw_lineup, home_bp_fip, park_factor, weather_context, umpire_profile, is_home=False
+            away_raw_lineup, home_bp_fip, park_factor, weather_context, umpire_profile, is_home=False, pure_core=pure_core
         )
         home_bp_states = _build_bullpen_lineup_states(
-            home_raw_lineup, away_bp_fip, park_factor, weather_context, umpire_profile, is_home=True
+            home_raw_lineup, away_bp_fip, park_factor, weather_context, umpire_profile, is_home=True, pure_core=pure_core
         )
     else:
         away_bp_states = None

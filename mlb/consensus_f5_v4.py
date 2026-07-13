@@ -15,6 +15,7 @@ from umpire_engine import get_umpire_for_game, load_umpire_profile
 from bullpen_rest import get_adjusted_bullpen_fip
 from pitcher_advanced_stats import get_pitcher_advanced_metrics
 from gatekeeper_v5 import generate_v6_premium_45_gatekeeper
+from env_confidence import compute_env_confidence
 import pandas as pd
 
 def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
@@ -157,11 +158,13 @@ def process_single_game(args):
         print(f"  [F5 Form] {home}: {home_form_info['factor']}x "
               f"(avg {home_form_info['raw_avg']} F5 runs, {home_form_info['games_used']} games)")
 
+        # Layer 1 — Pure Core: TD model runs in neutral park (PF=1.0, weather=1.0)
+        # Park and weather are now Layer 2 directional filters, not TD multipliers.
         top_down = grade_matchup_v6(
             away, ap_siera, away_bp, ap_ip, away_splits['vsR'], away_splits['vsL'],
             home, hp_siera, home_bp, hp_ip, home_splits['vsR'], home_splits['vsL'],
-            park_factor=pf,
-            weather_multiplier=weather_mult,
+            park_factor=1.0,
+            weather_multiplier=1.0,
             away_pitcher_hand=ap_hand,
             home_pitcher_hand=hp_hand,
         )
@@ -187,17 +190,32 @@ def process_single_game(args):
             print(f"  [Warning] Umpire fetch failed: {e}")
 
 
+        # Layer 1 — Pure Core: MC runs with park_factor=1.0 (neutral), no umpire at PA level.
+        # weather_context is still passed so temp_fatigue_scaler (pitcher physiology) stays active.
+        # Park / umpire become Layer 2 directional confidence filters (see env_conf below).
         mc = run_full_game_mc(
             lineups['away'], lineups['home'],
             ap, hp, ap_xfip, hp_xfip,
             away_team_name=away, home_team_name=home,
             away_projected_ip=ap_ip, home_projected_ip=hp_ip,
-            iterations=10000, park_factor=pf, weather_context=weather, sport_id=sport_id,
+            iterations=10000, park_factor=1.0, weather_context=weather, sport_id=sport_id,
             away_pitcher_hand=ap_hand, home_pitcher_hand=hp_hand,
-            umpire_profile=ump_profile,
+            umpire_profile=None,
             away_wrc=away_wrc, home_wrc=home_wrc,
             venue_name=venue,
+            pure_core=True,
         )
+
+        # Layer 2 — Directional Filter: evaluate PF / weather / umpire as confidence weights
+        env_conf = compute_env_confidence(
+            park_factor=pf,
+            weather_context=weather,
+            umpire_profile=ump_profile,
+            pure_f5=mc.get('mc_total_runs', td_total),
+            posted_line=4.5,
+            sport_id=sport_id,
+        )
+        print(f"  [EnvConf] {env_conf['env_note']}")
 
 
         ap_adv = get_pitcher_advanced_metrics(ap, sport_id, player_id=ap_id)
@@ -271,6 +289,13 @@ def process_single_game(args):
                 _advice = f'Bet **{mc_signal}** ({confidence})'
             else:
                 _advice = 'Skip'
+
+            # ── Layer 2 ENV Override: STRONG_CONTRADICT forces skip regardless of edge ──
+            # When all three environmental factors fight the model's lean, the market
+            # has information we don't. Respect it.
+            if env_conf['combined_signal'] == 'STRONG_CONTRADICT':
+                print(f"  [EnvConf] STRONG_CONTRADICT override on {line} line -> Skip")
+                return f'Skip (Env Contradict)'
 
             # -- Rule 1: Extreme Weather + Cold Team Override ------------------
             # Effective park factor +8% above neutral AND at least one cold team
@@ -356,6 +381,7 @@ def process_single_game(args):
                 "park_factor": pf,
                 "weather": weather,
                 "effective_pf": effective_pf,
+                "env_confidence": env_conf,
                 "umpire": {
                     "name": umpire_name,
                     "profile": ump_profile
