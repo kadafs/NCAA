@@ -109,7 +109,7 @@ def simulate_half_inning(adjusted_lineup, current_batter_idx):
 
 def get_pitcher_id(pitcher_name):
     if not pitcher_name or pitcher_name == 'TBD': return None
-    players = statsapi.lookup_player(pitcher_name)
+    players = [p for p in statsapi.lookup_player(pitcher_name) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
     if players: return players[0]['id']
     return None
 

@@ -426,7 +426,7 @@ def get_pitcher_fip(pitcher_name, sport_id=1, player_id=None):
         return FALLBACK_FIP
 
     if player_id is None:
-        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not players:
             return FALLBACK_FIP
         player_id = players[0]['id']
@@ -518,7 +518,7 @@ def get_pitcher_projected_ip(pitcher_name, sport_id=1, player_id=None):
         return 4.0  # generic projection
 
     if player_id is None:
-        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not players:
             return 4.0
         player_id = players[0]['id']
@@ -870,7 +870,7 @@ def get_pitcher_xfip(pitcher_name, sport_id=1, player_id=None):
     MIN_RELIABLE_IP = 20.0
     if pitcher_name in ('TBD', '', None): return FALLBACK_FIP
     if player_id is None:
-        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not players: return FALLBACK_FIP
         player_id = players[0]['id']
         
@@ -911,7 +911,7 @@ def get_pitcher_siera(pitcher_name, sport_id=1, player_id=None):
     MIN_RELIABLE_IP = 20.0
     if pitcher_name in ('TBD', '', None): return FALLBACK_FIP
     if player_id is None:
-        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not players: return FALLBACK_FIP
         player_id = players[0]['id']
         

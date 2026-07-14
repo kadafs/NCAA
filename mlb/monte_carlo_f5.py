@@ -495,7 +495,7 @@ def simulate_half_inning_vectorized(active_games, lineup_states, batter_indices,
 
 def get_pitcher_id(pitcher_name, sport_id=1):
     if not pitcher_name or pitcher_name == 'TBD': return None
-    players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+    players = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
     if players: return players[0]['id']
     return None
 

@@ -151,7 +151,7 @@ def get_velocity_fip_adjustment(pitcher_name: str) -> float:
 
     # Resolve pitcher name → player ID
     try:
-        players = statsapi.lookup_player(pitcher_name, sportId=1)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=1) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not players:
             return 0.0
         player_id = players[0]['id']

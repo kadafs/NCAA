@@ -292,7 +292,7 @@ def load_cache(filepath: str) -> dict | None:
 def _get_pitcher_id(pitcher_name: str, sport_id: int = 1) -> int | None:
     if not pitcher_name or pitcher_name == 'TBD': return None
     try:
-        players = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if players: return players[0]['id']
     except:
         pass

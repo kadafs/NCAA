@@ -128,10 +128,10 @@ def get_pitcher_hand(pitcher_name: str, sport_id: int = 1) -> str:
 
     # Live API fallback: lookup_player to get ID, then people endpoint for pitchHand
     try:
-        results = statsapi.lookup_player(pitcher_name, sportId=sport_id)
+        results = [p for p in statsapi.lookup_player(pitcher_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not results:
             # Try accent-stripped name
-            results = statsapi.lookup_player(stripped_name, sportId=sport_id)
+            results = [p for p in statsapi.lookup_player(stripped_name, sportId=sport_id) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if results:
             player_id = results[0]['id']
             person_data = statsapi.get('people', {'personIds': player_id})

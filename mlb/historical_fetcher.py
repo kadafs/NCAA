@@ -76,7 +76,7 @@ def get_historical_pitcher_fip(pitcher_name, target_date, sport_id=1):
         
     person_id = _player_map.get(pitcher_name)
     if not person_id:
-        players = statsapi.lookup_player(pitcher_name, sportId=1)
+        players = [p for p in statsapi.lookup_player(pitcher_name, sportId=1) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
         if not players:
             return 4.50
         person_id = players[0]['id']
@@ -141,7 +141,7 @@ def get_historical_pitcher_avg_ip(pitcher_name, target_date, sport_id=1):
     person_id = _player_map.get(pitcher_name)
     if not person_id:
         try:
-            players = statsapi.lookup_player(pitcher_name, sportId=1)
+            players = [p for p in statsapi.lookup_player(pitcher_name, sportId=1) if p.get('primaryPosition', {}).get('abbreviation') in ('P', 'TWP')]
             if players:
                 person_id = players[0]['id']
         except Exception:
