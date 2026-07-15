@@ -1,6 +1,6 @@
 # ⚾ V4 Tuned F5 Prediction Report (Sport ID: 23)
 **Date:** 2026-07-07
-**Generated:** 18:25:39
+**Generated:** 19:07:22
 **Model Mode:** Standard (Confirmed if available)
 
 ## 🚨 TOP PRIORITY GAMES 🚨
@@ -38,10 +38,10 @@
 [Umpire Filter] Lamberto Zavala: Neutral — insufficient data
 - **Pitcher Matchup:** Jackson Goddard (RHP, SIERA: 4.58) vs Roenis Elías (LHP, SIERA: 4.16)
 - **Top-Down Projected F5 Total:** 5.06 Runs
-- **Monte Carlo Simulated F5 Total:** 4.54 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.07 Runs
-- **Full Game Probs:** Over 7.5: 55% | Over 8.5: 41% | Over 9.5: 29%
+- **Monte Carlo Simulated F5 Total:** 4.52 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.01 Runs
+- **Full Game Probs:** Over 7.5: 54% | Over 8.5: 41% | Over 9.5: 28%
 
 ### Algodoneros Union Laguna (Touki Toussaint) @ Dorados de Chihuahua (Gabriel Ponce)
 🏙️ **Estadio Chihuahua** (Park Factor: 1.0x)
@@ -50,10 +50,10 @@
 [Umpire Filter] Rodrigo Quiroz Herrera: Neutral — insufficient data
 - **Pitcher Matchup:** Touki Toussaint (RHP, SIERA: 4.62) vs Gabriel Ponce (RHP, SIERA: 3.87)
 - **Top-Down Projected F5 Total:** 5.09 Runs
-- **Monte Carlo Simulated F5 Total:** 4.75 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.26 Runs
-- **Full Game Probs:** Over 7.5: 58% | Over 8.5: 44% | Over 9.5: 31%
+- **Monte Carlo Simulated F5 Total:** 4.76 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.31 Runs
+- **Full Game Probs:** Over 7.5: 59% | Over 8.5: 45% | Over 9.5: 32%
 
 ### 🚨 El Aguila de Veracruz (Cristopher Molina) @ Guerreros de Oaxaca (Luis Miranda)
 **🔥 FLAGGED:** High Confidence Edge
@@ -63,9 +63,9 @@
 [Umpire Filter] Daniel Toledo: Neutral — insufficient data
 - **Pitcher Matchup:** Cristopher Molina (RHP, SIERA: 4.03) vs Luis Miranda (RHP, SIERA: 3.96)
 - **Top-Down Projected F5 Total:** 4.72 Runs
-- **Monte Carlo Simulated F5 Total:** 4.32 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.85 Runs
+- **Monte Carlo Simulated F5 Total:** 4.35 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.47 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.83 Runs
 - **Full Game Probs:** Over 7.5: 52% | Over 8.5: 38% | Over 9.5: 26%
 
 ### Tigres de Quintana Roo (Darius Vines) @ Conspiradores de Queretaro (Tyler Viza)
@@ -75,10 +75,10 @@
 [Umpire Filter] Alexis Elbor: Neutral — insufficient data
 - **Pitcher Matchup:** Darius Vines (RHP, SIERA: 3.59) vs Tyler Viza (RHP, SIERA: 4.94)
 - **Top-Down Projected F5 Total:** 5.21 Runs
-- **Monte Carlo Simulated F5 Total:** 4.44 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.93 Runs
-- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 27%
+- **Monte Carlo Simulated F5 Total:** 4.49 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.99 Runs
+- **Full Game Probs:** Over 7.5: 54% | Over 8.5: 40% | Over 9.5: 28%
 
 ### 🚨 Pericos de Puebla (Antonio Santos) @ Bravos de Leon (Zac Lowther)
 **🔥 FLAGGED:** ENV CONTRADICT (delta=-8)
@@ -88,10 +88,10 @@
 [Umpire Filter] Aaron Leyva: Neutral — insufficient data
 - **Pitcher Matchup:** Antonio Santos (RHP, SIERA: 4.26) vs Zac Lowther (LHP, SIERA: 4.67)
 - **Top-Down Projected F5 Total:** 5.62 Runs
-- **Monte Carlo Simulated F5 Total:** 4.44 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.94 Runs
-- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 27%
+- **Monte Carlo Simulated F5 Total:** 4.48 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.98 Runs
+- **Full Game Probs:** Over 7.5: 54% | Over 8.5: 40% | Over 9.5: 28%
 
 ### 🚨 Piratas de Campeche (Ross Carver) @ Leones de Yucatan (Yoanner Negrin)
 **🔥 FLAGGED:** High Confidence Edge
@@ -101,10 +101,10 @@
 [Umpire Filter] Yamir Martinez: Neutral — insufficient data
 - **Pitcher Matchup:** Ross Carver (RHP, SIERA: 3.08) vs Yoanner Negrin (RHP, SIERA: 4.33)
 - **Top-Down Projected F5 Total:** 4.38 Runs
-- **Monte Carlo Simulated F5 Total:** 4.22 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.7 Runs
-- **Full Game Probs:** Over 7.5: 50% | Over 8.5: 36% | Over 9.5: 24%
+- **Monte Carlo Simulated F5 Total:** 4.23 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.76 Runs
+- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 37% | Over 9.5: 25%
 
 ### Diablos Rojos del Mexico (Ricardo Pinto) @ Olmecas de Tabasco (Austin Warner)
 🏙️ **Parque Centenario 27 de Febrero** (Park Factor: 1.0x)
@@ -113,10 +113,10 @@
 [Umpire Filter] Alan Izaguirre: Neutral — insufficient data
 - **Pitcher Matchup:** Ricardo Pinto (RHP, SIERA: 4.96) vs Austin Warner (LHP, SIERA: 4.46)
 - **Top-Down Projected F5 Total:** 5.92 Runs
-- **Monte Carlo Simulated F5 Total:** 4.92 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.43 Runs
-- **Full Game Probs:** Over 7.5: 60% | Over 8.5: 46% | Over 9.5: 33%
+- **Monte Carlo Simulated F5 Total:** 5.01 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.56 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.57 Runs
+- **Full Game Probs:** Over 7.5: 62% | Over 8.5: 48% | Over 9.5: 35%
 
 ### 🚨 Caliente de Durango (Devin Smeltzer) @ Saraperos de Saltillo (Wilmer Font)
 **🔥 FLAGGED:** High Confidence Edge
@@ -126,10 +126,10 @@
 [Umpire Filter] Vicente Madero: Neutral — insufficient data
 - **Pitcher Matchup:** Devin Smeltzer (LHP, SIERA: 4.03) vs Wilmer Font (RHP, SIERA: 3.42)
 - **Top-Down Projected F5 Total:** 4.41 Runs
-- **Monte Carlo Simulated F5 Total:** 3.94 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.47 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.41 Runs
-- **Full Game Probs:** Over 7.5: 46% | Over 8.5: 32% | Over 9.5: 21%
+- **Monte Carlo Simulated F5 Total:** 3.93 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.47 Runs
+- **Full Game Probs:** Over 7.5: 47% | Over 8.5: 33% | Over 9.5: 22%
 
 ### 🚨 Toros de Tijuana (Adonis Medina) @ Rieleros de Aguascalientes (Greg Duncan)
 **🔥 FLAGGED:** High Confidence Edge
@@ -139,8 +139,8 @@
 [Umpire Filter] Ulises Dominguez: Neutral — insufficient data
 - **Pitcher Matchup:** Adonis Medina (RHP, SIERA: 3.82) vs Greg Duncan (RHP, SIERA: 4.33)
 - **Top-Down Projected F5 Total:** 4.9 Runs
-- **Monte Carlo Simulated F5 Total:** 4.26 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo Simulated F5 Total:** 4.25 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
 - **Monte Carlo FULL GAME Total:** 7.75 Runs
 - **Full Game Probs:** Over 7.5: 51% | Over 8.5: 37% | Over 9.5: 25%
 
@@ -152,7 +152,7 @@
 [Umpire Filter] Edgar Huerta: Neutral — insufficient data
 - **Pitcher Matchup:** Manny Banuelos (LHP, SIERA: 4.08) vs Zach Plesac (RHP, SIERA: 4.64)
 - **Top-Down Projected F5 Total:** 5.02 Runs
-- **Monte Carlo Simulated F5 Total:** 4.93 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.43 Runs
-- **Full Game Probs:** Over 7.5: 60% | Over 8.5: 46% | Over 9.5: 33%
+- **Monte Carlo Simulated F5 Total:** 4.96 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.49 Runs
+- **Full Game Probs:** Over 7.5: 61% | Over 8.5: 47% | Over 9.5: 34%
