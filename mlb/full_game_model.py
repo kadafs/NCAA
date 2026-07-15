@@ -216,21 +216,21 @@ def run_full_game_mc(
     # Step 1: Fetch rest-adjusted bullpen FIPs so we can pass them to the F5 engine
     if away_bp_fip is None:
         try:
-            away_bp_fip = get_adjusted_bullpen_fip(away_team_name)
+            away_bp_fip = get_adjusted_bullpen_fip(away_team_name, sport_id=sport_id)
         except Exception:
             try:
                 from run_daily_f5 import get_team_bullpen_fip
-                away_bp_fip = get_team_bullpen_fip(away_team_name)
+                away_bp_fip = get_team_bullpen_fip(away_team_name, sport_id=sport_id)
             except Exception:
                 away_bp_fip = 3.15
 
     if home_bp_fip is None:
         try:
-            home_bp_fip = get_adjusted_bullpen_fip(home_team_name)
+            home_bp_fip = get_adjusted_bullpen_fip(home_team_name, sport_id=sport_id)
         except Exception:
             try:
                 from run_daily_f5 import get_team_bullpen_fip
-                home_bp_fip = get_team_bullpen_fip(home_team_name)
+                home_bp_fip = get_team_bullpen_fip(home_team_name, sport_id=sport_id)
             except Exception:
                 home_bp_fip = 3.15
 

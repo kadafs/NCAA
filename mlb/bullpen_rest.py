@@ -180,7 +180,7 @@ def _build_rest_index(lookback_days: int = 3) -> tuple[dict, dict]:
     return index, team_map
 
 
-def _get_season_fip_for_relievers_v6(pitcher_ids: list) -> dict:
+def _get_season_fip_for_relievers_v6(pitcher_ids: list, sport_id: int = 1) -> dict:
     """
     V6 Ingestion Upgrade: Fetches season FIP metrics alongside total
     Innings Pitched (workload volume) to drive downstream IP weighting.
@@ -197,7 +197,7 @@ def _get_season_fip_for_relievers_v6(pitcher_ids: list) -> dict:
     try:
         raw = statsapi.get('people', {
             'personIds': id_string,
-            'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+            'hydrate':   f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'
         })
         for person in raw.get('people', []):
             pid = person.get('id')
@@ -236,7 +236,7 @@ def _get_season_fip_for_relievers_v6(pitcher_ids: list) -> dict:
 # ---------------------------------------------------------------------------
 _adjusted_bullpen_cache = {}
 
-def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
+def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False, sport_id: int = 1) -> float:
     """
     V6 Rest Engine: Computes a mathematically precise, Innings-Pitched weighted
     average FIP for high-leverage bullpen profiles.
@@ -256,9 +256,9 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
         return _adjusted_bullpen_cache[team_name]
 
     try:
-        teams = statsapi.lookup_team(team_name, sportIds=1)
+        teams = statsapi.lookup_team(team_name, sportIds=sport_id)
         if not teams:
-            res = get_team_bullpen_fip(team_name)
+            res = get_team_bullpen_fip(team_name, sport_id)
             _adjusted_bullpen_cache[team_name] = res
             return res
 
@@ -279,12 +279,12 @@ def get_adjusted_bullpen_fip(team_name: str, verbose: bool = False) -> float:
 
         all_pids = list(set(team_pids + roster_pids))
         if not all_pids:
-            return get_team_bullpen_fip(team_name)
+            return get_team_bullpen_fip(team_name, sport_id)
 
         # Draw structured multi-season volume dictionary map
-        fip_map = _get_season_fip_for_relievers_v6(all_pids)
+        fip_map = _get_season_fip_for_relievers_v6(all_pids, sport_id)
         if not fip_map:
-            return get_team_bullpen_fip(team_name)
+            return get_team_bullpen_fip(team_name, sport_id)
 
         effective_profiles = []
 

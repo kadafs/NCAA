@@ -758,7 +758,7 @@ def get_team_bullpen_fip(team_name, sport_id=1):
     try:
         raw = statsapi.get('people', {
             'personIds': id_string,
-            'hydrate':   f'stats(group=[pitching],type=season,season={season})'
+            'hydrate':   f'stats(group=[pitching],type=season,season={season},sportId={sport_id})'
         })
         
         for person in raw.get('people', []):
