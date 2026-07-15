@@ -31,6 +31,7 @@ LEAGUE_AVG_OPS = {
     12: 0.740,  # AA
     13: 0.730,  # High-A
     14: 0.730,  # Single-A
+    23: 0.810,  # LMB (Mexican League is extremely hitter friendly)
 }
 
 # MLB League Average FIP fluctuates by season
@@ -656,6 +657,10 @@ def _get_team_ops_split_single_season(team_id, season, sit_code):
 
 def get_team_wrc_splits(team_name, sport_id=1):
     """Return a dict of multi-season wRC+ proxies for vsL and vsR."""
+    if sport_id != 1:
+        proxy = get_team_wrc_proxy(team_name, sport_id)
+        return {'vsL': proxy, 'vsR': proxy}
+
     teams = statsapi.lookup_team(team_name, sportIds=sport_id)
     if not teams:
         return {'vsL': FALLBACK_WRC, 'vsR': FALLBACK_WRC}

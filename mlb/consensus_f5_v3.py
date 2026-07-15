@@ -5,7 +5,7 @@ import datetime
 from multiprocessing import Pool, cpu_count
 from mlb_time import get_mlb_now
 from run_daily_f5 import get_today_games, get_pitcher_fip, get_team_wrc_proxy, get_team_bullpen_fip, get_pitcher_projected_ip, get_team_f5_form_factor
-from grade_f5 import grade_matchup
+from grade_f5 import grade_matchup_v6 as grade_matchup
 from fetch_lineups import get_lineup_for_game, get_pitcher_hand
 from monte_carlo_f5 import run_monte_carlo_f5
 from full_game_model import run_full_game_mc
@@ -120,8 +120,8 @@ def process_single_game(args):
               f"(avg {home_form_info['raw_avg']} F5 runs, {home_form_info['games_used']} games)")
 
         top_down = grade_matchup(
-            away, ap_fip, away_bp, ap_ip, away_wrc,
-            home, hp_fip, home_bp, hp_ip, home_wrc,
+            away, ap_fip, away_bp, ap_ip, away_wrc, away_wrc,
+            home, hp_fip, home_bp, hp_ip, home_wrc, home_wrc,
             park_factor=pf,
             weather_multiplier=weather_mult,
             away_pitcher_hand=ap_hand,
@@ -507,6 +507,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     elif sport_id == 12: league_name = "AA"
     elif sport_id == 13: league_name = "High-A"
     elif sport_id == 14: league_name = "Single-A"
+    elif sport_id == 23: league_name = "LMB"
     date_label = date_str if date_str else get_mlb_now().strftime('%m/%d/%Y')
     
     report_lines = []
@@ -581,7 +582,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Generate MLB or MiLB Consensus F5 Report")
-    parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, 12=AA, 13=High-A, 14=Single-A')
+    parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, 12=AA, 13=High-A, 14=Single-A, 23=LMB')
     parser.add_argument('--date', type=str, default=None, help='Date in MM/DD/YYYY format (default: today)')
     parser.add_argument('--generic', action='store_true', help='Force the model to use Generic lineups even if confirmed lineups are available')
     parser.add_argument('--team', nargs='+', type=str, default=None, help='Filter the report to only include games matching this team name')

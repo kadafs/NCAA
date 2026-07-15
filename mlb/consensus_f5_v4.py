@@ -648,10 +648,11 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     elif sport_id == 12: league_name = "AA"
     elif sport_id == 13: league_name = "High-A"
     elif sport_id == 14: league_name = "Single-A"
+    elif sport_id == 23: league_name = "LMB"
     date_label = date_str if date_str else get_mlb_now().strftime('%m/%d/%Y')
     
     report_lines = []
-    report_lines.append(f"# ⚾ V3 Tuned F5 Prediction Report (Sport ID: {sport_id})")
+    report_lines.append(f"# ⚾ V4 Tuned F5 Prediction Report (Sport ID: {sport_id})")
     report_lines.append(f"**Date:** {date_label}")
     report_lines.append(f"**Generated:** {get_mlb_now().strftime('%H:%M:%S')}")
     report_lines.append(f"**Model Mode:** {'Generic Lineups (FORCED)' if force_generic else 'Standard (Confirmed if available)'}")
@@ -708,9 +709,9 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     # Use dated filename so reports never overwrite each other
     if team_filter:
         safe_team = team_filter.replace(' ', '_').lower()
-        filename = f"{safe_team}_consensus_f5_v3_report_{report_date_safe}.md"
+        filename = f"{safe_team}_consensus_f5_v4_report_{report_date_safe}.md"
     else:
-        filename = f"consensus_f5_v3_report_{league_name}_{report_date_safe}.md" if sport_id != 1 else f"consensus_f5_v3_report_{report_date_safe}.md"
+        filename = f"consensus_f5_v4_report_{league_name}_{report_date_safe}.md" if sport_id != 1 else f"consensus_f5_v4_report_{report_date_safe}.md"
     output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
     with open(output_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(report_lines))
@@ -743,7 +744,7 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Generate MLB or MiLB Consensus F5 Report")
-    parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, 12=AA, 13=High-A, 14=Single-A')
+    parser.add_argument('--sportId', type=int, default=1, help='1=MLB, 11=AAA, 12=AA, 13=High-A, 14=Single-A, 23=LMB')
     parser.add_argument('--date', type=str, default=None, help='Date in MM/DD/YYYY format (default: today)')
     parser.add_argument('--generic', action='store_true', help='Force the model to use Generic lineups even if confirmed lineups are available')
     parser.add_argument('--team', nargs='+', type=str, default=None, help='Filter the report to only include games matching this team name')

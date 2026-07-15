@@ -161,7 +161,26 @@ MLB_PARK_FACTORS = {
     "Nelson Wolff Stadium":             0.785,  # San Antonio Missions — confirmed strong pitcher's park
     "Dickey-Stephens Park":             0.781,  # Arkansas Travelers — confirmed strong pitcher's park
 
-
+    # ── LMB (Liga Mexicana de Béisbol) ───────────────────────────────────────
+    # Extreme hitter parks (Altitude > 5,000ft)
+    "Estadio Alfredo Harp Helu":        1.400,  # Mexico City (7,300+ ft)
+    "Estadio Francisco I. Madero":      1.250,  # Saltillo (5,200 ft)
+    "Estadio Hermanos Serdan":          1.300,  # Puebla (7,000 ft)
+    "Estadio Domingo Santana":          1.250,  # Leon (5,900 ft)
+    "Estadio Panamericano":             1.250,  # Guadalajara (5,100 ft)
+    "Estadio Eduardo Vasconcelos":      1.250,  # Oaxaca (5,100 ft)
+    
+    # Hitter friendly
+    "Estadio Revolucion":               1.150,  # Torreon (3,700 ft)
+    "Estadio Mobil Super":              1.050,  # Monterrey (1,700 ft)
+    "Estadio de Beisbol Monterrey":     1.050,  # Monterrey Alias
+    
+    # Near Neutral / Pitcher friendly (Sea Level)
+    "Estadio Chevron":                  1.000,  # Tijuana
+    "Parque Kukulcan Alamo":            0.850,  # Yucatan (Merida - Sea level)
+    "Estadio Beto Avila":               0.850,  # Veracruz (Sea level)
+    "Estadio Centenario 27 de Febrero": 0.850,  # Tabasco (Sea level)
+    "Estadio Nelson Barrera":           0.850,  # Campeche (Sea level)
 }
 
 import os

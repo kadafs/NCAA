@@ -31,6 +31,11 @@ on:
         type: boolean
         required: false
         default: false
+      run_lmb:
+        description: 'Run LMB (Sport 23)'
+        type: boolean
+        required: false
+        default: true
 
 jobs:
   run_mlb_engine:
@@ -124,6 +129,22 @@ jobs:
             python mlb/consensus_f5_v4.py --sportId 12 --date "${{ github.event.inputs.target_date }}"
           else
             python mlb/consensus_f5_v4.py --sportId 12
+          fi
+
+      - name: Run LMB Consensus Engine
+        if: ${{ github.event_name == 'schedule' || github.event.inputs.run_lmb == 'true' }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          cd ncaa-api
+          echo "▶ Running LMB engine (sportId=23)..."
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            python mlb/consensus_f5_v4.py --sportId 23 --date "${{ github.event.inputs.target_date }}"
+          else
+            python mlb/consensus_f5_v4.py --sportId 23
           fi
 
       - name: Push Data to Baseball Dashboard
