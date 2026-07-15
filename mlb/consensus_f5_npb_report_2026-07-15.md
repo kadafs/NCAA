@@ -1,6 +1,6 @@
 # ⚾ NPB V4 Tuned Prediction Report (Sport ID: 14)
 **Date:** 2026-07-15
-**Generated:** 18:36:20
+**Generated:** 19:08:17
 **Model Mode:** Generic Lineups (FORCED)
 
 ---
@@ -10,12 +10,12 @@
 **Pitching:** マタ vs 増居
 
 **Top-Down Engine (F5)**
-* Yomiuri Giants: 1.55 expected runs
+* Yomiuri Giants: 1.54 expected runs
 * Yakult Swallows: 1.37 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 3.21
-* Full Game Total: 5.34
+* F5 Total: 3.16
+* Full Game Total: 5.22
 
 ### Hanshin Tigers @ Chunichi Dragons
 **Venue:** バンテリンドーム | **Time:** 18:00
@@ -26,8 +26,8 @@
 * Chunichi Dragons: 2.38 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 3.94
-* Full Game Total: 6.00
+* F5 Total: 4.10
+* Full Game Total: 6.16
 
 ### Fukuoka SoftBank Hawks @ Nippon-Ham Fighters
 **Venue:** エスコンF | **Time:** 13:00
@@ -38,8 +38,8 @@
 * Nippon-Ham Fighters: 3.13 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.22
-* Full Game Total: 5.71
+* F5 Total: 4.04
+* Full Game Total: 5.46
 
 ### Orix Buffaloes @ Rakuten Golden Eagles
 **Venue:** 楽天モバイル | **Time:** 18:00
@@ -50,8 +50,8 @@
 * Rakuten Golden Eagles: 6.47 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.65
-* Full Game Total: 7.87
+* F5 Total: 4.62
+* Full Game Total: 7.73
 
 ### Chiba Lotte Marines @ Saitama Seibu Lions
 **Venue:** ベルーナドーム | **Time:** 18:00
@@ -62,5 +62,5 @@
 * Saitama Seibu Lions: 3.32 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.04
-* Full Game Total: 5.42
+* F5 Total: 4.26
+* Full Game Total: 5.61
