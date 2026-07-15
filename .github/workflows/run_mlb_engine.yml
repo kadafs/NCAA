@@ -2,8 +2,8 @@ name: Daily MLB Engine Pipeline
 
 on:
   schedule:
-    # Run automatically every day at 13:30 UTC (9:30 AM Eastern Time)
-    - cron: '30 13 * * *'
+    # Run automatically every day at 05:00 UTC (1:00 AM Eastern Time)
+    - cron: '0 5 * * *'
   workflow_dispatch:
     inputs:
       force_umpire:
