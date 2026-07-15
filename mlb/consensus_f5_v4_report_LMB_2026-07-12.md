@@ -1,0 +1,156 @@
+# ⚾ V4 Tuned F5 Prediction Report (Sport ID: 23)
+**Date:** 2026-07-12
+**Generated:** 08:58:42
+**Model Mode:** Standard (Confirmed if available)
+
+## 🚨 TOP PRIORITY GAMES 🚨
+- **Tecos de los Dos Laredos @ Caliente de Durango:** High Confidence Edge
+- **Conspiradores de Queretaro @ Diablos Rojos del Mexico:** ENV CONFIRM (delta=+15)
+- **Bravos de Leon @ Tigres de Quintana Roo:** High Confidence Edge
+- **Rieleros de Aguascalientes @ Dorados de Chihuahua:** High Confidence Edge
+- **Toros de Tijuana @ Sultanes de Monterrey:** High Confidence Edge
+- **Saraperos de Saltillo @ Acereros del Norte:** High Confidence Edge
+- **Leones de Yucatan @ El Aguila de Veracruz:** High Confidence Edge
+- **Pericos de Puebla @ Piratas de Campeche:** High Confidence Edge
+
+---
+
+# Automated V6 Premium 4.5 Gatekeeper Report
+
+## Active Portfolio Recommendations
+1. **Conspiradores de Queretaro @ Diablos Rojos del Mexico** ──► **BET F5 OVER** (Odds: 1.85)
+    *   *System Note:* Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park (1.404x).
+
+*   **Leones de Yucatan @ El Aguila de Veracruz** ──► **BET F5 UNDER** (Odds: 1.85)
+    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
+
+
+---
+
+### 🚨 Tecos de los Dos Laredos (Roenis Elías) @ Caliente de Durango (Devin Smeltzer)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Estadio Francisco Villa** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Carlos Garcia: Neutral — insufficient data
+- **Pitcher Matchup:** Roenis Elías (LHP, SIERA: 4.16) vs Devin Smeltzer (LHP, SIERA: 4.03)
+- **Top-Down Projected F5 Total:** 4.86 Runs
+- **Monte Carlo Simulated F5 Total:** 4.2 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.69 Runs
+- **Full Game Probs:** Over 7.5: 50% | Over 8.5: 36% | Over 9.5: 24%
+
+### 🚨 Conspiradores de Queretaro (Tyler Viza) @ Diablos Rojos del Mexico (Ricardo Pinto)
+**🔥 FLAGGED:** ENV CONFIRM (delta=+15)
+🏙️ **Estadio Alfredo Harp Helu** (Park Factor: 1.4x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** Park: HITTERS_PARK CONFIRMS -> CONFIRM (+15)
+[Umpire Filter] Rafael Ramirez: Neutral — insufficient data
+- **Pitcher Matchup:** Tyler Viza (RHP, SIERA: 4.94) vs Ricardo Pinto (RHP, SIERA: 4.96)
+- **Top-Down Projected F5 Total:** 6.36 Runs
+- **Monte Carlo Simulated F5 Total:** 5.06 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.47 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.54 Runs
+- **Full Game Probs:** Over 7.5: 62% | Over 8.5: 48% | Over 9.5: 35%
+
+### 🚨 Bravos de Leon (Thaddeus Ward) @ Tigres de Quintana Roo (Onelki Garcia)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Beto Ávila Sherwin-Williams** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Manuel Carrillo: Neutral — insufficient data
+- **Pitcher Matchup:** Thaddeus Ward (RHP, SIERA: 4.41) vs Onelki Garcia (LHP, SIERA: 4.29)
+- **Top-Down Projected F5 Total:** 5.31 Runs
+- **Monte Carlo Simulated F5 Total:** 4.32 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.48 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.8 Runs
+- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 38% | Over 9.5: 25%
+
+### 🚨 Rieleros de Aguascalientes (Greg Duncan) @ Dorados de Chihuahua (Gabriel Ponce)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Estadio Chihuahua** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Axl Mayer: Neutral — insufficient data
+- **Pitcher Matchup:** Greg Duncan (RHP, SIERA: 4.33) vs Gabriel Ponce (RHP, SIERA: 3.87)
+- **Top-Down Projected F5 Total:** 4.97 Runs
+- **Monte Carlo Simulated F5 Total:** 4.39 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.48 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.87 Runs
+- **Full Game Probs:** Over 7.5: 52% | Over 8.5: 39% | Over 9.5: 26%
+
+### 🚨 Toros de Tijuana (Juan Hillman) @ Sultanes de Monterrey (Juan Gámez)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Walmart Park** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Juan Leyva: Neutral — insufficient data
+- **Pitcher Matchup:** Juan Hillman (LHP, SIERA: 3.49) vs Juan Gámez (RHP, SIERA: 4.76)
+- **Top-Down Projected F5 Total:** 4.72 Runs
+- **Monte Carlo Simulated F5 Total:** 4.12 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.62 Runs
+- **Full Game Probs:** Over 7.5: 49% | Over 8.5: 35% | Over 9.5: 23%
+
+### 🚨 Saraperos de Saltillo (Wilmer Font) @ Acereros del Norte (Jorge Tavarez)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Estadio Kickapoo Lucky Eagle** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Carlos Valenzuela: Neutral — insufficient data
+- **Pitcher Matchup:** Wilmer Font (RHP, SIERA: 3.42) vs Jorge Tavarez (RHP, SIERA: 4.0)
+- **Top-Down Projected F5 Total:** 4.31 Runs
+- **Monte Carlo Simulated F5 Total:** 4.02 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.56 Runs
+- **Full Game Probs:** Over 7.5: 48% | Over 8.5: 34% | Over 9.5: 23%
+
+### Guerreros de Oaxaca (Alemao Hernandez) @ Olmecas de Tabasco (Austin Warner)
+🏙️ **Parque Centenario 27 de Febrero** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Luis Galan: Neutral — insufficient data
+- **Pitcher Matchup:** Alemao Hernandez (LHP, SIERA: 4.69) vs Austin Warner (LHP, SIERA: 4.46)
+- **Top-Down Projected F5 Total:** 5.58 Runs
+- **Monte Carlo Simulated F5 Total:** 4.49 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.02 Runs
+- **Full Game Probs:** Over 7.5: 54% | Over 8.5: 41% | Over 9.5: 28%
+
+### 🚨 Leones de Yucatan (Ronnie Williams) @ El Aguila de Veracruz (Cristopher Molina)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Estadio Beto Avila** (Park Factor: 0.85x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Luis Ruiz: Neutral — insufficient data
+- **Pitcher Matchup:** Ronnie Williams (RHP, SIERA: 3.77) vs Cristopher Molina (RHP, SIERA: 4.03)
+- **Top-Down Projected F5 Total:** 4.44 Runs
+- **Monte Carlo Simulated F5 Total:** 4.29 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.84 Runs
+- **Full Game Probs:** Over 7.5: 52% | Over 8.5: 38% | Over 9.5: 26%
+
+### 🚨 Pericos de Puebla (Antonio Santos) @ Piratas de Campeche (Joe Record)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Estadio Cruz Azul Nelson Barrera Romellón** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Yamir Martinez: Neutral — insufficient data
+- **Pitcher Matchup:** Antonio Santos (RHP, SIERA: 4.26) vs Joe Record (RHP, SIERA: 3.39)
+- **Top-Down Projected F5 Total:** 4.74 Runs
+- **Monte Carlo Simulated F5 Total:** 4.15 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.64 Runs
+- **Full Game Probs:** Over 7.5: 49% | Over 8.5: 35% | Over 9.5: 24%
+
+### Charros de Jalisco (Luis Ivan Rodriguez) @ Algodoneros Union Laguna (Touki Toussaint)
+🏙️ **Estadio de la Revolucion** (Park Factor: 1.0x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter]  Marco Garibay: Neutral — insufficient data
+- **Pitcher Matchup:** Luis Ivan Rodriguez (RHP, SIERA: 4.2) vs Touki Toussaint (RHP, SIERA: 4.62)
+- **Top-Down Projected F5 Total:** 5.22 Runs
+- **Monte Carlo Simulated F5 Total:** 4.74 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.28 Runs
+- **Full Game Probs:** Over 7.5: 58% | Over 8.5: 44% | Over 9.5: 31%
