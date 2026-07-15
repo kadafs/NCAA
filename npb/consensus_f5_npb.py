@@ -232,4 +232,9 @@ def generate_consensus_report(date_str=None):
     print(f"JSON data bridged to {json_path}")
 
 if __name__ == "__main__":
-    generate_consensus_report()
+    import argparse
+    parser = argparse.ArgumentParser(description="NPB Consensus F5 Engine")
+    parser.add_argument("--date", type=str, help="Target date in YYYY-MM-DD format (defaults to today)")
+    args = parser.parse_args()
+    
+    generate_consensus_report(date_str=args.date)

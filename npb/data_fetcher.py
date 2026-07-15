@@ -253,7 +253,7 @@ def get_today_games(date_str=None):
         date_str = datetime.datetime.now().strftime('%Y-%m-%d')
     date_formatted = date_str.replace('-', '')
         
-    url = 'https://baseball.yahoo.co.jp/npb/schedule/'
+    url = f'https://baseball.yahoo.co.jp/npb/schedule/?date={date_formatted}'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }

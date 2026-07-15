@@ -157,7 +157,11 @@ jobs:
         run: |
           cd ncaa-api
           echo "▶ Running NPB engine..."
-          python npb/consensus_f5_npb.py
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            python npb/consensus_f5_npb.py --date "${{ github.event.inputs.target_date }}"
+          else
+            python npb/consensus_f5_npb.py
+          fi
 
       - name: Push Data to Baseball Dashboard
         run: |
