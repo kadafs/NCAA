@@ -32,22 +32,28 @@ def get_report_filepath(sport_id, schedule_date):
     except ValueError:
         report_date = schedule_date
 
-    league_suffix = ""
-    if sport_id == 1:
-        pass
-    elif sport_id == 11:
-        league_suffix = "_AAA"
-    elif sport_id == 12:
-        league_suffix = "_AA"
-    elif sport_id == 23:
-        league_suffix = "_LMB"
+    if sport_id == 14:
+        filename = f"consensus_f5_npb_report_{report_date}.md"
+    elif sport_id == 15:
+        filename = f"consensus_f5_kbo_report_{report_date}.md"
     else:
-        league_suffix = f"_{sport_id}"
+        league_suffix = ""
+        if sport_id == 1:
+            pass
+        elif sport_id == 11:
+            league_suffix = "_AAA"
+        elif sport_id == 12:
+            league_suffix = "_AA"
+        elif sport_id == 23:
+            league_suffix = "_LMB"
+        else:
+            league_suffix = f"_{sport_id}"
+            
+        filename = f"consensus_f5_v4_report{league_suffix}_{report_date}.md"
         
-    filename = f"consensus_f5_v4_report{league_suffix}_{report_date}.md"
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
 
-SPORT_LABELS = {1: 'MLB', 11: 'AAA', 12: 'AA', 23: 'LMB'}
+SPORT_LABELS = {1: 'MLB', 11: 'AAA', 12: 'AA', 14: 'NPB', 15: 'KBO', 23: 'LMB'}
 
 
 # ---------------------------------------------------------------------------
@@ -282,17 +288,18 @@ def grade_report(sport_id, line, schedule_date, filepath_override=None, grade_fg
     print(f"  Date:   {schedule_date}")
 
     # Fetch today's schedule for this sport to map games to IDs
-    schedule = None
-    for attempt in range(3):
-        try:
-            schedule = statsapi.schedule(sportId=sport_id, date=schedule_date)
-            break
-        except Exception:
-            if attempt < 2:
-                time.sleep(3)
-            else:
-                print(f"  Failed to fetch schedule after 3 attempts.")
-                return
+    schedule = []
+    if sport_id not in [14, 15]:
+        for attempt in range(3):
+            try:
+                schedule = statsapi.schedule(sportId=sport_id, date=schedule_date)
+                break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(3)
+                else:
+                    print(f"  Failed to fetch schedule after 3 attempts.")
+                    return
 
     games = parse_report(filepath, line=line, grading_mode=grading_mode)
 
