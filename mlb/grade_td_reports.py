@@ -32,18 +32,22 @@ def get_report_filepath(sport_id, schedule_date):
     except ValueError:
         report_date = schedule_date
 
+    league_suffix = ""
     if sport_id == 1:
-        filename = f"consensus_f5_v3_report_{report_date}.md"
+        pass
     elif sport_id == 11:
-        filename = f"consensus_f5_v3_report_AAA_{report_date}.md"
+        league_suffix = "_AAA"
     elif sport_id == 12:
-        filename = f"consensus_f5_v3_report_AA_{report_date}.md"
+        league_suffix = "_AA"
+    elif sport_id == 23:
+        league_suffix = "_LMB"
     else:
-        filename = f"consensus_f5_v3_report_{sport_id}_{report_date}.md"
+        league_suffix = f"_{sport_id}"
         
+    filename = f"consensus_f5_v4_report{league_suffix}_{report_date}.md"
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
 
-SPORT_LABELS = {1: 'MLB', 11: 'AAA', 12: 'AA'}
+SPORT_LABELS = {1: 'MLB', 11: 'AAA', 12: 'AA', 23: 'LMB'}
 
 
 # ---------------------------------------------------------------------------

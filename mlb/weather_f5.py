@@ -117,6 +117,29 @@ STADIUM_COORDS = {
     "Nelson Wolff Stadium":           (29.4387, -98.5315),  # San Antonio TX
     "Dr Pepper Ballpark":             (33.1476, -96.8231),  # Frisco TX
     "Hammons Field":                  (37.2044, -93.2985),  # Springfield MO
+
+    # ── LMB — Mexican League ──────────────────────────────────────────────────
+    "Estadio Alfredo Harp Helu":      (19.4057, -99.0921),  # Mexico City
+    "Estadio Francisco I. Madero":    (25.4383, -100.9737), # Saltillo
+    "Estadio Hermanos Serdan":        (19.0758, -98.1882),  # Puebla
+    "Estadio Domingo Santana":        (21.1444, -101.6963), # Leon
+    "Estadio Panamericano":           (20.7259, -103.3879), # Zapopan (Jalisco)
+    "Estadio Eduardo Vasconcelos":    (17.0655, -96.7118),  # Oaxaca
+    "Estadio Revolucion":             (25.5393, -103.4357), # Torreon
+    "Estadio Mobil Super":            (25.7077, -100.3164), # Monterrey
+    "Estadio de Beisbol Monterrey":   (25.7077, -100.3164), # Monterrey (alias)
+    "Estadio Chevron":                (32.4939, -116.9388), # Tijuana
+    "Parque Kukulcan Alamo":          (20.9490, -89.5937),  # Merida
+    "Estadio Beto Avila":             (19.1678, -96.1154),  # Veracruz
+    "Estadio Centenario 27 de Febrero": (17.9719, -92.9377), # Villahermosa
+    "Estadio Nelson Barrera":         (19.8277, -90.5404),  # Campeche
+    "Uni-Trade Stadium":              (27.5615, -99.4589),  # Laredo TX (Tecolotes)
+    "Parque La Junta":                (27.4871, -99.5082),  # Nuevo Laredo (Tecolotes)
+    "Estadio Kickapoo Lucky Eagle":   (26.9329, -101.4288), # Monclova
+    "Estadio Francisco Villa":        (24.0152, -104.6467), # Durango
+    "Parque Alberto Romo Chavez":     (21.8860, -102.2779), # Aguascalientes
+    "Estadio Monumental Chihuahua":   (28.6015, -106.0270), # Chihuahua
+    "Estadio Conspiradores":          (20.6559, -100.3340), # Queretaro
 }
 
 
@@ -468,6 +491,78 @@ def _get_wttr_weather(venue_name: str, target_date: str = None) -> dict:
     except Exception:
         return None
 
+# ---------------------------------------------------------------------------
+# Open-Meteo fallback (Robust Global Weather)
+# ---------------------------------------------------------------------------
+def _get_open_meteo_weather(venue_name: str, target_date: str = None) -> dict:
+    coords = None
+    venue_lower = venue_name.lower()
+    for name, c in STADIUM_COORDS.items():
+        if name.lower() in venue_lower or venue_lower in name.lower():
+            coords = c
+            break
+
+    if not coords:
+        return None
+
+    lat, lng = coords
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lng}&hourly=temperature_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto"
+    try:
+        r = requests.get(url, timeout=8)
+        data = r.json()
+        
+        target_weather = None
+        if target_date and 'hourly' in data:
+            try:
+                # Convert target_date to YYYY-MM-DD
+                if '-' in target_date:
+                    date_str = target_date
+                else:
+                    from datetime import datetime
+                    dt = datetime.strptime(target_date, '%m/%d/%Y')
+                    date_str = dt.strftime('%Y-%m-%d')
+                
+                # Find 18:00 (6 PM) or 15:00 (3 PM)
+                target_time_str_18 = f"{date_str}T18:00"
+                target_time_str_15 = f"{date_str}T15:00"
+                
+                idx = 0
+                if target_time_str_18 in data['hourly']['time']:
+                    idx = data['hourly']['time'].index(target_time_str_18)
+                elif target_time_str_15 in data['hourly']['time']:
+                    idx = data['hourly']['time'].index(target_time_str_15)
+                    
+                target_weather = {
+                    'temp': data['hourly']['temperature_2m'][idx],
+                    'wind_mph': data['hourly']['wind_speed_10m'][idx],
+                    'wind_deg': data['hourly']['wind_direction_10m'][idx]
+                }
+            except:
+                pass
+                
+        if not target_weather:
+            # Fallback to index 0 if date parsing fails
+            target_weather = {
+                'temp': data['hourly']['temperature_2m'][0],
+                'wind_mph': data['hourly']['wind_speed_10m'][0],
+                'wind_deg': data['hourly']['wind_direction_10m'][0]
+            }
+            
+        temp_f = round(target_weather['temp'])
+        wind_mph = round(target_weather['wind_mph'])
+        wind_deg = target_weather['wind_deg']
+
+        wind_dir = _wind_relative_to_stadium(wind_deg, venue_name)
+        if wind_dir == 'Cross':
+            wind_dir = 'Cross'
+            
+        return {'temp': temp_f, 'wind_mph': wind_mph,
+                'wind_dir': wind_dir, 'wind_lateral': None,
+                'rain_pct': 0, 'is_dome': False}
+    except Exception:
+        return None
+
+
 
 # ---------------------------------------------------------------------------
 # Module-level cache (populated once per run)
@@ -526,7 +621,11 @@ def get_weather_modifier(venue_name: str, away_abbr: str = None, home_abbr: str 
         key = f"{clean_away}@{clean_home}"
         raw = _rotowire_cache.get(key)
 
-    # Fallback: wttr.in (supports multi-day forecast if target_date is provided)
+    # Primary Fallback: Open-Meteo (Robust Global API)
+    if raw is None:
+        raw = _get_open_meteo_weather(venue_name, target_date)
+
+    # Secondary Fallback: wttr.in
     if raw is None:
         raw = _get_wttr_weather(venue_name, target_date)
 
