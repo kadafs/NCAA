@@ -193,6 +193,8 @@ def run_full_game_mc(
     home_wrc: float = 100.0,
     venue_name: str = None,
     pure_core: bool = True,
+    away_bp_fip: float = None,
+    home_bp_fip: float = None,
 ) -> dict:
     """
     Runs a full 9-inning Monte Carlo simulation combining:
@@ -212,17 +214,25 @@ def run_full_game_mc(
     dict with all F5 MC keys plus full game keys (see module docstring).
     """
     # Step 1: Fetch rest-adjusted bullpen FIPs so we can pass them to the F5 engine
-    try:
-        away_bp_fip = get_adjusted_bullpen_fip(away_team_name)
-    except Exception:
-        from run_daily_f5 import get_team_bullpen_fip
-        away_bp_fip = get_team_bullpen_fip(away_team_name)
+    if away_bp_fip is None:
+        try:
+            away_bp_fip = get_adjusted_bullpen_fip(away_team_name)
+        except Exception:
+            try:
+                from run_daily_f5 import get_team_bullpen_fip
+                away_bp_fip = get_team_bullpen_fip(away_team_name)
+            except Exception:
+                away_bp_fip = 3.15
 
-    try:
-        home_bp_fip = get_adjusted_bullpen_fip(home_team_name)
-    except Exception:
-        from run_daily_f5 import get_team_bullpen_fip
-        home_bp_fip = get_team_bullpen_fip(home_team_name)
+    if home_bp_fip is None:
+        try:
+            home_bp_fip = get_adjusted_bullpen_fip(home_team_name)
+        except Exception:
+            try:
+                from run_daily_f5 import get_team_bullpen_fip
+                home_bp_fip = get_team_bullpen_fip(home_team_name)
+            except Exception:
+                home_bp_fip = 3.15
 
     # Step 2: Run the F5 simulation (innings 1-5)
     f5_result = run_monte_carlo_f5(

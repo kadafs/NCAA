@@ -1,212 +1,194 @@
-"""
-npb/consensus_f5_npb.py
-=======================
-NPB First 5 Innings Consensus Report Generator.
-
-Architecture mirrors mlb/consensus_f5.py but uses:
-  - npb/fetch_schedule.py   for schedule + probable starters
-  - npb/fetch_metrics.py    for pitcher FIP proxy, bullpen FIP, team wRC+
-  - npb/park_factors.py     for static stadium park factors
-  - mlb/grade_f5.py         for Top-Down run calculation (sport-agnostic)
-  - mlb/v1/monte_carlo_v1.py for Monte Carlo simulation (stable V1 engine)
-
-Usage:
-  python npb/consensus_f5_npb.py
-  python npb/consensus_f5_npb.py --date 06/10/2026
-"""
-
 import os
 import sys
+import json
 import time
 import datetime
-import argparse
+from multiprocessing import Pool, cpu_count
 
-# Add the project root to path so we can import mlb modules
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, PROJECT_ROOT)
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'mlb'))
+# Add mlb to path to import the mathematical engines
+mlb_path = os.path.join(os.path.dirname(__file__), '..', 'mlb')
+sys.path.append(os.path.abspath(mlb_path))
 
-from mlb.grade_f5 import grade_matchup
-from mlb.v1.monte_carlo_v1 import run_monte_carlo_f5
-from npb.fetch_schedule import get_today_games
-from npb.fetch_metrics import (
-    get_pitcher_fip,
-    get_pitcher_projected_ip,
-    get_team_bullpen_fip,
-    get_team_wrc_proxy,
-    NPB_LEAGUE_AVG_FIP,
+sys.stdout.reconfigure(encoding='utf-8')
+
+from data_fetcher import (
+    get_today_games, get_pitcher_stats, get_team_stats, 
+    get_team_bullpen_fip, get_team_f5_form_factor, get_weather_multiplier
 )
-from npb.park_factors import get_npb_park_factor
 
-def _retry_call(fn, *args, retries=3, delay=2.0, **kwargs):
-    for attempt in range(retries):
-        try:
-            return fn(*args, **kwargs)
-        except Exception as e:
-            if attempt < retries - 1:
-                print(f"  [Retry {attempt+1}/{retries}] {fn.__name__} failed: {e}. Retrying in {delay}s...")
-                time.sleep(delay)
-            else:
-                raise
+from grade_f5 import grade_matchup_v6
+from monte_carlo_f5 import run_monte_carlo_f5
+from full_game_model import run_full_game_mc
 
-def get_advice(line: float, td_total: float, under_prob: float) -> str:
-    td_gap    = line - td_total       # positive = TD says Under
-    td_signal = 'UNDER' if td_gap > 0 else 'OVER'
+def process_single_game(args):
+    game, date_str = args
+    
+    away = game['away_team']
+    home = game['home_team']
+    ap = game['away_pitcher']
+    hp = game['home_pitcher']
+    venue = game.get('venue_name', 'Unknown')
+    effective_pf = game.get('park_factor', 1.0)
+    
+    # We omit the venue from the print because it contains Japanese characters which crash the Windows console
+    print(f"Processing NPB: {away} @ {home} (PF: {effective_pf})")
+    
+    # 1. Fetch Pitcher & Team Stats (Proxy Data Fetcher)
+    ap_url = game.get('away_pitcher_url')
+    hp_url = game.get('home_pitcher_url')
+    ap_stats = get_pitcher_stats(ap, ap_url)
+    hp_stats = get_pitcher_stats(hp, hp_url)
+    
+    away_team_stats = get_team_stats(away, opposing_pitcher_hand=hp_stats['hand'])
+    home_team_stats = get_team_stats(home, opposing_pitcher_hand=ap_stats['hand'])
+    
+    away_bp = get_team_bullpen_fip(away)
+    home_bp = get_team_bullpen_fip(home)
+    
+    away_form = get_team_f5_form_factor(away)
+    home_form = get_team_f5_form_factor(home)
+    
+    away_factor = away_form.get('factor', 1.0)
+    home_factor = home_form.get('factor', 1.0)
+    
+    live_weather_multiplier = get_weather_multiplier(venue)
+    
+    # 2. Run Top-Down Matchup Grader
+    top_down = grade_matchup_v6(
+        away, ap_stats['siera'], away_bp, ap_stats['projected_ip'], away_team_stats['vs_R'], away_team_stats['vs_L'],
+        home, hp_stats['siera'], home_bp, hp_stats['projected_ip'], home_team_stats['vs_R'], home_team_stats['vs_L'],
+        park_factor=effective_pf,
+        weather_multiplier=live_weather_multiplier,
+        away_pitcher_hand=ap_stats['hand'],
+        home_pitcher_hand=hp_stats['hand'],
+        away_form_factor=away_factor,
+        home_form_factor=home_factor
+    )
+    
+    # 3. Prepare Lineups for Monte Carlo (Generate generic lineups since we lack NPB live lineups)
+    # The MC engine builds generic lineups internally if we pass empty lists and force_generic=True
+    away_lineup_ids = []
+    home_lineup_ids = []
+    
+    # 4. Run Full Game Monte Carlo (This yields both F5 and Full game totals)
+    try:
+        mc = run_full_game_mc(
+            away_lineup_ids,
+            home_lineup_ids,
+            ap,
+            hp,
+            ap_stats['fip'],
+            hp_stats['fip'],
+            away_team_name=away,
+            home_team_name=home,
+            away_projected_ip=ap_stats['projected_ip'],
+            home_projected_ip=hp_stats['projected_ip'],
+            iterations=1000,
+            park_factor=effective_pf,
+            weather_context=None,
+            sport_id=14,
+            away_pitcher_hand=ap_stats['hand'],
+            home_pitcher_hand=hp_stats['hand'],
+            umpire_profile=None,
+            away_wrc=away_team_stats['wrc_plus'],
+            home_wrc=home_team_stats['wrc_plus'],
+            venue_name=venue,
+            pure_core=True,
+            away_bp_fip=away_bp,
+            home_bp_fip=home_bp
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"  [MC Full Game Error] {e}")
+        mc = {'f5_total': 0, 'full_game_total': 0, 'away_full_runs': 0, 'home_full_runs': 0}
 
-    if under_prob >= 0.52:
-        mc_signal = 'UNDER'
-    elif under_prob <= 0.48:
-        mc_signal = 'OVER'
-    else:
-        mc_signal = 'SKIP'
+    # Format output for JSON
+    game_json = {
+        "game_id": game['game_id'],
+        "game_time": game['game_time'],
+        "away_team": away,
+        "home_team": home,
+        "away_pitcher": ap,
+        "home_pitcher": hp,
+        "venue": venue,
+        "park_factor": effective_pf,
+        "weather_multiplier": 1.0, # Not implemented for NPB
+        "top_down": top_down,
+        "monte_carlo_f5": mc, # we pass mc for both, as it contains both subsets
+        "monte_carlo_full": mc
+    }
+    
+    # Format output for Markdown Block
+    md_block = f"""### {away} @ {home}
+**Venue:** {venue} | **Time:** {game['game_time']}
+**Pitching:** {ap} vs {hp}
 
-    if mc_signal == 'SKIP':
-        return f"Skip | MC Under Probability: {round(under_prob*100)}%"
-    if td_signal != mc_signal:
-        return f"Skip | MC Under Probability: {round(under_prob*100)}%"
+**Top-Down Engine (F5)**
+* {away}: {top_down['away_expected_f5_runs']} expected runs
+* {home}: {top_down['home_expected_f5_runs']} expected runs
 
-    gap_abs = abs(td_gap)
-    if gap_abs >= 0.75:
-        conf = "HIGH"
-    elif gap_abs >= 0.3:
-        conf = "MODERATE"
-    else:
-        return f"Skip | MC Under Probability: {round(under_prob*100)}%"
+**Monte Carlo Simulation**
+* F5 Total: {mc.get('f5_total', 0):.2f}
+* Full Game Total: {mc.get('full_game_total', 0):.2f}
+"""
+    return {
+        'md_block': md_block,
+        'json_data': game_json
+    }
 
-    return f"Bet **{mc_signal}** ({conf}) | MC Under Probability: {round(under_prob*100)}%"
-
-
-def generate_npb_report(date_str: str | None = None) -> str:
+def generate_consensus_report(date_str=None):
+    if not date_str:
+        date_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        
     games = get_today_games(date_str)
-
     if not games:
-        print("No NPB games found for the specified date.")
-        return ""
-
-    display_date = date_str or datetime.datetime.now().strftime('%m/%d/%Y')
+        print("No NPB games found for today.")
+        return
+        
+    print(f"Generating NPB Consensus Report for {len(games)} games...")
+    
+    # Run serial to avoid multiprocessing headaches with dummy data for now
+    results = [process_single_game((g, date_str)) for g in games]
+    
     report_lines = []
-    report_lines.append(f"# ⚾ NPB F5 Prediction Report")
-    report_lines.append(f"**Date:** {display_date}")
+    report_lines.append(f"# ⚾ NPB V4 Tuned Prediction Report (Sport ID: 14)")
+    report_lines.append(f"**Date:** {date_str}")
     report_lines.append(f"**Generated:** {datetime.datetime.now().strftime('%H:%M:%S')}")
-    report_lines.append(f"**Model:** V2 Hybrid (Current Top-Down + V1 Monte Carlo)")
+    report_lines.append(f"**Model Mode:** Generic Lineups (FORCED)")
     report_lines.append("")
-
-    priority_games = []
-    game_blocks    = []
-
-    print(f"\nGenerating NPB F5 Report for {len(games)} games...")
-
-    for game in games:
-        away = game['away_team']
-        home = game['home_team']
-        venue = game['venue']
-        away_starter = game.get('away_starter') or 'TBD'
-        home_starter = game.get('home_starter') or 'TBD'
-
-        pf, is_roofed = get_npb_park_factor(home)
-        weather_mult = 1.0 # Domes or weather-ignored for baseline
-
-        print(f"\nProcessing: {away} @ {home} (PF: {pf:.2f}, Roofed: {is_roofed})")
-
-        try:
-            ap_fip = _retry_call(get_pitcher_fip, away_starter) if away_starter != 'TBD' else NPB_LEAGUE_AVG_FIP
-            hp_fip = _retry_call(get_pitcher_fip, home_starter) if home_starter != 'TBD' else NPB_LEAGUE_AVG_FIP
-            ap_ip  = _retry_call(get_pitcher_projected_ip, away_starter) if away_starter != 'TBD' else 5.0
-            hp_ip  = _retry_call(get_pitcher_projected_ip, home_starter) if home_starter != 'TBD' else 5.0
-            away_bp  = _retry_call(get_team_bullpen_fip, away)
-            home_bp  = _retry_call(get_team_bullpen_fip, home)
-            away_wrc = _retry_call(get_team_wrc_proxy, away)
-            home_wrc = _retry_call(get_team_wrc_proxy, home)
-
-            ap_hand = 'R'
-            hp_hand = 'R'
-
-            top_down = grade_matchup(
-                away, ap_fip, away_bp, ap_ip, away_wrc,
-                home, hp_fip, home_bp, hp_ip, home_wrc,
-                park_factor=pf,
-                weather_multiplier=weather_mult,
-                away_pitcher_hand=ap_hand,
-                home_pitcher_hand=hp_hand,
-            )
-            td_total = top_down['projected_f5_total']
-
-            mc = run_monte_carlo_f5(
-                [], [],
-                away_starter, home_starter,
-                ap_fip, hp_fip,
-                iterations=10000,
-                park_factor=pf,
-            )
-            mc_total      = mc.get('f5_total', td_total)
-            under_prob_45 = mc.get('under_4_5_prob', 0.5)
-            under_prob_35 = mc.get('under_3_5_prob', round(under_prob_45 + 0.12, 3))
-            under_prob_55 = mc.get('under_5_5_prob', round(under_prob_45 - 0.11, 3))
-
-            if mc_total == td_total and 'f5_total' not in mc:
-                if under_prob_45 > 0.55:
-                    mc_total = 4.5 - (under_prob_45 - 0.5) * 2.0
-                elif under_prob_45 < 0.45:
-                    mc_total = 4.5 + (0.5 - under_prob_45) * 2.0
-                else:
-                    mc_total = 4.5
-
-            advice_35 = get_advice(3.5, td_total, under_prob_35)
-            advice_45 = get_advice(4.5, td_total, under_prob_45)
-            advice_55 = get_advice(5.5, td_total, under_prob_55)
-
-            td_gap_45 = abs(4.5 - td_total)
-            is_high_conf = td_gap_45 >= 0.75 and (
-                (under_prob_45 >= 0.60) or (under_prob_45 <= 0.40)
-            )
-            flag = "🚨 " if is_high_conf else ""
-            if is_high_conf:
-                priority_games.append(f"- **{away} @ {home}:** High Confidence Edge")
-
-            block = []
-            block.append(f"### {flag}{away} ({away_starter}) @ {home} ({home_starter})")
-            if is_high_conf:
-                block.append(f"**🔥 FLAGGED:** High Confidence Edge")
-            block.append(f"🏙️ **{venue}** (Park Factor: {pf}x){' 🏠 Roofed' if is_roofed else ''}")
-            block.append(f"- **Pitcher Matchup:** {away_starter} (FIP proxy: {ap_fip:.2f}) vs {home_starter} (FIP proxy: {hp_fip:.2f})")
-            block.append(f"- **Top-Down Projected F5 Total:** {td_total:.2f} Runs")
-            block.append(f"- **Monte Carlo Simulated F5 Total:** {mc_total:.2f} Runs (Generic Lineups)")
-            block.append(f"- 🎯 **ACTION MATRIX (Based on your Sportsbook's Line):**")
-            block.append(f"  - If Line is **3.5** -> {advice_35}")
-            block.append(f"  - If Line is **4.5** -> {advice_45}")
-            block.append(f"  - If Line is **5.5** -> {advice_55}")
-            game_blocks.append("\n".join(block))
-
-        except Exception as e:
-            print(f"  ⚠️  SKIPPED {away} @ {home}: {e}")
-            game_blocks.append(f"### {away} @ {home}\n⚠️ Skipped: {e}")
-
-    if priority_games:
-        report_lines.append("## 🚨 TOP PRIORITY GAMES 🚨")
-        report_lines.extend(priority_games)
-        report_lines.append("")
-        report_lines.append("---")
-        report_lines.append("")
-
-    report_lines.extend("\n\n".join(game_blocks).split("\n"))
-
-    output_dir = os.path.dirname(os.path.abspath(__file__))
-    if date_str:
-        safe_date = date_str.replace('/', '-')
-        filename  = f"npb_f5_report_{safe_date}.md"
-    else:
-        filename = "npb_f5_report.md"
-
-    output_path = os.path.join(output_dir, filename)
-    with open(output_path, 'w', encoding='utf-8') as f:
+    report_lines.append("---")
+    report_lines.append("")
+    
+    json_data = []
+    for r in results:
+        report_lines.append(r['md_block'])
+        json_data.append(r['json_data'])
+        
+    # Write MD Report
+    md_filename = f"consensus_f5_npb_report_{date_str}.md"
+    md_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'mlb', md_filename)
+    with open(md_path, 'w', encoding='utf-8') as f:
         f.write("\n".join(report_lines))
+        
+    # Write JSON Payload
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'baseball')
+    os.makedirs(data_dir, exist_ok=True)
+    json_filename = f"universal_predictions_NPB_{date_str}.json"
+    json_path = os.path.join(data_dir, json_filename)
+    
+    frontend_payload = {
+        "date": date_str,
+        "league": "NPB",
+        "mode": "generic",
+        "total_predictions": len(json_data),
+        "predictions": json_data
+    }
+    with open(json_path, 'w', encoding='utf-8') as f:
+        json.dump(frontend_payload, f, indent=4)
+        
+    print(f"\nDone! Report written to {md_path}")
+    print(f"JSON data bridged to {json_path}")
 
-    print(f"\nDone! NPB report written to {output_path}")
-    return output_path
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate NPB F5 Prediction Report')
-    parser.add_argument('--date', type=str, default=None,
-                        help='Date in MM/DD/YYYY format (default: today JST)')
-    args = parser.parse_args()
-    generate_npb_report(args.date)
+if __name__ == "__main__":
+    generate_consensus_report()

@@ -36,7 +36,8 @@ def grade_matchup_v6(
     home_team: str, home_siera: float, home_bp: float, home_ip: float,
     home_vs_rhp_wrc: float, home_vs_lhp_wrc: float,
     park_factor: float = 1.0, weather_multiplier: float = 1.0,
-    away_pitcher_hand: str = 'R', home_pitcher_hand: str = 'R'
+    away_pitcher_hand: str = 'R', home_pitcher_hand: str = 'R',
+    away_form_factor: float = 1.0, home_form_factor: float = 1.0
 ) -> dict:
     """
     Grades the matchup by matching the team's authentic wRC+ split 
@@ -47,8 +48,8 @@ def grade_matchup_v6(
     home_split_wrc = home_vs_lhp_wrc if away_pitcher_hand.upper() == 'L' else home_vs_rhp_wrc
     
     # Scale offensive capabilities defensively using predictive roots
-    away_offense_scalar = (away_split_wrc / 100.0) ** 0.7
-    home_offense_scalar = (home_split_wrc / 100.0) ** 0.7
+    away_offense_scalar = ((away_split_wrc / 100.0) ** 0.7) * away_form_factor
+    home_offense_scalar = ((home_split_wrc / 100.0) ** 0.7) * home_form_factor
 
     # Run the base SIERA engine and overlay offense + home advantages
     away_expected = calculate_expected_runs_siera(home_siera, home_bp, home_ip, park_factor, weather_multiplier) * away_offense_scalar
