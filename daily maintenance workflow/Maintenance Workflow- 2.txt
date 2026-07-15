@@ -18,10 +18,6 @@ python mlb/consensus_f5_v4.py - To run V4 (Tuned: Top-Down + Tuned Current MC + 
 python mlb/post_process_fg.py --file .consensus_f5_v3_report_MLB_YYYY-MM-DD.json - BULLPEN POST-PROCESSING MODULE
 python mlb/umpire_engine.py - Every Monday morning (before the daily run) 
 python mlb/grade_td_reports.py - grader script for MLB (Gatekeeper picks only)
-python mlb/grade_td_reports.py --mc - grade MC total only (pure Layer 1 talent, no Gatekeeper filter)
-python mlb/grade_td_reports.py --all - grade all games forcing TD-based pick
-python mlb/grade_td_reports.py --mc --sportId 11 - MC-only grader for AAA
-python mlb/grade_td_reports.py --mc --file mlb/consensus_f5_v3_report_YYYY-MM-DD.md - MC-only on specific report
 
 python grade_intl_reports.py --league KBO - grader script for KBO
 python grade_intl_reports.py --league NPB - grader script for NPB
