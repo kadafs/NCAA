@@ -105,18 +105,59 @@ def process_single_game(args):
 
     # Format output for JSON
     game_json = {
-        "game_id": game['game_id'],
-        "game_time": game['game_time'],
         "away_team": away,
         "home_team": home,
-        "away_pitcher": ap,
-        "home_pitcher": hp,
-        "venue": venue,
-        "park_factor": effective_pf,
-        "weather_multiplier": 1.0, # Not implemented for NPB
-        "top_down": top_down,
-        "monte_carlo_f5": mc, # we pass mc for both, as it contains both subsets
-        "monte_carlo_full": mc
+        "pitchers": {
+            "away": {
+                "name": ap, "hand": ap_stats['hand'], "fip": ap_stats['fip'],
+                "fb_pct": 0.5, "gb_pct": 0.5, "k_rate": 0.2
+            },
+            "home": {
+                "name": hp, "hand": hp_stats['hand'], "fip": hp_stats['fip'],
+                "fb_pct": 0.5, "gb_pct": 0.5, "k_rate": 0.2
+            }
+        },
+        "environment": {
+            "venue": venue,
+            "park_factor": effective_pf,
+            "weather": {
+                "temp": 72, "wind_mph": 0, "wind_dir": "Calm", "is_indoor": False, "weather_multiplier": live_weather_multiplier,
+                "weather_label": f"Weather multiplier: {live_weather_multiplier}"
+            },
+            "effective_pf": effective_pf,
+            "env_display": {
+                "signal": "NEUTRAL", "delta": 0, "park_flag": "NEUTRAL", "park_signal": "NEUTRAL",
+                "weather_flag": "NEUTRAL", "weather_signal": "NEUTRAL", "umpire_flag": "NEUTRAL", "umpire_signal": "NEUTRAL",
+                "lean": "NEUTRAL", "effective_pf": effective_pf, "effective_pf_note": "", "summary": ""
+            }
+        },
+        "lineups_status": "Generic",
+        "predictions": {
+            "top_down_f5": top_down['projected_f5_total'],
+            "mc_f5": mc.get('mc_total_runs'),
+            "mc_f5_away": mc.get('away_mc_runs'),
+            "mc_f5_home": mc.get('home_mc_runs'),
+            "mc_late": mc.get('late_total'),
+            "mc_full_game": mc.get('full_game_total'),
+            "td_clamp_applied": False,
+            "away_f5_form": {"factor": away_factor},
+            "home_f5_form": {"factor": home_factor},
+            "form_factor": "Not implemented"
+        },
+        "probabilities": {
+            "under_3_5": mc.get('under_3_5_prob'),
+            "under_4_5": mc.get('under_4_5_prob'),
+            "under_5_5": mc.get('under_5_5_prob'),
+            "full_over_7_5": mc.get('full_over_7_5_prob'),
+            "full_over_8_5": mc.get('full_over_8_5_prob'),
+            "full_over_9_5": mc.get('full_over_9_5_prob')
+        },
+        "action_matrix": {
+            "adv_3_5": "Skip",
+            "adv_4_5": "Skip",
+            "adv_5_5": "Skip"
+        },
+        "version": "v4"
     }
     
     # Format output for Markdown Block
