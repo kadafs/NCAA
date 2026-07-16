@@ -5,404 +5,159 @@
     "total_predictions": 5,
     "predictions": [
         {
+            "game_id": "205_8885_20260715",
+            "game_time": "18:00",
             "away_team": "Yomiuri Giants",
             "home_team": "Yakult Swallows",
-            "pitchers": {
-                "away": {
-                    "name": "\u30de\u30bf",
-                    "hand": "L",
-                    "fip": 1.82,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                },
-                "home": {
-                    "name": "\u5897\u5c45",
-                    "hand": "R",
-                    "fip": 3.15,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                }
+            "away_pitcher": "\u30de\u30bf",
+            "home_pitcher": "\u5897\u5c45",
+            "venue": "\u795e\u5bae",
+            "park_factor": 1.15,
+            "weather_multiplier": 1.0,
+            "top_down": {
+                "away_team": "Yomiuri Giants",
+                "home_team": "Yakult Swallows",
+                "away_expected_f5_runs": 1.55,
+                "home_expected_f5_runs": 1.37,
+                "projected_f5_total": 2.92,
+                "projected_f5_margin": -0.17
             },
-            "environment": {
-                "venue": "\u795e\u5bae",
-                "park_factor": 1.15,
-                "weather": {
-                    "temp": 72,
-                    "wind_mph": 0,
-                    "wind_dir": "Calm",
-                    "is_indoor": false,
-                    "weather_multiplier": 1.016,
-                    "weather_label": "Weather multiplier: 1.016"
-                },
-                "effective_pf": 1.15,
-                "env_display": {
-                    "signal": "NEUTRAL",
-                    "delta": 0,
-                    "park_flag": "NEUTRAL",
-                    "park_signal": "NEUTRAL",
-                    "weather_flag": "NEUTRAL",
-                    "weather_signal": "NEUTRAL",
-                    "umpire_flag": "NEUTRAL",
-                    "umpire_signal": "NEUTRAL",
-                    "lean": "NEUTRAL",
-                    "effective_pf": 1.15,
-                    "effective_pf_note": "",
-                    "summary": ""
-                }
+            "monte_carlo_f5": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
             },
-            "lineups_status": "Generic",
-            "predictions": {
-                "top_down_f5": 2.92,
-                "mc_f5": 3.16,
-                "mc_f5_away": 1.66,
-                "mc_f5_home": 1.5,
-                "mc_late": 2.06,
-                "mc_full_game": 5.22,
-                "td_clamp_applied": false,
-                "away_f5_form": {
-                    "factor": 0.75
-                },
-                "home_f5_form": {
-                    "factor": 0.95
-                },
-                "form_factor": "Not implemented"
-            },
-            "probabilities": {
-                "under_3_5": 0.625,
-                "under_4_5": 0.744,
-                "under_5_5": 0.822,
-                "full_over_7_5": 0.157,
-                "full_over_8_5": 0.083,
-                "full_over_9_5": 0.04
-            },
-            "action_matrix": {
-                "adv_3_5": "Skip",
-                "adv_4_5": "Skip",
-                "adv_5_5": "Skip"
-            },
-            "version": "v4"
+            "monte_carlo_full": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
+            }
         },
         {
+            "game_id": "666_3042_20260715",
+            "game_time": "18:00",
             "away_team": "Hanshin Tigers",
             "home_team": "Chunichi Dragons",
-            "pitchers": {
-                "away": {
-                    "name": "\u4f0a\u539f",
-                    "hand": "R",
-                    "fip": 2.99,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                },
-                "home": {
-                    "name": "\u67f3",
-                    "hand": "L",
-                    "fip": 4.6,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                }
+            "away_pitcher": "\u4f0a\u539f",
+            "home_pitcher": "\u67f3",
+            "venue": "\u30d0\u30f3\u30c6\u30ea\u30f3\u30c9\u30fc\u30e0",
+            "park_factor": 0.85,
+            "weather_multiplier": 1.0,
+            "top_down": {
+                "away_team": "Hanshin Tigers",
+                "home_team": "Chunichi Dragons",
+                "away_expected_f5_runs": 1.3,
+                "home_expected_f5_runs": 1.99,
+                "projected_f5_total": 3.29,
+                "projected_f5_margin": 0.69
             },
-            "environment": {
-                "venue": "\u30d0\u30f3\u30c6\u30ea\u30f3\u30c9\u30fc\u30e0",
-                "park_factor": 0.85,
-                "weather": {
-                    "temp": 72,
-                    "wind_mph": 0,
-                    "wind_dir": "Calm",
-                    "is_indoor": false,
-                    "weather_multiplier": 1.0,
-                    "weather_label": "Weather multiplier: 1.0"
-                },
-                "effective_pf": 0.85,
-                "env_display": {
-                    "signal": "NEUTRAL",
-                    "delta": 0,
-                    "park_flag": "NEUTRAL",
-                    "park_signal": "NEUTRAL",
-                    "weather_flag": "NEUTRAL",
-                    "weather_signal": "NEUTRAL",
-                    "umpire_flag": "NEUTRAL",
-                    "umpire_signal": "NEUTRAL",
-                    "lean": "NEUTRAL",
-                    "effective_pf": 0.85,
-                    "effective_pf_note": "",
-                    "summary": ""
-                }
+            "monte_carlo_f5": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
             },
-            "lineups_status": "Generic",
-            "predictions": {
-                "top_down_f5": 4.14,
-                "mc_f5": 4.1,
-                "mc_f5_away": 2.35,
-                "mc_f5_home": 1.76,
-                "mc_late": 2.05,
-                "mc_full_game": 6.16,
-                "td_clamp_applied": false,
-                "away_f5_form": {
-                    "factor": 0.75
-                },
-                "home_f5_form": {
-                    "factor": 1.247
-                },
-                "form_factor": "Not implemented"
-            },
-            "probabilities": {
-                "under_3_5": 0.475,
-                "under_4_5": 0.614,
-                "under_5_5": 0.717,
-                "full_over_7_5": 0.278,
-                "full_over_8_5": 0.169,
-                "full_over_9_5": 0.095
-            },
-            "action_matrix": {
-                "adv_3_5": "Skip",
-                "adv_4_5": "Skip",
-                "adv_5_5": "Skip"
-            },
-            "version": "v4"
+            "monte_carlo_full": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
+            }
         },
         {
+            "game_id": "6934_5861_20260715",
+            "game_time": "13:00",
             "away_team": "Fukuoka SoftBank Hawks",
             "home_team": "Nippon-Ham Fighters",
-            "pitchers": {
-                "away": {
-                    "name": "\u4e0a\u8336\u8c37",
-                    "hand": "R",
-                    "fip": 3.59,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                },
-                "home": {
-                    "name": "\u4f0a\u85e4",
-                    "hand": "R",
-                    "fip": 4.68,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                }
+            "away_pitcher": "\u4e0a\u8336\u8c37",
+            "home_pitcher": "\u4f0a\u85e4",
+            "venue": "\u30a8\u30b9\u30b3\u30f3F",
+            "park_factor": 1.0,
+            "weather_multiplier": 1.0,
+            "top_down": {
+                "away_team": "Fukuoka SoftBank Hawks",
+                "home_team": "Nippon-Ham Fighters",
+                "away_expected_f5_runs": 2.17,
+                "home_expected_f5_runs": 2.03,
+                "projected_f5_total": 4.19,
+                "projected_f5_margin": -0.14
             },
-            "environment": {
-                "venue": "\u30a8\u30b9\u30b3\u30f3F",
-                "park_factor": 1.0,
-                "weather": {
-                    "temp": 72,
-                    "wind_mph": 0,
-                    "wind_dir": "Calm",
-                    "is_indoor": false,
-                    "weather_multiplier": 1.0,
-                    "weather_label": "Weather multiplier: 1.0"
-                },
-                "effective_pf": 1.0,
-                "env_display": {
-                    "signal": "NEUTRAL",
-                    "delta": 0,
-                    "park_flag": "NEUTRAL",
-                    "park_signal": "NEUTRAL",
-                    "weather_flag": "NEUTRAL",
-                    "weather_signal": "NEUTRAL",
-                    "umpire_flag": "NEUTRAL",
-                    "umpire_signal": "NEUTRAL",
-                    "lean": "NEUTRAL",
-                    "effective_pf": 1.0,
-                    "effective_pf_note": "",
-                    "summary": ""
-                }
+            "monte_carlo_f5": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
             },
-            "lineups_status": "Generic",
-            "predictions": {
-                "top_down_f5": 5.8,
-                "mc_f5": 4.04,
-                "mc_f5_away": 2.02,
-                "mc_f5_home": 2.02,
-                "mc_late": 1.42,
-                "mc_full_game": 5.46,
-                "td_clamp_applied": false,
-                "away_f5_form": {
-                    "factor": 0.957
-                },
-                "home_f5_form": {
-                    "factor": 0.939
-                },
-                "form_factor": "Not implemented"
-            },
-            "probabilities": {
-                "under_3_5": 0.484,
-                "under_4_5": 0.64,
-                "under_5_5": 0.743,
-                "full_over_7_5": 0.186,
-                "full_over_8_5": 0.103,
-                "full_over_9_5": 0.052
-            },
-            "action_matrix": {
-                "adv_3_5": "Skip",
-                "adv_4_5": "Skip",
-                "adv_5_5": "Skip"
-            },
-            "version": "v4"
+            "monte_carlo_full": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
+            }
         },
         {
+            "game_id": "3653_1012_20260715",
+            "game_time": "18:00",
             "away_team": "Orix Buffaloes",
             "home_team": "Rakuten Golden Eagles",
-            "pitchers": {
-                "away": {
-                    "name": "\u535a\u5fd7",
-                    "hand": "R",
-                    "fip": 10.65,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                },
-                "home": {
-                    "name": "\u30b3\u30f3\u30c8\u30ec\u30e9\u30b9",
-                    "hand": "R",
-                    "fip": 2.99,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                }
+            "away_pitcher": "\u535a\u5fd7",
+            "home_pitcher": "\u30b3\u30f3\u30c8\u30ec\u30e9\u30b9",
+            "venue": "\u697d\u5929\u30e2\u30d0\u30a4\u30eb",
+            "park_factor": 0.98,
+            "weather_multiplier": 1.0,
+            "top_down": {
+                "away_team": "Orix Buffaloes",
+                "home_team": "Rakuten Golden Eagles",
+                "away_expected_f5_runs": 1.72,
+                "home_expected_f5_runs": 2.21,
+                "projected_f5_total": 3.94,
+                "projected_f5_margin": 0.49
             },
-            "environment": {
-                "venue": "\u697d\u5929\u30e2\u30d0\u30a4\u30eb",
-                "park_factor": 0.98,
-                "weather": {
-                    "temp": 72,
-                    "wind_mph": 0,
-                    "wind_dir": "Calm",
-                    "is_indoor": false,
-                    "weather_multiplier": 1.01,
-                    "weather_label": "Weather multiplier: 1.01"
-                },
-                "effective_pf": 0.98,
-                "env_display": {
-                    "signal": "NEUTRAL",
-                    "delta": 0,
-                    "park_flag": "NEUTRAL",
-                    "park_signal": "NEUTRAL",
-                    "weather_flag": "NEUTRAL",
-                    "weather_signal": "NEUTRAL",
-                    "umpire_flag": "NEUTRAL",
-                    "umpire_signal": "NEUTRAL",
-                    "lean": "NEUTRAL",
-                    "effective_pf": 0.98,
-                    "effective_pf_note": "",
-                    "summary": ""
-                }
+            "monte_carlo_f5": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
             },
-            "lineups_status": "Generic",
-            "predictions": {
-                "top_down_f5": 8.32,
-                "mc_f5": 4.62,
-                "mc_f5_away": 1.75,
-                "mc_f5_home": 2.87,
-                "mc_late": 3.11,
-                "mc_full_game": 7.73,
-                "td_clamp_applied": false,
-                "away_f5_form": {
-                    "factor": 0.929
-                },
-                "home_f5_form": {
-                    "factor": 1.25
-                },
-                "form_factor": "Not implemented"
-            },
-            "probabilities": {
-                "under_3_5": 0.422,
-                "under_4_5": 0.537,
-                "under_5_5": 0.659,
-                "full_over_7_5": 0.509,
-                "full_over_8_5": 0.37,
-                "full_over_9_5": 0.251
-            },
-            "action_matrix": {
-                "adv_3_5": "Skip",
-                "adv_4_5": "Skip",
-                "adv_5_5": "Skip"
-            },
-            "version": "v4"
+            "monte_carlo_full": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
+            }
         },
         {
+            "game_id": "4248_3502_20260715",
+            "game_time": "18:00",
             "away_team": "Chiba Lotte Marines",
             "home_team": "Saitama Seibu Lions",
-            "pitchers": {
-                "away": {
-                    "name": "\u6bdb\u5229",
-                    "hand": "R",
-                    "fip": 3.39,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                },
-                "home": {
-                    "name": "\u6e21\u9089",
-                    "hand": "L",
-                    "fip": 4.88,
-                    "fb_pct": 0.5,
-                    "gb_pct": 0.5,
-                    "k_rate": 0.2
-                }
+            "away_pitcher": "\u6bdb\u5229",
+            "home_pitcher": "\u6e21\u9089",
+            "venue": "\u30d9\u30eb\u30fc\u30ca\u30c9\u30fc\u30e0",
+            "park_factor": 1.0,
+            "weather_multiplier": 1.0,
+            "top_down": {
+                "away_team": "Chiba Lotte Marines",
+                "home_team": "Saitama Seibu Lions",
+                "away_expected_f5_runs": 2.37,
+                "home_expected_f5_runs": 2.34,
+                "projected_f5_total": 4.71,
+                "projected_f5_margin": -0.04
             },
-            "environment": {
-                "venue": "\u30d9\u30eb\u30fc\u30ca\u30c9\u30fc\u30e0",
-                "park_factor": 1.0,
-                "weather": {
-                    "temp": 72,
-                    "wind_mph": 0,
-                    "wind_dir": "Calm",
-                    "is_indoor": false,
-                    "weather_multiplier": 1.0,
-                    "weather_label": "Weather multiplier: 1.0"
-                },
-                "effective_pf": 1.0,
-                "env_display": {
-                    "signal": "NEUTRAL",
-                    "delta": 0,
-                    "park_flag": "NEUTRAL",
-                    "park_signal": "NEUTRAL",
-                    "weather_flag": "NEUTRAL",
-                    "weather_signal": "NEUTRAL",
-                    "umpire_flag": "NEUTRAL",
-                    "umpire_signal": "NEUTRAL",
-                    "lean": "NEUTRAL",
-                    "effective_pf": 1.0,
-                    "effective_pf_note": "",
-                    "summary": ""
-                }
+            "monte_carlo_f5": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
             },
-            "lineups_status": "Generic",
-            "predictions": {
-                "top_down_f5": 6.81,
-                "mc_f5": 4.26,
-                "mc_f5_away": 2.26,
-                "mc_f5_home": 2.0,
-                "mc_late": 1.35,
-                "mc_full_game": 5.61,
-                "td_clamp_applied": false,
-                "away_f5_form": {
-                    "factor": 1.25
-                },
-                "home_f5_form": {
-                    "factor": 1.166
-                },
-                "form_factor": "Not implemented"
-            },
-            "probabilities": {
-                "under_3_5": 0.472,
-                "under_4_5": 0.598,
-                "under_5_5": 0.705,
-                "full_over_7_5": 0.205,
-                "full_over_8_5": 0.115,
-                "full_over_9_5": 0.06
-            },
-            "action_matrix": {
-                "adv_3_5": "Skip",
-                "adv_4_5": "Skip",
-                "adv_5_5": "Skip"
-            },
-            "version": "v4"
+            "monte_carlo_full": {
+                "f5_total": 0,
+                "full_game_total": 0,
+                "away_full_runs": 0,
+                "home_full_runs": 0
+            }
         }
     ]
 }
