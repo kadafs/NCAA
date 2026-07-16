@@ -1,6 +1,6 @@
 # ⚾ KBO V4 Tuned Prediction Report (Sport ID: 15)
 **Date:** 2026-07-16
-**Generated:** 21:46:43
+**Generated:** 07:26:39
 **Model Mode:** Generic Lineups (FORCED)
 
 ---
@@ -14,8 +14,8 @@
 * SSG Landers: 2.65 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 5.30
-* Full Game Total: 9.20
+* F5 Total: 5.52
+* Full Game Total: 9.37
 
 ### KT Wiz @ LG Twins
 **Venue:** LG Twins | **Time:** 18:30
@@ -26,8 +26,8 @@
 * LG Twins: 2.82 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.69
-* Full Game Total: 8.10
+* F5 Total: 4.97
+* Full Game Total: 8.52
 
 ### Lotte Giants @ Samsung Lions
 **Venue:** Samsung Lions | **Time:** 18:30
@@ -38,8 +38,8 @@
 * Samsung Lions: 3.05 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.52
-* Full Game Total: 7.83
+* F5 Total: 4.66
+* Full Game Total: 8.20
 
 ### Doosan Bears @ NC Dinos
 **Venue:** NC Dinos | **Time:** 18:30
@@ -50,8 +50,8 @@
 * NC Dinos: 2.54 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.65
-* Full Game Total: 8.10
+* F5 Total: 4.48
+* Full Game Total: 7.97
 
 ### Kiwoom Heroes @ Hanwha Eagles
 **Venue:** Hanwha Eagles | **Time:** 18:30
@@ -62,5 +62,5 @@
 * Hanwha Eagles: 3.35 expected runs
 
 **Monte Carlo Simulation**
-* F5 Total: 4.87
-* Full Game Total: 8.63
+* F5 Total: 5.20
+* Full Game Total: 8.92
