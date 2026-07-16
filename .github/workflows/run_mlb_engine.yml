@@ -36,16 +36,7 @@ on:
         type: boolean
         required: false
         default: true
-      run_npb:
-        description: 'Run NPB (Japan)'
-        type: boolean
-        required: false
-        default: true
-      run_kbo:
-        description: 'Run KBO (Korea)'
-        type: boolean
-        required: false
-        default: true
+
 
 jobs:
   run_mlb_engine:
@@ -157,27 +148,7 @@ jobs:
             python mlb/consensus_f5_v4.py --sportId 23
           fi
 
-      - name: Run NPB Consensus Engine
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.run_npb == 'true' }}
-        run: |
-          cd ncaa-api
-          echo "▶ Running NPB engine..."
-          if [ -n "${{ github.event.inputs.target_date }}" ]; then
-            python npb/consensus_f5_npb.py --date "${{ github.event.inputs.target_date }}"
-          else
-            python npb/consensus_f5_npb.py
-          fi
 
-      - name: Run KBO Consensus Engine
-        if: ${{ github.event_name == 'schedule' || github.event.inputs.run_kbo == 'true' }}
-        run: |
-          cd ncaa-api
-          echo "▶ Running KBO engine..."
-          if [ -n "${{ github.event.inputs.target_date }}" ]; then
-            python kbo/consensus_f5_kbo.py --date "${{ github.event.inputs.target_date }}"
-          else
-            python kbo/consensus_f5_kbo.py
-          fi
 
       - name: Push Data to Baseball Dashboard
         run: |
@@ -187,7 +158,7 @@ jobs:
       - name: Commit Generated Files to ncaa-api
         run: |
           cd ncaa-api
-          git add -f mlb/*.md data/baseball/*.json data/umpires.json npb/*.md kbo/*.md
+          git add -f mlb/*.md data/baseball/*.json data/umpires.json
           # Only commit if there are changes
           if ! git diff --cached --quiet; then
             git commit -m "Auto-generate daily MLB/MiLB consensus reports"
