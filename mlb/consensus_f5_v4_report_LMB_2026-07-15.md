@@ -1,6 +1,6 @@
 # ⚾ V4 Tuned F5 Prediction Report (Sport ID: 23)
 **Date:** 2026-07-15
-**Generated:** 19:22:05
+**Generated:** 03:08:26
 **Model Mode:** Standard (Confirmed if available)
 
 ## 🚨 TOP PRIORITY GAMES 🚨
@@ -18,16 +18,7 @@
 1. **Diablos Rojos del Mexico @ Tigres de Quintana Roo** ──► **BET F5 OVER** (Odds: 1.85)
     *   *System Note:* Divergent baseline alignment confirms line value. Trusting TD via pure distance edge.
 
-2. **Leones de Yucatan @ Guerreros de Oaxaca** ──► **BET F5 OVER** (Odds: 1.85)
-    *   *System Note:* Volatility Veto: High true-outcome pitcher metrics. MC sequence noise flagged; trusting TD.
-
-3. **El Aguila de Veracruz @ Pericos de Puebla** ──► **BET F5 OVER** (Odds: 1.85)
-    *   *System Note:* Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park (1.300x).
-
-4. **Bravos de Leon @ Conspiradores de Queretaro** ──► **BET F5 OVER** (Odds: 1.85)
-    *   *System Note:* Divergent baseline alignment confirms line value. Trusting TD via pure distance edge.
-
-5. **Dorados de Chihuahua @ Saraperos de Saltillo** ──► **BET F5 OVER** (Odds: 1.85)
+2. **Bravos de Leon @ Conspiradores de Queretaro** ──► **BET F5 OVER** (Odds: 1.85)
     *   *System Note:* Divergent baseline alignment confirms line value. Trusting TD via pure distance edge.
 
 
@@ -38,11 +29,11 @@
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 [Umpire Filter] Kevin Basurto: Neutral — insufficient data
-- **Pitcher Matchup:** Justin Courtney (RHP, SIERA: 4.27) vs Melvi Acosta (RHP, SIERA: 5.11)
-- **Top-Down Projected F5 Total:** 5.64 Runs
-- **Monte Carlo Simulated F5 Total:** 4.61 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.11 Runs
+- **Pitcher Matchup:** Justin Courtney (RHP, SIERA: 4.17) vs Melvi Acosta (RHP, SIERA: 5.11)
+- **Top-Down Projected F5 Total:** 5.57 Runs
+- **Monte Carlo Simulated F5 Total:** 4.58 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.12 Runs
 - **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 29%
 
 ### 🚨 Olmecas de Tabasco (Jack Cushing) @ Piratas de Campeche (Ross Carver)
@@ -50,55 +41,60 @@
 🏙️ **Estadio Cruz Azul Nelson Barrera Romellón** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Jack Cushing (RHP, SIERA: 4.26) vs Ross Carver (RHP, SIERA: 3.08)
-- **Top-Down Projected F5 Total:** 4.6 Runs
-- **Monte Carlo Simulated F5 Total:** 4.17 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.67 Runs
-- **Full Game Probs:** Over 7.5: 50% | Over 8.5: 36% | Over 9.5: 24%
+[Umpire Filter] Pedro Tun Cetina: Neutral — insufficient data
+- **Pitcher Matchup:** Jack Cushing (RHP, SIERA: 4.07) vs Ross Carver (RHP, SIERA: 2.79)
+- **Top-Down Projected F5 Total:** 4.36 Runs
+- **Monte Carlo Simulated F5 Total:** 4.1 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.6 Runs
+- **Full Game Probs:** Over 7.5: 49% | Over 8.5: 35% | Over 9.5: 23%
 
 ### Leones de Yucatan (Brandon Brennan) @ Guerreros de Oaxaca (Radhames Liz)
 🏙️ **Estadio Yu'Va** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Brandon Brennan (RHP, SIERA: 4.64) vs Radhames Liz (RHP, SIERA: 4.12)
-- **Top-Down Projected F5 Total:** 5.11 Runs
-- **Monte Carlo Simulated F5 Total:** 4.51 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.05 Runs
-- **Full Game Probs:** Over 7.5: 55% | Over 8.5: 41% | Over 9.5: 28%
+[Umpire Filter] Daniel Toledo: Neutral — insufficient data
+- **Pitcher Matchup:** Brandon Brennan (RHP, SIERA: 4.82) vs Radhames Liz (RHP, SIERA: 3.97)
+- **Top-Down Projected F5 Total:** 5.13 Runs
+- **Monte Carlo Simulated F5 Total:** 4.4 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.48 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.88 Runs
+- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 26%
 
 ### 🚨 El Aguila de Veracruz (Gabriel Ynoa) @ Pericos de Puebla (Fernando Lozano)
 **🔥 FLAGGED:** ENV CONTRADICT (delta=-8)
 🏙️ **Estadio Hermanos Serdan** (Park Factor: 1.3x)
-🌤️ **Weather:** 68F | Calm | Weather: +0.0%
+🌤️ **Weather:** 57F | Calm | Weather: -1.2%
 🌍 **ENV Filters:** Park: HITTERS_PARK CONTRADICTS -> CONTRADICT (-8)
-- **Pitcher Matchup:** Gabriel Ynoa (RHP, SIERA: 4.16) vs Fernando Lozano (RHP, SIERA: 5.25)
-- **Top-Down Projected F5 Total:** 5.47 Runs
-- **Monte Carlo Simulated F5 Total:** 4.52 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.01 Runs
+[Umpire Filter] Jose Tirado: Neutral — insufficient data
+- **Pitcher Matchup:** Gabriel Ynoa (RHP, SIERA: 4.17) vs Fernando Lozano (RHP, SIERA: 5.1)
+- **Top-Down Projected F5 Total:** 5.43 Runs
+- **Monte Carlo Simulated F5 Total:** 4.46 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.98 Runs
 - **Full Game Probs:** Over 7.5: 54% | Over 8.5: 40% | Over 9.5: 28%
 
 ### Bravos de Leon (Faustino Carrera) @ Conspiradores de Queretaro (Junior Guerra)
 🏙️ **Estadio Conspiradores** (Park Factor: 1.0x)
-🌤️ **Weather:** 74F | 12 MPH In | Weather: -2.9%
-🌍 **ENV Filters:** Weather: WIND_IN CONTRADICTS -> NEUTRAL (-5)
-- **Pitcher Matchup:** Faustino Carrera (LHP, SIERA: 4.12) vs Junior Guerra (RHP, SIERA: 5.1)
-- **Top-Down Projected F5 Total:** 5.9 Runs
-- **Monte Carlo Simulated F5 Total:** 4.66 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.2 Runs
-- **Full Game Probs:** Over 7.5: 57% | Over 8.5: 43% | Over 9.5: 30%
+🌤️ **Weather:** 61F | 9 MPH In | Weather: -3.2%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+[Umpire Filter] Manuel Carrillo: Neutral — insufficient data
+- **Pitcher Matchup:** Faustino Carrera (LHP, SIERA: 4.26) vs Junior Guerra (RHP, SIERA: 5.07)
+- **Top-Down Projected F5 Total:** 5.95 Runs
+- **Monte Carlo Simulated F5 Total:** 4.58 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.12 Runs
+- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 29%
 
 ### Acereros del Norte (Jackson Goddard) @ Sultanes de Monterrey (Daniel Cruz)
 🏙️ **Walmart Park** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Jackson Goddard (RHP, SIERA: 4.58) vs Daniel Cruz (RHP, SIERA: 3.98)
-- **Top-Down Projected F5 Total:** 4.99 Runs
-- **Monte Carlo Simulated F5 Total:** 4.47 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+[Umpire Filter] Vicente Madero: Neutral — insufficient data
+- **Pitcher Matchup:** Jackson Goddard (RHP, SIERA: 4.57) vs Daniel Cruz (RHP, SIERA: 4.02)
+- **Top-Down Projected F5 Total:** 5.01 Runs
+- **Monte Carlo Simulated F5 Total:** 4.51 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
 - **Monte Carlo FULL GAME Total:** 8.01 Runs
 - **Full Game Probs:** Over 7.5: 54% | Over 8.5: 40% | Over 9.5: 28%
 
@@ -106,45 +102,49 @@
 🏙️ **Parque Francisco I. Madero** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Caleb Smith (LHP, SIERA: 4.42) vs Luis Payan (RHP, SIERA: 4.31)
-- **Top-Down Projected F5 Total:** 5.15 Runs
-- **Monte Carlo Simulated F5 Total:** 4.5 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.99 Runs
-- **Full Game Probs:** Over 7.5: 54% | Over 8.5: 40% | Over 9.5: 28%
+[Umpire Filter] Gustavo Pena: Neutral — insufficient data
+- **Pitcher Matchup:** Caleb Smith (LHP, SIERA: 4.44) vs Luis Payan (RHP, SIERA: 4.34)
+- **Top-Down Projected F5 Total:** 5.18 Runs
+- **Monte Carlo Simulated F5 Total:** 4.47 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.57 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.04 Runs
+- **Full Game Probs:** Over 7.5: 55% | Over 8.5: 41% | Over 9.5: 28%
 
 ### 🚨 Caliente de Durango (Spencer Turnbull) @ Algodoneros Union Laguna (Hector Perez)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **Estadio de la Revolucion** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Spencer Turnbull (RHP, SIERA: 3.75) vs Hector Perez (RHP, SIERA: 4.26)
-- **Top-Down Projected F5 Total:** 5.0 Runs
-- **Monte Carlo Simulated F5 Total:** 4.31 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.86 Runs
-- **Full Game Probs:** Over 7.5: 52% | Over 8.5: 38% | Over 9.5: 26%
+[Umpire Filter] Hector Garcia: Neutral — insufficient data
+- **Pitcher Matchup:** Spencer Turnbull (RHP, SIERA: 3.71) vs Hector Perez (RHP, SIERA: 4.23)
+- **Top-Down Projected F5 Total:** 4.91 Runs
+- **Monte Carlo Simulated F5 Total:** 4.27 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.8 Runs
+- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 37% | Over 9.5: 25%
 
 ### 🚨 Charros de Jalisco (Zac Grotz) @ Rieleros de Aguascalientes (Adrian Almeida)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **Estadio Alberto Romo Chavez** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Zac Grotz (RHP, SIERA: 3.51) vs Adrian Almeida (LHP, SIERA: 4.14)
-- **Top-Down Projected F5 Total:** 4.63 Runs
-- **Monte Carlo Simulated F5 Total:** 4.01 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.52 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.53 Runs
-- **Full Game Probs:** Over 7.5: 48% | Over 8.5: 34% | Over 9.5: 22%
+[Umpire Filter] Gilberto Mayer: Neutral — insufficient data
+- **Pitcher Matchup:** Zac Grotz (RHP, SIERA: 3.48) vs Adrian Almeida (LHP, SIERA: 4.0)
+- **Top-Down Projected F5 Total:** 4.54 Runs
+- **Monte Carlo Simulated F5 Total:** 3.87 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.36 Runs
+- **Full Game Probs:** Over 7.5: 45% | Over 8.5: 31% | Over 9.5: 20%
 
 ### 🚨 Tecos de los Dos Laredos (Leam Mendez) @ Toros de Tijuana (Jorge Perez)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **Toros Mobil Park** (Park Factor: 1.0x)
 🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-- **Pitcher Matchup:** Leam Mendez (RHP, SIERA: 4.44) vs Jorge Perez (RHP, SIERA: 4.46)
-- **Top-Down Projected F5 Total:** 5.15 Runs
-- **Monte Carlo Simulated F5 Total:** 4.33 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 7.88 Runs
-- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 26%
+[Umpire Filter] Lamberto Zavala: Neutral — insufficient data
+- **Pitcher Matchup:** Leam Mendez (RHP, SIERA: 4.17) vs Jorge Perez (RHP, SIERA: 4.27)
+- **Top-Down Projected F5 Total:** 4.95 Runs
+- **Monte Carlo Simulated F5 Total:** 4.3 Runs (Lineups: Confirmed)
+- **Monte Carlo Late Innings (6-9):** 3.46 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 7.76 Runs
+- **Full Game Probs:** Over 7.5: 51% | Over 8.5: 37% | Over 9.5: 25%
