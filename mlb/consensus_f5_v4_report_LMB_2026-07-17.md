@@ -1,6 +1,6 @@
 # ⚾ V4 Tuned F5 Prediction Report (Sport ID: 23)
 **Date:** 07/17/2026
-**Generated:** 09:01:52
+**Generated:** 13:12:51
 **Model Mode:** Standard (Confirmed if available)
 
 ## 🚨 TOP PRIORITY GAMES 🚨
@@ -47,10 +47,10 @@
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.24 Runs
-- **Monte Carlo Simulated F5 Total:** 4.67 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.53 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.2 Runs
-- **Full Game Probs:** Over 7.5: 57% | Over 8.5: 43% | Over 9.5: 30%
+- **Monte Carlo Simulated F5 Total:** 4.58 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.56 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.14 Runs
+- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 30%
 
 ### 🚨 Pericos de Puebla (TBD) @ Diablos Rojos del Mexico (TBD)
 **🔥 FLAGGED:** ENV CONFIRM (delta=+8)
@@ -59,30 +59,30 @@
 🌍 **ENV Filters:** Park: HITTERS_PARK CONFIRMS -> CONFIRM (+8)
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.75 Runs
-- **Monte Carlo Simulated F5 Total:** 4.68 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Simulated F5 Total:** 4.67 Runs (Lineups: Projected (Generic))
 - **Monte Carlo Late Innings (6-9):** 3.56 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.25 Runs
-- **Full Game Probs:** Over 7.5: 58% | Over 8.5: 44% | Over 9.5: 31%
+- **Monte Carlo FULL GAME Total:** 8.23 Runs
+- **Full Game Probs:** Over 7.5: 57% | Over 8.5: 44% | Over 9.5: 31%
 
 ### Conspiradores de Queretaro (TBD) @ El Aguila de Veracruz (TBD)
 🏙️ **Estadio Beto Avila** (Park Factor: 0.85x)
-🌤️ **Weather:** 77F | 6 MPH R-L | Weather: +1.0%
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.44 Runs
-- **Monte Carlo Simulated F5 Total:** 4.63 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.55 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo Simulated F5 Total:** 4.61 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.57 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
 - **Monte Carlo FULL GAME Total:** 8.18 Runs
 - **Full Game Probs:** Over 7.5: 57% | Over 8.5: 43% | Over 9.5: 30%
 
 ### Leones de Yucatan (TBD) @ Bravos de Leon (TBD)
 🏙️ **Estadio Domingo Santana TV4** (Park Factor: 1.25x)
-🌤️ **Weather:** 72F | Calm | Weather: +0.3%
+🌤️ **Weather:** 66F | 6 MPH In | Weather: -1.4%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.37 Runs
-- **Monte Carlo Simulated F5 Total:** 4.62 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.57 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo Simulated F5 Total:** 4.67 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.52 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
 - **Monte Carlo FULL GAME Total:** 8.19 Runs
 - **Full Game Probs:** Over 7.5: 57% | Over 8.5: 43% | Over 9.5: 30%
 
@@ -92,9 +92,9 @@
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.33 Runs
-- **Monte Carlo Simulated F5 Total:** 4.6 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.1 Runs
+- **Monte Carlo Simulated F5 Total:** 4.59 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.52 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.12 Runs
 - **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 29%
 
 ### Tigres de Quintana Roo (TBD) @ Olmecas de Tabasco (TBD)
@@ -103,10 +103,10 @@
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.26 Runs
-- **Monte Carlo Simulated F5 Total:** 4.59 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.14 Runs
-- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 30%
+- **Monte Carlo Simulated F5 Total:** 4.6 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.5 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.11 Runs
+- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 29%
 
 ### Saraperos de Saltillo (TBD) @ Charros de Jalisco (TBD)
 🏙️ **Estadio Panamericano de los Charros** (Park Factor: 1.25x)
@@ -114,20 +114,20 @@
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.22 Runs
-- **Monte Carlo Simulated F5 Total:** 4.6 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.11 Runs
-- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 29%
+- **Monte Carlo Simulated F5 Total:** 4.54 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.49 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.03 Runs
+- **Full Game Probs:** Over 7.5: 55% | Over 8.5: 41% | Over 9.5: 28%
 
 ### Caliente de Durango (TBD) @ Acereros del Norte (TBD)
 🏙️ **Estadio Kickapoo Lucky Eagle** (Park Factor: 1.0x)
-🌤️ **Weather:** 77F | Calm | Weather: +1.0%
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.32 Runs
-- **Monte Carlo Simulated F5 Total:** 4.59 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.54 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.14 Runs
+- **Monte Carlo Simulated F5 Total:** 4.62 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.52 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.13 Runs
 - **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 30%
 
 ### Toros de Tijuana (TBD) @ Dorados de Chihuahua (TBD)
@@ -136,7 +136,7 @@
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
 - **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs TBD (RHP, SIERA: 4.5)
 - **Top-Down Projected F5 Total:** 5.35 Runs
-- **Monte Carlo Simulated F5 Total:** 4.61 Runs (Lineups: Projected (Generic))
-- **Monte Carlo Late Innings (6-9):** 3.52 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
-- **Monte Carlo FULL GAME Total:** 8.13 Runs
-- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 30%
+- **Monte Carlo Simulated F5 Total:** 4.6 Runs (Lineups: Projected (Generic))
+- **Monte Carlo Late Innings (6-9):** 3.51 Runs (Away BP FIP: 4.5 | Home BP FIP: 4.5)
+- **Monte Carlo FULL GAME Total:** 8.12 Runs
+- **Full Game Probs:** Over 7.5: 56% | Over 8.5: 42% | Over 9.5: 29%
