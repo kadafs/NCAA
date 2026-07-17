@@ -1,0 +1,171 @@
+{
+    "date": "2026-07-17",
+    "league": "MLB",
+    "mode": "confirmed",
+    "total_predictions": 1,
+    "predictions": [
+        {
+            "away_team": "New York Mets",
+            "home_team": "Philadelphia Phillies",
+            "pitchers": {
+                "away": {
+                    "name": "Christian Scott",
+                    "hand": "R",
+                    "fip": 3.89,
+                    "fb_pct": 0.6214,
+                    "gb_pct": 0.3786,
+                    "k_rate": 0.2846
+                },
+                "home": {
+                    "name": "Aaron Nola",
+                    "hand": "R",
+                    "fip": 4.36,
+                    "fb_pct": 0.5309,
+                    "gb_pct": 0.4691,
+                    "k_rate": 0.2389
+                }
+            },
+            "environment": {
+                "venue": "Citizens Bank Park",
+                "park_factor": 1.048,
+                "weather": {
+                    "temp": 82,
+                    "wind_mph": 5,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.018,
+                    "wind_multiplier": 0.99,
+                    "weather_multiplier": 1.0078,
+                    "weather_label": "82F | 5 MPH In | Weather: +0.8%"
+                },
+                "effective_pf": 1.0277,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.048 eff=1.028 (neutral)",
+                    "effective_pf": 1.0277,
+                    "effective_pf_note": "eff_PF=1.028 (avg_FB%=58%, raw_PF=1.048, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "82F | In",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "K-dev=-0.010 (within threshold)",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 1.0277,
+                    "effective_pf_note": "eff_PF=1.028 (avg_FB%=58%, raw_PF=1.048, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": {
+                    "name": "Dan Iassogna",
+                    "profile": {
+                        "games_called": 26,
+                        "raw_k_mod": 0.9895,
+                        "raw_bb_mod": 1.0999,
+                        "last_updated": "2026-07-13",
+                        "game_history_logs": [
+                            {
+                                "date": "2026-07-01",
+                                "k": 17.0,
+                                "bb": 10.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-06",
+                                "k": 12.0,
+                                "bb": 10.0,
+                                "ip": 21.333333333333336,
+                                "weight": 0.5
+                            },
+                            {
+                                "date": "2026-07-11",
+                                "k": 17.0,
+                                "bb": 3.0,
+                                "ip": 17.0,
+                                "weight": 0.5
+                            }
+                        ]
+                    }
+                }
+            },
+            "lineups_status": "Confirmed",
+            "predictions": {
+                "top_down_f5": 4.16,
+                "mc_f5": 4.4,
+                "mc_f5_away": 2.21,
+                "mc_f5_home": 2.19,
+                "mc_late": 2.81,
+                "mc_full_game": 7.21,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        0,
+                        1,
+                        6,
+                        1,
+                        9
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        4,
+                        2,
+                        0,
+                        3,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.455,
+                "under_4_5": 0.583,
+                "under_5_5": 0.692,
+                "full_over_7_5": 0.432,
+                "full_over_8_5": 0.299,
+                "full_over_9_5": 0.191
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Bet **UNDER** (HIGH)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 UNDER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        }
+    ]
+}
