@@ -1,0 +1,140 @@
+{
+    "date": "2026-07-16",
+    "league": "MLB",
+    "mode": "confirmed",
+    "total_predictions": 1,
+    "predictions": [
+        {
+            "away_team": "New York Mets",
+            "home_team": "Philadelphia Phillies",
+            "pitchers": {
+                "away": {
+                    "name": "Christian Scott",
+                    "hand": "R",
+                    "fip": 3.96,
+                    "fb_pct": 0.6237,
+                    "gb_pct": 0.3763,
+                    "k_rate": 0.279
+                },
+                "home": {
+                    "name": "Aaron Nola",
+                    "hand": "R",
+                    "fip": 4.31,
+                    "fb_pct": 0.5355,
+                    "gb_pct": 0.4645,
+                    "k_rate": 0.24
+                }
+            },
+            "environment": {
+                "venue": "Citizens Bank Park",
+                "park_factor": 1.053,
+                "weather": {
+                    "temp": 81,
+                    "wind_mph": 4,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0165,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0165,
+                    "weather_label": "81F | Calm | Weather: +1.6%"
+                },
+                "effective_pf": 1.0307,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.053 eff=1.031 (neutral)",
+                    "effective_pf": 1.0307,
+                    "effective_pf_note": "eff_PF=1.031 (avg_FB%=58%, raw_PF=1.053, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "81F | In",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 1.0307,
+                    "effective_pf_note": "eff_PF=1.031 (avg_FB%=58%, raw_PF=1.053, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.18,
+                "mc_f5": 4.41,
+                "mc_f5_away": 2.18,
+                "mc_f5_home": 2.23,
+                "mc_late": 2.72,
+                "mc_full_game": 7.13,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        0,
+                        1,
+                        6,
+                        1,
+                        9
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        4,
+                        2,
+                        0,
+                        3,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.443,
+                "under_4_5": 0.571,
+                "under_5_5": 0.68,
+                "full_over_7_5": 0.42,
+                "full_over_8_5": 0.288,
+                "full_over_9_5": 0.183
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4",
+            "gatekeeper_logic": {
+                "category": "High-Confidence",
+                "action": "BET F5 UNDER",
+                "reason": "Engine Convergence: Models perfectly aligned with measurable market edge.",
+                "odds": 1.85
+            }
+        }
+    ]
+}
