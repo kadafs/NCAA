@@ -1,245 +1,259 @@
 # ⚾ V4 Tuned F5 Prediction Report (Sport ID: 1)
 **Date:** 07/18/2026
-**Generated:** 03:03:08
+**Generated:** 07:10:41
 **Model Mode:** Standard (Confirmed if available)
 
 ## 🚨 TOP PRIORITY GAMES 🚨
-- **Miami Marlins @ Milwaukee Brewers:** High Confidence Edge
+- **Pittsburgh Pirates @ Cleveland Guardians:** High Confidence Edge
+- **Pittsburgh Pirates @ Cleveland Guardians:** High Confidence Edge
 - **Cincinnati Reds @ Colorado Rockies:** Under Lean R1 (EW+Cold Form — skip OVER), ENV CONFIRM (delta=+13)
-- **Detroit Tigers @ Los Angeles Angels:** High Confidence Edge
-- **Washington Nationals @ Athletics:** High Confidence Edge
+- **New York Mets @ Philadelphia Phillies:** High Confidence Edge
 - **St. Louis Cardinals @ Arizona Diamondbacks:** Under Lean R2 (Both Teams Cold — skip OVER)
+- **Miami Marlins @ Milwaukee Brewers:** High Confidence Edge
+- **Los Angeles Dodgers @ New York Yankees:** High Confidence Edge, Under Lean R2 (Both Teams Cold — skip OVER)
 
 ---
 
 # Automated V6 Premium 4.5 Gatekeeper Report
 
 ## Active Portfolio Recommendations
-1. **Tampa Bay Rays @ Boston Red Sox** ──► **BET F5 UNDER** (Odds: 1.85)
-    *   *System Note:* Team Bias Veto Active. Trusting MC; TD blinded by unregressed park variance (16.2%).
-
-2. **Tampa Bay Rays @ Boston Red Sox** ──► **BET F5 UNDER** (Odds: 1.85)
-    *   *System Note:* Team Bias Veto Active. Trusting MC; TD blinded by unregressed park variance (16.2%).
-
-*   **Texas Rangers @ Atlanta Braves** ──► **BET F5 OVER** (Odds: 1.85)
-    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
-
-*   **Chicago White Sox @ Toronto Blue Jays** ──► **BET F5 OVER** (Odds: 1.85)
-    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
-
-*   **Miami Marlins @ Milwaukee Brewers** ──► **BET F5 UNDER** (Odds: 1.85)
-    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
-
-*   **San Diego Padres @ Kansas City Royals** ──► **BET F5 OVER** (Odds: 1.85)
+*   **Minnesota Twins @ Chicago Cubs** ──► **BET F5 UNDER** (Odds: 1.85)
     *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
 
 *   **Cincinnati Reds @ Colorado Rockies** ──► **BET F5 OVER** (Odds: 1.85)
     *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
 
+*   **New York Mets @ Philadelphia Phillies** ──► **BET F5 UNDER** (Odds: 1.85)
+    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
+
+*   **Baltimore Orioles @ Houston Astros** ──► **BET F5 OVER** (Odds: 1.85)
+    *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
+
 *   **St. Louis Cardinals @ Arizona Diamondbacks** ──► **BET F5 OVER** (Odds: 1.85)
     *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
 
-*   **San Francisco Giants @ Seattle Mariners** ──► **BET F5 UNDER** (Odds: 1.85)
+*   **Los Angeles Dodgers @ New York Yankees** ──► **BET F5 UNDER** (Odds: 1.85)
     *   *System Note:* Engine Convergence: Models perfectly aligned with measurable market edge.
 
 
 ---
 
-### Tampa Bay Rays (Griffin Jax) @ Boston Red Sox (Jake Bennett)
-🏙️ **Fenway Park** (Park Factor: 1.005x)
-🌤️ **Weather:** 65F | Calm | Weather: +0.0%
-🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Mike Estabrook: K +0.7%, BB -2.3% (directional, not in core)
-- **Pitcher Matchup:** Griffin Jax (RHP, SIERA: 3.67) vs Jake Bennett (LHP, SIERA: 4.03)
-- **Top-Down Projected F5 Total:** 4.42 Runs
-- **Monte Carlo Simulated F5 Total:** 3.38 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 2.81 Runs (Away BP FIP: 3.38 | Home BP FIP: 3.06)
-- **Monte Carlo FULL GAME Total:** 6.19 Runs
-- **Full Game Probs:** Over 7.5: 28% | Over 8.5: 17% | Over 9.5: 9%
-
-### Tampa Bay Rays (Mason Englert) @ Boston Red Sox (Eduardo Rivera)
-🏙️ **Fenway Park** (Park Factor: 1.005x)
-🌤️ **Weather:** 65F | Calm | Weather: +0.0%
-🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Lance Barrett: K -2.4%, BB +1.8% (directional, not in core)
-- **Pitcher Matchup:** Mason Englert (RHP, SIERA: 3.81) vs Eduardo Rivera (LHP, SIERA: 4.34)
-- **Top-Down Projected F5 Total:** 4.42 Runs
-- **Monte Carlo Simulated F5 Total:** 3.68 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 2.81 Runs (Away BP FIP: 3.38 | Home BP FIP: 3.06)
-- **Monte Carlo FULL GAME Total:** 6.49 Runs
-- **Full Game Probs:** Over 7.5: 32% | Over 8.5: 20% | Over 9.5: 12%
-
-### Los Angeles Dodgers (Roki Sasaki) @ New York Yankees (Gerrit Cole)
-🏙️ **Yankee Stadium** (Park Factor: 0.997x)
-🌤️ **Weather:** 73F | Calm | Weather: +0.4%
-🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Junior Valentine: K -0.2%, BB +3.9% (directional, not in core)
-- **Pitcher Matchup:** Roki Sasaki (RHP, SIERA: 3.99) vs Gerrit Cole (RHP, SIERA: 3.32)
-- **Top-Down Projected F5 Total:** 4.53 Runs
-- **Monte Carlo Simulated F5 Total:** 4.47 Runs (Lineups: Confirmed)
+### 🚨 Pittsburgh Pirates (Jared Jones) @ Cleveland Guardians (Gavin Williams)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Progressive Field** (Park Factor: 0.954x)
+🌤️ **Weather:** 85F | 10 MPH Cross | Weather: +2.2%
+🌍 **ENV Filters:** Weather: HOT CONTRADICTS -> NEUTRAL (-5)
+- **Pitcher Matchup:** Jared Jones (RHP, SIERA: 3.53) vs Gavin Williams (RHP, SIERA: 3.1)
+- **Top-Down Projected F5 Total:** 4.09 Runs
+- **Monte Carlo Simulated F5 Total:** 3.76 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold New York Yankees offense: 0.804x (recent avg 1.4 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.8 Runs (Away BP FIP: 3.07 | Home BP FIP: 3.33)
-- **Monte Carlo FULL GAME Total:** 7.27 Runs
-- **Full Game Probs:** Over 7.5: 44% | Over 8.5: 30% | Over 9.5: 19%
+  📈 Hot Pittsburgh Pirates offense: 1.196x (recent avg 3.2 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.89 Runs (Away BP FIP: 3.82 | Home BP FIP: 2.91)
+- **Monte Carlo FULL GAME Total:** 6.65 Runs
+- **Full Game Probs:** Over 7.5: 35% | Over 8.5: 22% | Over 9.5: 13%
 
-### Texas Rangers (Cal Quantrill) @ Atlanta Braves (Chris Sale)
-🏙️ **Truist Park** (Park Factor: 0.97x)
-🌤️ **Weather:** 89F | 8 MPH Cross | Weather: +2.8%
-🌍 **ENV Filters:** Weather: HOT CONFIRMS -> NEUTRAL (+5)
-[Umpire Filter] Chris Conroy: K -0.5%, BB +4.1% (directional, not in core)
-- **Pitcher Matchup:** Cal Quantrill (RHP, SIERA: 4.68) vs Chris Sale (LHP, SIERA: 3.05)
-- **Top-Down Projected F5 Total:** 4.65 Runs
-- **Monte Carlo Simulated F5 Total:** 4.61 Runs (Lineups: Confirmed)
+### 🚨 Pittsburgh Pirates (TBD) @ Cleveland Guardians (Logan Allen)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Progressive Field** (Park Factor: 0.954x)
+🌤️ **Weather:** 85F | 10 MPH Cross | Weather: +2.2%
+🌍 **ENV Filters:** Weather: HOT CONTRADICTS -> NEUTRAL (-5)
+- **Pitcher Matchup:** TBD (RHP, SIERA: 4.5) vs Logan Allen (LHP, SIERA: 4.48)
+- **Top-Down Projected F5 Total:** 5.05 Runs
+- **Monte Carlo Simulated F5 Total:** 4.34 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Atlanta Braves offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.81 Runs (Away BP FIP: 3.63 | Home BP FIP: 2.52)
-- **Monte Carlo FULL GAME Total:** 7.42 Runs
-- **Full Game Probs:** Over 7.5: 46% | Over 8.5: 32% | Over 9.5: 21%
+  📈 Hot Pittsburgh Pirates offense: 1.196x (recent avg 3.2 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.92 Runs (Away BP FIP: 3.82 | Home BP FIP: 2.91)
+- **Monte Carlo FULL GAME Total:** 7.26 Runs
+- **Full Game Probs:** Over 7.5: 43% | Over 8.5: 30% | Over 9.5: 19%
 
-### Chicago White Sox (Anthony Kay) @ Toronto Blue Jays (Spencer Miles)
+### Minnesota Twins (Taj Bradley) @ Chicago Cubs (Matthew Boyd)
+🏙️ **Wrigley Field** (Park Factor: 1.004x)
+🌤️ **Weather:** 78F | Calm | Weather: +1.2%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+- **Pitcher Matchup:** Taj Bradley (RHP, SIERA: 3.25) vs Matthew Boyd (LHP, SIERA: 3.81)
+- **Top-Down Projected F5 Total:** 4.22 Runs
+- **Monte Carlo Simulated F5 Total:** 4.39 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold Chicago Cubs offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 3.52 Runs (Away BP FIP: 4.12 | Home BP FIP: 4.69)
+- **Monte Carlo FULL GAME Total:** 7.91 Runs
+- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 27%
+
+### Chicago White Sox (Davis Martin) @ Toronto Blue Jays (Shane Bieber)
 🏙️ **Rogers Centre** (Park Factor: 0.966x)
 🌤️ **Weather:** 69F | Calm | Weather: +0.0%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Scott Barry: K -1.9%, BB +6.8% (directional, not in core)
-- **Pitcher Matchup:** Anthony Kay (LHP, SIERA: 4.8) vs Spencer Miles (RHP, SIERA: 3.62)
-- **Top-Down Projected F5 Total:** 4.64 Runs
-- **Monte Carlo Simulated F5 Total:** 4.65 Runs (Lineups: Confirmed)
+- **Pitcher Matchup:** Davis Martin (RHP, SIERA: 3.86) vs Shane Bieber (RHP, SIERA: 4.56)
+- **Top-Down Projected F5 Total:** 4.95 Runs
+- **Monte Carlo Simulated F5 Total:** 5.34 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Chicago White Sox offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
-  📈 Hot Toronto Blue Jays offense: 1.225x (recent avg 3.4 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.7 Runs (Away BP FIP: 3.15 | Home BP FIP: 2.51)
-- **Monte Carlo FULL GAME Total:** 7.35 Runs
-- **Full Game Probs:** Over 7.5: 45% | Over 8.5: 31% | Over 9.5: 20%
+  📈 Hot Toronto Blue Jays offense: 1.225x (recent avg 4.0 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.71 Runs (Away BP FIP: 3.15 | Home BP FIP: 2.51)
+- **Monte Carlo FULL GAME Total:** 8.04 Runs
+- **Full Game Probs:** Over 7.5: 55% | Over 8.5: 41% | Over 9.5: 28%
 
-### 🚨 Miami Marlins (Sandy Alcantara) @ Milwaukee Brewers (Logan Henderson)
+### 🚨 Cincinnati Reds (Rhett Lowder) @ Colorado Rockies (Tomoyuki Sugano)
+**🔥 FLAGGED:** Under Lean R1 (EW+Cold Form — skip OVER), ENV CONFIRM (delta=+13)
+🏙️ **Coors Field** (Park Factor: 1.185x)
+🌤️ **Weather:** 89F | 6 MPH Cross | Weather: +2.8%
+🌍 **ENV Filters:** Park: HITTERS_PARK CONFIRMS | Weather: HOT CONFIRMS -> CONFIRM (+13)
+- **Pitcher Matchup:** Rhett Lowder (RHP, SIERA: 4.6) vs Tomoyuki Sugano (RHP, SIERA: 4.75)
+- **Top-Down Projected F5 Total:** 5.62 Runs
+- **Monte Carlo Simulated F5 Total:** 5.51 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold Cincinnati Reds offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
+  📉 Cold Colorado Rockies offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 3.09 Runs (Away BP FIP: 4.01 | Home BP FIP: 3.45)
+- **Monte Carlo FULL GAME Total:** 8.6 Runs
+- **Full Game Probs:** Over 7.5: 62% | Over 8.5: 49% | Over 9.5: 36%
+
+### 🚨 New York Mets (Sean Manaea) @ Philadelphia Phillies (Jesús Luzardo)
+**🔥 FLAGGED:** High Confidence Edge
+🏙️ **Citizens Bank Park** (Park Factor: 1.048x)
+🌤️ **Weather:** 75F | Calm | Weather: +0.8%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+- **Pitcher Matchup:** Sean Manaea (LHP, SIERA: 3.95) vs Jesús Luzardo (LHP, SIERA: 3.09)
+- **Top-Down Projected F5 Total:** 4.08 Runs
+- **Monte Carlo Simulated F5 Total:** 4.09 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold New York Mets offense: 0.775x (recent avg 0.8 F5 runs, 5 games)
+  📉 Cold Philadelphia Phillies offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.73 Runs (Away BP FIP: 3.05 | Home BP FIP: 3.02)
+- **Monte Carlo FULL GAME Total:** 6.81 Runs
+- **Full Game Probs:** Over 7.5: 37% | Over 8.5: 24% | Over 9.5: 15%
+
+### Baltimore Orioles (Trevor Rogers) @ Houston Astros (Spencer Arrighetti)
+🏙️ **Daikin Park** (Park Factor: 1.06x)
+🌤️ **Weather:** Indoor / Roof Closed | No weather adjustment
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+- **Pitcher Matchup:** Trevor Rogers (LHP, SIERA: 4.29) vs Spencer Arrighetti (RHP, SIERA: 4.44)
+- **Top-Down Projected F5 Total:** 5.26 Runs
+- **Monte Carlo Simulated F5 Total:** 5.4 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold Houston Astros offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 3.05 Runs (Away BP FIP: 3.57 | Home BP FIP: 3.71)
+- **Monte Carlo FULL GAME Total:** 8.45 Runs
+- **Full Game Probs:** Over 7.5: 60% | Over 8.5: 46% | Over 9.5: 34%
+
+### San Diego Padres (Griffin Canning) @ Kansas City Royals (Randy Dobnak)
+🏙️ **Kauffman Stadium** (Park Factor: 1.045x)
+🌤️ **Weather:** 78F | 7 MPH Out | Weather: +3.0%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+- **Pitcher Matchup:** Griffin Canning (RHP, SIERA: 4.3) vs Randy Dobnak (RHP, SIERA: 4.78)
+- **Top-Down Projected F5 Total:** 5.29 Runs
+- **Monte Carlo Simulated F5 Total:** 4.94 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold Kansas City Royals offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 3.29 Runs (Away BP FIP: 3.62 | Home BP FIP: 4.63)
+- **Monte Carlo FULL GAME Total:** 8.23 Runs
+- **Full Game Probs:** Over 7.5: 57% | Over 8.5: 44% | Over 9.5: 31%
+
+### 🚨 St. Louis Cardinals (Dustin May) @ Arizona Diamondbacks (Brandon Pfaadt)
+**🔥 FLAGGED:** Under Lean R2 (Both Teams Cold — skip OVER)
+🏙️ **Chase Field** (Park Factor: 1.033x)
+🌤️ **Weather:** 86F | Calm | Weather: +2.4%
+🌍 **ENV Filters:** Weather: HOT CONFIRMS -> NEUTRAL (+5)
+- **Pitcher Matchup:** Dustin May (RHP, SIERA: 3.8) vs Brandon Pfaadt (RHP, SIERA: 4.38)
+- **Top-Down Projected F5 Total:** 4.74 Runs
+- **Monte Carlo Simulated F5 Total:** 4.59 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold St. Louis Cardinals offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
+  📉 Cold Arizona Diamondbacks offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.96 Runs (Away BP FIP: 3.84 | Home BP FIP: 3.19)
+- **Monte Carlo FULL GAME Total:** 7.55 Runs
+- **Full Game Probs:** Over 7.5: 48% | Over 8.5: 34% | Over 9.5: 23%
+
+### Tampa Bay Rays (Ian Seymour) @ Boston Red Sox (Patrick Sandoval)
+🏙️ **Fenway Park** (Park Factor: 1.005x)
+🌤️ **Weather:** 65F | Calm | Weather: +0.0%
+🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
+- **Pitcher Matchup:** Ian Seymour (LHP, SIERA: 3.33) vs Patrick Sandoval (LHP, SIERA: 4.33)
+- **Top-Down Projected F5 Total:** 4.5 Runs
+- **Monte Carlo Simulated F5 Total:** 4.68 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold Tampa Bay Rays offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.84 Runs (Away BP FIP: 3.38 | Home BP FIP: 3.06)
+- **Monte Carlo FULL GAME Total:** 7.51 Runs
+- **Full Game Probs:** Over 7.5: 47% | Over 8.5: 34% | Over 9.5: 22%
+
+### Texas Rangers (MacKenzie Gore) @ Atlanta Braves (Owen Murphy)
+🏙️ **Truist Park** (Park Factor: 0.97x)
+🌤️ **Weather:** 89F | 8 MPH Cross | Weather: +2.8%
+🌍 **ENV Filters:** Weather: HOT CONFIRMS -> NEUTRAL (+5)
+- **Pitcher Matchup:** MacKenzie Gore (LHP, SIERA: 3.49) vs Owen Murphy (RHP, SIERA: 4.4)
+- **Top-Down Projected F5 Total:** 4.02 Runs
+- **Monte Carlo Simulated F5 Total:** 5.03 Runs (Lineups: Projected (Generic))
+- 📊 **F5 Offense Form Adjustment:**
+  📉 Cold Texas Rangers offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.81 Runs (Away BP FIP: 3.63 | Home BP FIP: 2.52)
+- **Monte Carlo FULL GAME Total:** 7.84 Runs
+- **Full Game Probs:** Over 7.5: 52% | Over 8.5: 38% | Over 9.5: 26%
+
+### 🚨 Miami Marlins (Max Meyer) @ Milwaukee Brewers (Shane Drohan)
 **🔥 FLAGGED:** High Confidence Edge
 🏙️ **American Family Field** (Park Factor: 0.965x)
 🌤️ **Weather:** Indoor / Roof Closed | No weather adjustment
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Nick Mahrley: K +0.1%, BB +2.7% (directional, not in core)
-- **Pitcher Matchup:** Sandy Alcantara (RHP, SIERA: 4.15) vs Logan Henderson (RHP, SIERA: 2.95)
-- **Top-Down Projected F5 Total:** 4.44 Runs
-- **Monte Carlo Simulated F5 Total:** 4.28 Runs (Lineups: Confirmed)
+- **Pitcher Matchup:** Max Meyer (RHP, SIERA: 3.56) vs Shane Drohan (LHP, SIERA: 3.73)
+- **Top-Down Projected F5 Total:** 4.47 Runs
+- **Monte Carlo Simulated F5 Total:** 3.97 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Miami Marlins offense: 0.804x (recent avg 1.4 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.89 Runs (Away BP FIP: 3.41 | Home BP FIP: 3.48)
-- **Monte Carlo FULL GAME Total:** 7.17 Runs
-- **Full Game Probs:** Over 7.5: 42% | Over 8.5: 29% | Over 9.5: 18%
+  📉 Cold Miami Marlins offense: 0.775x (recent avg 0.8 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.92 Runs (Away BP FIP: 3.41 | Home BP FIP: 3.48)
+- **Monte Carlo FULL GAME Total:** 6.88 Runs
+- **Full Game Probs:** Over 7.5: 38% | Over 8.5: 25% | Over 9.5: 15%
 
-### Minnesota Twins (Bailey Ober) @ Chicago Cubs (Colin Rea)
-🏙️ **Wrigley Field** (Park Factor: 1.004x)
-🌤️ **Weather:** 78F | Calm | Weather: +1.2%
+### San Francisco Giants (Logan Webb) @ Seattle Mariners (Bryan Woo)
+🏙️ **T-Mobile Park** (Park Factor: 0.85x)
+🌤️ **Weather:** 63F | Calm | Weather: -0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Bruce Dreckman: K -1.8%, BB +1.9% (directional, not in core)
-- **Pitcher Matchup:** Bailey Ober (RHP, SIERA: 4.12) vs Colin Rea (RHP, SIERA: 4.55)
-- **Top-Down Projected F5 Total:** 5.35 Runs
-- **Monte Carlo Simulated F5 Total:** 5.05 Runs (Lineups: Confirmed)
+- **Pitcher Matchup:** Logan Webb (RHP, SIERA: 3.88) vs Bryan Woo (RHP, SIERA: 3.2)
+- **Top-Down Projected F5 Total:** 4.29 Runs
+- **Monte Carlo Simulated F5 Total:** 3.89 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Chicago Cubs offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.48 Runs (Away BP FIP: 4.12 | Home BP FIP: 4.69)
-- **Monte Carlo FULL GAME Total:** 8.53 Runs
-- **Full Game Probs:** Over 7.5: 61% | Over 8.5: 48% | Over 9.5: 35%
+  📉 Cold San Francisco Giants offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
+  📉 Cold Seattle Mariners offense: 0.775x (recent avg 0.8 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.93 Runs (Away BP FIP: 3.42 | Home BP FIP: 3.48)
+- **Monte Carlo FULL GAME Total:** 6.82 Runs
+- **Full Game Probs:** Over 7.5: 37% | Over 8.5: 24% | Over 9.5: 15%
 
-### Baltimore Orioles (Dean Kremer) @ Houston Astros (Peter Lambert)
-🏙️ **Daikin Park** (Park Factor: 1.06x)
-🌤️ **Weather:** Indoor / Roof Closed | No weather adjustment
+### 🚨 Los Angeles Dodgers (Emmet Sheehan) @ New York Yankees (Ryan Weathers)
+**🔥 FLAGGED:** High Confidence Edge, Under Lean R2 (Both Teams Cold — skip OVER)
+🏙️ **Yankee Stadium** (Park Factor: 0.997x)
+🌤️ **Weather:** 72F | Calm | Weather: +0.3%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Erich Bacchus: K -1.8%, BB +5.1% (directional, not in core)
-- **Pitcher Matchup:** Dean Kremer (RHP, SIERA: 3.51) vs Peter Lambert (RHP, SIERA: 3.83)
-- **Top-Down Projected F5 Total:** 4.49 Runs
-- **Monte Carlo Simulated F5 Total:** 4.69 Runs (Lineups: Confirmed)
-- **Monte Carlo Late Innings (6-9):** 3.02 Runs (Away BP FIP: 3.57 | Home BP FIP: 3.71)
-- **Monte Carlo FULL GAME Total:** 7.71 Runs
-- **Full Game Probs:** Over 7.5: 50% | Over 8.5: 36% | Over 9.5: 24%
-
-### San Diego Padres (Michael King) @ Kansas City Royals (Seth Lugo)
-🏙️ **Kauffman Stadium** (Park Factor: 1.045x)
-🌤️ **Weather:** 78F | 7 MPH Out | Weather: +3.0%
-🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Nestor Ceja: K -0.3%, BB -0.6% (directional, not in core)
-- **Pitcher Matchup:** Michael King (RHP, SIERA: 4.32) vs Seth Lugo (RHP, SIERA: 4.23)
-- **Top-Down Projected F5 Total:** 5.03 Runs
-- **Monte Carlo Simulated F5 Total:** 4.9 Runs (Lineups: Confirmed)
-- 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Kansas City Royals offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.3 Runs (Away BP FIP: 3.62 | Home BP FIP: 4.63)
-- **Monte Carlo FULL GAME Total:** 8.2 Runs
-- **Full Game Probs:** Over 7.5: 57% | Over 8.5: 43% | Over 9.5: 30%
-
-### 🚨 Cincinnati Reds (Brady Singer) @ Colorado Rockies (Gabriel Hughes)
-**🔥 FLAGGED:** Under Lean R1 (EW+Cold Form — skip OVER), ENV CONFIRM (delta=+13)
-🏙️ **Coors Field** (Park Factor: 1.185x)
-🌤️ **Weather:** 91F | 6 MPH Cross | Weather: +3.2%
-🌍 **ENV Filters:** Park: HITTERS_PARK CONFIRMS | Weather: HOT CONFIRMS -> CONFIRM (+13)
-[Umpire Filter] Jansen Visconti: K -1.7%, BB -0.3% (directional, not in core)
-- **Pitcher Matchup:** Brady Singer (RHP, SIERA: 4.27) vs Gabriel Hughes (RHP, SIERA: 4.1)
-- **Top-Down Projected F5 Total:** 5.05 Runs
-- **Monte Carlo Simulated F5 Total:** 4.94 Runs (Lineups: Confirmed)
-- 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Cincinnati Reds offense: 0.804x (recent avg 1.4 F5 runs, 5 games)
-  📉 Cold Colorado Rockies offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.09 Runs (Away BP FIP: 4.01 | Home BP FIP: 3.45)
-- **Monte Carlo FULL GAME Total:** 8.03 Runs
-- **Full Game Probs:** Over 7.5: 55% | Over 8.5: 41% | Over 9.5: 28%
-
-### 🚨 Detroit Tigers (Troy Melton) @ Los Angeles Angels (Reid Detmers)
-**🔥 FLAGGED:** High Confidence Edge
-🏙️ **Angel Stadium** (Park Factor: 0.994x)
-🌤️ **Weather:** 69F | Calm | Weather: +0.0%
-🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Will Little: K -0.8%, BB +5.6% (directional, not in core)
-- **Pitcher Matchup:** Troy Melton (RHP, SIERA: 3.74) vs Reid Detmers (LHP, SIERA: 3.04)
+- **Pitcher Matchup:** Emmet Sheehan (RHP, SIERA: 3.3) vs Ryan Weathers (LHP, SIERA: 3.2)
 - **Top-Down Projected F5 Total:** 4.03 Runs
-- **Monte Carlo Simulated F5 Total:** 4.31 Runs (Lineups: Confirmed)
+- **Monte Carlo Simulated F5 Total:** 4.23 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold Detroit Tigers offense: 0.848x (recent avg 1.6 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.1 Runs (Away BP FIP: 4.07 | Home BP FIP: 3.53)
-- **Monte Carlo FULL GAME Total:** 7.41 Runs
-- **Full Game Probs:** Over 7.5: 46% | Over 8.5: 32% | Over 9.5: 21%
+  📉 Cold Los Angeles Dodgers offense: 0.804x (recent avg 1.4 F5 runs, 5 games)
+  📉 Cold New York Yankees offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 2.82 Runs (Away BP FIP: 3.07 | Home BP FIP: 3.33)
+- **Monte Carlo FULL GAME Total:** 7.04 Runs
+- **Full Game Probs:** Over 7.5: 40% | Over 8.5: 27% | Over 9.5: 17%
 
-### 🚨 Washington Nationals (Cade Cavalli) @ Athletics (Gage Jump)
-**🔥 FLAGGED:** High Confidence Edge
+### Washington Nationals (Zack Littell) @ Athletics (J.T. Ginn)
 🏙️ **Sutter Health Park** (Park Factor: 0.922x)
-🌤️ **Weather:** 88F | 8 MPH In | Weather: +0.4%
-🌍 **ENV Filters:** Weather: HOT CONTRADICTS -> NEUTRAL (-5)
-[Umpire Filter] John Libka: K -1.6%, BB -1.7% (directional, not in core)
-- **Pitcher Matchup:** Cade Cavalli (RHP, SIERA: 3.51) vs Gage Jump (LHP, SIERA: 3.53)
-- **Top-Down Projected F5 Total:** 4.55 Runs
-- **Monte Carlo Simulated F5 Total:** 4.22 Runs (Lineups: Confirmed)
+🌤️ **Weather:** 89F | 8 MPH In | Weather: +0.6%
+🌍 **ENV Filters:** Weather: HOT CONFIRMS -> NEUTRAL (+5)
+- **Pitcher Matchup:** Zack Littell (RHP, SIERA: 4.56) vs J.T. Ginn (RHP, SIERA: 4.25)
+- **Top-Down Projected F5 Total:** 5.34 Runs
+- **Monte Carlo Simulated F5 Total:** 4.96 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
   📉 Cold Athletics offense: 0.775x (recent avg 0.6 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 3.3 Runs (Away BP FIP: 4.55 | Home BP FIP: 3.64)
-- **Monte Carlo FULL GAME Total:** 7.52 Runs
-- **Full Game Probs:** Over 7.5: 47% | Over 8.5: 34% | Over 9.5: 22%
+- **Monte Carlo Late Innings (6-9):** 3.33 Runs (Away BP FIP: 4.55 | Home BP FIP: 3.64)
+- **Monte Carlo FULL GAME Total:** 8.29 Runs
+- **Full Game Probs:** Over 7.5: 58% | Over 8.5: 44% | Over 9.5: 32%
 
-### 🚨 St. Louis Cardinals (Michael McGreevy) @ Arizona Diamondbacks (Merrill Kelly)
-**🔥 FLAGGED:** Under Lean R2 (Both Teams Cold — skip OVER)
-🏙️ **Chase Field** (Park Factor: 1.033x)
-🌤️ **Weather:** 88F | Calm | Weather: +2.7%
-🌍 **ENV Filters:** Weather: HOT CONFIRMS -> NEUTRAL (+5)
-[Umpire Filter] Bill Miller: K +0.7%, BB +0.8% (directional, not in core)
-- **Pitcher Matchup:** Michael McGreevy (RHP, SIERA: 4.19) vs Merrill Kelly (RHP, SIERA: 4.92)
-- **Top-Down Projected F5 Total:** 5.26 Runs
-- **Monte Carlo Simulated F5 Total:** 5.2 Runs (Lineups: Confirmed)
-- 📊 **F5 Offense Form Adjustment:**
-  📉 Cold St. Louis Cardinals offense: 0.775x (recent avg 1.0 F5 runs, 5 games)
-  📉 Cold Arizona Diamondbacks offense: 0.804x (recent avg 1.4 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.99 Runs (Away BP FIP: 3.84 | Home BP FIP: 3.19)
-- **Monte Carlo FULL GAME Total:** 8.18 Runs
-- **Full Game Probs:** Over 7.5: 57% | Over 8.5: 43% | Over 9.5: 30%
-
-### San Francisco Giants (Landen Roupp) @ Seattle Mariners (Bryce Miller)
-🏙️ **T-Mobile Park** (Park Factor: 0.85x)
-🌤️ **Weather:** 62F | Calm | Weather: -0.4%
+### Detroit Tigers (Tarik Skubal) @ Los Angeles Angels (Grayson Rodriguez)
+🏙️ **Angel Stadium** (Park Factor: 0.994x)
+🌤️ **Weather:** 71F | 5 MPH Out | Weather: +1.2%
 🌍 **ENV Filters:** All NEUTRAL — pure talent drives the projection
-[Umpire Filter] Mark Ripperger: K -1.5%, BB +3.6% (directional, not in core)
-- **Pitcher Matchup:** Landen Roupp (RHP, SIERA: 3.76) vs Bryce Miller (RHP, SIERA: 2.7)
-- **Top-Down Projected F5 Total:** 3.91 Runs
-- **Monte Carlo Simulated F5 Total:** 3.9 Runs (Lineups: Confirmed)
+- **Pitcher Matchup:** Tarik Skubal (LHP, SIERA: 2.79) vs Grayson Rodriguez (RHP, SIERA: 4.74)
+- **Top-Down Projected F5 Total:** 4.45 Runs
+- **Monte Carlo Simulated F5 Total:** 4.83 Runs (Lineups: Projected (Generic))
 - 📊 **F5 Offense Form Adjustment:**
-  📉 Cold San Francisco Giants offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-  📉 Cold Seattle Mariners offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
-- **Monte Carlo Late Innings (6-9):** 2.94 Runs (Away BP FIP: 3.42 | Home BP FIP: 3.48)
-- **Monte Carlo FULL GAME Total:** 6.83 Runs
-- **Full Game Probs:** Over 7.5: 37% | Over 8.5: 24% | Over 9.5: 15%
+  📉 Cold Detroit Tigers offense: 0.775x (recent avg 1.2 F5 runs, 5 games)
+- **Monte Carlo Late Innings (6-9):** 3.08 Runs (Away BP FIP: 4.07 | Home BP FIP: 3.53)
+- **Monte Carlo FULL GAME Total:** 7.91 Runs
+- **Full Game Probs:** Over 7.5: 53% | Over 8.5: 39% | Over 9.5: 27%
