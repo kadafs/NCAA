@@ -544,7 +544,7 @@ def process_single_game(args):
 
         block_lines.append(f"- **Pitcher Matchup:** {ap} ({ap_hand}HP, SIERA: {ap_siera}) vs {hp} ({hp_hand}HP, SIERA: {hp_siera})")
         block_lines.append(f"- **Top-Down Projected F5 Total:** {td_total} Runs")
-        block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Lineups: {lineups_status})")
+        block_lines.append(f"- **Monte Carlo Simulated F5 Total:** {mc['mc_total_runs']} Runs (Away: {mc.get('away_f5_runs') or mc.get('away_mc_runs', td_total/2):.2f} | Home: {mc.get('home_f5_runs') or mc.get('home_mc_runs', td_total/2):.2f}) (Lineups: {lineups_status})")
         # consensus_f5 removed from report per user request
         if _td_clamp_applied:
             block_lines.append(

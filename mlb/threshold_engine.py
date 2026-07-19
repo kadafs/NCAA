@@ -29,16 +29,23 @@ def generate_league_specific_threshold_report(df, sport_id):
         reason = None
         category = None
         
+        market_line = row.get('Market_Line', 4.5)
+        market_odds = row.get('Market_Odds', 1.85)
+        
+        # We only execute on the 4.5 line for these F5 Over systems
+        if market_line != 4.5 or market_odds < 1.80:
+            continue
+            
         if sport_id == 1: # MLB
-            if mc >= 5.50:
+            if mc >= 5.50 and td >= 5.50:
                 action = "BET F5 OVER 4.5"
-                reason = f"MLB Threshold Met (MC={mc:.2f} >= 5.50)"
+                reason = f"MLB Double Convergence Met (MC={mc:.2f} >= 5.50 & TD={td:.2f} >= 5.50)"
                 category = "Threshold Play"
                 
         elif sport_id == 11: # AAA
-            if mc >= 5.40:
+            if mc >= 5.40 and td >= 5.40:
                 action = "BET F5 OVER 4.5"
-                reason = f"AAA Threshold Met (MC={mc:.2f} >= 5.40)"
+                reason = f"AAA Double Convergence Met (MC={mc:.2f} >= 5.40 & TD={td:.2f} >= 5.40)"
                 category = "Threshold Play"
                 
         elif sport_id == 12: # AA
@@ -54,9 +61,9 @@ def generate_league_specific_threshold_report(df, sport_id):
                 category = "Threshold Play"
         else:
             # Fallback threshold if new league is ever added
-            if mc >= 5.50:
+            if mc >= 5.50 and td >= 5.50:
                 action = "BET F5 OVER 4.5"
-                reason = f"Generic Threshold Met (MC={mc:.2f} >= 5.50)"
+                reason = f"Generic Double Convergence Met (MC={mc:.2f} >= 5.50 & TD={td:.2f} >= 5.50)"
                 category = "Threshold Play"
         
         if action:
