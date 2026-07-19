@@ -29,63 +29,70 @@
                 "venue": "Estadio Alfredo Harp Helu",
                 "park_factor": 1.4,
                 "weather": {
-                    "temp": 59,
-                    "wind_mph": 4,
-                    "wind_dir": "R-L",
+                    "temp": 70,
+                    "wind_mph": 6,
+                    "wind_dir": "L-R",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
-                    "temp_fatigue_scaler": 0.976,
-                    "temp_multiplier": 0.991,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
                     "wind_multiplier": 1.0,
-                    "weather_multiplier": 0.991,
-                    "weather_label": "59F | Calm | Weather: -0.9%"
+                    "weather_multiplier": 1.0,
+                    "weather_label": "70F | 6 MPH L-R | Weather: +0.0%"
                 },
                 "effective_pf": 1.1782,
                 "env_confidence": {
                     "park_flag": "HITTERS_PARK",
-                    "park_signal": "CONFIRMS",
-                    "park_delta": 15,
+                    "park_signal": "CONTRADICTS",
+                    "park_delta": -15,
                     "park_note": "PF=1.400 eff=1.178 (extreme)",
                     "effective_pf": 1.1782,
                     "effective_pf_note": "eff_PF=1.178 (avg_FB%=45%, raw_PF=1.400, both SPs)",
                     "weather_flag": "NEUTRAL",
                     "weather_signal": "NEUTRAL",
                     "weather_delta": 0.0,
-                    "weather_note": "59F | R-L",
+                    "weather_note": "70F | L-R",
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
                     "umpire_delta": 0.0,
-                    "umpire_note": "No umpire data",
-                    "lean": "OVER",
-                    "combined_signal": "CONFIRM",
-                    "confidence_delta": 15.0,
-                    "env_note": "Park: HITTERS_PARK CONFIRMS -> CONFIRM (+15)"
+                    "umpire_note": "Insufficient sample (0 G)",
+                    "lean": "PUSH",
+                    "combined_signal": "CONTRADICT",
+                    "confidence_delta": -15.0,
+                    "env_note": "Park: HITTERS_PARK CONTRADICTS -> CONTRADICT (-15)"
                 },
                 "env_display": {
-                    "signal": "CONFIRM",
-                    "delta": 15,
+                    "signal": "CONTRADICT",
+                    "delta": -15,
                     "park_flag": "HITTERS_PARK",
-                    "park_signal": "CONFIRMS",
+                    "park_signal": "CONTRADICTS",
                     "weather_flag": "NEUTRAL",
                     "weather_signal": "NEUTRAL",
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
-                    "lean": "OVER",
+                    "lean": "PUSH",
                     "effective_pf": 1.1782,
                     "effective_pf_note": "eff_PF=1.178 (avg_FB%=45%, raw_PF=1.400, both SPs)",
-                    "summary": "Park: HITTERS_PARK CONFIRMS -> CONFIRM (+15)"
+                    "summary": "Park: HITTERS_PARK CONTRADICTS -> CONTRADICT (-15)"
                 },
-                "umpire": null
+                "umpire": {
+                    "name": "Emmanuel Peregrina Aguirre",
+                    "profile": {
+                        "games_called": 0,
+                        "raw_k_mod": 1.0,
+                        "raw_bb_mod": 1.0
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 5.51,
-                "mc_f5": 4.66,
-                "mc_f5_away": 2.31,
-                "mc_f5_home": 2.35,
-                "mc_late": 3.6,
-                "mc_full_game": 8.26,
+                "mc_f5": 4.48,
+                "mc_f5_away": 2.23,
+                "mc_f5_home": 2.25,
+                "mc_late": 3.47,
+                "mc_full_game": 7.95,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -102,12 +109,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.424,
-                "under_4_5": 0.551,
-                "under_5_5": 0.66,
-                "full_over_7_5": 0.583,
-                "full_over_8_5": 0.444,
-                "full_over_9_5": 0.316
+                "under_3_5": 0.437,
+                "under_4_5": 0.564,
+                "under_5_5": 0.68,
+                "full_over_7_5": 0.54,
+                "full_over_8_5": 0.4,
+                "full_over_9_5": 0.277
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (MODERATE)",
@@ -116,10 +123,9 @@
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "High-Value Strategy",
-                "action": "BET F5 OVER",
-                "reason": "Explosive Tail Risk: MC capturing non-linear fly-ball profiles in hitter-friendly park (1.387x).",
-                "odds": 1.85
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
             }
         },
         {
@@ -174,7 +180,7 @@
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
                     "umpire_delta": 0.0,
-                    "umpire_note": "No umpire data",
+                    "umpire_note": "Insufficient sample (0 G)",
                     "lean": "UNDER",
                     "combined_signal": "NEUTRAL",
                     "confidence_delta": 0.0,
@@ -194,16 +200,23 @@
                     "effective_pf_note": "eff_PF=1.000 (avg_FB%=37%, raw_PF=1.000, both SPs)",
                     "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
                 },
-                "umpire": null
+                "umpire": {
+                    "name": "Rafael Ramirez",
+                    "profile": {
+                        "games_called": 0,
+                        "raw_k_mod": 1.0,
+                        "raw_bb_mod": 1.0
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 4.76,
-                "mc_f5": 4.11,
-                "mc_f5_away": 1.93,
-                "mc_f5_home": 2.18,
-                "mc_late": 3.48,
-                "mc_full_game": 7.59,
+                "mc_f5": 4.01,
+                "mc_f5_away": 1.84,
+                "mc_f5_home": 2.17,
+                "mc_late": 3.52,
+                "mc_full_game": 7.53,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -220,15 +233,15 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.48,
-                "under_4_5": 0.608,
-                "under_5_5": 0.72,
-                "full_over_7_5": 0.489,
-                "full_over_8_5": 0.35,
-                "full_over_9_5": 0.234
+                "under_3_5": 0.499,
+                "under_4_5": 0.632,
+                "under_5_5": 0.732,
+                "full_over_7_5": 0.479,
+                "full_over_8_5": 0.342,
+                "full_over_9_5": 0.227
             },
             "action_matrix": {
-                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_3_5": "Skip",
                 "adv_4_5": "Skip",
                 "adv_5_5": "Bet **UNDER** (HIGH)"
             },
@@ -292,7 +305,7 @@
                     "umpire_signal": "NEUTRAL",
                     "umpire_delta": 0.0,
                     "umpire_note": "No umpire data",
-                    "lean": "PUSH",
+                    "lean": "UNDER",
                     "combined_signal": "NEUTRAL",
                     "confidence_delta": 0.0,
                     "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
@@ -306,7 +319,7 @@
                     "weather_signal": "NEUTRAL",
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
-                    "lean": "PUSH",
+                    "lean": "UNDER",
                     "effective_pf": 1.0,
                     "effective_pf_note": "eff_PF=1.000 (avg_FB%=60%, raw_PF=1.000, both SPs)",
                     "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
@@ -316,11 +329,11 @@
             "lineups_status": "Projected (Generic)",
             "predictions": {
                 "top_down_f5": 4.78,
-                "mc_f5": 4.51,
-                "mc_f5_away": 2.07,
-                "mc_f5_home": 2.43,
-                "mc_late": 3.55,
-                "mc_full_game": 8.05,
+                "mc_f5": 4.41,
+                "mc_f5_away": 2.06,
+                "mc_f5_home": 2.34,
+                "mc_late": 3.51,
+                "mc_full_game": 7.91,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -337,12 +350,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.436,
-                "under_4_5": 0.568,
-                "under_5_5": 0.671,
-                "full_over_7_5": 0.554,
-                "full_over_8_5": 0.414,
-                "full_over_9_5": 0.289
+                "under_3_5": 0.44,
+                "under_4_5": 0.576,
+                "under_5_5": 0.684,
+                "full_over_7_5": 0.534,
+                "full_over_8_5": 0.394,
+                "full_over_9_5": 0.272
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (MODERATE)",
@@ -408,8 +421,8 @@
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
                     "umpire_delta": 0.0,
-                    "umpire_note": "No umpire data",
-                    "lean": "OVER",
+                    "umpire_note": "Insufficient sample (0 G)",
+                    "lean": "PUSH",
                     "combined_signal": "NEUTRAL",
                     "confidence_delta": 0.0,
                     "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
@@ -423,21 +436,28 @@
                     "weather_signal": "NEUTRAL",
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
-                    "lean": "OVER",
+                    "lean": "PUSH",
                     "effective_pf": 1.0,
                     "effective_pf_note": "eff_PF=1.000 (avg_FB%=41%, raw_PF=1.000, both SPs)",
                     "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
                 },
-                "umpire": null
+                "umpire": {
+                    "name": "Pedro Tun Lezama",
+                    "profile": {
+                        "games_called": 0,
+                        "raw_k_mod": 1.0,
+                        "raw_bb_mod": 1.0
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 5.21,
-                "mc_f5": 4.59,
-                "mc_f5_away": 2.34,
-                "mc_f5_home": 2.26,
-                "mc_late": 3.5,
-                "mc_full_game": 8.1,
+                "mc_f5": 4.48,
+                "mc_f5_away": 2.18,
+                "mc_f5_home": 2.3,
+                "mc_late": 3.49,
+                "mc_full_game": 7.97,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -454,12 +474,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.426,
-                "under_4_5": 0.554,
-                "under_5_5": 0.665,
-                "full_over_7_5": 0.561,
-                "full_over_8_5": 0.422,
-                "full_over_9_5": 0.296
+                "under_3_5": 0.442,
+                "under_4_5": 0.566,
+                "under_5_5": 0.676,
+                "full_over_7_5": 0.542,
+                "full_over_8_5": 0.403,
+                "full_over_9_5": 0.279
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (MODERATE)",
@@ -468,10 +488,9 @@
             },
             "version": "v4",
             "gatekeeper_logic": {
-                "category": "High-Value Strategy",
-                "action": "BET F5 OVER",
-                "reason": "Divergent baseline alignment confirms line value. Trusting TD via pure distance edge.",
-                "odds": 1.85
+                "category": "Line-Crossing Veto",
+                "action": "SKIP",
+                "reason": "Models conflict across the 4.5 line."
             }
         },
         {
@@ -551,10 +570,10 @@
             "lineups_status": "Projected (Generic)",
             "predictions": {
                 "top_down_f5": 5.67,
-                "mc_f5": 5.0,
-                "mc_f5_away": 2.81,
-                "mc_f5_home": 2.18,
-                "mc_late": 3.5,
+                "mc_f5": 4.98,
+                "mc_f5_away": 2.78,
+                "mc_f5_home": 2.19,
+                "mc_late": 3.52,
                 "mc_full_game": 8.49,
                 "td_clamp_applied": false,
                 "away_f5_form": {
@@ -572,11 +591,11 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.372,
-                "under_4_5": 0.501,
-                "under_5_5": 0.615,
+                "under_3_5": 0.383,
+                "under_4_5": 0.504,
+                "under_5_5": 0.614,
                 "full_over_7_5": 0.613,
-                "full_over_8_5": 0.476,
+                "full_over_8_5": 0.475,
                 "full_over_9_5": 0.346
             },
             "action_matrix": {
@@ -669,11 +688,11 @@
             "lineups_status": "Projected (Generic)",
             "predictions": {
                 "top_down_f5": 5.13,
-                "mc_f5": 4.27,
-                "mc_f5_away": 2.12,
-                "mc_f5_home": 2.15,
-                "mc_late": 3.51,
-                "mc_full_game": 7.78,
+                "mc_f5": 4.23,
+                "mc_f5_away": 2.13,
+                "mc_f5_home": 2.1,
+                "mc_late": 3.52,
+                "mc_full_game": 7.75,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -690,12 +709,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.468,
-                "under_4_5": 0.589,
-                "under_5_5": 0.698,
-                "full_over_7_5": 0.516,
-                "full_over_8_5": 0.377,
-                "full_over_9_5": 0.256
+                "under_3_5": 0.466,
+                "under_4_5": 0.594,
+                "under_5_5": 0.703,
+                "full_over_7_5": 0.512,
+                "full_over_8_5": 0.372,
+                "full_over_9_5": 0.253
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (MODERATE)",
@@ -761,7 +780,7 @@
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
                     "umpire_delta": 0.0,
-                    "umpire_note": "No umpire data",
+                    "umpire_note": "Insufficient sample (0 G)",
                     "lean": "UNDER",
                     "combined_signal": "CONTRADICT",
                     "confidence_delta": -8.0,
@@ -781,16 +800,23 @@
                     "effective_pf_note": "eff_PF=1.100 (avg_FB%=40%, raw_PF=1.250, both SPs)",
                     "summary": "Park: HITTERS_PARK CONTRADICTS -> CONTRADICT (-8)"
                 },
-                "umpire": null
+                "umpire": {
+                    "name": "Rodrigo Quiroz Herrera",
+                    "profile": {
+                        "games_called": 0,
+                        "raw_k_mod": 1.0,
+                        "raw_bb_mod": 1.0
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 4.87,
-                "mc_f5": 4.22,
-                "mc_f5_away": 2.06,
-                "mc_f5_home": 2.16,
-                "mc_late": 3.5,
-                "mc_full_game": 7.72,
+                "mc_f5": 4.16,
+                "mc_f5_away": 2.07,
+                "mc_f5_home": 2.09,
+                "mc_late": 3.53,
+                "mc_full_game": 7.69,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -807,15 +833,15 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.468,
-                "under_4_5": 0.6,
-                "under_5_5": 0.708,
-                "full_over_7_5": 0.508,
-                "full_over_8_5": 0.369,
-                "full_over_9_5": 0.25
+                "under_3_5": 0.481,
+                "under_4_5": 0.611,
+                "under_5_5": 0.714,
+                "full_over_7_5": 0.503,
+                "full_over_8_5": 0.364,
+                "full_over_9_5": 0.246
             },
             "action_matrix": {
-                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_3_5": "Skip",
                 "adv_4_5": "Skip",
                 "adv_5_5": "Bet **UNDER** (HIGH)"
             },
@@ -851,17 +877,17 @@
                 "venue": "Estadio Beto Avila",
                 "park_factor": 0.85,
                 "weather": {
-                    "temp": 75,
-                    "wind_mph": 6,
+                    "temp": 80,
+                    "wind_mph": 1,
                     "wind_dir": "Out",
                     "wind_lateral": null,
                     "is_indoor": false,
                     "rain_pct": 0,
                     "temp_fatigue_scaler": 1.0,
-                    "temp_multiplier": 1.0075,
-                    "wind_multiplier": 1.014,
-                    "weather_multiplier": 1.0216,
-                    "weather_label": "75F | 6 MPH Out | Weather: +2.2%"
+                    "temp_multiplier": 1.015,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.015,
+                    "weather_label": "80F | Calm | Weather: +1.5%"
                 },
                 "effective_pf": 0.9202,
                 "env_confidence": {
@@ -874,11 +900,11 @@
                     "weather_flag": "NEUTRAL",
                     "weather_signal": "NEUTRAL",
                     "weather_delta": 0.0,
-                    "weather_note": "75F | Out",
+                    "weather_note": "80F | Out",
                     "umpire_flag": "NEUTRAL",
                     "umpire_signal": "NEUTRAL",
                     "umpire_delta": 0.0,
-                    "umpire_note": "No umpire data",
+                    "umpire_note": "Insufficient sample (0 G)",
                     "lean": "OVER",
                     "combined_signal": "NEUTRAL",
                     "confidence_delta": 0.0,
@@ -898,16 +924,23 @@
                     "effective_pf_note": "eff_PF=0.920 (avg_FB%=53%, raw_PF=0.850, both SPs)",
                     "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
                 },
-                "umpire": null
+                "umpire": {
+                    "name": "Jose Del Puerto",
+                    "profile": {
+                        "games_called": 0,
+                        "raw_k_mod": 1.0,
+                        "raw_bb_mod": 1.0
+                    }
+                }
             },
-            "lineups_status": "Projected (Generic)",
+            "lineups_status": "Confirmed",
             "predictions": {
                 "top_down_f5": 5.4,
-                "mc_f5": 4.66,
-                "mc_f5_away": 2.28,
-                "mc_f5_home": 2.38,
+                "mc_f5": 4.67,
+                "mc_f5_away": 2.27,
+                "mc_f5_home": 2.4,
                 "mc_late": 3.53,
-                "mc_full_game": 8.19,
+                "mc_full_game": 8.2,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -924,15 +957,15 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.422,
-                "under_4_5": 0.55,
+                "under_3_5": 0.413,
+                "under_4_5": 0.544,
                 "under_5_5": 0.656,
-                "full_over_7_5": 0.573,
-                "full_over_8_5": 0.434,
-                "full_over_9_5": 0.307
+                "full_over_7_5": 0.574,
+                "full_over_8_5": 0.435,
+                "full_over_9_5": 0.308
             },
             "action_matrix": {
-                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_3_5": "Bet **OVER** (HIGH)",
                 "adv_4_5": "Skip",
                 "adv_5_5": "Bet **UNDER** (MODERATE)"
             },
@@ -1022,10 +1055,10 @@
             "predictions": {
                 "top_down_f5": 5.31,
                 "mc_f5": 4.51,
-                "mc_f5_away": 2.21,
-                "mc_f5_home": 2.3,
-                "mc_late": 3.49,
-                "mc_full_game": 8.0,
+                "mc_f5_away": 2.23,
+                "mc_f5_home": 2.28,
+                "mc_late": 3.5,
+                "mc_full_game": 8.01,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -1042,12 +1075,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.429,
-                "under_4_5": 0.564,
-                "under_5_5": 0.676,
-                "full_over_7_5": 0.547,
-                "full_over_8_5": 0.408,
-                "full_over_9_5": 0.284
+                "under_3_5": 0.433,
+                "under_4_5": 0.56,
+                "under_5_5": 0.672,
+                "full_over_7_5": 0.548,
+                "full_over_8_5": 0.409,
+                "full_over_9_5": 0.285
             },
             "action_matrix": {
                 "adv_3_5": "Bet **OVER** (MODERATE)",
@@ -1139,10 +1172,10 @@
             "lineups_status": "Projected (Generic)",
             "predictions": {
                 "top_down_f5": 4.6,
-                "mc_f5": 4.0,
-                "mc_f5_away": 2.12,
-                "mc_f5_home": 1.88,
-                "mc_late": 3.56,
+                "mc_f5": 4.07,
+                "mc_f5_away": 2.17,
+                "mc_f5_home": 1.9,
+                "mc_late": 3.49,
                 "mc_full_game": 7.56,
                 "td_clamp_applied": false,
                 "away_f5_form": {
@@ -1160,12 +1193,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.496,
-                "under_4_5": 0.623,
-                "under_5_5": 0.735,
-                "full_over_7_5": 0.485,
-                "full_over_8_5": 0.347,
-                "full_over_9_5": 0.231
+                "under_3_5": 0.488,
+                "under_4_5": 0.619,
+                "under_5_5": 0.726,
+                "full_over_7_5": 0.484,
+                "full_over_8_5": 0.346,
+                "full_over_9_5": 0.23
             },
             "action_matrix": {
                 "adv_3_5": "Skip",
@@ -1256,11 +1289,11 @@
             "lineups_status": "Projected (Generic)",
             "predictions": {
                 "top_down_f5": 4.73,
-                "mc_f5": 4.19,
-                "mc_f5_away": 2.13,
-                "mc_f5_home": 2.05,
+                "mc_f5": 4.15,
+                "mc_f5_away": 2.07,
+                "mc_f5_home": 2.08,
                 "mc_late": 3.52,
-                "mc_full_game": 7.7,
+                "mc_full_game": 7.67,
                 "td_clamp_applied": false,
                 "away_f5_form": {
                     "factor": 1.0,
@@ -1277,12 +1310,12 @@
                 "form_factor": "Not implemented"
             },
             "probabilities": {
-                "under_3_5": 0.481,
-                "under_4_5": 0.601,
-                "under_5_5": 0.71,
-                "full_over_7_5": 0.504,
-                "full_over_8_5": 0.366,
-                "full_over_9_5": 0.247
+                "under_3_5": 0.486,
+                "under_4_5": 0.608,
+                "under_5_5": 0.711,
+                "full_over_7_5": 0.5,
+                "full_over_8_5": 0.362,
+                "full_over_9_5": 0.244
             },
             "action_matrix": {
                 "adv_3_5": "Skip",
