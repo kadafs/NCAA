@@ -14,7 +14,6 @@ from weather_f5 import get_weather_modifier, get_thermal_adjusted_ip
 from umpire_engine import get_umpire_for_game, load_umpire_profile
 from bullpen_rest import get_adjusted_bullpen_fip
 from pitcher_advanced_stats import get_pitcher_advanced_metrics
-from threshold_engine import generate_league_specific_threshold_report
 from env_confidence import compute_env_confidence
 import pandas as pd
 
@@ -661,7 +660,6 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
     priority_flags = []
     game_blocks = []
     raw_json_data = []
-    gatekeeper_rows = []
 
     # MULTIPROCESSING POOL
     # Windows requires the main module idiom, which is safely guarded by the if __name__ block
@@ -676,8 +674,6 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
         priority_flags.extend(r['priority_flags'])
         if r['raw_json_data']:
             raw_json_data.append(r['raw_json_data'])
-        if r.get('gatekeeper_data'):
-            gatekeeper_rows.append(r['gatekeeper_data'])
 
     # 5. Assemble final report
     if priority_flags:
@@ -687,22 +683,6 @@ def generate_consensus_report(sport_id=1, date_str=None, force_generic=False, te
         report_lines.append("---")
         report_lines.append("")
         
-    if gatekeeper_rows:
-        df = pd.DataFrame(gatekeeper_rows)
-        gatekeeper_report, structured_data = generate_league_specific_threshold_report(df, sport_id)
-        
-        # Inject structured data back into the raw_json_data per game
-        for g in raw_json_data:
-            game_key = f"{g['away_team']} @ {g['home_team']}"
-            if game_key in structured_data:
-                g['gatekeeper_logic'] = structured_data[game_key]
-            else:
-                g['gatekeeper_logic'] = {"category": "No Edge", "reason": "Did not meet league-specific threshold."}
-
-        report_lines.append(gatekeeper_report)
-        report_lines.append("")
-        report_lines.append("---")
-        report_lines.append("")
 
     report_lines.extend(game_blocks)
         
