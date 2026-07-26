@@ -35,9 +35,9 @@
 ### Bottom 1st (Home Hitters vs Away SP)
 - **Kohl Drake (Throws: L)**: 1st Inning xwOBA Allowed: 0.179
   - James Wood: xwOBA vs LHP: 0.362
-  - Andrés Chaparro: xwOBA vs LHP: 0.377
+  - Daylen Lile: xwOBA vs LHP: 0.259
   - Dylan Crews: xwOBA vs LHP: 0.396
-- **Bottom 1st Threat Score:** 0.279
+- **Bottom 1st Threat Score:** 0.259
 
 ---
 
@@ -72,10 +72,10 @@
 
 ### Bottom 1st (Home Hitters vs Away SP)
 - **Kevin Gausman (Throws: R)**: 1st Inning xwOBA Allowed: 0.332
-  - Masataka Yoshida: xwOBA vs RHP: 0.322
+  - Jahmai Jones: xwOBA vs RHP: 0.143
   - Ceddanne Rafaela: xwOBA vs RHP: 0.281
   - Wilyer Abreu: xwOBA vs RHP: 0.325
-- **Bottom 1st Threat Score:** 0.321
+- **Bottom 1st Threat Score:** 0.291
 
 ---
 
@@ -118,14 +118,14 @@
 ---
 
 ## Los Angeles Dodgers @ New York Mets
-**Recommendation:** **PASS**
+**Recommendation:** **LEAN NRFI**
 
 ### Top 1st (Away Hitters vs Home SP)
 - **Freddy Peralta (Throws: R)**: 1st Inning xwOBA Allowed: 0.262
-  - Shohei Ohtani: xwOBA vs RHP: 0.422
+  - Alex Call: xwOBA vs RHP: 0.26
   - Andy Pages: xwOBA vs RHP: 0.316
-  - Freddie Freeman: xwOBA vs RHP: 0.395
-- **Top 1st Threat Score:** 0.32
+  - Alex Freeland: xwOBA vs RHP: 0.295
+- **Top 1st Threat Score:** 0.276
 
 ### Bottom 1st (Home Hitters vs Away SP)
 - **Emmet Sheehan (Throws: R)**: 1st Inning xwOBA Allowed: 0.292
@@ -186,7 +186,7 @@
 
 ### Bottom 1st (Home Hitters vs Away SP)
 - **Ronel Blanco (Throws: R)**: 1st Inning xwOBA Allowed: 0.271
-  - Sam Antonacci: xwOBA vs RHP: 0.381
+  - Junior Perez: xwOBA vs RHP: 0.38
   - Munetaka Murakami: xwOBA vs RHP: 0.39
   - Miguel Vargas: xwOBA vs RHP: 0.37
 - **Bottom 1st Threat Score:** 0.326
@@ -199,9 +199,9 @@
 ### Top 1st (Away Hitters vs Home SP)
 - **Jacob Misiorowski (Throws: R)**: 1st Inning xwOBA Allowed: 0.22
   - Jake McCarthy: xwOBA vs RHP: 0.303
-  - Mickey Moniak: xwOBA vs RHP: 0.326
+  - Brett Sullivan: xwOBA vs RHP: 0.26
   - Hunter Goodman: xwOBA vs RHP: 0.342
-- **Top 1st Threat Score:** 0.272
+- **Top 1st Threat Score:** 0.261
 
 ### Bottom 1st (Home Hitters vs Away SP)
 - **Kyle Freeland (Throws: L)**: 1st Inning xwOBA Allowed: 0.346
@@ -218,15 +218,72 @@
 ### Top 1st (Away Hitters vs Home SP)
 - **Kyle Leahy (Throws: R)**: 1st Inning xwOBA Allowed: 0.29
   - Elly De La Cruz: xwOBA vs RHP: 0.37
-  - Spencer Steer: xwOBA vs RHP: 0.314
+  - Edwin Arroyo: xwOBA vs RHP: 0.298
   - JJ Bleday: xwOBA vs RHP: 0.379
-- **Top 1st Threat Score:** 0.322
+- **Top 1st Threat Score:** 0.32
 
 ### Bottom 1st (Home Hitters vs Away SP)
 - **Andrew Abbott (Throws: L)**: 1st Inning xwOBA Allowed: 0.345
   - JJ Wetherholt: xwOBA vs LHP: 0.371
-  - Iván Herrera: xwOBA vs LHP: 0.386
   - Jordan Walker: xwOBA vs LHP: 0.429
+  - Iván Herrera: xwOBA vs LHP: 0.386
 - **Bottom 1st Threat Score:** 0.37
+
+---
+
+## Seattle Mariners @ Texas Rangers
+**Recommendation:** **STRONG YRFI**
+
+### Top 1st (Away Hitters vs Home SP)
+- **Jacob deGrom (Throws: R)**: 1st Inning xwOBA Allowed: 0.402
+  - Cole Young: xwOBA vs RHP: 0.346
+  - Julio Rodríguez: xwOBA vs RHP: 0.323
+  - Dominic Canzone: xwOBA vs RHP: 0.351
+- **Top 1st Threat Score:** 0.371
+
+### Bottom 1st (Home Hitters vs Away SP)
+- **Logan Gilbert (Throws: R)**: 1st Inning xwOBA Allowed: 0.342
+  - Joc Pederson: xwOBA vs RHP: 0.363
+  - Wyatt Langford: xwOBA vs RHP: 0.328
+  - Ezequiel Duran: xwOBA vs RHP: 0.302
+- **Bottom 1st Threat Score:** 0.336
+
+---
+
+## Los Angeles Angels @ San Francisco Giants
+**Recommendation:** **PASS**
+
+### Top 1st (Away Hitters vs Home SP)
+- **Carson Whisenhunt (Throws: L)**: 1st Inning xwOBA Allowed: 0.285
+  - Zach Neto: xwOBA vs LHP: 0.336
+  - Mike Trout: xwOBA vs LHP: 0.38
+  - Vaughn Grissom: xwOBA vs LHP: 0.326
+- **Top 1st Threat Score:** 0.316
+
+### Bottom 1st (Home Hitters vs Away SP)
+- **José Soriano (Throws: R)**: 1st Inning xwOBA Allowed: 0.304
+  - Luis Arraez: xwOBA vs RHP: 0.325
+  - Heliot Ramos: xwOBA vs RHP: 0.314
+  - Bryce Eldridge: xwOBA vs RHP: 0.372
+- **Bottom 1st Threat Score:** 0.32
+
+---
+
+## New York Yankees @ Philadelphia Phillies
+**Recommendation:** **PASS**
+
+### Top 1st (Away Hitters vs Home SP)
+- **Cristopher Sánchez (Throws: L)**: 1st Inning xwOBA Allowed: 0.317
+  - Paul Goldschmidt: xwOBA vs LHP: 0.379
+  - Ben Rice: xwOBA vs LHP: 0.336
+  - Amed Rosario: xwOBA vs LHP: 0.294
+- **Top 1st Threat Score:** 0.327
+
+### Bottom 1st (Home Hitters vs Away SP)
+- **Will Warren (Throws: R)**: 1st Inning xwOBA Allowed: 0.3
+  - Trea Turner: xwOBA vs RHP: 0.284
+  - Kyle Schwarber: xwOBA vs RHP: 0.347
+  - Bryce Harper: xwOBA vs RHP: 0.414
+- **Bottom 1st Threat Score:** 0.324
 
 ---
