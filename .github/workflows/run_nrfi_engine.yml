@@ -1,0 +1,66 @@
+name: Daily NRFI Engine Pipeline
+
+on:
+  schedule:
+    # Run automatically every day at 20:00 UTC (4:00 PM EDT / 1:00 PM PDT)
+    # Lineups are much more likely to be confirmed by late afternoon.
+    - cron: '0 20 * * *'
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Target Date (YYYY-MM-DD)'
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  run_nrfi_engine:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout ncaa-api
+        uses: actions/checkout@v4
+        with:
+          path: ncaa-api
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # cache pip dependencies
+
+      - name: Install Dependencies
+        run: |
+          cd ncaa-api
+          pip install -r requirements.txt
+          # Make sure pybaseball is installed, it should be in requirements.txt
+          pip install pybaseball pandas
+
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run NRFI Engine
+        run: |
+          cd ncaa-api
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            python mlb/nrfi_engine.py --date "${{ github.event.inputs.target_date }}"
+          else
+            python mlb/nrfi_engine.py
+          fi
+
+      - name: Commit Generated Reports to ncaa-api
+        run: |
+          cd ncaa-api
+          # Force add the generated NRFI markdown files
+          git add -f nrfi_report_*.md
+          # Only commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-generate daily NRFI report"
+            git push
+          else
+            echo "No changes to commit"
+          fi
