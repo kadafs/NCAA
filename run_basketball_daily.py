@@ -680,9 +680,9 @@ def predict_game(away_name, home_name, away_id, home_id, team_stats, config, con
     a_gp = sA.get("games_played", 0)
     h_gp = sH.get("games_played", 0)
 
-    # STRICT GUARD: Skip completely identically empty games to prevent 108v108 identical loops
-    if a_gp == 0 and h_gp == 0:
-        return None, f"Both {away_name} and {home_name} have 0 games played. Skipping to prevent identical dummy baseline projections."
+    # STRICT GUARD: Require at least 2 games played for both teams
+    if a_gp < 2 or h_gp < 2:
+        return None, f"Insufficient games played (need 2+). {away_name} ({a_gp}), {home_name} ({h_gp}). Skipping."
 
     # FIX 13: Bayesian Smoothing for small samples (Replaces hard 108.0 overwrite)
     def bayesian_blend(raw_value, gp, league_default):

@@ -20,8 +20,17 @@ python mlb/umpire_engine.py - Every Monday morning (before the daily run)
 python mlb/grade_td_reports.py - grader script for MLB (Gatekeeper picks only)
 
 
+##Football
 
+ Grade Football 
+python grade_football.py
 
+Grade individual league
+python aggregate_league_stats.py
+
+python run_football_daily.py               # all leagues, safe mode
+python run_football_daily.py --mode full      # sharp BTTS adjustments. 
+python run_football_daily.py --mode full --low-data
 
 
 ##Basketball
