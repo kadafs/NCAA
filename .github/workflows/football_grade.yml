@@ -3,7 +3,12 @@ name: ⚽ Football Grade Results
 on:
   schedule:
     - cron: '30 23 * * *'  # 23:30 UTC (after most leagues finish)
-  workflow_dispatch:         # manual trigger
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD)'
+        required: false
+        default: ''
 
 jobs:
   grade:
@@ -28,8 +33,14 @@ jobs:
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            DATE_FLAG="--date ${{ github.event.inputs.date }}"
+            echo "Using manually provided date: $DATE_FLAG"
+          else
+            DATE_FLAG=""
+          fi
           echo "Grading football results..."
-          python grade_football.py
+          python grade_football.py $DATE_FLAG
           echo "Done."
 
       - name: Aggregate League Stats
@@ -39,13 +50,63 @@ jobs:
           echo "Done."
 
 
-      - name: Commit and push graded files
+      - name: Regenerate dates index
+        run: |
+          python - <<'EOF'
+          import json, os, glob
+          DATA_DIR = 'data/football'
+          files = sorted(glob.glob(os.path.join(DATA_DIR, 'universal_predictions_*.json')), reverse=True)
+          result = []
+          for f in files:
+              date = os.path.basename(f).replace('universal_predictions_', '').replace('.json', '')
+              try:
+                  payload = json.load(open(f, encoding='utf-8'))
+              except Exception:
+                  continue
+              graded = payload.get('grade_summary') is not None
+              scored = sum(1 for p in payload.get('predictions', []) if p.get('actual_result') is not None)
+              result.append({'date': date, 'total': payload.get('total_predictions', 0),
+                             'graded': graded, 'graded_count': scored, 'grade_summary': payload.get('grade_summary')})
+          with open(os.path.join(DATA_DIR, 'dates_index.json'), 'w', encoding='utf-8') as out:
+              json.dump({'dates': result}, out, indent=2)
+          print(f"dates_index.json updated with {len(result)} date(s)")
+          EOF
+
+      - name: Commit local data changes
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
           git add data/football/
-          git diff --staged --quiet && echo "No changes to commit." || (
+          git diff --staged --quiet && echo "No changes to commit to ncaa-api." || (
             git commit -m "chore: grade football results $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Checkout Dashboard Repo
+        uses: actions/checkout@v4
+        with:
+          repository: kadafs/sports-analytics
+          token: ${{ secrets.GH_PAT }}
+          path: sports-analytics
+
+      - name: Sync to Dashboard
+        run: |
+          echo "Copying graded predictions to dashboard..."
+          mkdir -p sports-analytics/public/data/football
+          
+          # Copy up to 14 latest prediction files
+          ls -t data/football/universal_predictions_*.json 2>/dev/null | head -14 | xargs -I {} cp {} sports-analytics/public/data/football/ || true
+          
+          # Copy dates index
+          cp data/football/dates_index.json sports-analytics/public/data/football/ || true
+          
+          # Commit and push
+          cd sports-analytics
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add public/data/football/
+          git diff --staged --quiet && echo "No changes to commit to dashboard." || (
+            git commit -m "data: push graded football predictions $(date -u +'%Y-%m-%d')"
             git push
           )
 

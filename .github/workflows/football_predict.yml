@@ -3,7 +3,12 @@ name: ⚽ Football Daily Predictions
 on:
   schedule:
     - cron: '0 5 * * *'   # 05:00 UTC daily (after overnight markets settle)
-  workflow_dispatch:        # manual trigger from Actions tab
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Target date (YYYY-MM-DD)'
+        required: false
+        default: ''
 
 jobs:
   predict:
@@ -28,7 +33,12 @@ jobs:
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
-          TODAY=$(date -u +'%Y-%m-%d')
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            TODAY="${{ github.event.inputs.date }}"
+            echo "Using manually provided date: $TODAY"
+          else
+            TODAY=$(date -u +'%Y-%m-%d')
+          fi
           echo "Generating football predictions for $TODAY..."
           python run_football_daily.py --mode full --all-leagues --refresh --date "$TODAY"
           echo "Done."
