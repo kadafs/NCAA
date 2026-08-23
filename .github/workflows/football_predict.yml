@@ -55,20 +55,41 @@ jobs:
           print(f"dates_index.json updated with {len(result)} date(s)")
           EOF
 
-      - name: Sync data to Vercel public folder
-        run: |
-          mkdir -p football-dashboard/public/data/football
-          cp data/football/universal_predictions_*.json football-dashboard/public/data/football/
-          cp data/football/dates_index.json football-dashboard/public/data/football/
-          echo "Synced prediction files to public/"
-
-      - name: Commit and push prediction files
+      - name: Commit local data changes
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
           git add data/football/
-          git diff --staged --quiet && echo "No changes to commit." || (
-            git commit -m "chore: football predictions $(date -u +'%Y-%m-%d')"
+          git diff --staged --quiet && echo "No changes to commit to ncaa-api." || (
+            git commit -m "data: generate football predictions $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Checkout Dashboard Repo
+        uses: actions/checkout@v4
+        with:
+          repository: kadafs/sports-analytics
+          token: ${{ secrets.GH_PAT }}
+          path: sports-analytics
+
+      - name: Sync to Dashboard
+        run: |
+          echo "Copying predictions to dashboard..."
+          mkdir -p sports-analytics/public/data/football
+          
+          # Copy up to 14 latest prediction files
+          ls -t data/football/universal_predictions_*.json 2>/dev/null | head -14 | xargs -I {} cp {} sports-analytics/public/data/football/ || true
+          
+          # Copy dates index
+          cp data/football/dates_index.json sports-analytics/public/data/football/ || true
+          
+          # Commit and push
+          cd sports-analytics
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add public/data/football/
+          git diff --staged --quiet && echo "No changes to commit to dashboard." || (
+            git commit -m "data: push daily football predictions $(date -u +'%Y-%m-%d')"
             git push
           )
 
