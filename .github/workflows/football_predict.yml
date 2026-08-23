@@ -30,7 +30,7 @@ jobs:
         run: |
           TODAY=$(date -u +'%Y-%m-%d')
           echo "Generating football predictions for $TODAY..."
-          python run_football_daily.py --mode full --date "$TODAY"
+          python run_football_daily.py --mode full --all-leagues --refresh --date "$TODAY"
           echo "Done."
 
       - name: Regenerate dates index
