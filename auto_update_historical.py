@@ -11,7 +11,7 @@ import sys
 import json
 import requests
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
@@ -39,7 +39,8 @@ def main():
     if args.date:
         target_date = args.date
     else:
-        target_date = (datetime.now(ET_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
+        # The API-Basketball free tier uses strict UTC boundaries for "yesterday"
+        target_date = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
     
     print(f"\n===========================================================")
     print(f"  API-BASKETBALL AUTO-UPDATER | Target Date: {target_date}")
