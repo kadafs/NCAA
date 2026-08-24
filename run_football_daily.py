@@ -42,6 +42,12 @@ if sys.platform == "win32":
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 load_dotenv()
 
+from core.football_enricher import (
+    fetch_injury_flags, enrich_fixture,
+    fetch_match_stats, fetch_match_events
+)
+from build_corner_booking_profiles import corners_prediction
+
 API_KEY  = os.getenv("API_BASKETBALL_KEY")          # Same key covers api-sports football
 BASE_URL = "https://v3.football.api-sports.io"
 HEADERS  = {"x-apisports-key": API_KEY}
@@ -831,6 +837,19 @@ def main():
             # print(f"    [DEBUG] No standings for {lid} in 2025, trying 2026...")
             league_standings = fetch_standings(lid, 2026, args.refresh)
 
+        # --- Enrichment: injury flags (one API call per league) ---
+        injury_cache = fetch_injury_flags(lid, season) if not args.low_data else {}
+
+        # --- Enrichment: corner/booking team profiles (from local file if available) ---
+        profiles_path = os.path.join(DATA_DIR, f"team_profiles_{lid}.json")
+        team_profiles = {}
+        if os.path.exists(profiles_path):
+            try:
+                with open(profiles_path, encoding="utf-8") as _f:
+                    team_profiles = json.load(_f).get("teams", {})
+            except Exception:
+                team_profiles = {}
+
         # Step 3: Predict each game
         for game in upcoming:
             home = game["home_team"]
@@ -900,6 +919,20 @@ def main():
                 print(f"      Final: {ag}-{hg}  BTTS:{actual_btts}  Result:{actual_result}  "
                       f"(Pred:{pred})")
 
+            # --- Enrichment per fixture (odds + consensus) ---
+            fixture_id = game.get("fixture_id")
+            enrichment = enrich_fixture(
+                fixture_id,
+                home_s.get("team_id"),
+                away_s.get("team_id"),
+                injury_cache
+            ) if fixture_id and not args.low_data else {}
+
+            # --- Corner & Booking prediction from team profiles ---
+            home_profile = team_profiles.get(str(home_s.get("team_id", "")))
+            away_profile = team_profiles.get(str(away_s.get("team_id", "")))
+            corner_booking = corners_prediction(home_profile, away_profile)
+
             all_predictions.append({
                 "league_id":   lid,
                 "league":      lname,
@@ -930,6 +963,14 @@ def main():
                 "predicted_result": result.get("predicted_result"),
                 "mode":        args.mode,
                 "timestamp":   datetime.now(ET_TZ).isoformat(),
+                # Enrichment
+                "fixture_id":      fixture_id,
+                "market_odds":     enrichment.get("market_odds"),
+                "api_consensus":   enrichment.get("api_consensus"),
+                "home_injuries":   enrichment.get("home_injuries", []),
+                "away_injuries":   enrichment.get("away_injuries", []),
+                # Corner & Booking
+                "corners":         corner_booking if corner_booking else None,
                 # Actual results for backtesting
                 "actual_home_goals": game.get("home_goals") if game.get("is_completed") else None,
                 "actual_away_goals": game.get("away_goals") if game.get("is_completed") else None,

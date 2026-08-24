@@ -145,8 +145,8 @@ class FootballEngine:
         btts_prob_final = round(max(0.01, min(0.99, btts_prob_base + btts_adj)), 4)
         draw_prob_final = round(max(0.01, min(0.99, draw_prob_base + draw_adj)), 4)
 
-        # Market implied probability
-        btts_market_prob = c.get("btts_market_avg", 0.52)   # default to typical market
+        # Market implied probability — use real bookmaker odds if available, else hardcoded default
+        btts_market_prob = game_data.get("btts_market_prob") or c.get("btts_market_avg", 0.52)
 
         # Edge
         btts_edge = round(btts_prob_final - btts_market_prob, 4)
