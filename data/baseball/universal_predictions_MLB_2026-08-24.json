@@ -1,0 +1,1268 @@
+{
+    "date": "2026-08-24",
+    "league": "MLB",
+    "mode": "confirmed",
+    "total_predictions": 10,
+    "predictions": [
+        {
+            "away_team": "Tampa Bay Rays",
+            "home_team": "Detroit Tigers",
+            "pitchers": {
+                "away": {
+                    "name": "Drew Rasmussen",
+                    "hand": "R",
+                    "fip": 3.96,
+                    "fb_pct": 0.4903,
+                    "gb_pct": 0.5097,
+                    "k_rate": 0.2609
+                },
+                "home": {
+                    "name": "Framber Valdez",
+                    "hand": "L",
+                    "fip": 3.52,
+                    "fb_pct": 0.4034,
+                    "gb_pct": 0.5966,
+                    "k_rate": 0.1811
+                }
+            },
+            "environment": {
+                "venue": "Comerica Park",
+                "park_factor": 0.955,
+                "weather": {
+                    "temp": 58,
+                    "wind_mph": 4,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 0.972,
+                    "temp_multiplier": 0.9895,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 0.9895,
+                    "weather_label": "58F | Calm | Weather: -1.0%"
+                },
+                "effective_pf": 0.9799,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.955 eff=0.980 (neutral)",
+                    "effective_pf": 0.9799,
+                    "effective_pf_note": "eff_PF=0.980 (avg_FB%=45%, raw_PF=0.955, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "58F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9799,
+                    "effective_pf_note": "eff_PF=0.980 (avg_FB%=45%, raw_PF=0.955, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.46,
+                "mc_f5": 3.87,
+                "mc_f5_away": 2.17,
+                "mc_f5_home": 1.71,
+                "mc_late": 3.29,
+                "mc_full_game": 7.17,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.848,
+                    "raw_avg": 1.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        1,
+                        3,
+                        1,
+                        7,
+                        3
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        1,
+                        0,
+                        3,
+                        1,
+                        5
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.523,
+                "under_4_5": 0.644,
+                "under_5_5": 0.746,
+                "full_over_7_5": 0.426,
+                "full_over_8_5": 0.293,
+                "full_over_9_5": 0.187
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Boston Red Sox",
+            "home_team": "Miami Marlins",
+            "pitchers": {
+                "away": {
+                    "name": "Ranger Suarez",
+                    "hand": "L",
+                    "fip": 3.81,
+                    "fb_pct": 0.5139,
+                    "gb_pct": 0.4861,
+                    "k_rate": 0.242
+                },
+                "home": {
+                    "name": "Sandy Alcantara",
+                    "hand": "R",
+                    "fip": 4.35,
+                    "fb_pct": 0.5262,
+                    "gb_pct": 0.4738,
+                    "k_rate": 0.1799
+                }
+            },
+            "environment": {
+                "venue": "loanDepot park",
+                "park_factor": 0.969,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Indoor",
+                    "wind_lateral": null,
+                    "is_indoor": true,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0,
+                    "weather_label": "Indoor / Roof Closed | No weather adjustment"
+                },
+                "effective_pf": 0.9839,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.969 eff=0.984 (neutral)",
+                    "effective_pf": 0.9839,
+                    "effective_pf_note": "eff_PF=0.984 (avg_FB%=52%, raw_PF=0.969, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "Indoor/no weather",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.9839,
+                    "effective_pf_note": "eff_PF=0.984 (avg_FB%=52%, raw_PF=0.969, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.64,
+                "mc_f5": 4.7,
+                "mc_f5_away": 2.57,
+                "mc_f5_home": 2.13,
+                "mc_late": 2.93,
+                "mc_full_game": 7.63,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.225,
+                    "raw_avg": 3.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        0,
+                        5,
+                        2,
+                        6,
+                        7
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        4,
+                        0,
+                        0,
+                        2,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.414,
+                "under_4_5": 0.535,
+                "under_5_5": 0.649,
+                "full_over_7_5": 0.494,
+                "full_over_8_5": 0.355,
+                "full_over_9_5": 0.238
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Colorado Rockies",
+            "home_team": "Washington Nationals",
+            "pitchers": {
+                "away": {
+                    "name": "Ryan Feltner",
+                    "hand": "R",
+                    "fip": 5.62,
+                    "fb_pct": 0.5,
+                    "gb_pct": 0.5,
+                    "k_rate": 0.1569
+                },
+                "home": {
+                    "name": "Cade Cavalli",
+                    "hand": "R",
+                    "fip": 3.73,
+                    "fb_pct": 0.4206,
+                    "gb_pct": 0.5794,
+                    "k_rate": 0.27
+                }
+            },
+            "environment": {
+                "venue": "Nationals Park",
+                "park_factor": 1.111,
+                "weather": {
+                    "temp": 80,
+                    "wind_mph": 7,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.015,
+                    "wind_multiplier": 0.982,
+                    "weather_multiplier": 0.9967,
+                    "weather_label": "80F | 7 MPH In | Weather: -0.3%"
+                },
+                "effective_pf": 1.0511,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.111 eff=1.051 (neutral)",
+                    "effective_pf": 1.0511,
+                    "effective_pf_note": "eff_PF=1.051 (avg_FB%=46%, raw_PF=1.111, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "80F | In",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 1.0511,
+                    "effective_pf_note": "eff_PF=1.051 (avg_FB%=46%, raw_PF=1.111, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.9,
+                "mc_f5": 4.22,
+                "mc_f5_away": 1.76,
+                "mc_f5_home": 2.46,
+                "mc_late": 3.06,
+                "mc_full_game": 7.28,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.848,
+                    "raw_avg": 1.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        2,
+                        1,
+                        2,
+                        4,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        2,
+                        0,
+                        0,
+                        2,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.475,
+                "under_4_5": 0.605,
+                "under_5_5": 0.707,
+                "full_over_7_5": 0.442,
+                "full_over_8_5": 0.307,
+                "full_over_9_5": 0.198
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R1)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Texas Rangers",
+            "home_team": "Chicago White Sox",
+            "pitchers": {
+                "away": {
+                    "name": "Kumar Rocker",
+                    "hand": "R",
+                    "fip": 4.09,
+                    "fb_pct": 0.5325,
+                    "gb_pct": 0.4675,
+                    "k_rate": 0.2064
+                },
+                "home": {
+                    "name": "TBD",
+                    "hand": "R",
+                    "fip": 4.5,
+                    "fb_pct": 0.33,
+                    "gb_pct": 0.45,
+                    "k_rate": 0.22
+                }
+            },
+            "environment": {
+                "venue": "Rate Field",
+                "park_factor": 0.956,
+                "weather": {
+                    "temp": 57,
+                    "wind_mph": 4,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 0.968,
+                    "temp_multiplier": 0.988,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 0.988,
+                    "weather_label": "57F | Calm | Weather: -1.2%"
+                },
+                "effective_pf": 0.981,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.956 eff=0.981 (neutral)",
+                    "effective_pf": 0.981,
+                    "effective_pf_note": "eff_PF=0.981 (avg_FB%=43%, raw_PF=0.956, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "57F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.981,
+                    "effective_pf_note": "eff_PF=0.981 (avg_FB%=43%, raw_PF=0.956, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.03,
+                "mc_f5": 4.81,
+                "mc_f5_away": 2.25,
+                "mc_f5_home": 2.56,
+                "mc_late": 2.91,
+                "mc_full_game": 7.72,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        5,
+                        0,
+                        0,
+                        1,
+                        0,
+                        5
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        4,
+                        0,
+                        0,
+                        0,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.395,
+                "under_4_5": 0.523,
+                "under_5_5": 0.638,
+                "full_over_7_5": 0.507,
+                "full_over_8_5": 0.368,
+                "full_over_9_5": 0.249
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R2)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Cleveland Guardians",
+            "home_team": "Los Angeles Angels",
+            "pitchers": {
+                "away": {
+                    "name": "Parker Messick",
+                    "hand": "L",
+                    "fip": 2.93,
+                    "fb_pct": 0.5035,
+                    "gb_pct": 0.4965,
+                    "k_rate": 0.2572
+                },
+                "home": {
+                    "name": "George Klassen",
+                    "hand": "R",
+                    "fip": 4.87,
+                    "fb_pct": 0.4545,
+                    "gb_pct": 0.5455,
+                    "k_rate": 0.2079
+                }
+            },
+            "environment": {
+                "venue": "Angel Stadium",
+                "park_factor": 0.977,
+                "weather": {
+                    "temp": 74,
+                    "wind_mph": 1,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.006,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.006,
+                    "weather_label": "74F | Calm | Weather: +0.6%"
+                },
+                "effective_pf": 0.989,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.977 eff=0.989 (neutral)",
+                    "effective_pf": 0.989,
+                    "effective_pf_note": "eff_PF=0.989 (avg_FB%=48%, raw_PF=0.977, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "74F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.989,
+                    "effective_pf_note": "eff_PF=0.989 (avg_FB%=48%, raw_PF=0.977, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.57,
+                "mc_f5": 4.13,
+                "mc_f5_away": 2.41,
+                "mc_f5_home": 1.72,
+                "mc_late": 2.72,
+                "mc_full_game": 6.85,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.196,
+                    "raw_avg": 3.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        6,
+                        3,
+                        4,
+                        3,
+                        0,
+                        7
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 1.2,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        1,
+                        0,
+                        14,
+                        2,
+                        3
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.483,
+                "under_4_5": 0.604,
+                "under_5_5": 0.717,
+                "full_over_7_5": 0.38,
+                "full_over_8_5": 0.252,
+                "full_over_9_5": 0.155
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Chicago Cubs",
+            "home_team": "Arizona Diamondbacks",
+            "pitchers": {
+                "away": {
+                    "name": "Kevin Gausman",
+                    "hand": "R",
+                    "fip": 2.97,
+                    "fb_pct": 0.5484,
+                    "gb_pct": 0.4516,
+                    "k_rate": 0.2348
+                },
+                "home": {
+                    "name": "Merrill Kelly",
+                    "hand": "R",
+                    "fip": 5.9,
+                    "fb_pct": 0.5267,
+                    "gb_pct": 0.4733,
+                    "k_rate": 0.1487
+                }
+            },
+            "environment": {
+                "venue": "Chase Field",
+                "park_factor": 1.036,
+                "weather": {
+                    "temp": 86,
+                    "wind_mph": 7,
+                    "wind_dir": "R-L",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.01,
+                    "temp_multiplier": 1.024,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.024,
+                    "weather_label": "86F | 7 MPH R-L | Weather: +2.4%"
+                },
+                "effective_pf": 1.0194,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=1.036 eff=1.019 (neutral)",
+                    "effective_pf": 1.0194,
+                    "effective_pf_note": "eff_PF=1.019 (avg_FB%=54%, raw_PF=1.036, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "weather_delta": 5.0,
+                    "weather_note": "86F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (86F) -> NEUTRAL (+5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 1.0194,
+                    "effective_pf_note": "eff_PF=1.019 (avg_FB%=54%, raw_PF=1.036, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (86F) -> NEUTRAL (+5)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.04,
+                "mc_f5": 5.02,
+                "mc_f5_away": 2.84,
+                "mc_f5_home": 2.18,
+                "mc_late": 3.01,
+                "mc_full_game": 8.03,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.935,
+                    "raw_avg": 2.0,
+                    "games_used": 5,
+                    "games_raw": [
+                        6,
+                        1,
+                        3,
+                        0,
+                        2,
+                        4
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        2,
+                        6,
+                        3,
+                        4,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.374,
+                "under_4_5": 0.497,
+                "under_5_5": 0.613,
+                "full_over_7_5": 0.551,
+                "full_over_8_5": 0.411,
+                "full_over_9_5": 0.287
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Skip",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Pittsburgh Pirates",
+            "home_team": "San Diego Padres",
+            "pitchers": {
+                "away": {
+                    "name": "Braxton Ashcraft",
+                    "hand": "R",
+                    "fip": 2.93,
+                    "fb_pct": 0.4545,
+                    "gb_pct": 0.5455,
+                    "k_rate": 0.2641
+                },
+                "home": {
+                    "name": "Robbie Ray",
+                    "hand": "L",
+                    "fip": 4.4,
+                    "fb_pct": 0.6057,
+                    "gb_pct": 0.3943,
+                    "k_rate": 0.2024
+                }
+            },
+            "environment": {
+                "venue": "Petco Park",
+                "park_factor": 0.93,
+                "weather": {
+                    "temp": 74,
+                    "wind_mph": 2,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.006,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.006,
+                    "weather_label": "74F | Calm | Weather: +0.6%"
+                },
+                "effective_pf": 0.9629,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.930 eff=0.963 (neutral)",
+                    "effective_pf": 0.9629,
+                    "effective_pf_note": "eff_PF=0.963 (avg_FB%=53%, raw_PF=0.930, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "74F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9629,
+                    "effective_pf_note": "eff_PF=0.963 (avg_FB%=53%, raw_PF=0.930, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.39,
+                "mc_f5": 4.41,
+                "mc_f5_away": 2.72,
+                "mc_f5_home": 1.69,
+                "mc_late": 2.69,
+                "mc_full_game": 7.1,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        3,
+                        2,
+                        1,
+                        3,
+                        1
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.804,
+                    "raw_avg": 1.4,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        1,
+                        6,
+                        1,
+                        3,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.447,
+                "under_4_5": 0.575,
+                "under_5_5": 0.684,
+                "full_over_7_5": 0.417,
+                "full_over_8_5": 0.285,
+                "full_over_9_5": 0.18
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip (Under Lean - R2)",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Minnesota Twins",
+            "home_team": "Athletics",
+            "pitchers": {
+                "away": {
+                    "name": "Zebby Matthews",
+                    "hand": "R",
+                    "fip": 4.57,
+                    "fb_pct": 0.4924,
+                    "gb_pct": 0.5076,
+                    "k_rate": 0.1976
+                },
+                "home": {
+                    "name": "Jeffrey Springs",
+                    "hand": "L",
+                    "fip": 4.5,
+                    "fb_pct": 0.6066,
+                    "gb_pct": 0.3934,
+                    "k_rate": 0.1766
+                }
+            },
+            "environment": {
+                "venue": "Sutter Health Park",
+                "park_factor": 0.948,
+                "weather": {
+                    "temp": 92,
+                    "wind_mph": 8,
+                    "wind_dir": "In",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 1,
+                    "temp_fatigue_scaler": 1.07,
+                    "temp_multiplier": 1.033,
+                    "wind_multiplier": 0.978,
+                    "weather_multiplier": 1.0103,
+                    "weather_label": "92F | 8 MPH In | Weather: +1.0%"
+                },
+                "effective_pf": 0.9714,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.948 eff=0.971 (neutral)",
+                    "effective_pf": 0.9714,
+                    "effective_pf_note": "eff_PF=0.971 (avg_FB%=55%, raw_PF=0.948, both SPs)",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "weather_delta": 5.0,
+                    "weather_note": "92F",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "OVER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 5.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (92F) -> NEUTRAL (+5)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 5,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "HOT",
+                    "weather_signal": "CONFIRMS",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "OVER",
+                    "effective_pf": 0.9714,
+                    "effective_pf_note": "eff_PF=0.971 (avg_FB%=55%, raw_PF=0.948, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL | Weather: HOT CONFIRMS (92F) -> NEUTRAL (+5)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 5.09,
+                "mc_f5": 5.32,
+                "mc_f5_away": 2.9,
+                "mc_f5_home": 2.42,
+                "mc_late": 3.24,
+                "mc_full_game": 8.56,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 1.065,
+                    "raw_avg": 2.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        1,
+                        5,
+                        2,
+                        4,
+                        2,
+                        4
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        6,
+                        1,
+                        0,
+                        2,
+                        5,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.337,
+                "under_4_5": 0.464,
+                "under_5_5": 0.58,
+                "full_over_7_5": 0.621,
+                "full_over_8_5": 0.484,
+                "full_over_9_5": 0.354
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (HIGH)",
+                "adv_4_5": "Bet **OVER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Philadelphia Phillies",
+            "home_team": "Seattle Mariners",
+            "pitchers": {
+                "away": {
+                    "name": "Zack Wheeler",
+                    "hand": "R",
+                    "fip": 2.84,
+                    "fb_pct": 0.4951,
+                    "gb_pct": 0.5049,
+                    "k_rate": 0.3038
+                },
+                "home": {
+                    "name": "Logan Gilbert",
+                    "hand": "R",
+                    "fip": 3.24,
+                    "fb_pct": 0.5821,
+                    "gb_pct": 0.4179,
+                    "k_rate": 0.2643
+                }
+            },
+            "environment": {
+                "venue": "T-Mobile Park",
+                "park_factor": 0.834,
+                "weather": {
+                    "temp": 72,
+                    "wind_mph": 0,
+                    "wind_dir": "Indoor",
+                    "wind_lateral": null,
+                    "is_indoor": true,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 1.0,
+                    "temp_multiplier": 1.0,
+                    "wind_multiplier": 1.0,
+                    "weather_multiplier": 1.0,
+                    "weather_label": "Indoor / Roof Closed | No weather adjustment"
+                },
+                "effective_pf": 0.9106,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.834 eff=0.911 (neutral)",
+                    "effective_pf": 0.9106,
+                    "effective_pf_note": "eff_PF=0.911 (avg_FB%=54%, raw_PF=0.834, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "Indoor/no weather",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9106,
+                    "effective_pf_note": "eff_PF=0.911 (avg_FB%=54%, raw_PF=0.834, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 3.54,
+                "mc_f5": 3.66,
+                "mc_f5_away": 2.04,
+                "mc_f5_home": 1.62,
+                "mc_late": 2.87,
+                "mc_full_game": 6.53,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        0,
+                        7,
+                        3,
+                        3,
+                        1,
+                        2
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 1.065,
+                    "raw_avg": 2.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        2,
+                        2,
+                        5,
+                        4,
+                        7,
+                        0
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.543,
+                "under_4_5": 0.67,
+                "under_5_5": 0.774,
+                "full_over_7_5": 0.332,
+                "full_over_8_5": 0.212,
+                "full_over_9_5": 0.125
+            },
+            "action_matrix": {
+                "adv_3_5": "Skip",
+                "adv_4_5": "Skip (Team Bias Veto - Realized Pitcher Edge)",
+                "adv_5_5": "Skip (Team Bias Veto - Realized Pitcher Edge)"
+            },
+            "version": "v4"
+        },
+        {
+            "away_team": "Cincinnati Reds",
+            "home_team": "San Francisco Giants",
+            "pitchers": {
+                "away": {
+                    "name": "Chase Burns",
+                    "hand": "R",
+                    "fip": 3.79,
+                    "fb_pct": 0.6017,
+                    "gb_pct": 0.3983,
+                    "k_rate": 0.2901
+                },
+                "home": {
+                    "name": "TBD",
+                    "hand": "R",
+                    "fip": 4.5,
+                    "fb_pct": 0.33,
+                    "gb_pct": 0.45,
+                    "k_rate": 0.22
+                }
+            },
+            "environment": {
+                "venue": "Oracle Park",
+                "park_factor": 0.945,
+                "weather": {
+                    "temp": 57,
+                    "wind_mph": 8,
+                    "wind_dir": "Out",
+                    "wind_lateral": null,
+                    "is_indoor": false,
+                    "rain_pct": 0,
+                    "temp_fatigue_scaler": 0.968,
+                    "temp_multiplier": 0.988,
+                    "wind_multiplier": 1.022,
+                    "weather_multiplier": 1.0097,
+                    "weather_label": "57F | 8 MPH Out | Weather: +1.0%"
+                },
+                "effective_pf": 0.9744,
+                "env_confidence": {
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "park_delta": 0.0,
+                    "park_note": "PF=0.945 eff=0.974 (neutral)",
+                    "effective_pf": 0.9744,
+                    "effective_pf_note": "eff_PF=0.974 (avg_FB%=47%, raw_PF=0.945, both SPs)",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "weather_delta": 0.0,
+                    "weather_note": "57F | Out",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "umpire_delta": 0.0,
+                    "umpire_note": "No umpire data",
+                    "lean": "UNDER",
+                    "combined_signal": "NEUTRAL",
+                    "confidence_delta": 0.0,
+                    "env_note": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "env_display": {
+                    "signal": "NEUTRAL",
+                    "delta": 0,
+                    "park_flag": "NEUTRAL",
+                    "park_signal": "NEUTRAL",
+                    "weather_flag": "NEUTRAL",
+                    "weather_signal": "NEUTRAL",
+                    "umpire_flag": "NEUTRAL",
+                    "umpire_signal": "NEUTRAL",
+                    "lean": "UNDER",
+                    "effective_pf": 0.9744,
+                    "effective_pf_note": "eff_PF=0.974 (avg_FB%=47%, raw_PF=0.945, both SPs)",
+                    "summary": "Park: NEUTRAL NEUTRAL -> NEUTRAL (+0)"
+                },
+                "umpire": null
+            },
+            "lineups_status": "Projected (Generic)",
+            "predictions": {
+                "top_down_f5": 4.38,
+                "mc_f5": 4.16,
+                "mc_f5_away": 2.33,
+                "mc_f5_home": 1.83,
+                "mc_late": 3.39,
+                "mc_full_game": 7.55,
+                "td_clamp_applied": false,
+                "away_f5_form": {
+                    "factor": 0.775,
+                    "raw_avg": 0.6,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        7,
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                },
+                "home_f5_form": {
+                    "factor": 0.891,
+                    "raw_avg": 1.8,
+                    "games_used": 5,
+                    "games_raw": [
+                        3,
+                        2,
+                        4,
+                        2,
+                        1,
+                        1
+                    ]
+                },
+                "form_factor": "Not implemented"
+            },
+            "probabilities": {
+                "under_3_5": 0.473,
+                "under_4_5": 0.604,
+                "under_5_5": 0.716,
+                "full_over_7_5": 0.483,
+                "full_over_8_5": 0.345,
+                "full_over_9_5": 0.229
+            },
+            "action_matrix": {
+                "adv_3_5": "Bet **OVER** (MODERATE)",
+                "adv_4_5": "Bet **UNDER** (MODERATE)",
+                "adv_5_5": "Bet **UNDER** (HIGH)"
+            },
+            "version": "v4"
+        }
+    ]
+}
