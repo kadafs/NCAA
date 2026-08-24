@@ -177,12 +177,76 @@ class FootballEngine:
         self._log(f"Decision: BTTS {btts_decision} [{btts_confidence}]")
 
         # -------------------------------------------------------
-        # PHASE 4 — 1X2 Outcome Prediction
+        # PHASE 4 — 1X2 Outcome Prediction (with sharp adjustments)
         # -------------------------------------------------------
         outcome = calc_outcome_probs(xg_home, xg_away)
         hw = outcome["home_win"]
         dw = outcome["draw"]
         aw = outcome["away_win"]
+
+        # Phase 4 adjustments (full mode only)
+        hw_adj = 0.0
+        aw_adj = 0.0
+        dw_adj = 0.0
+
+        if self.mode == "full":
+            # 4A: Form advantage — if one team is in significantly better form, nudge their win prob
+            home_form = game_data.get("combined_form_wins", 4) - game_data.get("combined_form_wins", 4) // 2
+            away_form = game_data.get("combined_form_wins", 4) // 2
+            home_form_wins = game_data.get("statsH", {}).get("form", "")
+            away_form_wins = game_data.get("statsA", {}).get("form", "")
+
+            # Count recent W's in form string (last 5)
+            def count_wins(form_str):
+                return sum(1 for c in str(form_str)[-5:] if c == "W") if form_str else 2
+
+            h_wins = count_wins(home_form_wins)
+            a_wins = count_wins(away_form_wins)
+            form_diff = h_wins - a_wins  # positive = home stronger
+
+            form_nudge = sp.get("outcome_form_nudge", 0.04)  # per form-win advantage
+            if abs(form_diff) >= 2:
+                nudge = form_nudge * min(abs(form_diff), 3)
+                if form_diff > 0:
+                    hw_adj += nudge
+                    aw_adj -= nudge * 0.5
+                    dw_adj -= nudge * 0.5
+                    self._log(f"Phase 4A: Home form advantage ({h_wins}W vs {a_wins}W) → Home +{nudge:.3f}")
+                else:
+                    aw_adj += nudge
+                    hw_adj -= nudge * 0.5
+                    dw_adj -= nudge * 0.5
+                    self._log(f"Phase 4A: Away form advantage ({a_wins}W vs {h_wins}W) → Away +{nudge:.3f}")
+
+            # 4B: Draw-prone correction — boost draw prob, reduce extremes
+            if game_data.get("is_draw_prone", False):
+                draw_pull = sp.get("outcome_draw_prone_boost", 0.04)
+                dw_adj += draw_pull
+                hw_adj -= draw_pull * 0.5
+                aw_adj -= draw_pull * 0.5
+                self._log(f"Phase 4B: Draw-prone teams → Draw +{draw_pull:.3f}")
+
+            # 4C: Dominant team bias — if xG split is very lopsided, amplify the leader
+            xg_ratio = xg_home / max(xg_away, 0.01)
+            if xg_ratio >= 1.8:   # home dominant (e.g. 2.0 vs 1.1)
+                dom_boost = sp.get("outcome_dominance_boost", 0.04)
+                hw_adj += dom_boost
+                aw_adj -= dom_boost
+                self._log(f"Phase 4C: Home xG dominant ({xg_home:.2f} vs {xg_away:.2f}) → Home +{dom_boost:.3f}")
+            elif xg_ratio <= 0.56:  # away dominant
+                dom_boost = sp.get("outcome_dominance_boost", 0.04)
+                aw_adj += dom_boost
+                hw_adj -= dom_boost
+                self._log(f"Phase 4C: Away xG dominant ({xg_away:.2f} vs {xg_home:.2f}) → Away +{dom_boost:.3f}")
+
+            # Apply adjustments and renormalise
+            hw = max(0.01, hw + hw_adj)
+            dw = max(0.01, dw + dw_adj)
+            aw = max(0.01, aw + aw_adj)
+            total_1x2 = hw + dw + aw
+            hw = round(hw / total_1x2, 4)
+            dw = round(dw / total_1x2, 4)
+            aw = round(aw / total_1x2, 4)
 
         def _odds(p): return round(1 / p, 2) if p > 0 else 99.0
 
