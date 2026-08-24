@@ -9,10 +9,6 @@ on:
         description: 'Target date (YYYY-MM-DD)'
         required: false
         default: ''
-      skip_profiles:
-        description: 'Skip corner/booking profile rebuild (true/false)'
-        required: false
-        default: 'false'
 
 jobs:
   predict:
@@ -34,7 +30,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build corner & booking profiles (today's leagues only)
-        if: ${{ github.event.inputs.skip_profiles != 'true' }}
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
@@ -45,7 +40,7 @@ jobs:
           fi
           echo "Building corner/booking profiles for leagues active on $TARGET_DATE..."
           python build_corner_booking_profiles.py --today-only --date "$TARGET_DATE" --season 2026
-          echo "Profile build complete."
+          echo "Profile build complete (stale-only, fresh leagues auto-skipped)."
 
       - name: Run football predictions (full mode)
         env:
