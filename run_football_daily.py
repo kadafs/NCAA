@@ -940,6 +940,8 @@ def main():
                 "date":        date_str,
                 "away_team":   away,
                 "home_team":   home,
+                "home_team_id": home_s.get("team_id"),
+                "away_team_id": away_s.get("team_id"),
                 "status":      game.get("status", ""),
                 "kickoff":     game.get("kickoff", ""),
                 "xg_home":     round(xg_h, 3),
