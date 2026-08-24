@@ -870,7 +870,11 @@ def main():
             home = game["home"]
             status = game.get("status", "")
             stage = game.get("stage", "")
-            
+
+            # Extract HH:MM kickoff time from fixture date (e.g. "2026-08-24 18:30" → "18:30")
+            raw_time = game.get("time", "") or ""
+            kickoff_time = raw_time.split(" ")[1] if " " in raw_time else None
+
             away_id = game.get("away_id")
             home_id = game.get("home_id")
 
@@ -999,6 +1003,7 @@ def main():
                     "league":       lname,
                     "country":      country,
                     "date":         date_str,
+                    "time":         kickoff_time,
                     "away_team":    away,
                     "home_team":    home,
                     "status":       status,
