@@ -4,10 +4,12 @@ build_corner_booking_profiles.py
 Builds per-team historical corner & booking point profiles by fetching
 the last N completed fixtures per team from /fixtures/statistics.
 
-Run manually or via cron (weekly recommended):
-    python build_corner_booking_profiles.py
-    python build_corner_booking_profiles.py --league 39 --season 2026
-    python build_corner_booking_profiles.py --last 10   # use last 10 fixtures per team
+Usage:
+    python build_corner_booking_profiles.py                        # all discovered leagues (weekly)
+    python build_corner_booking_profiles.py --today-only           # only today's active leagues (daily)
+    python build_corner_booking_profiles.py --league 39            # specific league
+    python build_corner_booking_profiles.py --last 5               # use last 5 fixtures per team
+    python build_corner_booking_profiles.py --today-only --date 2026-08-24  # specific date
 
 Output: data/football/team_profiles_{league_id}.json
 """
@@ -252,19 +254,50 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
     return profiles
 
 
+def get_todays_league_ids(date_str: str) -> list[int]:
+    """
+    Fetch all leagues with fixtures on a given date.
+    Used by --today-only to avoid rebuilding all leagues every day.
+    """
+    data = safe_get("/fixtures", {"date": date_str})
+    league_ids = sorted(set(
+        fix["league"]["id"]
+        for fix in data.get("response", [])
+        if fix.get("league", {}).get("id")
+    ))
+    print(f"Found {len(league_ids)} leagues with fixtures on {date_str}.")
+    return league_ids
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build corner & booking profiles for football teams.")
-    parser.add_argument("--league",  type=int, help="Specific league ID to build (default: all active leagues)")
-    parser.add_argument("--season",  type=int, default=2026)
-    parser.add_argument("--last",    type=int, default=12, help="Last N completed fixtures per team (default: 12)")
+    parser.add_argument("--league",     type=int,  help="Specific league ID to build")
+    parser.add_argument("--season",     type=int,  default=2026)
+    parser.add_argument("--last",       type=int,  default=0,
+                        help="Last N completed fixtures per team (0 = auto: 5 for today-only, 12 for full)")
+    parser.add_argument("--today-only", action="store_true",
+                        help="Only build profiles for leagues with games today (fast, daily-safe)")
+    parser.add_argument("--date",       default="",
+                        help="Target date for --today-only (YYYY-MM-DD, default: today UTC)")
     args = parser.parse_args()
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
+    # Resolve how many fixtures to look back
+    last = args.last if args.last > 0 else (5 if args.today_only else 12)
+
     if args.league:
         league_ids = [args.league]
+
+    elif args.today_only:
+        date_str = args.date or datetime.utcnow().strftime("%Y-%m-%d")
+        league_ids = get_todays_league_ids(date_str)
+        if not league_ids:
+            print("No leagues found for today. Exiting.")
+            return
+
     else:
-        # Auto-discover leagues from existing stats files
+        # Full mode: auto-discover from existing stats files
         stat_files = glob.glob(os.path.join(DATA_DIR, "universal_*_stats.json"))
         league_ids = sorted(set(
             int(os.path.basename(f).split("_")[1])
@@ -274,15 +307,17 @@ def main():
         print(f"Auto-discovered {len(league_ids)} leagues from existing stats files.")
 
     if not league_ids:
-        print("No leagues to process. Use --league <id> or ensure stats files exist.")
+        print("No leagues to process. Use --league <id>, --today-only, or ensure stats files exist.")
         return
+
+    print(f"Building profiles for {len(league_ids)} league(s) | last={last} fixtures per team")
 
     for lid in league_ids:
         print(f"\n{'='*60}")
         print(f"  League {lid}")
         print(f"{'='*60}")
 
-        profiles = build_profiles_for_league(lid, args.season, args.last)
+        profiles = build_profiles_for_league(lid, args.season, last)
         if not profiles:
             continue
 

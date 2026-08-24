@@ -1,0 +1,78 @@
+name: 📐 Corner & Booking Profiles (Weekly Full Rebuild)
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # 03:00 UTC every Sunday — full rebuild before the week starts
+  workflow_dispatch:
+    inputs:
+      league:
+        description: 'Single league ID to rebuild (leave blank for all)'
+        required: false
+        default: ''
+      last:
+        description: 'Last N fixtures per team (default: 12)'
+        required: false
+        default: '12'
+      season:
+        description: 'Season year'
+        required: false
+        default: '2026'
+
+jobs:
+  build-profiles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120   # full rebuild can take ~90min for 80+ leagues
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build all corner & booking profiles
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+        run: |
+          LAST="${{ github.event.inputs.last || '12' }}"
+          SEASON="${{ github.event.inputs.season || '2026' }}"
+
+          if [ -n "${{ github.event.inputs.league }}" ]; then
+            echo "Building profiles for league ${{ github.event.inputs.league }}..."
+            python build_corner_booking_profiles.py \
+              --league "${{ github.event.inputs.league }}" \
+              --season "$SEASON" \
+              --last "$LAST"
+          else
+            echo "Building profiles for ALL discovered leagues (last=$LAST fixtures)..."
+            python build_corner_booking_profiles.py \
+              --season "$SEASON" \
+              --last "$LAST"
+          fi
+
+      - name: Commit profile data
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add data/football/team_profiles_*.json
+          git diff --staged --quiet && echo "No profile changes to commit." || (
+            PROFILE_COUNT=$(git diff --staged --name-only | wc -l)
+            git commit -m "data: weekly corner/booking profile rebuild — ${PROFILE_COUNT} leagues updated $(date -u +'%Y-%m-%d')"
+            git push
+          )
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Profile files ==="
+          ls -lh data/football/team_profiles_*.json 2>/dev/null | wc -l | xargs -I{} echo "{} league profile(s) built"
+          ls -lh data/football/team_profiles_*.json 2>/dev/null | tail -10
