@@ -21,7 +21,7 @@ import time
 import argparse
 import glob
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 if sys.platform == "win32":
@@ -36,9 +36,18 @@ API_KEY  = os.getenv("API_BASKETBALL_KEY")
 BASE_URL = "https://v3.football.api-sports.io"
 HEADERS  = {"x-apisports-key": API_KEY}
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "football")
+CHECKPOINT_PATH = os.path.join(DATA_DIR, "_profiles_checkpoint.json")
 
 YELLOW_CARD_PTS = 10
 RED_CARD_PTS    = 25
+
+# Shared mutable call counter (module-level so safe_get can update it)
+_api_calls = {"count": 0, "budget": 4000}
+
+
+class BudgetExhausted(Exception):
+    """Raised when the API call budget is reached."""
+    pass
 
 
 def safe_get(endpoint, params, retries=2):
@@ -51,7 +60,16 @@ def safe_get(endpoint, params, retries=2):
                 time.sleep(10)
                 continue
             r.raise_for_status()
+            _api_calls["count"] += 1
+            # Hard budget cap — stop before exhausting the day's allowance
+            if _api_calls["count"] >= _api_calls["budget"]:
+                raise BudgetExhausted(
+                    f"API budget reached ({_api_calls['budget']} calls). "
+                    f"Remaining calls reserved for predictions."
+                )
             return r.json()
+        except BudgetExhausted:
+            raise   # propagate immediately
         except Exception as e:
             if attempt < retries:
                 time.sleep(2)
@@ -269,22 +287,149 @@ def get_todays_league_ids(date_str: str) -> list[int]:
     return league_ids
 
 
+# ─────────────────────────────────────────────────────────────
+# CHECKPOINT — resume interrupted builds
+# ─────────────────────────────────────────────────────────────
+
+def load_checkpoint() -> dict:
+    """
+    Returns the saved checkpoint, or empty dict if none.
+    Schema: {"completed_leagues": [int, ...], "started_at": str, "calls_used": int}
+    """
+    if not os.path.exists(CHECKPOINT_PATH):
+        return {}
+    try:
+        with open(CHECKPOINT_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def save_checkpoint(completed: list[int], calls_used: int) -> None:
+    """Persist progress so the next run can skip already-built leagues."""
+    data = {
+        "completed_leagues": completed,
+        "calls_used": calls_used,
+        "saved_at": datetime.utcnow().isoformat(),
+    }
+    with open(CHECKPOINT_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    print(f"  💾 Checkpoint saved — {len(completed)} league(s) done, {calls_used} API calls used.")
+
+
+def clear_checkpoint() -> None:
+    if os.path.exists(CHECKPOINT_PATH):
+        os.remove(CHECKPOINT_PATH)
+        print("  🗑️  Checkpoint cleared.")
+
+
+def profile_age_hours(league_id: int) -> float | None:
+    """
+    Returns how many hours ago the profile for league_id was built,
+    or None if no profile file exists yet.
+    """
+    path = os.path.join(DATA_DIR, f"team_profiles_{league_id}.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        built_at = data.get("built_at", "")
+        if not built_at:
+            return None
+        # Parse ISO timestamp (UTC)
+        dt = datetime.fromisoformat(built_at.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - dt).total_seconds() / 3600
+        return round(age, 1)
+    except Exception:
+        return None
+
+
+def print_status():
+    """Print a table of all existing profile files and their freshness."""
+    files = sorted(glob.glob(os.path.join(DATA_DIR, "team_profiles_*.json")))
+    if not files:
+        print("No profile files found in", DATA_DIR)
+        return
+
+    print(f"\n{'League':>8}  {'Teams':>6}  {'Built At (UTC)':>22}  {'Age':>8}  Status")
+    print("-" * 65)
+    now = datetime.now(timezone.utc)
+    for fpath in files:
+        lid = os.path.basename(fpath).replace("team_profiles_", "").replace(".json", "")
+        try:
+            with open(fpath, encoding="utf-8") as f:
+                data = json.load(f)
+            n_teams  = len(data.get("teams", {}))
+            built_at = data.get("built_at", "?")
+            age_h    = profile_age_hours(int(lid))
+            age_str  = f"{age_h:.1f}h ago" if age_h is not None else "unknown"
+            fresh    = "✅ fresh" if (age_h is not None and age_h < 25) else "⚠️  stale"
+            print(f"{lid:>8}  {n_teams:>6}  {built_at[:19]:>22}  {age_str:>8}  {fresh}")
+        except Exception as e:
+            print(f"{lid:>8}  (error reading: {e})")
+    print(f"\nTotal: {len(files)} league profile(s)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build corner & booking profiles for football teams.")
-    parser.add_argument("--league",     type=int,  help="Specific league ID to build")
-    parser.add_argument("--season",     type=int,  default=2026)
-    parser.add_argument("--last",       type=int,  default=0,
+    parser.add_argument("--league",        type=int,  help="Specific league ID to build")
+    parser.add_argument("--season",        type=int,  default=2026)
+    parser.add_argument("--last",          type=int,  default=0,
                         help="Last N completed fixtures per team (0 = auto: 5 for today-only, 12 for full)")
-    parser.add_argument("--today-only", action="store_true",
+    parser.add_argument("--today-only",    action="store_true",
                         help="Only build profiles for leagues with games today (fast, daily-safe)")
-    parser.add_argument("--date",       default="",
+    parser.add_argument("--date",          default="",
                         help="Target date for --today-only (YYYY-MM-DD, default: today UTC)")
+    parser.add_argument("--max-age-hours", type=float, default=0,
+                        help="Skip rebuild if profile is fresher than N hours (0 = auto: 23h daily, 160h weekly)")
+    parser.add_argument("--force",         action="store_true",
+                        help="Force rebuild even if profiles are fresh")
+    parser.add_argument("--status",        action="store_true",
+                        help="Print a table of existing profiles and their freshness, then exit")
+    parser.add_argument("--max-calls",     type=int,  default=4000,
+                        help="Max API calls before stopping gracefully (default: 4000, leaves ~3500 for predictions)")
+    parser.add_argument("--resume",        action="store_true",
+                        help="Resume from last checkpoint (skip already-completed leagues)")
+    parser.add_argument("--clear-checkpoint", action="store_true",
+                        help="Delete the saved checkpoint and exit")
     args = parser.parse_args()
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
+    # --status: just show what's on disk and exit
+    if args.status:
+        print_status()
+        # Also show checkpoint if present
+        ckpt = load_checkpoint()
+        if ckpt:
+            print(f"\n📌 Checkpoint found — {len(ckpt.get('completed_leagues', []))} leagues completed, "
+                  f"{ckpt.get('calls_used', 0)} calls used, saved at {ckpt.get('saved_at', '?')}")
+            print("   Run with --resume to continue from this point.")
+        return
+
+    if args.clear_checkpoint:
+        clear_checkpoint()
+        return
+
+    # Set the budget cap
+    _api_calls["budget"] = args.max_calls
+    print(f"API budget cap: {args.max_calls} calls")
+
     # Resolve how many fixtures to look back
     last = args.last if args.last > 0 else (5 if args.today_only else 12)
+
+    # Resolve max-age for staleness check
+    if args.force:
+        max_age_hours = 0.0
+    elif args.max_age_hours > 0:
+        max_age_hours = args.max_age_hours
+    elif args.today_only:
+        max_age_hours = 23.0
+    else:
+        max_age_hours = 160.0
 
     if args.league:
         league_ids = [args.league]
@@ -297,7 +442,6 @@ def main():
             return
 
     else:
-        # Full mode: auto-discover from existing stats files
         stat_files = glob.glob(os.path.join(DATA_DIR, "universal_*_stats.json"))
         league_ids = sorted(set(
             int(os.path.basename(f).split("_")[1])
@@ -307,17 +451,48 @@ def main():
         print(f"Auto-discovered {len(league_ids)} leagues from existing stats files.")
 
     if not league_ids:
-        print("No leagues to process. Use --league <id>, --today-only, or ensure stats files exist.")
+        print("No leagues to process.")
         return
 
-    print(f"Building profiles for {len(league_ids)} league(s) | last={last} fixtures per team")
+    # Load checkpoint — skip already-completed leagues if --resume
+    checkpoint = load_checkpoint() if args.resume else {}
+    already_done = set(checkpoint.get("completed_leagues", []))
+    if already_done:
+        before = len(league_ids)
+        league_ids = [lid for lid in league_ids if lid not in already_done]
+        print(f"Resuming: skipping {before - len(league_ids)} already-completed league(s) from checkpoint.")
+
+    print(f"Processing {len(league_ids)} league(s) | last={last} fixtures | "
+          f"max_age={max_age_hours}h | budget={args.max_calls} calls")
+
+    built = skipped = 0
+    completed_this_run: list[int] = list(already_done)
 
     for lid in league_ids:
+        # ── Staleness check ────────────────────────────────────
+        age = profile_age_hours(lid)
+        if not args.force and max_age_hours > 0 and age is not None and age < max_age_hours:
+            print(f"  League {lid:>6} — SKIP (profile is {age:.1f}h old, threshold={max_age_hours}h)")
+            skipped += 1
+            completed_this_run.append(lid)  # treat fresh ones as done for checkpoint
+            continue
+
+        age_str = f"{age:.1f}h old" if age is not None else "no existing profile"
         print(f"\n{'='*60}")
-        print(f"  League {lid}")
+        print(f"  League {lid}  [{age_str} → rebuilding]  "
+              f"[API calls so far: {_api_calls['count']}/{args.max_calls}]")
         print(f"{'='*60}")
 
-        profiles = build_profiles_for_league(lid, args.season, last)
+        try:
+            profiles = build_profiles_for_league(lid, args.season, last)
+        except BudgetExhausted as e:
+            print(f"\n⚠️  {e}")
+            print(f"   Stopping after {_api_calls['count']} calls. "
+                  f"{len(completed_this_run)} league(s) completed this session.")
+            save_checkpoint(completed_this_run, _api_calls["count"])
+            print("   Run again with --resume to continue from here.")
+            break
+
         if not profiles:
             continue
 
@@ -329,9 +504,18 @@ def main():
                 "built_at":  datetime.utcnow().isoformat(),
                 "teams":     profiles
             }, f, indent=2, ensure_ascii=False)
-        print(f"  ✅ Saved {len(profiles)} team profiles → {out_path}")
+        print(f"  ✅ Saved {len(profiles)} team profiles → {out_path}  "
+              f"[{_api_calls['count']} calls used]")
+        built += 1
+        completed_this_run.append(lid)
 
-    print("\n✅ All profiles built!")
+    else:
+        # Loop completed without hitting budget — clear checkpoint
+        if os.path.exists(CHECKPOINT_PATH):
+            clear_checkpoint()
+
+    print(f"\n✅ Done — {built} built, {skipped} skipped (fresh). "
+          f"Total API calls this run: {_api_calls['count']}")
 
 
 if __name__ == "__main__":
