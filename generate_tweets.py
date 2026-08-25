@@ -354,7 +354,9 @@ def main():
     parser.add_argument("--top-n",     type=int, default=5,
                         help="Number of picks for Posts 1 and 2 (default 5)")
     parser.add_argument("--output",    default=None,
-                        help="Save posts to a text file instead of printing")
+                        help="Save posts to a specific file path")
+    parser.add_argument("--save",      action="store_true",
+                        help="Auto-save posts to tweets/tweets_YYYY-MM-DD.txt (always also prints to console)")
     parser.add_argument("--post",      action="store_true",
                         help="Auto-post to X via API (requires X_API_* env vars)")
     args = parser.parse_args()
@@ -389,15 +391,24 @@ def main():
     for title, content in posts:
         block = f"{'=' * 60}\n{title}\n{'=' * 60}\n\n{content}"
         output_lines.append(block)
-
     full_output = ("\n" + separator).join(output_lines)
 
+    # Always print to console
+    print("\n" + full_output)
+
+    # Save to file if --output or --save specified
     if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
+        save_path = args.output
+        with open(save_path, "w", encoding="utf-8") as f:
             f.write(full_output)
-        print(f"\nPosts saved to {args.output}")
-    else:
-        print("\n" + full_output)
+        print(f"\n✅ Posts saved to {save_path}")
+    elif args.save:
+        tweets_dir = os.path.join(os.path.dirname(__file__), "tweets")
+        os.makedirs(tweets_dir, exist_ok=True)
+        save_path = os.path.join(tweets_dir, f"tweets_{args.date}.txt")
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write(full_output)
+        print(f"\n✅ Posts saved to {save_path}")
 
     # ── X API auto-posting (optional) ────────────────────────────────────────
     if args.post:
