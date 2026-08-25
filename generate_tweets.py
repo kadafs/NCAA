@@ -65,13 +65,26 @@ def get_btts_market_odds(p):
     return _safe(mo.get("btts_yes_odds") or mo.get("btts_market_prob"))
 
 
+def real_market_edge(p):
+    """
+    True edge = model BTTS-YES probability minus implied probability from
+    actual bookmaker BTTS-YES odds.  Falls back to stored btts_edge if
+    no market odds are available (e.g. smaller leagues).
+    """
+    mkt_odds = get_btts_market_odds(p)
+    if mkt_odds > 1.0:
+        implied = (1 / mkt_odds) * 100      # e.g. 1/1.25 = 80%
+        return round(_safe(p.get("btts_prob", 0)) - implied, 1)
+    # Fallback: stored edge (calculated against 0.52 baseline)
+    return _safe(p.get("btts_edge", 0))
+
+
 def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS):
-    """True if game has an active BTTS play with positive edge and decent odds."""
+    """True if game has an active BTTS YES play with real positive edge and decent odds."""
     decision = p.get("btts_decision", "")
     if decision not in BTTS_PLAY_DECISIONS:
         return False
-    edge = _safe(p.get("btts_edge", 0))
-    if edge <= 0:
+    if real_market_edge(p) <= 0:
         return False
     mkt_odds = get_btts_market_odds(p)
     return mkt_odds >= min_odds
@@ -103,9 +116,9 @@ def composite_score(p, min_odds=DEFAULT_MIN_ODDS):
     """
     score = 0.0
 
-    # BTTS signal (up to 50 pts)
+    # BTTS signal (up to 50 pts) — uses real market edge
     if p.get("btts_decision") in BTTS_PLAY_DECISIONS:
-        edge = _safe(p.get("btts_edge", 0))
+        edge = real_market_edge(p)
         score += max(0, edge) * 2.5   # e.g. edge=10 → +25 pts
 
     # 1X2 dominance signal (up to 40 pts)
@@ -136,9 +149,9 @@ def shorten(name, max_len=22):
 # ── Post Generators ───────────────────────────────────────────────────────────
 
 def post_btts_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5):
-    """Post 1 — Top N BTTS value picks ranked by edge."""
+    """Post 1 — Top N BTTS value picks ranked by real market edge."""
     candidates = [p for p in preds if is_value_btts(p, min_odds)]
-    candidates.sort(key=lambda p: _safe(p.get("btts_edge", 0)), reverse=True)
+    candidates.sort(key=lambda p: real_market_edge(p), reverse=True)
     picks = candidates[:n]
 
     date_str = datetime.now().strftime("%d %b %Y")
@@ -150,22 +163,19 @@ def post_btts_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5):
     for i, p in enumerate(picks, 1):
         ht = shorten(p["home_team"])
         at = shorten(p["away_team"])
-        label  = btts_display(p)
-        prob   = _safe(p.get("btts_prob", 0))
-        if "NO" in label:
-            conf_prob = round(btts_no_prob(p), 1)
-        else:
-            conf_prob = round(prob, 1)
-        edge   = _safe(p.get("btts_edge", 0))
-        league = p.get("league", "")
-        kick   = str(p.get("kickoff", ""))[-5:]   # HH:MM portion
-        icon   = "🟢" if "STRONG" in p.get("btts_decision","") else "🔵"
+        label    = btts_display(p)
+        prob     = round(_safe(p.get("btts_prob", 0)), 1)
+        edge     = real_market_edge(p)
+        league   = p.get("league", "")
+        kick     = str(p.get("kickoff", ""))[-5:]   # HH:MM portion
+        icon     = "🟢" if "STRONG" in p.get("btts_decision", "") else "🔵"
         mkt_odds = get_btts_market_odds(p)
         odds_str = f" | Odds: {mkt_odds:.2f}" if mkt_odds > 1.0 else ""
+        edge_str = f"+{edge:.1f}%" if edge > 0 else f"{edge:.1f}%"
 
         lines.append(
             f"{icon} {i}. {ht} vs {at}\n"
-            f"   {label} | Model: {conf_prob}% | Edge: +{edge:.1f}%{odds_str}\n"
+            f"   {label} | Model: {prob}% | Edge: {edge_str}{odds_str}\n"
             f"   {league} | KO: {kick}"
         )
 
@@ -198,10 +208,10 @@ def post_composite_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5):
         decision = p.get("btts_decision", "")
         side, prob_1x2, odds_1x2 = best_1x2(p)
 
-        btts_edge_val = _safe(p.get("btts_edge", 0))
-        has_btts_play = decision in BTTS_PLAY_DECISIONS and btts_edge_val > 0
+        btts_real_edge = real_market_edge(p)
+        has_btts_play = decision in BTTS_PLAY_DECISIONS and btts_real_edge > 0
 
-        if has_btts_play and btts_edge_val >= (prob_1x2 - 65) * 0.5:
+        if has_btts_play and btts_real_edge >= (prob_1x2 - 65) * 0.5:
             # BTTS is the stronger signal
             label = btts_display(p)
             prob  = _safe(p.get("btts_prob", 0)) if "YES" in label else btts_no_prob(p)
@@ -302,29 +312,53 @@ def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_M
 
 # ── Results Post (Yesterday's grading) ───────────────────────────────────────
 
-def post_results(preds_yesterday):
-    """Post 4 — Grade yesterday's picks (run next morning with previous day's JSON)."""
-    graded  = [p for p in preds_yesterday if p.get("actual_btts") is not None]
-    if not graded:
+def post_results(preds_yesterday, yesterday_date_str=None):
+    """Post 4 — Grade yesterday's BTTS YES picks with per-game detail."""
+    # Only grade BTTS YES plays that have been resolved
+    plays = [
+        p for p in preds_yesterday
+        if p.get("btts_decision") in BTTS_PLAY_DECISIONS
+        and p.get("actual_btts") is not None
+    ]
+    if not plays:
         return None
 
-    correct = sum(1 for p in graded
-                  if p.get("btts_decision") in BTTS_PLAY_DECISIONS
-                  and (
-                      ("YES" in p["btts_decision"] and p["actual_btts"]) or
-                      ("NO"  in p["btts_decision"] and not p["actual_btts"])
-                  ))
-    total   = len(graded)
-    pct     = round(correct / total * 100) if total else 0
+    wins   = [p for p in plays if p.get("actual_btts") is True]
+    losses = [p for p in plays if p.get("actual_btts") is False]
+    total  = len(plays)
+    correct = len(wins)
+    pct    = round(correct / total * 100) if total else 0
 
     icon = "🟢" if pct >= 60 else ("🟡" if pct >= 50 else "🔴")
-    date_str = (datetime.now()).strftime("%d %b %Y")
+    date_label = yesterday_date_str or "Yesterday"
 
     lines = [
-        f"📋 RESULTS — {date_str}",
-        f"Yesterday's model performance:\n",
-        f"{icon} BTTS: {correct}/{total} correct ({pct}%)\n",
-        f"Tracking record 👉 {SITE_URL}",
+        f"📋 BTTS RESULTS — {date_label}",
+        f"{icon} {correct}/{total} correct ({pct}%)\n",
+    ]
+
+    if wins:
+        lines.append("✅ Won:")
+        for p in wins:
+            ht = shorten(p["home_team"], 20)
+            at = shorten(p["away_team"], 20)
+            hg = p.get("actual_home_goals", "?")
+            ag = p.get("actual_away_goals", "?")
+            prob = _safe(p.get("btts_prob", 0))
+            lines.append(f"  ✅ {ht} vs {at} — {hg}-{ag} ({prob:.0f}%)")
+
+    if losses:
+        lines.append("\n❌ Lost:")
+        for p in losses:
+            ht = shorten(p["home_team"], 20)
+            at = shorten(p["away_team"], 20)
+            hg = p.get("actual_home_goals", "?")
+            ag = p.get("actual_away_goals", "?")
+            prob = _safe(p.get("btts_prob", 0))
+            lines.append(f"  ❌ {ht} vs {at} — {hg}-{ag} ({prob:.0f}%)")
+
+    lines += [
+        f"\nFull record 👉 {SITE_URL}",
         "#Football #Results #Accountability"
     ]
     return "\n".join(lines)
@@ -381,9 +415,12 @@ def main():
     if args.yesterday:
         try:
             y_preds = load_predictions(args.yesterday)
-            post4   = post_results(y_preds)
+            from datetime import datetime as _dt
+            y_label = _dt.strptime(args.yesterday, "%Y-%m-%d").strftime("%d %b %Y")
+            post4   = post_results(y_preds, yesterday_date_str=y_label)
             if post4:
                 posts.insert(0, ("POST 4 — Yesterday's Results (post first)", post4))
+
         except FileNotFoundError as e:
             print(f"  [warn] {e}")
 
