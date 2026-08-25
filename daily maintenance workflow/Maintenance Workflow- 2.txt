@@ -21,6 +21,12 @@ python mlb/grade_td_reports.py - grader script for MLB (Gatekeeper picks only)
 
 
 ##Football
+python generate_tweets.py --save
+python generate_tweets.py --date 2026-08-25        # specific date
+python generate_tweets.py --threshold 75           # raise floor to 75%
+python generate_tweets.py --min-odds 1.15          # stricter value filter
+python generate_tweets.py --output tweets.txt      # save to file
+python generate_tweets.py --post                   # auto-post via X API
 
  Grade Football 
 python grade_football.py
