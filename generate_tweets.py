@@ -39,33 +39,59 @@ DATA_DIR   = os.path.join(os.path.dirname(__file__), "data", "football")
 BTTS_PLAY_DECISIONS = {"PLAY YES", "[STRONG] PLAY YES"}
 
 # Minimum odds for a pick to be "interesting" on social media.
-# Filters out 1.02 sure-things that read as noise.
 DEFAULT_MIN_ODDS  = 1.10
-DEFAULT_THRESHOLD = 70   # % confidence floor for Post 3
+DEFAULT_THRESHOLD = 70   # % confidence floor — main Poisson probability gate
+
+# Triple-filter thresholds
+LEAGUE_BTTS_FLOOR  = 50  # league safety gate: at least half of games score in both nets
+TEAM_BTTS_THRESHOLD = 55  # model accuracy required when team has enough history
+TEAM_MIN_PLAYS      = 5   # minimum graded predictions before team filter activates
 
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
 def load_league_leaderboard():
     """
-    Load league_leaderboard.json and return a dict keyed by league_id
-    so we can quickly look up a league's historical BTTS hit rate.
+    Load league_leaderboard.json → dict keyed by league_id.
+    Records historical BTTS rate across ALL games in each league.
     """
     path = os.path.join(DATA_DIR, "league_leaderboard.json")
     if not os.path.exists(path):
-        return {}   # graceful degradation — filter still works on model prob alone
+        return {}
     with open(path, encoding="utf-8") as f:
         data = json.load(f)
-    entries = data.get("leaderboard", [])
-    return {e["league_id"]: e for e in entries if "league_id" in e}
+    return {e["league_id"]: e for e in data.get("leaderboard", []) if "league_id" in e}
 
 
-def league_btts_hit_rate(league_id, leaderboard):
-    """Return a league's historical BTTS hit rate (0-100), or None if unknown."""
-    entry = leaderboard.get(league_id)
-    if entry:
-        return entry.get("btts_hit_rate")
-    return None
+def load_team_leaderboard():
+    """
+    Load football_leaderboard.json → dict keyed by (team_name_lower, league_id).
+    Records our model's BTTS prediction accuracy per team.
+    """
+    path = os.path.join(DATA_DIR, "football_leaderboard.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    result = {}
+    for e in data.get("leaderboard", []):
+        name = (e.get("name") or "").strip().lower()
+        lid  = e.get("league_id")
+        if name and lid is not None:
+            result[(name, lid)] = e
+    return result
+
+
+def league_btts_hit_rate(league_id, league_lb):
+    """Return league historical BTTS hit rate (0–100), or None if unknown."""
+    entry = league_lb.get(league_id)
+    return entry.get("btts_hit_rate") if entry else None
+
+
+def team_btts_entry(team_name, league_id, team_lb):
+    """Return a team's leaderboard entry, or None if not tracked."""
+    key = (team_name.strip().lower(), league_id)
+    return team_lb.get(key)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -103,31 +129,52 @@ def real_market_edge(p):
     return _safe(p.get("btts_edge", 0))
 
 
-def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS, leaderboard=None, league_threshold=0):
+def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS,
+                  league_lb=None, team_lb=None, model_threshold=DEFAULT_THRESHOLD):
     """
-    True if game passes the same double filter as the dashboard BTTS % control:
-      1. League historical BTTS hit rate >= league_threshold  (structural evidence)
-      2. Model BTTS-YES probability >= league_threshold        (game-specific signal)
-      3. Positive real market edge against bookmaker odds
-      4. Market odds >= min_odds (interesting for social media)
+    Triple filter — a pick must pass ALL three:
+
+    1. LEAGUE safety gate (league_btts_hit_rate >= LEAGUE_BTTS_FLOOR):
+       Ensures the game is in a structurally goal-friendly league.
+       Uses a low 50% floor — just a sanity check, not the main signal.
+
+    2. POISSON model probability (btts_prob >= model_threshold):
+       The primary signal — the mathematical prediction for this exact game.
+
+    3. TEAM model accuracy (btts_hit_rate >= TEAM_BTTS_THRESHOLD):
+       Confirms our model has a proven track record on this team.
+       Gracefully SKIPPED if either team has fewer than TEAM_MIN_PLAYS graded.
+
+    Plus: positive real market edge and odds >= min_odds.
     """
     decision = p.get("btts_decision", "")
     if decision not in BTTS_PLAY_DECISIONS:
         return False
 
-    # Double filter (mirrors dashboard behaviour)
-    if league_threshold > 0 and leaderboard is not None:
-        lid = p.get("league_id")
-        hit_rate = league_btts_hit_rate(lid, leaderboard) if lid else None
-        if hit_rate is None or hit_rate < league_threshold:
-            return False   # league doesn't have a high-scoring history
-        if _safe(p.get("btts_prob", 0)) < league_threshold:
-            return False   # model doesn't confirm it for this game
+    lid = p.get("league_id")
 
+    # ── Filter 1: League safety gate (>= 50%) ───────────────────────────
+    if league_lb is not None and lid:
+        rate = league_btts_hit_rate(lid, league_lb)
+        if rate is not None and rate < LEAGUE_BTTS_FLOOR:
+            return False
+
+    # ── Filter 2: Poisson model probability (main gate) ─────────────────
+    if _safe(p.get("btts_prob", 0)) < model_threshold:
+        return False
+
+    # ── Filter 3: Team model accuracy (only when >= TEAM_MIN_PLAYS) ─────
+    if team_lb is not None and lid:
+        for team_key in [p.get("home_team", ""), p.get("away_team", "")]:
+            entry = team_btts_entry(team_key, lid, team_lb)
+            if entry and entry.get("btts_plays", 0) >= TEAM_MIN_PLAYS:
+                if _safe(entry.get("btts_hit_rate", 100)) < TEAM_BTTS_THRESHOLD:
+                    return False   # model has a poor track record for this team
+
+    # ── Market edge & odds ───────────────────────────────────────
     if real_market_edge(p) <= 0:
         return False
-    mkt_odds = get_btts_market_odds(p)
-    return mkt_odds >= min_odds
+    return get_btts_market_odds(p) >= min_odds
 
 
 def btts_display(p):
@@ -188,11 +235,11 @@ def shorten(name, max_len=22):
 
 # ── Post Generators ───────────────────────────────────────────────────────────
 
-def post_btts_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5, leaderboard=None, league_threshold=0):
-    """Post 1 — Top N BTTS value picks ranked by real market edge (double-filtered)."""
-    candidates = [p for p in preds if is_value_btts(p, min_odds,
-                                                     leaderboard=leaderboard,
-                                                     league_threshold=league_threshold)]
+def post_btts_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5, league_lb=None, team_lb=None, model_threshold=DEFAULT_THRESHOLD):
+    """Post 1 — Top N BTTS value picks ranked by real market edge (triple-filtered)."""
+    candidates = [p for p in preds if is_value_btts(
+        p, min_odds, league_lb=league_lb, team_lb=team_lb, model_threshold=model_threshold
+    )]
     candidates.sort(key=lambda p: real_market_edge(p), reverse=True)
     picks = candidates[:n]
 
@@ -310,12 +357,14 @@ def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_M
         if away_prob >= threshold and away_odds >= min_odds:
             away_wins.append((away_prob, row("AWAY", away_prob, away_odds)))
 
-        # BTTS YES: apply the same double filter (league hit rate + model prob)
+        # BTTS YES: league safety gate (>= 50%) + model prob >= threshold
         if b_yes_prob >= threshold:
             lid = p.get("league_id")
-            league_rate = league_btts_hit_rate(lid, leaderboard) if (leaderboard and lid) else None
-            if league_rate is None or league_rate >= threshold:
-                btts_yes.append((b_yes_prob, row("BTTS YES", b_yes_prob, 0)))
+            if leaderboard and lid:
+                league_rate = league_btts_hit_rate(lid, leaderboard)
+                if league_rate is not None and league_rate < LEAGUE_BTTS_FLOOR:
+                    continue    # league too defensive — skip
+            btts_yes.append((b_yes_prob, row("BTTS YES", b_yes_prob, 0)))
 
         if draw_prob >= threshold and draw_odds >= min_odds:
             draws.append((draw_prob, row("DRAW", draw_prob, draw_odds)))
@@ -447,16 +496,18 @@ def main():
     preds = load_predictions(args.date)
     print(f"  {len(preds)} predictions loaded.")
 
-    leaderboard = load_league_leaderboard()
-    print(f"  {len(leaderboard)} leagues in leaderboard.")
+    league_lb = load_league_leaderboard()
+    team_lb   = load_team_leaderboard()
+    print(f"  {len(league_lb)} leagues | {len(team_lb)} teams in leaderboard.")
 
     separator = "\n" + "─" * 60 + "\n"
 
     post1 = post_btts_top5(preds,        min_odds=args.min_odds, n=args.top_n,
-                           leaderboard=leaderboard, league_threshold=args.threshold)
+                           league_lb=league_lb, team_lb=team_lb,
+                           model_threshold=args.threshold)
     post2 = post_composite_top5(preds,   min_odds=args.min_odds, n=args.top_n)
     post3 = post_confidence_board(preds, threshold=args.threshold, min_odds=args.min_odds,
-                                  leaderboard=leaderboard)
+                                  leaderboard=league_lb)
 
     posts = [
         ("POST 3 — High Confidence Board (post first, highest reach)", post3),
