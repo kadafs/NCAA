@@ -43,9 +43,9 @@ DEFAULT_MIN_ODDS  = 1.10
 DEFAULT_THRESHOLD = 70   # % confidence floor — main Poisson probability gate
 
 # Triple-filter thresholds
-LEAGUE_BTTS_FLOOR  = 50  # league safety gate: at least half of games score in both nets
-TEAM_BTTS_THRESHOLD = 60  # model accuracy required when team has enough history
-TEAM_MIN_PLAYS      = 5   # minimum graded predictions before team filter activates
+LEAGUE_BTTS_FLOOR   = 55  # league safety gate: structural goal-friendliness (>50% of games score both ways)
+TEAM_BTTS_THRESHOLD = 70  # team model accuracy gate: matches Poisson threshold — model must be proven right
+TEAM_MIN_PLAYS      = 8   # min graded predictions before team filter activates (~statistically meaningful)
 
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────
