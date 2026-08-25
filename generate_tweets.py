@@ -35,8 +35,8 @@ if sys.platform == "win32":
 SITE_URL   = "blowrout.com"
 DATA_DIR   = os.path.join(os.path.dirname(__file__), "data", "football")
 
-# BTTS decisions the model considers an active play
-BTTS_PLAY_DECISIONS = {"PLAY YES", "PLAY NO", "[STRONG] PLAY NO", "[STRONG] PLAY YES"}
+# BTTS decisions the model considers an active YES play
+BTTS_PLAY_DECISIONS = {"PLAY YES", "[STRONG] PLAY YES"}
 
 # Minimum odds for a pick to be "interesting" on social media.
 # Filters out 1.02 sure-things that read as noise.
@@ -60,14 +60,9 @@ def btts_no_prob(p):
 
 
 def get_btts_market_odds(p):
-    """Return market odds for whichever side the model backs."""
-    decision = p.get("btts_decision", "")
+    """Return market odds for BTTS YES."""
     mo = p.get("market_odds") or {}
-    if "YES" in decision:
-        return _safe(mo.get("btts_yes_odds") or mo.get("btts_market_prob"))
-    elif "NO" in decision:
-        return _safe(mo.get("btts_no_odds"))
-    return 0.0
+    return _safe(mo.get("btts_yes_odds") or mo.get("btts_market_prob"))
 
 
 def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS):
@@ -83,9 +78,8 @@ def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS):
 
 
 def btts_display(p):
-    """Return 'BTTS YES' or 'BTTS NO' label."""
-    decision = p.get("btts_decision", "")
-    return "BTTS NO" if "NO" in decision else "BTTS YES"
+    """Always BTTS YES (NO plays are filtered out)."""
+    return "BTTS YES"
 
 
 def best_1x2(p):
@@ -246,7 +240,6 @@ def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_M
         away_prob = _safe(p.get("away_win_prob", 0))
         draw_prob = _safe(p.get("draw_prob_1x2", 0))
         b_yes_prob = _safe(p.get("btts_prob", 0))
-        b_no_prob  = btts_no_prob(p)
         home_odds  = _safe(p.get("home_win_odds"))
         away_odds  = _safe(p.get("away_win_odds"))
         draw_odds  = _safe(p.get("draw_odds"))
@@ -266,8 +259,6 @@ def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_M
             away_wins.append((away_prob, row("AWAY", away_prob, away_odds)))
         if b_yes_prob >= threshold:
             btts_yes.append((b_yes_prob, row("BTTS YES", b_yes_prob, 0)))
-        if b_no_prob >= threshold:
-            btts_no.append((b_no_prob, row("BTTS NO", b_no_prob, 0)))
         if draw_prob >= threshold and draw_odds >= min_odds:
             draws.append((draw_prob, row("DRAW", draw_prob, draw_odds)))
 

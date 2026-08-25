@@ -223,13 +223,13 @@ def main():
     x12_wins  = sum(1 for g, _ in x12_results if g == "WIN")
     x12_total = sum(1 for g, _ in x12_results if g is not None)
 
-    btts_played = [p for p in completed if p.get("btts_decision") in ("PLAY YES", "PLAY NO")]
+    btts_played = [p for p in completed if p.get("btts_decision") in ("PLAY YES", "[STRONG] PLAY YES")]
     btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
     btts_total  = len(btts_played)
 
     print(f"\n  [---] Grade Summary ({date})")
     print(f"     1X2:  {x12_wins}/{x12_total} correct" + (f"  ({100*x12_wins//x12_total}%)" if x12_total else ""))
-    print(f"     BTTS: {btts_wins}/{btts_total} wins"  + (f"  ({100*btts_wins//btts_total}%)" if btts_total else ""))
+    print(f"     BTTS YES: {btts_wins}/{btts_total} wins"  + (f"  ({100*btts_wins//btts_total}%)" if btts_total else ""))
 
     if args.dry_run:
         print("\n  [DRY RUN] — no changes saved.")
