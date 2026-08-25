@@ -249,6 +249,13 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
         print(f"  No teams found for league {league_id}")
         return {}
 
+    # Preflight: one call to check if ANY completed fixtures exist for this league.
+    # Saves N credits (one per team) for empty/early-season leagues.
+    preflight = safe_get("/fixtures", {"league": league_id, "season": season, "status": "FT", "last": 1})
+    if not preflight.get("response"):
+        print(f"  League {league_id}: no FT fixtures yet — skipping all {len(teams)} teams (saves {len(teams)} credits)")
+        return {}
+
     profiles = {}
     print(f"  Building profiles for {len(teams)} teams in league {league_id}...")
 

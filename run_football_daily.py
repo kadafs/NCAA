@@ -52,6 +52,7 @@ API_KEY  = os.getenv("API_BASKETBALL_KEY")          # Same key covers api-sports
 BASE_URL = "https://v3.football.api-sports.io"
 HEADERS  = {"x-apisports-key": API_KEY}
 ET_TZ    = timezone.utc
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "football")
 
 # Stats cache max age in seconds
 # Team stats are valid for a full season week - no need to re-fetch daily
