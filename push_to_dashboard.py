@@ -79,8 +79,8 @@ def copy_sport_data(sport: str, date_filter: str | None = None):
             print(f"  ⚠️ No file found for date {date_filter} in {src_dir}")
             return []
     else:
-        # Copy up to 14 recent files to ensure graded past games sync over
-        files_to_copy = all_files[:14]
+        # Copy up to 7 recent files to ensure graded past games sync over
+        files_to_copy = all_files[:7]
 
     copied = []
     for src_file in files_to_copy:
@@ -100,7 +100,7 @@ def copy_sport_data(sport: str, date_filter: str | None = None):
     return copied
 
 
-def cleanup_old_files(sport: str, keep_days: int = 14):
+def cleanup_old_files(sport: str, keep_days: int = 7):
     """
     Remove universal_predictions_*.json files older than keep_days
     from the dashboard repo to prevent git history from ballooning.
@@ -127,6 +127,41 @@ def cleanup_old_files(sport: str, keep_days: int = 14):
         print(f"  🗑️  Cleaned up {len(removed)} old {sport} file(s): {', '.join(removed)}")
     else:
         print(f"  ✅ No old {sport} files to clean up (keeping last {keep_days} days).")
+
+
+def trim_dates_index(sport: str, keep_days: int = 7):
+    """
+    Trim the dates_index.json to keep only the last keep_days dates,
+    preventing the date selector from growing indefinitely.
+    Also removes entries for which no prediction file exists.
+    """
+    import json
+    dest_dir  = DASHBOARD_ROOT / "public" / "data" / sport
+    idx_path  = dest_dir / "dates_index.json"
+    if not idx_path.exists():
+        return
+
+    with open(idx_path, encoding="utf-8") as f:
+        idx = json.load(f)
+
+    dates = idx.get("dates", [])
+    if not dates or not isinstance(dates[0], dict):
+        return   # unexpected format — skip
+
+    # Keep only dates that still have a corresponding prediction file
+    available = {f.stem.replace("universal_predictions_", "") for f in dest_dir.glob("universal_predictions_*.json")}
+    dates_filtered = [d for d in dates if d.get("date") in available]
+
+    # Sort descending and keep last keep_days
+    dates_trimmed = sorted(dates_filtered, key=lambda d: d["date"], reverse=True)[:keep_days]
+
+    if len(dates_trimmed) != len(dates):
+        idx["dates"] = dates_trimmed
+        with open(idx_path, "w", encoding="utf-8") as f:
+            json.dump(idx, f, indent=2)
+        print(f"  📅 dates_index trimmed: {len(dates)} → {len(dates_trimmed)} dates")
+    else:
+        print(f"  ✅ dates_index OK ({len(dates_trimmed)} dates).")
 
 
 def git_commit_and_push(copied_files: dict[str, list[str]], dashboard_root: Path):
@@ -209,7 +244,8 @@ def main():
         print(f"--- {sport.upper()} ---")
         copied = copy_sport_data(sport, date_filter=args.date)
         all_copied[sport] = copied
-        cleanup_old_files(sport, keep_days=14)
+        cleanup_old_files(sport, keep_days=7)
+        trim_dates_index(sport, keep_days=7)
         print()
 
     if args.no_push:
