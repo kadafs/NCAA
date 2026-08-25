@@ -44,6 +44,30 @@ DEFAULT_MIN_ODDS  = 1.10
 DEFAULT_THRESHOLD = 70   # % confidence floor for Post 3
 
 
+# ── Leaderboard ───────────────────────────────────────────────────────────────
+
+def load_league_leaderboard():
+    """
+    Load league_leaderboard.json and return a dict keyed by league_id
+    so we can quickly look up a league's historical BTTS hit rate.
+    """
+    path = os.path.join(DATA_DIR, "league_leaderboard.json")
+    if not os.path.exists(path):
+        return {}   # graceful degradation — filter still works on model prob alone
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    entries = data.get("leaderboard", [])
+    return {e["league_id"]: e for e in entries if "league_id" in e}
+
+
+def league_btts_hit_rate(league_id, leaderboard):
+    """Return a league's historical BTTS hit rate (0-100), or None if unknown."""
+    entry = leaderboard.get(league_id)
+    if entry:
+        return entry.get("btts_hit_rate")
+    return None
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _safe(val, default=0.0):
@@ -79,11 +103,27 @@ def real_market_edge(p):
     return _safe(p.get("btts_edge", 0))
 
 
-def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS):
-    """True if game has an active BTTS YES play with real positive edge and decent odds."""
+def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS, leaderboard=None, league_threshold=0):
+    """
+    True if game passes the same double filter as the dashboard BTTS % control:
+      1. League historical BTTS hit rate >= league_threshold  (structural evidence)
+      2. Model BTTS-YES probability >= league_threshold        (game-specific signal)
+      3. Positive real market edge against bookmaker odds
+      4. Market odds >= min_odds (interesting for social media)
+    """
     decision = p.get("btts_decision", "")
     if decision not in BTTS_PLAY_DECISIONS:
         return False
+
+    # Double filter (mirrors dashboard behaviour)
+    if league_threshold > 0 and leaderboard is not None:
+        lid = p.get("league_id")
+        hit_rate = league_btts_hit_rate(lid, leaderboard) if lid else None
+        if hit_rate is None or hit_rate < league_threshold:
+            return False   # league doesn't have a high-scoring history
+        if _safe(p.get("btts_prob", 0)) < league_threshold:
+            return False   # model doesn't confirm it for this game
+
     if real_market_edge(p) <= 0:
         return False
     mkt_odds = get_btts_market_odds(p)
@@ -148,9 +188,11 @@ def shorten(name, max_len=22):
 
 # ── Post Generators ───────────────────────────────────────────────────────────
 
-def post_btts_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5):
-    """Post 1 — Top N BTTS value picks ranked by real market edge."""
-    candidates = [p for p in preds if is_value_btts(p, min_odds)]
+def post_btts_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5, leaderboard=None, league_threshold=0):
+    """Post 1 — Top N BTTS value picks ranked by real market edge (double-filtered)."""
+    candidates = [p for p in preds if is_value_btts(p, min_odds,
+                                                     leaderboard=leaderboard,
+                                                     league_threshold=league_threshold)]
     candidates.sort(key=lambda p: real_market_edge(p), reverse=True)
     picks = candidates[:n]
 
@@ -241,21 +283,21 @@ def post_composite_top5(preds, min_odds=DEFAULT_MIN_ODDS, n=5):
     return "\n".join(lines)
 
 
-def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_MIN_ODDS):
-    """Post 3 — All games where any market >= threshold%."""
+def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_MIN_ODDS, leaderboard=None):
+    """Post 3 — All games where any market >= threshold%, with BTTS YES double-filtered."""
     home_wins, away_wins, btts_yes, btts_no, draws = [], [], [], [], []
 
     for p in preds:
-        home_prob = _safe(p.get("home_win_prob", 0))
-        away_prob = _safe(p.get("away_win_prob", 0))
-        draw_prob = _safe(p.get("draw_prob_1x2", 0))
+        home_prob  = _safe(p.get("home_win_prob", 0))
+        away_prob  = _safe(p.get("away_win_prob", 0))
+        draw_prob  = _safe(p.get("draw_prob_1x2", 0))
         b_yes_prob = _safe(p.get("btts_prob", 0))
         home_odds  = _safe(p.get("home_win_odds"))
         away_odds  = _safe(p.get("away_win_odds"))
         draw_odds  = _safe(p.get("draw_odds"))
 
-        ht = shorten(p["home_team"])
-        at = shorten(p["away_team"])
+        ht     = shorten(p["home_team"])
+        at     = shorten(p["away_team"])
         league = p.get("league", "")
         kick   = str(p.get("kickoff", ""))[-5:]
 
@@ -267,8 +309,14 @@ def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_M
             home_wins.append((home_prob, row("HOME", home_prob, home_odds)))
         if away_prob >= threshold and away_odds >= min_odds:
             away_wins.append((away_prob, row("AWAY", away_prob, away_odds)))
+
+        # BTTS YES: apply the same double filter (league hit rate + model prob)
         if b_yes_prob >= threshold:
-            btts_yes.append((b_yes_prob, row("BTTS YES", b_yes_prob, 0)))
+            lid = p.get("league_id")
+            league_rate = league_btts_hit_rate(lid, leaderboard) if (leaderboard and lid) else None
+            if league_rate is None or league_rate >= threshold:
+                btts_yes.append((b_yes_prob, row("BTTS YES", b_yes_prob, 0)))
+
         if draw_prob >= threshold and draw_odds >= min_odds:
             draws.append((draw_prob, row("DRAW", draw_prob, draw_odds)))
 
@@ -399,11 +447,16 @@ def main():
     preds = load_predictions(args.date)
     print(f"  {len(preds)} predictions loaded.")
 
+    leaderboard = load_league_leaderboard()
+    print(f"  {len(leaderboard)} leagues in leaderboard.")
+
     separator = "\n" + "─" * 60 + "\n"
 
-    post1 = post_btts_top5(preds,        min_odds=args.min_odds, n=args.top_n)
+    post1 = post_btts_top5(preds,        min_odds=args.min_odds, n=args.top_n,
+                           leaderboard=leaderboard, league_threshold=args.threshold)
     post2 = post_composite_top5(preds,   min_odds=args.min_odds, n=args.top_n)
-    post3 = post_confidence_board(preds, threshold=args.threshold, min_odds=args.min_odds)
+    post3 = post_confidence_board(preds, threshold=args.threshold, min_odds=args.min_odds,
+                                  leaderboard=leaderboard)
 
     posts = [
         ("POST 3 — High Confidence Board (post first, highest reach)", post3),
