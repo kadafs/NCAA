@@ -59,7 +59,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "football")
 CACHE_MAX_AGE = 7 * 86400  # 7 days
 
 # Minimum games a team must have played before we predict their game
-MIN_GAMES_PLAYED = 4
+MIN_GAMES_PLAYED = 3
 
 
 # ------------------------------------------------------------------
