@@ -9,6 +9,14 @@ on:
         description: 'Target date (YYYY-MM-DD)'
         required: false
         default: ''
+      skip_profiles:
+        description: 'Skip corner/booking profile build (saves ~400 API credits)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   predict:
@@ -30,6 +38,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build corner & booking profiles (today's leagues only)
+        if: ${{ github.event.inputs.skip_profiles != 'true' }}
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
