@@ -59,7 +59,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "football")
 CACHE_MAX_AGE = 7 * 86400  # 7 days
 
 # Minimum games a team must have played before we predict their game
-MIN_GAMES_PLAYED = 3
+MIN_GAMES_PLAYED = 0
 
 
 # ------------------------------------------------------------------
@@ -289,13 +289,19 @@ def get_or_fetch_stats(league_id, season, games, refresh=False, refresh_stats=Fa
                     break
 
     # Find which playing teams are missing from cache
-    cached_ids = {v.get("team_id") for v in base_teams.values() if v.get("team_id")}
+    cached_by_id = {v.get("team_id"): v for v in base_teams.values() if v.get("team_id")}
     missing_ids = set()
     for g in games:
-        if g.get("home_id") and g["home_id"] not in cached_ids:
-            missing_ids.add(g["home_id"])
-        if g.get("away_id") and g["away_id"] not in cached_ids:
-            missing_ids.add(g["away_id"])
+        for tid in [g.get("home_id"), g.get("away_id")]:
+            if not tid: continue
+            c_team = cached_by_id.get(tid)
+            if not c_team:
+                missing_ids.add(tid)
+            else:
+                # If < 8 games played and we haven't fetched (or tried to fetch) prev season
+                if c_team.get("played_all", 0) < 8:
+                    if "previous_season" not in c_team and not c_team.get("no_prev_season"):
+                        missing_ids.add(tid)
 
     # If all teams are already cached — done
     if not missing_ids and base_teams:
@@ -366,7 +372,19 @@ def fetch_stats_from_api(league_id, season, games, existing_teams=None, missing_
         stats = r.get("response", {})
         if not stats:
             continue
-        raw_new.append(_parse_team_stats(name, tid, league_id, season, stats))
+        parsed_stats = _parse_team_stats(name, tid, league_id, season, stats)
+        
+        # If early season, try to fetch previous season data to act as a prior
+        if parsed_stats.get("played_all", 0) < 8:
+            prev_s = season - 1 if isinstance(season, int) else int(str(season)[:4]) - 1
+            r_prev = safe_get(f"{BASE_URL}/teams/statistics", {"team": tid, "league": league_id, "season": prev_s})
+            stats_prev = r_prev.get("response", {}) if r_prev else {}
+            if stats_prev:
+                parsed_stats["previous_season"] = _parse_team_stats(name, tid, league_id, prev_s, stats_prev)
+            else:
+                parsed_stats["no_prev_season"] = True
+                
+        raw_new.append(parsed_stats)
 
     return _build_from_raw(raw_new, league_id, season, existing_teams)
 
@@ -584,15 +602,36 @@ def calc_xg(home_s, away_s, avg_home, avg_away):
     def get_regression(played):
         return min(0.88, max(0.10, played * 0.11))
         
-    reg_home = get_regression(home_s.get("played_all", 1))
-    reg_away = get_regression(away_s.get("played_all", 1))
+    def get_blended_rating(team_s, rating_key):
+        curr_played = team_s.get("played_all", 0)
+        curr_rating = team_s.get(rating_key, 1.0)
+        prev_s = team_s.get("previous_season")
+        
+        if prev_s and curr_played < 10:
+            # We have prior season data, and current season is early.
+            prev_rating = prev_s.get(rating_key, 1.0)
+            # Linearly shift from prior to current over 10 games
+            w_curr = max(0.0, min(1.0, curr_played / 10.0))
+            w_prev = 1.0 - w_curr
+            return (curr_rating * w_curr) + (prev_rating * w_prev)
+        return curr_rating
 
-    ar_home = home_s.get("attack_rating_home", 1.0)
-    dr_away = away_s.get("defense_rating_away", 1.0)
+    def get_effective_played(team_s):
+        p = team_s.get("played_all", 0)
+        # If we have a prior, we trust the blended rating equivalent to ~8 games played
+        if team_s.get("previous_season") and p < 8:
+            return max(p, 8) 
+        return max(p, 1)
+
+    reg_home = get_regression(get_effective_played(home_s))
+    reg_away = get_regression(get_effective_played(away_s))
+
+    ar_home = get_blended_rating(home_s, "attack_rating_home")
+    dr_away = get_blended_rating(away_s, "defense_rating_away")
     xg_h_raw = ar_home * dr_away * avg_home
 
-    ar_away = away_s.get("attack_rating_away", 1.0)
-    dr_home = home_s.get("defense_rating_home", 1.0)
+    ar_away = get_blended_rating(away_s, "attack_rating_away")
+    dr_home = get_blended_rating(home_s, "defense_rating_home")
     xg_a_raw = ar_away * dr_home * avg_away
 
     xg_h = round(xg_h_raw * reg_home + avg_home * (1 - reg_home), 3)
