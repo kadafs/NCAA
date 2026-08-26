@@ -677,16 +677,21 @@ def calc_xg_elo(home_name, away_name):
 # STEP 5: RUN ENGINE PER GAME
 # ------------------------------------------------------------------
 
-def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=""):
+def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country="", lname=""):
     from core.football_engine import FootballEngine
 
     home_name = game["home_team"]
     away_name = game["away_team"]
 
-    # National teams often only play 1-2 games a year. Bypass the strict check.
-    min_req = 1 if country.lower() == "world" else MIN_GAMES_PLAYED
+    # Identify if this is a competition where domestic stats don't cross over well
+    is_international = (country.lower() == "world")
+    is_domestic_cup = ("cup" in lname.lower() or "copa" in lname.lower() or "trophy" in lname.lower() or "pokal" in lname.lower() or "coppa" in lname.lower() or "coupe" in lname.lower())
+    use_elo = is_international or is_domestic_cup
+
+    # National/Cup teams often only play 1-2 games a year. Bypass the strict check.
+    min_req = 1 if use_elo else MIN_GAMES_PLAYED
     
-    if country.lower() == "world":
+    if use_elo:
         xg_h, xg_a = calc_xg_elo(home_name, away_name)
     else:
         if home_s.get("played_all", 0) < min_req or away_s.get("played_all", 0) < min_req:
@@ -907,7 +912,7 @@ def main():
                 total_skipped += 1
                 continue
 
-            result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace, country)
+            result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace, country, lname)
             if err:
                 print(f"    {away:28} @ {home:28}  -- SKIP ({err})")
                 total_skipped += 1
