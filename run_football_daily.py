@@ -454,8 +454,15 @@ def _build_from_raw(raw_new, league_id, season, existing_teams):
         if raw.get("for_home", 0) > 0: hgf_list.append(raw["for_home"] / ph)
         if raw.get("for_away", 0) > 0: agf_list.append(raw["for_away"] / pa)
 
-    avg_home = round(sum(hgf_list) / len(hgf_list), 3) if hgf_list else 1.5
-    avg_away = round(sum(agf_list) / len(agf_list), 3) if agf_list else 1.2
+    raw_avg_home = sum(hgf_list) / len(hgf_list) if hgf_list else 1.50
+    raw_avg_away = sum(agf_list) / len(agf_list) if agf_list else 1.20
+    
+    total_league_games = sum(s.get("played_all", 0) for s in raw_new) / 2.0
+    # Blend with global anchor (1.50 Home / 1.20 Away) if under 40 games
+    w_avg = min(1.0, total_league_games / 40.0)
+    
+    avg_home = round((raw_avg_home * w_avg) + (1.50 * (1.0 - w_avg)), 3)
+    avg_away = round((raw_avg_away * w_avg) + (1.20 * (1.0 - w_avg)), 3)
     league_avgs = {"avg_home_goals_for": avg_home, "avg_away_goals_for": avg_away}
 
     # Finalize new entries
@@ -609,7 +616,18 @@ def calc_xg(home_s, away_s, avg_home, avg_away):
         
         if prev_s and curr_played < 10:
             # We have prior season data, and current season is early.
-            prev_rating = prev_s.get(rating_key, 1.0)
+            if rating_key in prev_s:
+                prev_rating = prev_s[rating_key]
+            else:
+                # Calculate rating on the fly using global baseline
+                if "attack_rating_home" in rating_key: prev_rating = prev_s.get("pgf_home", 1.5) / 1.50
+                elif "attack_rating_away" in rating_key: prev_rating = prev_s.get("pgf_away", 1.2) / 1.20
+                elif "defense_rating_home" in rating_key: prev_rating = prev_s.get("pga_home", 1.2) / 1.20
+                elif "defense_rating_away" in rating_key: prev_rating = prev_s.get("pga_away", 1.5) / 1.50
+                elif "attack_rating_all" in rating_key: prev_rating = prev_s.get("pgf_all", 1.35) / 1.35
+                elif "defense_rating_all" in rating_key: prev_rating = prev_s.get("pga_all", 1.35) / 1.35
+                else: prev_rating = 1.0
+            
             # Linearly shift from prior to current over 10 games
             w_curr = max(0.0, min(1.0, curr_played / 10.0))
             w_prev = 1.0 - w_curr
