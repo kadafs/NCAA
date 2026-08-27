@@ -94,8 +94,11 @@ def safe_get(endpoint, params, retries=2):
     return {}
 
 
-def build_profile_for_team(team_id: int, league_id: int, season: int, last: int) -> dict | None:
-    """Fetch last N completed fixtures for a team and compute averages."""
+def build_profile_for_team(team_id: int, league_id: int, season: int, last: int, old_prof: dict) -> dict | None:
+    """
+    Fetch the last `last` matches for `team_id`, extract corners/cards,
+    and return an aggregated dict with caching.
+    """
     data = safe_get("/fixtures", {
         "team": team_id, "league": league_id, "season": season,
         "status": "FT", "last": last
@@ -111,15 +114,31 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int)
     fouls_list          = []
     booking_pts_list    = []
     shots_total_list    = []
+    
+    cached_history = old_prof.get("fixture_history", {}) if old_prof else {}
+    new_history = {}
 
     for fix in fixtures:
-        fid = fix["fixture"]["id"]
-        # Determine which side this team is (home or away)
+        fid = str(fix["fixture"]["id"])
+        
+        # If it's already cached, grab stats locally (0 API calls)
+        if fid in cached_history:
+            cached = cached_history[fid]
+            corners_for_list.append(cached["corners_for"])
+            corners_ag_list.append(cached["corners_ag"])
+            yellow_list.append(cached["yellow"])
+            red_list.append(cached["red"])
+            fouls_list.append(cached.get("fouls", 0))
+            booking_pts_list.append(cached["booking_pts"])
+            shots_total_list.append(cached.get("shots", 0))
+            new_history[fid] = cached
+            continue
+
         is_home = fix["teams"]["home"]["id"] == team_id
         side    = "home" if is_home else "away"
         opp_side = "away" if is_home else "home"
 
-        stat_data = safe_get("/fixtures/statistics", {"fixture": fid})
+        stat_data = safe_get("/fixtures/statistics", {"fixture": int(fid)})
         time.sleep(0.15)   # be gentle with rate limits
 
         stats_by_team = {}
@@ -157,6 +176,16 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int)
             fouls_list.append(fouls)
             booking_pts_list.append(booking_pts)
             shots_total_list.append(shots)
+            
+            new_history[fid] = {
+                "corners_for": corners_for,
+                "corners_ag": corners_ag,
+                "yellow": yellow,
+                "red": red,
+                "fouls": fouls,
+                "shots": shots,
+                "booking_pts": booking_pts
+            }
 
     n = len(corners_for_list)
     if n == 0:
@@ -177,6 +206,7 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int)
         "avg_shots_total":      avg(shots_total_list),
         "sample_size":          n,
         "built_at":             datetime.utcnow().isoformat(),
+        "fixture_history":      new_history
     }
 
 
@@ -301,7 +331,7 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
             profiles[str(tid)] = old_prof
             continue
 
-        profile = build_profile_for_team(tid, league_id, season, last)
+        profile = build_profile_for_team(tid, league_id, season, last, old_prof)
         if profile:
             if profile.get("quarantined"):
                 print("quarantined (no stats)")
@@ -475,7 +505,7 @@ def main():
     elif args.max_age_hours > 0:
         max_age_hours = args.max_age_hours
     elif args.today_only:
-        max_age_hours = 23.0
+        max_age_hours = 96.0
     else:
         max_age_hours = 160.0
 
