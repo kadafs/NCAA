@@ -41,6 +41,22 @@ CHECKPOINT_PATH = os.path.join(DATA_DIR, "_profiles_checkpoint.json")
 YELLOW_CARD_PTS = 10
 RED_CARD_PTS    = 25
 
+LEAGUE_PRIORITY = {
+    2: 1, 3: 2, 848: 3, 13: 4, 11: 5,
+    39: 10,
+    140: 20, 135: 21, 78: 22,
+    61: 30, 88: 31, 94: 32,
+    45: 40, 48: 41, 143: 42, 137: 43, 81: 44, 66: 45,
+    144: 50, 203: 51, 179: 52, 218: 53, 207: 54, 197: 55, 345: 56,
+    40: 60, 141: 61, 136: 62, 79: 63, 62: 64,
+    71: 70, 73: 71, 128: 72, 239: 73, 242: 74, 265: 75, 268: 76,
+    262: 80, 253: 81,
+    307: 90,
+    119: 100, 113: 101, 103: 102, 210: 103, 285: 104, 106: 105, 283: 106, 89: 107,
+    98: 110, 292: 111, 188: 112,
+    254: 120
+}
+
 # Shared mutable call counter (module-level so safe_get can update it)
 _api_calls = {"count": 0, "budget": 4000}
 
@@ -144,7 +160,7 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int)
 
     n = len(corners_for_list)
     if n == 0:
-        return None
+        return {"quarantined": True, "reason": "No corner/booking stats in FT fixtures"}
 
     def avg(lst):
         return round(sum(lst) / len(lst), 2) if lst else 0.0
@@ -249,6 +265,17 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
         print(f"  No teams found for league {league_id}")
         return {}
 
+    # Load existing to check for previous permanent quarantines
+    existing_path = os.path.join(DATA_DIR, f"team_profiles_{league_id}.json")
+    existing_teams = {}
+    if os.path.exists(existing_path):
+        try:
+            with open(existing_path, encoding="utf-8") as f:
+                ed = json.load(f)
+                existing_teams = ed.get("teams", {})
+        except Exception:
+            pass
+
     # Preflight: one call to check if ANY completed fixtures exist for this league.
     # Saves N credits (one per team) for empty/early-season leagues.
     preflight = safe_get("/fixtures", {"league": league_id, "season": season, "status": "FT", "last": 1})
@@ -267,13 +294,24 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
             continue
 
         print(f"    {name} (id={tid})...", end=" ", flush=True)
+
+        old_prof = existing_teams.get(str(tid), {})
+        if old_prof.get("quarantined"):
+            print("permanently quarantined")
+            profiles[str(tid)] = old_prof
+            continue
+
         profile = build_profile_for_team(tid, league_id, season, last)
         if profile:
-            profile["name"] = name
-            profiles[str(tid)] = profile
-            print(f"✓ ({profile['sample_size']} fixtures)")
+            if profile.get("quarantined"):
+                print("quarantined (no stats)")
+                profiles[str(tid)] = profile
+            else:
+                profile["name"] = name
+                profiles[str(tid)] = profile
+                print(f"✓ ({profile['sample_size']} fixtures)")
         else:
-            print("no data")
+            print("no data (no FT fixtures)")
         time.sleep(0.3)
 
     return profiles
@@ -330,28 +368,28 @@ def clear_checkpoint() -> None:
         print("  🗑️  Checkpoint cleared.")
 
 
-def profile_age_hours(league_id: int) -> float | None:
+def profile_age_hours(league_id: int) -> tuple[float | None, bool]:
     """
-    Returns how many hours ago the profile for league_id was built,
-    or None if no profile file exists yet.
+    Returns (age_hours, is_quarantined)
     """
     path = os.path.join(DATA_DIR, f"team_profiles_{league_id}.json")
     if not os.path.exists(path):
-        return None
+        return None, False
     try:
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
+        is_quar = data.get("league_quarantined", False)
         built_at = data.get("built_at", "")
         if not built_at:
-            return None
+            return None, is_quar
         # Parse ISO timestamp (UTC)
         dt = datetime.fromisoformat(built_at.replace("Z", "+00:00"))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         age = (datetime.now(timezone.utc) - dt).total_seconds() / 3600
-        return round(age, 1)
+        return round(age, 1), is_quar
     except Exception:
-        return None
+        return None, False
 
 
 def print_status():
@@ -371,9 +409,12 @@ def print_status():
                 data = json.load(f)
             n_teams  = len(data.get("teams", {}))
             built_at = data.get("built_at", "?")
-            age_h    = profile_age_hours(int(lid))
+            age_h, is_quar = profile_age_hours(int(lid))
             age_str  = f"{age_h:.1f}h ago" if age_h is not None else "unknown"
-            fresh    = "✅ fresh" if (age_h is not None and age_h < 25) else "⚠️  stale"
+            if is_quar:
+                fresh = "🚫 quarantined"
+            else:
+                fresh = "✅ fresh" if (age_h is not None and age_h < 25) else "⚠️  stale"
             print(f"{lid:>8}  {n_teams:>6}  {built_at[:19]:>22}  {age_str:>8}  {fresh}")
         except Exception as e:
             print(f"{lid:>8}  (error reading: {e})")
@@ -447,6 +488,7 @@ def main():
         if not league_ids:
             print("No leagues found for today. Exiting.")
             return
+        league_ids = sorted(league_ids, key=lambda x: LEAGUE_PRIORITY.get(x, 999))
 
     else:
         stat_files = glob.glob(os.path.join(DATA_DIR, "universal_*_stats.json"))
@@ -454,7 +496,7 @@ def main():
             int(os.path.basename(f).split("_")[1])
             for f in stat_files
             if os.path.basename(f).split("_")[1].isdigit()
-        ))
+        ), key=lambda x: LEAGUE_PRIORITY.get(x, 999))
         print(f"Auto-discovered {len(league_ids)} leagues from existing stats files.")
 
     if not league_ids:
@@ -476,8 +518,15 @@ def main():
     completed_this_run: list[int] = list(already_done)
 
     for lid in league_ids:
-        # ── Staleness check ────────────────────────────────────
-        age = profile_age_hours(lid)
+        # ── Staleness & Quarantine check ────────────────────────────────────
+        age, is_quar = profile_age_hours(lid)
+        
+        if is_quar and not args.force:
+            print(f"  League {lid:>6} — SKIP (permanently quarantined due to missing stats)")
+            skipped += 1
+            completed_this_run.append(lid)
+            continue
+            
         if not args.force and max_age_hours > 0 and age is not None and age < max_age_hours:
             print(f"  League {lid:>6} — SKIP (profile is {age:.1f}h old, threshold={max_age_hours}h)")
             skipped += 1
@@ -503,11 +552,15 @@ def main():
         if not profiles:
             continue
 
+        # Check if ALL teams in this league returned quarantined
+        all_quar = all(p.get("quarantined") for p in profiles.values()) if profiles else False
+
         out_path = os.path.join(DATA_DIR, f"team_profiles_{lid}.json")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump({
                 "league_id": lid,
                 "season":    args.season,
+                "league_quarantined": all_quar,
                 "built_at":  datetime.utcnow().isoformat(),
                 "teams":     profiles
             }, f, indent=2, ensure_ascii=False)
