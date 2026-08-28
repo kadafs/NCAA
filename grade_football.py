@@ -227,7 +227,7 @@ def main():
     btts_played = [
         p for p in completed 
         if p.get("btts_decision") in ("PLAY YES", "[STRONG] PLAY YES") 
-        and p.get("btts_yes_prob", 0) >= 70.0
+        and p.get("btts_prob", 0) >= 70.0
     ]
     btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
     btts_total  = len(btts_played)
