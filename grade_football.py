@@ -223,7 +223,12 @@ def main():
     x12_wins  = sum(1 for g, _ in x12_results if g == "WIN")
     x12_total = sum(1 for g, _ in x12_results if g is not None)
 
-    btts_played = [p for p in completed if p.get("btts_decision") in ("PLAY YES", "[STRONG] PLAY YES")]
+    # Only grade BTTS for matches that meet the 70% premium filter
+    btts_played = [
+        p for p in completed 
+        if p.get("btts_decision") in ("PLAY YES", "[STRONG] PLAY YES") 
+        and p.get("btts_yes_prob", 0) >= 70.0
+    ]
     btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
     btts_total  = len(btts_played)
 

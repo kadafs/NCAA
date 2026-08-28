@@ -17,6 +17,11 @@ on:
         options:
           - 'false'
           - 'true'
+      max_calls:
+        description: 'Max API calls for profile build'
+        required: false
+        default: '4000'
+        type: string
 
 jobs:
   predict:
@@ -47,8 +52,13 @@ jobs:
           else
             TARGET_DATE=$(date -u +'%Y-%m-%d')
           fi
-          echo "Building corner/booking profiles for leagues active on $TARGET_DATE..."
-          python build_corner_booking_profiles.py --today-only --date "$TARGET_DATE" --season 2026
+          if [ -n "${{ github.event.inputs.max_calls }}" ]; then
+            MAX_CALLS="${{ github.event.inputs.max_calls }}"
+          else
+            MAX_CALLS="4000"
+          fi
+          echo "Building corner/booking profiles for leagues active on $TARGET_DATE (Max calls: $MAX_CALLS)..."
+          python build_corner_booking_profiles.py --today-only --date "$TARGET_DATE" --season 2026 --max-calls "$MAX_CALLS"
           echo "Profile build complete (stale-only, fresh leagues auto-skipped)."
 
       - name: Run football predictions (full mode)
