@@ -219,7 +219,14 @@ def main():
 
     # Compute grade summary
     completed = [p for p in graded_predictions if p.get("actual_result")]
-    x12_results = [(outcome_grade(p), p) for p in completed]
+    
+    # Only grade 1X2 for matches that meet the 60% premium filter (PLAY or STRONG PLAY)
+    x12_played = [
+        p for p in completed
+        if "PLAY" in p.get("outcome_decision", "") 
+        or max(p.get("home_win_prob", 0), p.get("away_win_prob", 0), p.get("draw_prob_1x2", 0)) >= 60.0
+    ]
+    x12_results = [(outcome_grade(p), p) for p in x12_played]
     x12_wins  = sum(1 for g, _ in x12_results if g == "WIN")
     x12_total = sum(1 for g, _ in x12_results if g is not None)
 

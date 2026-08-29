@@ -239,6 +239,19 @@ class FootballEngine:
                 hw_adj -= dom_boost
                 self._log(f"Phase 4C: Away xG dominant ({xg_away:.2f} vs {xg_home:.2f}) → Away +{dom_boost:.3f}")
 
+            # 4D: Team Historical Win Rate blending
+            # We compare the Poisson probability to the team's historical win rate.
+            home_win_pct = game_data.get("statsH", {}).get("win_pct")
+            away_win_pct = game_data.get("statsA", {}).get("win_pct")
+            if home_win_pct is not None and away_win_pct is not None:
+                # Nudge towards historical reality
+                win_pct_weight = sp.get("outcome_win_pct_weight", 0.15)
+                h_adj = (home_win_pct - hw) * win_pct_weight
+                a_adj = (away_win_pct - aw) * win_pct_weight
+                hw_adj += h_adj
+                aw_adj += a_adj
+                self._log(f"Phase 4D: Historic Win Rate (H:{home_win_pct*100:.1f}% A:{away_win_pct*100:.1f}%) → Home {h_adj:+.3f} | Away {a_adj:+.3f}")
+
             # Apply adjustments and renormalise
             hw = max(0.01, hw + hw_adj)
             dw = max(0.01, dw + dw_adj)
@@ -259,9 +272,17 @@ class FootballEngine:
         else:
             predicted_result = "AWAY"
 
+        # 1X2 Decision Grading
+        if best_p >= 0.70:
+            outcome_decision = f"[STRONG] PLAY {predicted_result}"
+        elif best_p >= 0.60:
+            outcome_decision = f"PLAY {predicted_result}"
+        else:
+            outcome_decision = f"LEAN {predicted_result}"
+
         self._log(f"Phase 4: Home {hw*100:.1f}% ({_odds(hw)}x)  "
                   f"Draw {dw*100:.1f}% ({_odds(dw)}x)  "
-                  f"Away {aw*100:.1f}% ({_odds(aw)}x)  -> {predicted_result}")
+                  f"Away {aw*100:.1f}% ({_odds(aw)}x)  -> {predicted_result} ({outcome_decision})")
 
         return {
             # Poisson outputs
@@ -291,6 +312,7 @@ class FootballEngine:
             "draw_odds":       _odds(dw),
             "away_win_odds":   _odds(aw),
             "predicted_result": predicted_result,
+            "outcome_decision": outcome_decision,
 
             # Metadata
             "mode":   self.mode,

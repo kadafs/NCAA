@@ -963,9 +963,10 @@ def main():
             dw_odds = result.get("draw_odds", 0)
             aw_odds = result.get("away_win_odds", 0)
             pred    = result.get("predicted_result", "?")
+            out_dec = result.get("outcome_decision", "?")
             print(f"      1X2:  Home {hw_pct:.1f}% ({hw_odds}x)  "
                   f"Draw {dw_pct:.1f}% ({dw_odds}x)  "
-                  f"Away {aw_pct:.1f}% ({aw_odds}x)  → {pred}")
+                  f"Away {aw_pct:.1f}% ({aw_odds}x)  -> {out_dec}")
 
             if args.trace:
                 for log in result.get("logs", []):
@@ -1026,6 +1027,7 @@ def main():
                 "draw_odds":        result.get("draw_odds"),
                 "away_win_odds":    result.get("away_win_odds"),
                 "predicted_result": result.get("predicted_result"),
+                "outcome_decision": result.get("outcome_decision"),
                 "mode":        args.mode,
                 "timestamp":   datetime.now(ET_TZ).isoformat(),
                 # Enrichment
