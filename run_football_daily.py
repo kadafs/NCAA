@@ -597,6 +597,17 @@ def calc_btts_prob(xg_h, xg_a):
 def calc_draw_prob(xg_h, xg_a, max_g=6):
     return round(sum(poisson_prob(xg_h, k) * poisson_prob(xg_a, k) for k in range(max_g + 1)), 4)
 
+def calc_1x2_prob(xg_h, xg_a, max_g=6):
+    hw = dw = aw = 0.0
+    for i in range(max_g + 1):
+        ph = poisson_prob(xg_h, i)
+        for j in range(max_g + 1):
+            pa = poisson_prob(xg_a, j)
+            if i > j: hw += ph * pa
+            elif i == j: dw += ph * pa
+            else: aw += ph * pa
+    return hw, dw, aw
+
 def calc_over_prob(xg_total, threshold):
     under_p = 0.0
     for k in range(int(threshold + 0.5)):
@@ -997,6 +1008,29 @@ def main():
             away_profile = team_profiles.get(str(away_s.get("team_id", "")))
             corner_booking = corners_prediction(home_profile, away_profile)
 
+            # --- Player Props ---
+            home_props = {}
+            away_props = {}
+            if not args.low_data:
+                try:
+                    hp_path = os.path.join(DATA_DIR, "props", f"team_{home_s.get('team_id')}.json")
+                    if os.path.exists(hp_path):
+                        with open(hp_path, encoding="utf-8") as _f:
+                            home_props = json.load(_f)
+                except Exception: pass
+                
+                try:
+                    ap_path = os.path.join(DATA_DIR, "props", f"team_{away_s.get('team_id')}.json")
+                    if os.path.exists(ap_path):
+                        with open(ap_path, encoding="utf-8") as _f:
+                            away_props = json.load(_f)
+                except Exception: pass
+
+            # --- CALCULATE FIRST HALF MARKETS ---
+            fh_xg_h = xg_h * 0.45
+            fh_xg_a = xg_a * 0.45
+            fh_hw, fh_dw, fh_aw = calc_1x2_prob(fh_xg_h, fh_xg_a)
+
             all_predictions.append({
                 "league_id":   lid,
                 "league":      lname,
@@ -1058,6 +1092,13 @@ def main():
                     "full_standings": league_standings if len(league_standings) > 0 else None,
                     "over_1_5_prob": round(calc_over_prob(xg_h + xg_a, 1.5) * 100, 1),
                     "over_2_5_prob": round(calc_over_prob(xg_h + xg_a, 2.5) * 100, 1),
+                    "fh_1x2_home": round(fh_hw * 100, 1),
+                    "fh_1x2_draw": round(fh_dw * 100, 1),
+                    "fh_1x2_away": round(fh_aw * 100, 1),
+                    "fh_over_0_5_prob": round(calc_over_prob(fh_xg_h + fh_xg_a, 0.5) * 100, 1),
+                    "fh_over_1_5_prob": round(calc_over_prob(fh_xg_h + fh_xg_a, 1.5) * 100, 1),
+                    "player_props_H": home_props,
+                    "player_props_A": away_props,
                     "statsH": {
                         "played": home_s.get("played_all"),
                         "win_pct": home_s.get("win_pct"),

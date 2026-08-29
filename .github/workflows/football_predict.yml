@@ -61,6 +61,14 @@ jobs:
           python build_corner_booking_profiles.py --today-only --date "$TARGET_DATE" --season 2026 --max-calls "$MAX_CALLS"
           echo "Profile build complete (stale-only, fresh leagues auto-skipped)."
 
+      - name: Build player props profiles (priority leagues only)
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+        run: |
+          echo "Building player props cache files for all priority leagues..."
+          python build_player_props.py
+          echo "Player props build complete."
+
       - name: Run football predictions (full mode)
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
