@@ -623,9 +623,12 @@ def calc_xg(home_s, away_s, avg_home, avg_away):
     def get_blended_rating(team_s, rating_key):
         curr_played = team_s.get("played_all", 0)
         curr_rating = team_s.get(rating_key, 1.0)
+        if curr_played == 0:
+            curr_rating = 1.0
+            
         prev_s = team_s.get("previous_season")
         
-        if prev_s and curr_played < 10:
+        if prev_s and curr_played < 10 and prev_s.get("played_all", 0) > 0:
             # We have prior season data, and current season is early.
             if rating_key in prev_s:
                 prev_rating = prev_s[rating_key]
@@ -648,7 +651,8 @@ def calc_xg(home_s, away_s, avg_home, avg_away):
     def get_effective_played(team_s):
         p = team_s.get("played_all", 0)
         # If we have a prior, we trust the blended rating equivalent to ~8 games played
-        if team_s.get("previous_season") and p < 8:
+        prev_s = team_s.get("previous_season")
+        if prev_s and prev_s.get("played_all", 0) > 0 and p < 8:
             return max(p, 8) 
         return max(p, 1)
 
@@ -714,7 +718,7 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=
 
     # Identify if this is a competition where domestic stats don't cross over well
     is_international = (country.lower() == "world")
-    is_domestic_cup = ("cup" in lname.lower() or "copa" in lname.lower() or "trophy" in lname.lower() or "pokal" in lname.lower() or "coppa" in lname.lower() or "coupe" in lname.lower())
+    is_domestic_cup = ("cup" in lname.lower() or "copa" in lname.lower() or "trophy" in lname.lower() or "pokal" in lname.lower() or "coppa" in lname.lower() or "coupe" in lname.lower() or "taça" in lname.lower() or "taca" in lname.lower())
     use_elo = is_international or is_domestic_cup
 
     # National/Cup teams often only play 1-2 games a year. Bypass the strict check.
