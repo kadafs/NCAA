@@ -316,6 +316,9 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
     profiles = {}
     print(f"  Building profiles for {len(teams)} teams in league {league_id}...")
 
+    teams_with_stats = 0
+    teams_without_stats = 0
+
     for t in teams:
         team = t.get("team", {})
         tid  = team.get("id")
@@ -329,6 +332,10 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
         if old_prof.get("quarantined"):
             print("permanently quarantined")
             profiles[str(tid)] = old_prof
+            teams_without_stats += 1
+            if teams_without_stats >= 2 and teams_with_stats == 0:
+                print(f"\n  [SMART QUARANTINE] League {league_id} provides no stats (cached). Quarantining entire league.")
+                break
             continue
 
         profile = build_profile_for_team(tid, league_id, season, last, old_prof)
@@ -336,9 +343,18 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
             if profile.get("quarantined"):
                 print("quarantined (no stats)")
                 profiles[str(tid)] = profile
+                teams_without_stats += 1
+                
+                # SMART QUARANTINE LOGIC:
+                # If the first 2 teams with FT fixtures return no stats across all their matches,
+                # it's practically certain the league doesn't provide stats. Abort early.
+                if teams_without_stats >= 2 and teams_with_stats == 0:
+                    print(f"\n  [SMART QUARANTINE] League {league_id} provides no stats. Quarantining entire league.")
+                    break
             else:
                 profile["name"] = name
                 profiles[str(tid)] = profile
+                teams_with_stats += 1
                 print(f"✓ ({profile['sample_size']} fixtures)")
         else:
             print("no data (no FT fixtures)")
