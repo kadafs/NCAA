@@ -475,6 +475,8 @@ def main():
                         help="Last N completed fixtures per team (0 = auto: 5 for today-only, 12 for full)")
     parser.add_argument("--today-only",    action="store_true",
                         help="Only build profiles for leagues with games today (fast, daily-safe)")
+    parser.add_argument("--priority-only", action="store_true",
+                        help="Only build profiles for the predefined top-tier (priority) leagues")
     parser.add_argument("--date",          default="",
                         help="Target date for --today-only (YYYY-MM-DD, default: today UTC)")
     parser.add_argument("--max-age-hours", type=float, default=0,
@@ -527,6 +529,10 @@ def main():
 
     if args.league:
         league_ids = [args.league]
+
+    elif args.priority_only:
+        league_ids = sorted(list(LEAGUE_PRIORITY.keys()), key=lambda x: LEAGUE_PRIORITY.get(x, 999))
+        print(f"Building profiles for {len(league_ids)} priority leagues.")
 
     elif args.today_only:
         date_str = args.date or datetime.utcnow().strftime("%Y-%m-%d")

@@ -20,6 +20,11 @@ on:
         type: boolean
         required: false
         default: false
+      priority_only:
+        description: 'Only build profiles for the predefined top-tier (priority) leagues'
+        type: boolean
+        required: false
+        default: false
       date:
         description: 'Target date for today-only (YYYY-MM-DD)'
         required: false
@@ -92,6 +97,10 @@ jobs:
           
           if [ "${{ github.event.inputs.today_only }}" == "true" ]; then
             ARGS="$ARGS --today-only"
+          fi
+          
+          if [ "${{ github.event.inputs.priority_only }}" == "true" ]; then
+            ARGS="$ARGS --priority-only"
           fi
           
           if [ -n "${{ github.event.inputs.date }}" ]; then
