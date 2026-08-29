@@ -1,0 +1,137 @@
+name: 🛠️ Build Corner & Booking Profiles
+
+on:
+  workflow_dispatch:
+    inputs:
+      league:
+        description: 'Specific league ID to build (leave blank for all)'
+        required: false
+        default: ''
+      season:
+        description: 'Season year (e.g. 2024)'
+        required: false
+        default: ''
+      last:
+        description: 'Last N completed fixtures per team (0 = auto)'
+        required: false
+        default: '0'
+      today_only:
+        description: 'Only build profiles for leagues with games today'
+        type: boolean
+        required: false
+        default: false
+      date:
+        description: 'Target date for today-only (YYYY-MM-DD)'
+        required: false
+        default: ''
+      max_age_hours:
+        description: 'Skip rebuild if fresher than N hours (0 = auto)'
+        required: false
+        default: '0'
+      force:
+        description: 'Force rebuild even if fresh'
+        type: boolean
+        required: false
+        default: false
+      status:
+        description: 'Print status table and exit'
+        type: boolean
+        required: false
+        default: false
+      max_calls:
+        description: 'Max API calls before stopping gracefully'
+        required: false
+        default: '4000'
+      resume:
+        description: 'Resume from last checkpoint'
+        type: boolean
+        required: false
+        default: false
+      clear_checkpoint:
+        description: 'Clear checkpoint and exit'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  build-profiles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Profile Builder
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+        run: |
+          ARGS=""
+          
+          if [ -n "${{ github.event.inputs.league }}" ]; then
+            ARGS="$ARGS --league ${{ github.event.inputs.league }}"
+          fi
+          
+          if [ -n "${{ github.event.inputs.season }}" ]; then
+            ARGS="$ARGS --season ${{ github.event.inputs.season }}"
+          fi
+          
+          if [ "${{ github.event.inputs.last }}" != "0" ]; then
+            ARGS="$ARGS --last ${{ github.event.inputs.last }}"
+          fi
+          
+          if [ "${{ github.event.inputs.today_only }}" == "true" ]; then
+            ARGS="$ARGS --today-only"
+          fi
+          
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ github.event.inputs.date }}"
+          fi
+          
+          if [ "${{ github.event.inputs.max_age_hours }}" != "0" ]; then
+            ARGS="$ARGS --max-age-hours ${{ github.event.inputs.max_age_hours }}"
+          fi
+          
+          if [ "${{ github.event.inputs.force }}" == "true" ]; then
+            ARGS="$ARGS --force"
+          fi
+          
+          if [ "${{ github.event.inputs.status }}" == "true" ]; then
+            ARGS="$ARGS --status"
+          fi
+          
+          if [ -n "${{ github.event.inputs.max_calls }}" ]; then
+            ARGS="$ARGS --max-calls ${{ github.event.inputs.max_calls }}"
+          fi
+          
+          if [ "${{ github.event.inputs.resume }}" == "true" ]; then
+            ARGS="$ARGS --resume"
+          fi
+          
+          if [ "${{ github.event.inputs.clear_checkpoint }}" == "true" ]; then
+            ARGS="$ARGS --clear-checkpoint"
+          fi
+          
+          echo "Running: python build_corner_booking_profiles.py $ARGS"
+          python build_corner_booking_profiles.py $ARGS
+
+      - name: Commit local data changes
+        if: ${{ github.event.inputs.status != 'true' && github.event.inputs.clear_checkpoint != 'true' }}
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
+          git add data/football/
+          git diff --staged --quiet && echo "No changes to commit to ncaa-api." || (
+            git commit -m "data: update corner and booking profiles via manual trigger"
+            git push
+          )
