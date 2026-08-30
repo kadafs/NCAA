@@ -217,6 +217,9 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     """
     if not home_profile or not away_profile:
         return {}
+        
+    if home_profile.get("quarantined") or away_profile.get("quarantined"):
+        return {}
 
     # Expected corners: blend team for/against averages
     exp_home_corners = round((home_profile["avg_corners_for"] + away_profile["avg_corners_against"]) / 2, 1)
