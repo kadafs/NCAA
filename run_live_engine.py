@@ -54,7 +54,11 @@ def parse_stats(stats_array):
         "shots_on_goal": 0,
         "corners": 0,
         "possession": 50,
-        "dangerous_attacks": 0
+        "dangerous_attacks": 0,
+        "fouls": 0,
+        "yellow_cards": 0,
+        "total_shots": 0,
+        "saves": 0
     }
     for item in stats_array:
         t = item["type"]
@@ -63,6 +67,10 @@ def parse_stats(stats_array):
         elif t == "Corner Kicks": parsed["corners"] = v
         elif t == "Ball Possession": parsed["possession"] = v
         elif t == "Dangerous Attacks": parsed["dangerous_attacks"] = v
+        elif t == "Fouls": parsed["fouls"] = v
+        elif t == "Yellow Cards": parsed["yellow_cards"] = v
+        elif t == "Total Shots": parsed["total_shots"] = v
+        elif t == "Goalkeeper Saves": parsed["saves"] = v
     return parsed
 
 def get_predictions_dict(date_str):
@@ -189,6 +197,21 @@ def run():
         if h_reds > 0 or a_reds > 0:
             triggers.append("RED_CARD")
             
+        # Extract recent events (last 5)
+        recent_events = []
+        for e in reversed(events): # newest first usually, or we reverse
+            t = e.get("type", "")
+            if t in ["Goal", "Card", "subst", "Var"]:
+                recent_events.append({
+                    "time": e.get("time", {}).get("elapsed", 0),
+                    "type": t,
+                    "detail": str(e.get("detail", "")),
+                    "player": str(e.get("player", {}).get("name", "")),
+                    "team": str(e.get("team", {}).get("name", ""))
+                })
+            if len(recent_events) >= 6:
+                break
+                
         live_data.append({
             "fixture_id": fix_id,
             "match": match_str,
@@ -209,7 +232,8 @@ def run():
             "stats": {
                 "home": h_stats,
                 "away": a_stats
-            }
+            },
+            "recent_events": recent_events
         })
         
     # Sort by absolute momentum difference (most volatile games first)
