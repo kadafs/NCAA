@@ -75,14 +75,21 @@ def get_predictions_dict(date_str):
         
     preds = {}
     if isinstance(data, dict):
-        # Format might be dict of leagues
-        for lid, ldata in data.items():
-            if isinstance(ldata, dict) and "games" in ldata:
-                for g in ldata["games"]:
-                    home = g.get("home_team")
-                    away = g.get("away_team")
-                    if home and away:
-                        preds[f"{home} vs {away}"] = g
+        if "predictions" in data and isinstance(data["predictions"], list):
+            for g in data["predictions"]:
+                home = g.get("home_team")
+                away = g.get("away_team")
+                if home and away:
+                    preds[f"{home} vs {away}"] = g
+        else:
+            # Format might be dict of leagues
+            for lid, ldata in data.items():
+                if isinstance(ldata, dict) and "games" in ldata:
+                    for g in ldata["games"]:
+                        home = g.get("home_team")
+                        away = g.get("away_team")
+                        if home and away:
+                            preds[f"{home} vs {away}"] = g
     elif isinstance(data, list):
         for g in data:
             home = g.get("home_team")
