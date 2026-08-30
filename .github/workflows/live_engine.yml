@@ -1,0 +1,52 @@
+name: 🔴 Live Engine (Long Runner)
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration_hours:
+        description: 'How many hours should the live engine run?'
+        required: true
+        default: '6'
+        type: choice
+        options:
+          - '2'
+          - '4'
+          - '6'
+
+jobs:
+  live-tracker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests python-dotenv
+
+      - name: Run Live Engine Loop
+        env:
+          API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          LIVE_GIST_ID: ${{ vars.LIVE_GIST_ID }}
+        run: |
+          HOURS=${{ github.event.inputs.duration_hours }}
+          MINUTES=$((HOURS * 60))
+          LOOPS=$((MINUTES / 2))
+          
+          echo "Starting Live Engine for $HOURS hours ($LOOPS iterations, 2 mins each)..."
+          
+          for i in $(seq 1 $LOOPS); do
+            echo "Iteration $i / $LOOPS at $(date)"
+            python run_live_engine.py || true
+            if [ $i -lt $LOOPS ]; then
+              echo "Sleeping for 2 minutes..."
+              sleep 120
+            fi
+          done
+          echo "Live Engine finished."
