@@ -36,17 +36,18 @@ jobs:
           LIVE_GIST_ID: ${{ vars.LIVE_GIST_ID }}
         run: |
           HOURS=${{ github.event.inputs.duration_hours }}
-          MINUTES=$((HOURS * 60))
-          LOOPS=$((MINUTES / 2))
+          # 60 iterations per hour for 1-minute polling
+          ITERATIONS=$((HOURS * 60))
           
-          echo "Starting Live Engine for $HOURS hours ($LOOPS iterations, 2 mins each)..."
+          echo "Starting Live Engine for $HOURS hours ($ITERATIONS iterations, 1 min each)..."
           
-          for i in $(seq 1 $LOOPS); do
-            echo "Iteration $i / $LOOPS at $(date)"
+          for i in $(seq 1 $ITERATIONS); do
+            echo "Iteration $i / $ITERATIONS at $(date)"
             python run_live_engine.py || true
-            if [ $i -lt $LOOPS ]; then
-              echo "Sleeping for 2 minutes..."
-              sleep 120
+            
+            if [ $i -lt $ITERATIONS ]; then
+              echo "Sleeping for 1 minute..."
+              sleep 60
             fi
           done
           echo "Live Engine finished."
