@@ -245,7 +245,7 @@ def run():
     live_data.sort(key=lambda x: abs(x["momentum_diff"]), reverse=True)
     
     payload = {
-        "updated_at": datetime.datetime.utcnow().isoformat(),
+        "updated_at": datetime.datetime.utcnow().isoformat() + "Z",
         "active_games": len(live_data),
         "matches": live_data
     }
