@@ -41,6 +41,12 @@ CHECKPOINT_PATH = os.path.join(DATA_DIR, "_profiles_checkpoint.json")
 YELLOW_CARD_PTS = 10
 RED_CARD_PTS    = 25
 
+# ── Bayesian shrinkage & prior-season settings ─────────────────────────────
+MIN_RELIABLE     = 8    # games before own data outweighs the prior
+SHRINKAGE_K      = 8    # weight of league prior (stricter: needs 8+ games to trust own data ≥50%)
+PRIOR_SEASON     = 2025 # fallback season to query API when current season is sparse
+
+
 LEAGUE_PRIORITY = {
     2: 1, 3: 2, 848: 3, 13: 4, 11: 5,
     39: 10,
@@ -92,6 +98,176 @@ def safe_get(endpoint, params, retries=2):
             else:
                 print(f"  ⚠️  {endpoint} failed: {e}")
     return {}
+
+
+def fetch_prior_season_raw(team_id: int, league_id: int, last: int) -> dict:
+    """
+    Fetch last N FT fixtures from PRIOR_SEASON for a team via the API.
+    Returns raw aggregated stats dict (corners_for_list, etc.) or empty dict on failure.
+    Costs API credits, so only called when current season n < MIN_RELIABLE.
+    """
+    data = safe_get("/fixtures", {
+        "team": team_id, "league": league_id, "season": PRIOR_SEASON,
+        "status": "FT", "last": last
+    })
+    fixtures = data.get("response", [])
+    if not fixtures:
+        return {}
+
+    corners_for_list = []
+    corners_ag_list  = []
+    yellow_list      = []
+    red_list         = []
+    fouls_list       = []
+    booking_pts_list = []
+    shots_total_list = []
+
+    for fix in fixtures:
+        fid = str(fix["fixture"]["id"])
+        is_home = fix["teams"]["home"]["id"] == team_id
+
+        stat_data = safe_get("/fixtures/statistics", {"fixture": int(fid)})
+        time.sleep(0.15)
+
+        stats_by_team = {}
+        for block in stat_data.get("response", []):
+            tid  = block["team"]["id"]
+            vals = {s["type"]: s["value"] for s in block.get("statistics", [])}
+            stats_by_team[tid] = vals
+
+        team_stats = stats_by_team.get(team_id, {})
+        opp_ids    = [tid for tid in stats_by_team if tid != team_id]
+        opp_stats  = stats_by_team.get(opp_ids[0], {}) if opp_ids else {}
+
+        def _int(d, key, default=0):
+            v = d.get(key)
+            if v is None:
+                return default
+            try:
+                return int(str(v).replace("%", ""))
+            except (ValueError, TypeError):
+                return default
+
+        corners_for = _int(team_stats, "Corner Kicks")
+        corners_ag  = _int(opp_stats,  "Corner Kicks")
+        yellow      = _int(team_stats, "Yellow Cards")
+        red         = _int(team_stats, "Red Cards")
+        fouls       = _int(team_stats, "Fouls")
+        shots       = _int(team_stats, "Total Shots")
+        booking_pts = (yellow * YELLOW_CARD_PTS) + (red * RED_CARD_PTS)
+
+        if corners_for + corners_ag + yellow + shots > 0:
+            corners_for_list.append(corners_for)
+            corners_ag_list.append(corners_ag)
+            yellow_list.append(yellow)
+            red_list.append(red)
+            fouls_list.append(fouls)
+            booking_pts_list.append(booking_pts)
+            shots_total_list.append(shots)
+
+    if not corners_for_list:
+        return {}
+
+    def avg(lst):
+        return round(sum(lst) / len(lst), 2) if lst else 0.0
+
+    return {
+        "n":              len(corners_for_list),
+        "avg_corners_for":     avg(corners_for_list),
+        "avg_corners_against": avg(corners_ag_list),
+        "avg_yellow_cards":    avg(yellow_list),
+        "avg_red_cards":       avg(red_list),
+        "avg_fouls":           avg(fouls_list),
+        "avg_booking_pts":     avg(booking_pts_list),
+        "avg_shots_total":     avg(shots_total_list),
+    }
+
+
+def apply_bayesian_shrinkage(raw_profile: dict, league_prior: dict) -> dict:
+    """
+    Shrink each team metric toward the league prior.
+    Formula: shrunk = (n * observed + k * prior) / (n + k)
+    k = SHRINKAGE_K (8 = stricter; team needs 8+ games to be >=50% weighted)
+    """
+    if not league_prior or raw_profile.get("quarantined"):
+        return raw_profile
+
+    n = raw_profile.get("sample_size", 0)
+    k = SHRINKAGE_K
+
+    metrics = [
+        "avg_corners_for", "avg_corners_against", "avg_total_corners",
+        "avg_yellow_cards", "avg_red_cards", "avg_fouls",
+        "avg_booking_pts", "avg_shots_total"
+    ]
+
+    shrunk = dict(raw_profile)
+    for m in metrics:
+        obs   = raw_profile.get(m, 0.0)
+        prior = league_prior.get(m, obs)   # fallback to own value if prior missing
+        shrunk[m] = round((n * obs + k * prior) / (n + k), 2)
+
+    shrunk["shrinkage_applied"] = True
+    shrunk["league_prior_weight"] = round(k / (n + k), 3)
+    return shrunk
+
+
+def blend_with_prior_season(current: dict, prior: dict, current_n: int) -> dict:
+    """
+    Linearly blend current-season shrunk stats with prior-season stats.
+    alpha = min(1.0, n / MIN_RELIABLE)
+    alpha=0 → all prior season, alpha=1 → all current season
+    """
+    if not prior or current.get("quarantined"):
+        return current
+
+    alpha = min(1.0, current_n / MIN_RELIABLE)
+    blended = dict(current)
+
+    metrics = [
+        "avg_corners_for", "avg_corners_against", "avg_total_corners",
+        "avg_yellow_cards", "avg_red_cards", "avg_fouls",
+        "avg_booking_pts", "avg_shots_total"
+    ]
+    for m in metrics:
+        cur_val  = current.get(m, 0.0)
+        prev_val = prior.get(m, cur_val)
+        blended[m] = round(alpha * cur_val + (1 - alpha) * prev_val, 2)
+
+    blended["prior_season_blend_alpha"] = round(alpha, 3)
+    blended["prior_season_used"]        = (PRIOR_SEASON if alpha < 1.0 else None)
+    return blended
+
+
+def compute_league_prior(profiles: dict) -> dict:
+    """
+    Compute the unweighted mean of each metric across all non-quarantined teams
+    in a league. Used as the Bayesian prior for shrinkage.
+    """
+    valid = [p for p in profiles.values() if not p.get("quarantined") and p.get("sample_size", 0) > 0]
+    if not valid:
+        return {}
+
+    metrics = [
+        "avg_corners_for", "avg_corners_against", "avg_total_corners",
+        "avg_yellow_cards", "avg_red_cards", "avg_fouls",
+        "avg_booking_pts", "avg_shots_total"
+    ]
+
+    prior = {}
+    for m in metrics:
+        vals = [p[m] for p in valid if m in p]
+        prior[m] = round(sum(vals) / len(vals), 2) if vals else 0.0
+    return prior
+
+
+def assign_confidence(n: int) -> str:
+    if n >= MIN_RELIABLE:
+        return "high"
+    elif n >= 4:
+        return "medium"
+    else:
+        return "low"
 
 
 def build_profile_for_team(team_id: int, league_id: int, season: int, last: int, old_prof: dict) -> dict | None:
@@ -205,6 +381,7 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         "avg_booking_pts":      avg(booking_pts_list),
         "avg_shots_total":      avg(shots_total_list),
         "sample_size":          n,
+        "confidence":           assign_confidence(n),
         "built_at":             datetime.utcnow().isoformat(),
         "fixture_history":      new_history
     }
@@ -362,6 +539,36 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
         else:
             print("no data (no FT fixtures)")
         time.sleep(0.3)
+
+    # ── Bayesian post-processing ──────────────────────────────────────────
+    # Step A: compute league-level prior from all non-quarantined raw profiles
+    league_prior = compute_league_prior(profiles)
+
+    # Step B: for each non-quarantined profile, apply shrinkage + prior-season blend
+    for tid_str, profile in list(profiles.items()):
+        if profile.get("quarantined"):
+            continue
+
+        current_n = profile.get("sample_size", 0)
+
+        # Apply Bayesian shrinkage toward league mean
+        profile = apply_bayesian_shrinkage(profile, league_prior)
+
+        # If under-sampled, fetch prior season and blend in
+        if current_n < MIN_RELIABLE:
+            try:
+                tid_int = int(tid_str)
+                print(f"    Team {tid_str}: n={current_n} < {MIN_RELIABLE}, fetching prior season {PRIOR_SEASON}...", end=" ", flush=True)
+                prior_raw = fetch_prior_season_raw(tid_int, league_id, last)
+                if prior_raw:
+                    profile = blend_with_prior_season(profile, prior_raw, current_n)
+                    print(f"blended (alpha={profile.get('prior_season_blend_alpha', '?')})")
+                else:
+                    print("no prior season data found")
+            except Exception as e:
+                print(f"prior season fetch failed: {e}")
+
+        profiles[tid_str] = profile
 
     return profiles
 

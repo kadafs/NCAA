@@ -134,8 +134,13 @@ def update_gist(payload):
 
 def run():
     print("Running Live In-Play Engine...")
-    today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-    preds = get_predictions_dict(today_str)
+    now = datetime.datetime.utcnow()
+    preds = {}
+    for delta in [-1, 0, 1]:
+        d = now + datetime.timedelta(days=delta)
+        day_preds = get_predictions_dict(d.strftime("%Y-%m-%d"))
+        preds.update(day_preds)
+    print(f"Loaded {len(preds)} tracked matches across yesterday/today/tomorrow.")
     
     live_fixtures = fetch_live_fixtures()
     print(f"Found {len(live_fixtures)} live fixtures.")
