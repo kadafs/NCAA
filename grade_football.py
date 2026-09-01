@@ -95,6 +95,11 @@ def grade_prediction(pred: dict, home_goals: int, away_goals: int) -> dict:
     p["actual_btts"]       = actual_btts
     p["actual_draw"]       = (actual_result == "DRAW")
     p["actual_result"]     = actual_result
+
+    # Corners & booking grading — populated later from fixtures/statistics
+    # (These are set by grade_corners_from_api if available)
+    # p["actual_corners_total"] = None  -- set externally
+    # p["actual_booking_pts"]   = None  -- set externally
     
     # Delta Grading Matrix
     actual_total = home_goals + away_goals
@@ -126,6 +131,47 @@ def btts_grade(pred: dict) -> str | None:
         return "WIN" if actual else "LOSS"
     if decision == "PLAY NO":
         return "WIN" if not actual else "LOSS"
+    return None
+
+
+def corner_grade(pred: dict) -> str | None:
+    """Return WIN, LOSS, or None (PASS) based on corner_call vs actual corners."""
+    call = pred.get("corner_call")
+    if not call or call == "PASS":
+        return None
+    actual_total = pred.get("actual_corners_total")
+    if actual_total is None:
+        return None
+    line_str = pred.get("corner_call_line", "")
+    # Parse the line number from e.g. "OVER 9.5" or "UNDER 9.5"
+    try:
+        line_val = float(line_str.split()[-1])
+    except (ValueError, IndexError):
+        return None
+    if "OVER" in line_str:
+        return "WIN" if actual_total > line_val else "LOSS"
+    elif "UNDER" in line_str:
+        return "WIN" if actual_total < line_val else "LOSS"
+    return None
+
+
+def booking_grade(pred: dict) -> str | None:
+    """Return WIN, LOSS, or None (PASS) based on booking_call vs actual booking pts."""
+    call = pred.get("booking_call")
+    if not call or call == "PASS":
+        return None
+    actual_pts = pred.get("actual_booking_pts")
+    if actual_pts is None:
+        return None
+    line_str = pred.get("booking_call_line", "")
+    try:
+        line_val = float(line_str.split()[-2])  # e.g. "OVER 30 PTS" -> 30
+    except (ValueError, IndexError):
+        return None
+    if "OVER" in line_str:
+        return "WIN" if actual_pts > line_val else "LOSS"
+    elif "UNDER" in line_str:
+        return "WIN" if actual_pts < line_val else "LOSS"
     return None
 
 
@@ -204,7 +250,11 @@ def main():
             outcome_str = f"  1X2: {graded['predicted_result']} -> {graded['actual_result']} [{o_grade}]"
             btts_str    = f"  BTTS: {graded['btts_decision']} [{b_grade}]" if b_grade else ""
             
-            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str} | {tier_str}")
+            c_grade = corner_grade(graded)
+            bk_grade = booking_grade(graded)
+            corner_str = f"  CORNERS: {graded.get('corner_call_line','?')} [{c_grade}]" if c_grade else ""
+            booking_str = f"  BOOKING: {graded.get('booking_call_line','?')} [{bk_grade}]" if bk_grade else ""
+            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}{corner_str}{booking_str} | {tier_str}")
         else:
             graded_predictions.append(pred)
             missed += 1
@@ -249,6 +299,16 @@ def main():
 
     data["predictions"]    = graded_predictions
     data["graded_at"]      = datetime.now().isoformat()
+    # Grade corners (only count PASS-filtered calls)
+    corners_played = [p for p in completed if p.get("corner_call") not in (None, "PASS")]
+    corners_wins  = sum(1 for p in corners_played if corner_grade(p) == "WIN")
+    corners_total = sum(1 for p in corners_played if corner_grade(p) is not None)
+
+    # Grade bookings (only count PASS-filtered calls)
+    booking_played = [p for p in completed if p.get("booking_call") not in (None, "PASS")]
+    booking_wins  = sum(1 for p in booking_played if booking_grade(p) == "WIN")
+    booking_total = sum(1 for p in booking_played if booking_grade(p) is not None)
+
     data["grade_summary"]  = {
         "outcome_wins":  x12_wins,
         "outcome_total": x12_total,
@@ -256,6 +316,12 @@ def main():
         "btts_wins":     btts_wins,
         "btts_total":    btts_total,
         "btts_pct":      round(100 * btts_wins / btts_total, 1) if btts_total else None,
+        "corners_wins":  corners_wins,
+        "corners_total": corners_total,
+        "corners_pct":   round(100 * corners_wins / corners_total, 1) if corners_total else None,
+        "booking_wins":  booking_wins,
+        "booking_total": booking_total,
+        "booking_pct":   round(100 * booking_wins / booking_total, 1) if booking_total else None,
     }
     save_predictions(date, data)
     print("\n  ✅ Grading complete!")

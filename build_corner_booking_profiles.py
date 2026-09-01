@@ -391,20 +391,23 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     """
     Predict corner totals and booking points for a match
     given the two team profiles.
+
+    Emits YES/NO/PASS signals (corner_call, booking_call) with minimum
+    confidence thresholds:
+      - Corner call: Poisson probability >= 65% AND expected margin >= 1.5
+      - Booking call: >= 65% probability above/below 30/40 pts threshold
     """
     if not home_profile or not away_profile:
         return {}
-        
+
     if home_profile.get("quarantined") or away_profile.get("quarantined"):
         return {}
 
-    # Expected corners: blend team for/against averages
+    # ── Corner expected values ────────────────────────────────────────────
     exp_home_corners = round((home_profile["avg_corners_for"] + away_profile["avg_corners_against"]) / 2, 1)
     exp_away_corners = round((away_profile["avg_corners_for"] + home_profile["avg_corners_against"]) / 2, 1)
     exp_total        = round(exp_home_corners + exp_away_corners, 1)
 
-    # Simple probability model: use Poisson-style threshold comparison
-    # P(over N) ≈ 1 - CDF(N, lambda=exp_total)
     import math
 
     def poisson_cdf(lam, k):
@@ -421,7 +424,38 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     over_10_5 = round((1 - poisson_cdf(exp_total, 10)) * 100)
     over_11_5 = round((1 - poisson_cdf(exp_total, 11)) * 100)
 
-    # Recommended corner line
+    # ── Dynamic line selection ────────────────────────────────────────────
+    # Pick the line with the maximum edge (furthest from 50/50)
+    CORNER_LINES   = [8.5, 9.5, 10.5, 11.5]
+    CORNER_PROBS   = [over_8_5, over_9_5, over_10_5, over_11_5]
+    CORNER_THRES   = 65   # minimum % to call YES or NO
+    CORNER_MARGIN  = 1.5  # expected total must be >= 1.5 clear of the line
+
+    corner_call      = "PASS"
+    corner_call_line = None
+    corner_call_pct  = None
+    best_edge        = 0
+
+    for line, p_over in zip(CORNER_LINES, CORNER_PROBS):
+        p_under = 100 - p_over
+        edge_over  = p_over  - 50  # positive = over leaning
+        edge_under = p_under - 50  # positive = under leaning
+
+        if p_over >= CORNER_THRES and (exp_total - line) >= CORNER_MARGIN:
+            if edge_over > best_edge:
+                best_edge        = edge_over
+                corner_call      = "YES"
+                corner_call_line = f"OVER {line}"
+                corner_call_pct  = p_over
+
+        if p_under >= CORNER_THRES and (line - exp_total) >= CORNER_MARGIN:
+            if edge_under > best_edge:
+                best_edge        = edge_under
+                corner_call      = "NO"
+                corner_call_line = f"UNDER {line}"
+                corner_call_pct  = p_under
+
+    # Legacy recommendation field (kept for backward compat)
     if over_10_5 >= 55:
         corner_rec = "OVER 10.5"
     elif over_9_5 >= 60:
@@ -431,17 +465,38 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     else:
         corner_rec = "PASS"
 
-    # Expected booking points
-    exp_home_booking = round((home_profile["avg_booking_pts"] + away_profile.get("avg_booking_pts", 20)) / 2, 1)
-    exp_away_booking = exp_home_booking   # symmetric for now
+    # ── Booking expected values ───────────────────────────────────────────
     exp_total_booking = round(home_profile["avg_booking_pts"] + away_profile["avg_booking_pts"], 1)
     exp_total_yellows = round(home_profile["avg_yellow_cards"] + away_profile["avg_yellow_cards"], 1)
 
-    # Booking points over lines
-    over_30_bk = round((1 - poisson_cdf(exp_total_booking / 10, 2)) * 100)  # rough approximation
+    over_30_bk = round((1 - poisson_cdf(exp_total_booking / 10, 2)) * 100)
     over_40_bk = round((1 - poisson_cdf(exp_total_booking / 10, 3)) * 100)
 
-    # Booking recommendation
+    # ── Booking YES/NO/PASS call ──────────────────────────────────────────
+    BOOKING_THRES   = 65   # minimum % to issue a call
+    BOOKING_MARGIN  = 5.0  # expected pts must be >= 5 clear of threshold
+
+    booking_call      = "PASS"
+    booking_call_line = None
+    booking_call_pct  = None
+
+    # Check Over 30 pts
+    if over_30_bk >= BOOKING_THRES and (exp_total_booking - 30) >= BOOKING_MARGIN:
+        booking_call      = "YES"
+        booking_call_line = "OVER 30 PTS"
+        booking_call_pct  = over_30_bk
+    # Check Under 30 pts (rare, but possible for very clean leagues)
+    elif (100 - over_30_bk) >= BOOKING_THRES and (30 - exp_total_booking) >= BOOKING_MARGIN:
+        booking_call      = "NO"
+        booking_call_line = "UNDER 30 PTS"
+        booking_call_pct  = 100 - over_30_bk
+    # If no 30 pts call, check Over 40 pts (high volatility games)
+    elif over_40_bk >= BOOKING_THRES and (exp_total_booking - 40) >= BOOKING_MARGIN:
+        booking_call      = "YES"
+        booking_call_line = "OVER 40 PTS"
+        booking_call_pct  = over_40_bk
+
+    # Legacy booking recommendation (kept for backward compat)
     if exp_total_booking >= 40:
         booking_rec = "HIGH (Over 30 pts likely)"
     elif exp_total_booking >= 28:
@@ -457,12 +512,20 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
         "over_9_5_pct":        over_9_5,
         "over_10_5_pct":       over_10_5,
         "over_11_5_pct":       over_11_5,
-        "corner_recommendation": corner_rec,
+        # ── YES/NO/PASS corner call ──
+        "corner_call":         corner_call,       # "YES" | "NO" | "PASS"
+        "corner_call_line":    corner_call_line,  # e.g. "OVER 9.5"
+        "corner_call_pct":     corner_call_pct,   # e.g. 68
+        "corner_recommendation": corner_rec,       # legacy
+        # ── YES/NO/PASS booking call ──
+        "booking_call":        booking_call,       # "YES" | "NO" | "PASS"
+        "booking_call_line":   booking_call_line,  # e.g. "OVER 30 PTS"
+        "booking_call_pct":    booking_call_pct,   # e.g. 71
         "exp_total_booking_pts":  exp_total_booking,
         "exp_total_yellows":      exp_total_yellows,
         "over_30_booking_pct":    over_30_bk,
         "over_40_booking_pct":    over_40_bk,
-        "booking_recommendation": booking_rec,
+        "booking_recommendation": booking_rec,     # legacy
     }
 
 
