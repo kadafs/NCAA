@@ -368,12 +368,12 @@ def main():
     data["predictions"]    = graded_predictions
     data["graded_at"]      = datetime.now().isoformat()
     # Grade corners (only count PASS-filtered calls)
-    corners_played = [p for p in completed if p.get("corners", {}).get("corner_call") not in (None, "PASS")]
+    corners_played = [p for p in completed if (p.get("corners") or {}).get("corner_call") not in (None, "PASS")]
     corners_wins  = sum(1 for p in corners_played if corner_grade(p) == "WIN")
     corners_total = sum(1 for p in corners_played if corner_grade(p) is not None)
 
     # Grade bookings (only count PASS-filtered calls)
-    booking_played = [p for p in completed if p.get("corners", {}).get("booking_call") not in (None, "PASS")]
+    booking_played = [p for p in completed if (p.get("corners") or {}).get("booking_call") not in (None, "PASS")]
     booking_wins  = sum(1 for p in booking_played if booking_grade(p) == "WIN")
     booking_total = sum(1 for p in booking_played if booking_grade(p) is not None)
 
