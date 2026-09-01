@@ -72,6 +72,48 @@ def fetch_fixtures_for_date(date: str) -> list:
         return []
 
 
+def fetch_fixture_statistics(fixture_id: int) -> dict:
+    """
+    Fetch statistics for a single fixture.
+    Returns a dict with {"corners": int, "booking_pts": int} or None if unavailable.
+    """
+    url = f"{BASE_URL}/fixtures/statistics"
+    params = {"fixture": fixture_id}
+    try:
+        r = requests.get(url, headers=HEADERS, params=params, timeout=10)
+        r.raise_for_status()
+        stats_response = r.json().get("response", [])
+        
+        if not stats_response:
+            return None
+            
+        total_corners = 0
+        total_booking_pts = 0
+        
+        for team_stats in stats_response:
+            stats = team_stats.get("statistics", [])
+            for stat in stats:
+                val = stat.get("value")
+                if val is None:
+                    continue
+                # Corner Kicks
+                if stat.get("type") == "Corner Kicks":
+                    total_corners += int(val)
+                # Booking points (Yellow = 10, Red = 25)
+                elif stat.get("type") == "Yellow Cards":
+                    total_booking_pts += int(val) * 10
+                elif stat.get("type") == "Red Cards":
+                    total_booking_pts += int(val) * 25
+                    
+        return {
+            "corners": total_corners,
+            "booking_pts": total_booking_pts
+        }
+    except Exception as e:
+        # Ignore errors (could be rate limit or just no stats available)
+        return None
+
+
 def build_result_key(fixture: dict) -> tuple:
     """Return (league_id, home_team_name, away_team_name) for matching."""
     league_id  = fixture["league"]["id"]
@@ -216,14 +258,15 @@ def main():
         print("  ⚠️  No finished fixtures returned — try again later or check API key.")
         return
 
-    # Build lookup: (league_id, home_name, away_name) → (home_goals, away_goals)
-    results_map: dict[tuple, tuple[int, int]] = {}
+    # Build lookup: (league_id, home_name, away_name) → (home_goals, away_goals, fixture_id)
+    results_map: dict[tuple, tuple[int, int, int]] = {}
     for fix in fixtures:
         key = build_result_key(fix)
         home_goals = fix["goals"]["home"]
         away_goals = fix["goals"]["away"]
+        fixture_id = fix["fixture"]["id"]
         if home_goals is not None and away_goals is not None:
-            results_map[key] = (int(home_goals), int(away_goals))
+            results_map[key] = (int(home_goals), int(away_goals), fixture_id)
 
     # Grade each prediction
     matched = 0
@@ -238,8 +281,29 @@ def main():
 
         key = (pred["league_id"], pred["home_team"], pred["away_team"])
         if key in results_map:
-            home_goals, away_goals = results_map[key]
+            home_goals, away_goals, fixture_id = results_map[key]
             graded = grade_prediction(pred, home_goals, away_goals)
+            
+            # --- NEW: Fetch statistics if this is a Corners/Booking YES/NO call ---
+            corner_call = graded.get("corner_call")
+            booking_call = graded.get("booking_call")
+            
+            needs_stats = False
+            if corner_call and corner_call != "PASS": needs_stats = True
+            if booking_call and booking_call != "PASS": needs_stats = True
+            
+            if needs_stats:
+                stats = fetch_fixture_statistics(fixture_id)
+                if stats:
+                    graded["actual_corners_total"] = stats["corners"]
+                    graded["actual_booking_pts"]   = stats["booking_pts"]
+                    # Polite delay to avoid hitting the 10 requests/sec limit
+                    time.sleep(0.1)
+                else:
+                    graded["actual_corners_total"] = None
+                    graded["actual_booking_pts"]   = None
+            # ----------------------------------------------------------------------
+
             graded_predictions.append(graded)
             matched += 1
 
