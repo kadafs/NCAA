@@ -178,7 +178,7 @@ def btts_grade(pred: dict) -> str | None:
 
 def corner_grade(pred: dict) -> str | None:
     """Return WIN, LOSS, or None (PASS) based on corner_call vs actual corners."""
-    corners = pred.get("corners", {})
+    corners = pred.get("corners") or {}
     call = corners.get("corner_call")
     if not call or call == "PASS":
         return None
@@ -200,7 +200,7 @@ def corner_grade(pred: dict) -> str | None:
 
 def booking_grade(pred: dict) -> str | None:
     """Return WIN, LOSS, or None (PASS) based on booking_call vs actual booking pts."""
-    corners = pred.get("corners", {})
+    corners = pred.get("corners") or {}
     call = corners.get("booking_call")
     if not call or call == "PASS":
         return None
@@ -287,7 +287,7 @@ def main():
             graded = grade_prediction(pred, home_goals, away_goals)
             
             # --- NEW: Fetch statistics if this is a Corners/Booking YES/NO call ---
-            corners_block = graded.get("corners", {})
+            corners_block = graded.get("corners") or {}
             corner_call = corners_block.get("corner_call")
             booking_call = corners_block.get("booking_call")
             
@@ -319,7 +319,7 @@ def main():
             
             c_grade = corner_grade(graded)
             bk_grade = booking_grade(graded)
-            corners_block = graded.get("corners", {})
+            corners_block = graded.get("corners") or {}
             corner_str = f"  CORNERS: {corners_block.get('corner_call_line','?')} [{c_grade}]" if c_grade else ""
             booking_str = f"  BOOKING: {corners_block.get('booking_call_line','?')} [{bk_grade}]" if bk_grade else ""
             print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}{corner_str}{booking_str} | {tier_str}")
