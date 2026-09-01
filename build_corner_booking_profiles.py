@@ -197,6 +197,8 @@ def apply_bayesian_shrinkage(raw_profile: dict, league_prior: dict) -> dict:
 
     metrics = [
         "avg_corners_for", "avg_corners_against", "avg_total_corners",
+        "home_corners_for", "home_corners_against", 
+        "away_corners_for", "away_corners_against",
         "avg_yellow_cards", "avg_red_cards", "avg_fouls",
         "avg_booking_pts", "avg_shots_total"
     ]
@@ -226,6 +228,8 @@ def blend_with_prior_season(current: dict, prior: dict, current_n: int) -> dict:
 
     metrics = [
         "avg_corners_for", "avg_corners_against", "avg_total_corners",
+        "home_corners_for", "home_corners_against", 
+        "away_corners_for", "away_corners_against",
         "avg_yellow_cards", "avg_red_cards", "avg_fouls",
         "avg_booking_pts", "avg_shots_total"
     ]
@@ -250,6 +254,8 @@ def compute_league_prior(profiles: dict) -> dict:
 
     metrics = [
         "avg_corners_for", "avg_corners_against", "avg_total_corners",
+        "home_corners_for", "home_corners_against", 
+        "away_corners_for", "away_corners_against",
         "avg_yellow_cards", "avg_red_cards", "avg_fouls",
         "avg_booking_pts", "avg_shots_total"
     ]
@@ -285,6 +291,10 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
 
     corners_for_list    = []
     corners_ag_list     = []
+    home_corners_for    = []
+    home_corners_ag     = []
+    away_corners_for    = []
+    away_corners_ag     = []
     yellow_list         = []
     red_list            = []
     fouls_list          = []
@@ -297,11 +307,21 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
     for fix in fixtures:
         fid = str(fix["fixture"]["id"])
         
+        is_home = fix["teams"]["home"]["id"] == team_id
+        
         # If it's already cached, grab stats locally (0 API calls)
         if fid in cached_history:
             cached = cached_history[fid]
             corners_for_list.append(cached["corners_for"])
             corners_ag_list.append(cached["corners_ag"])
+            
+            if is_home:
+                home_corners_for.append(cached["corners_for"])
+                home_corners_ag.append(cached["corners_ag"])
+            else:
+                away_corners_for.append(cached["corners_for"])
+                away_corners_ag.append(cached["corners_ag"])
+                
             yellow_list.append(cached["yellow"])
             red_list.append(cached["red"])
             fouls_list.append(cached.get("fouls", 0))
@@ -309,8 +329,6 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
             shots_total_list.append(cached.get("shots", 0))
             new_history[fid] = cached
             continue
-
-        is_home = fix["teams"]["home"]["id"] == team_id
         side    = "home" if is_home else "away"
         opp_side = "away" if is_home else "home"
 
@@ -347,6 +365,14 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         if corners_for + corners_ag + yellow + shots > 0:   # skip blank stat returns
             corners_for_list.append(corners_for)
             corners_ag_list.append(corners_ag)
+            
+            if is_home:
+                home_corners_for.append(corners_for)
+                home_corners_ag.append(corners_ag)
+            else:
+                away_corners_for.append(corners_for)
+                away_corners_ag.append(corners_ag)
+                
             yellow_list.append(yellow)
             red_list.append(red)
             fouls_list.append(fouls)
@@ -370,11 +396,48 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
     def avg(lst):
         return round(sum(lst) / len(lst), 2) if lst else 0.0
 
+    def blended_venue_avg(venue_lst, overall_lst):
+        """Blend venue-specific average with overall if sample < 5"""
+        v_avg = avg(venue_lst)
+        o_avg = avg(overall_lst)
+        n_venue = len(venue_lst)
+        if n_venue >= 5: return v_avg
+        # Linear blend: n/5 weight to venue, (5-n)/5 to overall
+        w = n_venue / 5.0
+        return round(w * v_avg + (1 - w) * o_avg, 2)
+
+    # Calculate Form Slope (Last 5 matches corners_for)
+    # y = corners, x = [1, 2, 3, 4, 5] (where 5 is most recent)
+    # Slope = sum((x - mean_x) * (y - mean_y)) / sum((x - mean_x)^2)
+    # The list is from oldest to newest if they are ordered that way. 
+    # API usually returns newest to oldest or oldest to newest. We need to be careful.
+    # Let's assume the order in corners_for_list is newest last or oldest last.
+    # Actually, fixtures from API with `last=N` returns newest first. 
+    # Let's reverse to get oldest first for slope calculation:
+    recent_5 = list(reversed(corners_for_list))[-5:] if len(corners_for_list) >= 5 else []
+    corner_form_slope = 0.0
+    if len(recent_5) == 5:
+        x = [1, 2, 3, 4, 5]
+        mean_x = 3
+        mean_y = sum(recent_5) / 5
+        numerator = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, recent_5))
+        denominator = 10.0 # sum((x-3)^2) = 4 + 1 + 0 + 1 + 4 = 10
+        corner_form_slope = round(numerator / denominator, 2)
+
     return {
         "team_id":              team_id,
         "avg_corners_for":      avg(corners_for_list),
         "avg_corners_against":  avg(corners_ag_list),
         "avg_total_corners":    avg([f + a for f, a in zip(corners_for_list, corners_ag_list)]),
+        
+        # Venue-specific stats
+        "home_corners_for":     blended_venue_avg(home_corners_for, corners_for_list),
+        "home_corners_against": blended_venue_avg(home_corners_ag, corners_ag_list),
+        "away_corners_for":     blended_venue_avg(away_corners_for, corners_for_list),
+        "away_corners_against": blended_venue_avg(away_corners_ag, corners_ag_list),
+        
+        "corner_form_slope":    corner_form_slope,
+        
         "avg_yellow_cards":     avg(yellow_list),
         "avg_red_cards":        avg(red_list),
         "avg_fouls":            avg(fouls_list),
@@ -402,11 +465,29 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
 
     if home_profile.get("quarantined") or away_profile.get("quarantined"):
         return {}
+        
+    # Default to non-venue splits if venue splits are missing (e.g. from old data)
+    h_for = home_profile.get("home_corners_for", home_profile["avg_corners_for"])
+    a_ag  = away_profile.get("away_corners_against", away_profile["avg_corners_against"])
+    a_for = away_profile.get("away_corners_for", away_profile["avg_corners_for"])
+    h_ag  = home_profile.get("home_corners_against", home_profile["avg_corners_against"])
 
     # ── Corner expected values ────────────────────────────────────────────
-    exp_home_corners = round((home_profile["avg_corners_for"] + away_profile["avg_corners_against"]) / 2, 1)
-    exp_away_corners = round((away_profile["avg_corners_for"] + home_profile["avg_corners_against"]) / 2, 1)
-    exp_total        = round(exp_home_corners + exp_away_corners, 1)
+    exp_home_corners = (h_for + a_ag) / 2
+    exp_away_corners = (a_for + h_ag) / 2
+    
+    # Form slope modifier (caps at +/- 1.0 corners)
+    h_slope = max(-1.0, min(1.0, home_profile.get("corner_form_slope", 0.0) * 0.5))
+    a_slope = max(-1.0, min(1.0, away_profile.get("corner_form_slope", 0.0) * 0.5))
+    
+    exp_home_corners += h_slope
+    exp_away_corners += a_slope
+    
+    # Ensure they don't go negative
+    exp_home_corners = round(max(0.5, exp_home_corners), 1)
+    exp_away_corners = round(max(0.5, exp_away_corners), 1)
+    
+    exp_total = round(exp_home_corners + exp_away_corners, 1)
 
     import math
 
@@ -472,29 +553,54 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     over_30_bk = round((1 - poisson_cdf(exp_total_booking / 10, 2)) * 100)
     over_40_bk = round((1 - poisson_cdf(exp_total_booking / 10, 3)) * 100)
 
-    # ── Booking YES/NO/PASS call ──────────────────────────────────────────
-    BOOKING_THRES   = 65   # minimum % to issue a call
-    BOOKING_MARGIN  = 5.0  # expected pts must be >= 5 clear of threshold
+    # ── Booking YES/NO/PASS call (League Normalized) ──────────────────────
+    # Determine the league's baseline points (fallback to 40 if missing)
+    # The league prior is typically passed inside the profile or we can extract it.
+    # We will use the home team's avg_booking_pts as a proxy if league prior is missing,
+    # but to do this properly we should pass league_avg_booking_pts. 
+    # For now, we extract it from a new key we will add to profiles: 'league_avg_booking_pts'
+    league_avg_team_pts = home_profile.get("league_avg_booking_pts", 20.0)
+    league_avg_match_pts = league_avg_team_pts * 2
+    
+    # We test lines around the league average (rounded to nearest 10)
+    base_line = round(league_avg_match_pts / 10) * 10
+    if base_line < 20: base_line = 20
+    if base_line > 70: base_line = 70
+    
+    # Test base_line and base_line + 10
+    lines_to_test = [base_line, base_line + 10]
+    if base_line > 20: lines_to_test.insert(0, base_line - 10)
+    
+    BOOKING_THRES   = 65
+    BOOKING_MARGIN  = 5.0
 
     booking_call      = "PASS"
     booking_call_line = None
     booking_call_pct  = None
+    best_bk_edge      = 0
 
-    # Check Over 30 pts
-    if over_30_bk >= BOOKING_THRES and (exp_total_booking - 30) >= BOOKING_MARGIN:
-        booking_call      = "YES"
-        booking_call_line = "OVER 30 PTS"
-        booking_call_pct  = over_30_bk
-    # Check Under 30 pts (rare, but possible for very clean leagues)
-    elif (100 - over_30_bk) >= BOOKING_THRES and (30 - exp_total_booking) >= BOOKING_MARGIN:
-        booking_call      = "NO"
-        booking_call_line = "UNDER 30 PTS"
-        booking_call_pct  = 100 - over_30_bk
-    # If no 30 pts call, check Over 40 pts (high volatility games)
-    elif over_40_bk >= BOOKING_THRES and (exp_total_booking - 40) >= BOOKING_MARGIN:
-        booking_call      = "YES"
-        booking_call_line = "OVER 40 PTS"
-        booking_call_pct  = over_40_bk
+    for line in lines_to_test:
+        # Calculate poisson prob for > line
+        # line / 10 because poisson is calculated using units of 10 points (1 card)
+        p_over = round((1 - poisson_cdf(exp_total_booking / 10, int(line / 10) - 1)) * 100)
+        p_under = 100 - p_over
+        
+        edge_over = p_over - 50
+        edge_under = p_under - 50
+        
+        if p_over >= BOOKING_THRES and (exp_total_booking - line) >= BOOKING_MARGIN:
+            if edge_over > best_bk_edge:
+                best_bk_edge      = edge_over
+                booking_call      = "YES"
+                booking_call_line = f"OVER {line} PTS"
+                booking_call_pct  = p_over
+                
+        if p_under >= BOOKING_THRES and (line - exp_total_booking) >= BOOKING_MARGIN:
+            if edge_under > best_bk_edge:
+                best_bk_edge      = edge_under
+                booking_call      = "NO"
+                booking_call_line = f"UNDER {line} PTS"
+                booking_call_pct  = p_under
 
     # Legacy booking recommendation (kept for backward compat)
     if exp_total_booking >= 40:
@@ -608,9 +714,14 @@ def build_profiles_for_league(league_id: int, season: int, last: int) -> dict:
     league_prior = compute_league_prior(profiles)
 
     # Step B: for each non-quarantined profile, apply shrinkage + prior-season blend
+    league_avg_booking_pts = league_prior.get("avg_booking_pts", 20.0)
+    
     for tid_str, profile in list(profiles.items()):
         if profile.get("quarantined"):
             continue
+            
+        # Inject league average booking points so corners_prediction can normalize calls
+        profile["league_avg_booking_pts"] = league_avg_booking_pts
 
         current_n = profile.get("sample_size", 0)
 
