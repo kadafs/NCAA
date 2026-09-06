@@ -505,10 +505,13 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     over_10_5 = round((1 - poisson_cdf(exp_total, 10)) * 100)
     over_11_5 = round((1 - poisson_cdf(exp_total, 11)) * 100)
 
-    # ── Dynamic line selection ────────────────────────────────────────────
-    # Pick the line with the maximum edge (furthest from 50/50)
-    CORNER_LINES   = [8.5, 9.5, 10.5, 11.5]
-    CORNER_PROBS   = [over_8_5, over_9_5, over_10_5, over_11_5]
+    # ── Standard Vegas line: 10.5 ─────────────────────────────────────────
+    # 10.5 is the canonical bookmaker corners total line (avg actual = 10.0).
+    # Previously we picked the max-edge line across [8.5, 9.5, 10.5, 11.5]
+    # which gravitated to OVER 8.5 / UNDER 11.5 — lines not offered at
+    # real odds. Fixing to 10.5 aligns predictions with actual betting markets.
+    CORNER_LINES   = [10.5]
+    CORNER_PROBS   = [over_10_5]
     CORNER_THRES   = 65   # minimum % to call YES or NO
     CORNER_MARGIN  = 1.5  # expected total must be >= 1.5 clear of the line
 
