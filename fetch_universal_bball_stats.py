@@ -420,6 +420,105 @@ def fetch_all_from_today(verbose=True):
     return results
 
 
+def attach_prior_season_stats(teams, league_id, season=None):
+    """
+    For any team with < 8 games in the current season, look up and attach
+    their previous season's true-talent stats as a baseline prior.
+    Looks in order:
+      1. data/bball_stats_{league_id}_prior_srs.json
+      2. data/bball_stats_{league_id}_{prev_season}_srs.json
+      3. data/bball_stats_{league_id}_{prev_season}.json
+      4. fetch_stats(league_id, season=prev_season)
+    """
+    if not teams:
+        return teams
+
+    # Check if any teams have < 8 games
+    early_teams = [
+        name for name, t in teams.items()
+        if t.get("games_played", t.get("games", 0)) < 8
+        and "previous_season" not in t
+        and not t.get("no_prev_season")
+    ]
+    if not early_teams:
+        return teams
+
+    # Determine prior season
+    if season is None:
+        season = get_current_season(league_id)
+    try:
+        s_year = int(str(season).split("-")[0]) if "-" in str(season) else int(season)
+        prev_s = s_year - 1
+    except (ValueError, TypeError):
+        prev_s = 2025
+
+    # Load prior season matrix
+    prior_teams = {}
+    prior_candidates = [
+        f"data/bball_stats_{league_id}_prior_srs.json",
+        f"data/bball_stats_{league_id}_{prev_s}_srs.json",
+        f"data/bball_stats_{league_id}_{prev_s}.json",
+    ]
+    for p in prior_candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    raw_teams = data.get("teams", data)
+                    if isinstance(raw_teams, list):
+                        prior_teams = {t["team_name"]: t for t in raw_teams if t.get("team_name")}
+                    elif isinstance(raw_teams, dict):
+                        prior_teams = raw_teams
+                    if prior_teams:
+                        break
+            except Exception:
+                pass
+
+    # If still not found, fetch from API if network/key available
+    if not prior_teams:
+        try:
+            prior_teams = fetch_stats(league_id, season=prev_s, verbose=False)
+        except Exception:
+            prior_teams = {}
+
+    if not prior_teams:
+        for name in early_teams:
+            teams[name]["no_prev_season"] = True
+        return teams
+
+    import difflib
+    # Build lower-case lookup map
+    prior_lower = {k.lower().strip(): v for k, v in prior_teams.items()}
+
+    for name in early_teams:
+        t = teams[name]
+        c_name = name.lower().strip()
+        matched = None
+
+        # 1. Exact or case-insensitive match
+        if name in prior_teams:
+            matched = prior_teams[name]
+        elif c_name in prior_lower:
+            matched = prior_lower[c_name]
+        else:
+            # 2. Fuzzy match
+            best_k, best_score = None, 0.0
+            for pk in prior_teams:
+                sim = difflib.SequenceMatcher(None, c_name, pk.lower().strip()).ratio()
+                if sim > best_score:
+                    best_score = sim
+                    best_k = pk
+            if best_score >= 0.85:
+                matched = prior_teams[best_k]
+
+        if matched and (matched.get("games_played", matched.get("games", 0)) >= 3 or matched.get("srs_rating") is not None):
+            t["previous_season"] = dict(matched)
+        else:
+            t["no_prev_season"] = True
+
+    return teams
+
+
 def main():
     parser = argparse.ArgumentParser(description="Fetch team stats for any basketball league")
     parser.add_argument("--league_id", type=int, help="League ID")

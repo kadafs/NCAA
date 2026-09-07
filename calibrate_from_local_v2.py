@@ -247,6 +247,12 @@ def main():
                 
         final_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
         
+        # Early-season anchor: If current season has < 25 games, expand window 365 days back
+        # to ensure pace_pivot and eff_pivot are calibrated to the league's true distribution
+        if len(final_games) < 25:
+            prior_cutoff = cutoff_date - datetime.timedelta(days=365)
+            final_games = [g for g in merged_games if g["_parsed_date"] >= prior_cutoff]
+        
         # Load existing config for the league name if available
         league_name = f"League {lid}"
         config_path = f"configs/leagues_v2/{lid}.json"

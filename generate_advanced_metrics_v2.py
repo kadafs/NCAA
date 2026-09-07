@@ -146,16 +146,17 @@ def calculate_iterative_srs(games):
             
         days_old = (max_date - g_date).days
         
-        # Time Decay: 14-day plateau, λ=0.030, hard cutoff at ~168 days.
-        # Games within 14 days = full weight (authoritative recent form).
-        # Exponential decay after that: Jan game in April ≈ 9%, Oct game ≈ 1%.
-        # Games older than ~168 days (weight < 1%) are excluded entirely —
-        # they pre-date the current season and have zero predictive value.
-        weight = 1.0
-        if days_old > 14:
-            weight = math.exp(-0.030 * (days_old - 14))
-        if weight < 0.01:
-            continue  # Hard cutoff — game too old to contribute meaningfully
+        # Time Decay: 14-day plateau, λ=0.030.
+        # Prior season games during early-season transition receive a constant anchor weight (0.35)
+        # so the summer vacation gap does not decay them to zero.
+        if g.get("is_prior_season"):
+            weight = 0.35
+        else:
+            weight = 1.0
+            if days_old > 14:
+                weight = math.exp(-0.030 * (days_old - 14))
+            if weight < 0.01:
+                continue  # Hard cutoff — game too old to contribute meaningfully
         
         if ht not in teams:
             teams[ht] = {"games": 0, "weight_sum": 0.0, "wins": 0, "pts_for": 0, "pts_against": 0, "scaled_margin_sum": 0.0, "opponents": [], "game_totals": []}
@@ -251,8 +252,11 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
         g_date = g.get("_parsed_date", max_date)
         if g_date == datetime.datetime.min: g_date = max_date
         days_old = (max_date - g_date).days
-        weight = 1.0 if days_old <= 14 else math.exp(-0.030 * (days_old - 14))
-        if weight < 0.01: continue
+        if g.get("is_prior_season"):
+            weight = 0.35
+        else:
+            weight = 1.0 if days_old <= 14 else math.exp(-0.030 * (days_old - 14))
+            if weight < 0.01: continue
 
         for team, pts, opp_pts, t_s, o_s in [
             (home_team, hs, as_, home_s, away_s),
@@ -638,7 +642,19 @@ def process_leagues():
             else:
                 cutoff_date = datetime.datetime(cur_year - 1, 8, 1)
                 
-        filtered_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
+        current_season_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
+        is_early_season = len(current_season_games) < 20
+
+        if is_early_season:
+            # Look back 365 days to anchor with the prior season
+            prior_cutoff = cutoff_date - datetime.timedelta(days=365)
+            filtered_games = [g for g in merged_games if g["_parsed_date"] >= prior_cutoff]
+            for g in filtered_games:
+                g["is_prior_season"] = (g["_parsed_date"] < cutoff_date)
+        else:
+            filtered_games = current_season_games
+            for g in filtered_games:
+                g["is_prior_season"] = False
             
         if len(filtered_games) < 5:
             continue
@@ -736,6 +752,10 @@ def process_leagues():
         }
         with open(f"data/bball_stats_{league_id}_srs_v2.json", "w", encoding="utf-8") as f:
             json.dump(payload_srs, f, indent=4)
+
+        if not is_early_season and len(output_stats) > 0:
+            with open(f"data/bball_stats_{league_id}_prior_srs.json", "w", encoding="utf-8") as f:
+                json.dump(payload_srs, f, indent=4)
 
         # Write [ADVANCED] — uses GENUINE efficiency ratings, not SRS clone
         adv_stats = calculate_advanced_ratings(filtered_games, pace_pivot=pace_pivot) if advanced_eligible else []
