@@ -2,7 +2,7 @@ name: ⚽ Football Daily Predictions
 
 on:
   schedule:
-    - cron: '30 4 * * *'   # 04:30 UTC daily — build profiles, then predict at 05:00
+    - cron: '0 2 * * *'   # 02:00 UTC daily — build profiles and run predictions
   workflow_dispatch:
     inputs:
       date:
