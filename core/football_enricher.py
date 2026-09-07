@@ -169,20 +169,23 @@ def fetch_api_consensus(fixture_id: int) -> dict:
 
 def fetch_injury_flags(league_id: int, season: int) -> dict:
     """
-    Returns a dict mapping team_id → list of injury strings.
+    Returns a dict mapping team_id → list of injury strings (deduplicated).
 
     Example:
         {33: ["Joelinton (Missing)", "Harvey Barnes (Questionable)"]}
     """
     data = _get("/injuries", {"league": league_id, "season": season})
     injuries: dict[int, list[str]] = {}
+    seen:     dict[int, set[str]]  = {}  # deduplicate per team
     for item in data.get("response", []):
         try:
             team_id     = item["team"]["id"]
             player_name = item["player"]["name"]
             inj_type    = item["player"]["type"]  # "Missing Fixture" or "Questionable"
             label = f"{player_name} ({inj_type})"
-            injuries.setdefault(team_id, []).append(label)
+            if label not in seen.setdefault(team_id, set()):
+                seen[team_id].add(label)
+                injuries.setdefault(team_id, []).append(label)
         except (KeyError, TypeError):
             continue
     return injuries
