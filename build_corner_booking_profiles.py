@@ -457,7 +457,7 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
 
     Emits YES/NO/PASS signals (corner_call, booking_call) with minimum
     confidence thresholds:
-      - Corner call: Poisson probability >= 65% AND expected margin >= 1.5
+      - Corner call: OVER >= 60% (margin >= 1.0) | UNDER >= 65% (margin >= 1.5)
       - Booking call: >= 65% probability above/below 30/40 pts threshold
     """
     if not home_profile or not away_profile:
@@ -510,10 +510,12 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     # Previously we picked the max-edge line across [8.5, 9.5, 10.5, 11.5]
     # which gravitated to OVER 8.5 / UNDER 11.5 — lines not offered at
     # real odds. Fixing to 10.5 aligns predictions with actual betting markets.
-    CORNER_LINES   = [10.5]
-    CORNER_PROBS   = [over_10_5]
-    CORNER_THRES   = 65   # minimum % to call YES or NO
-    CORNER_MARGIN  = 1.5  # expected total must be >= 1.5 clear of the line
+    CORNER_LINES        = [10.5]
+    CORNER_PROBS        = [over_10_5]
+    CORNER_OVER_THRES   = 60   # minimum % to call OVER (YES)
+    CORNER_OVER_MARGIN  = 1.0  # expected total must be >= 1.0 clear of line (>= 11.5)
+    CORNER_UNDER_THRES  = 65   # minimum % to call UNDER (NO)
+    CORNER_UNDER_MARGIN = 1.5  # expected total must be >= 1.5 clear of line (<= 9.0)
 
     corner_call      = "PASS"
     corner_call_line = None
@@ -525,14 +527,14 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
         edge_over  = p_over  - 50  # positive = over leaning
         edge_under = p_under - 50  # positive = under leaning
 
-        if p_over >= CORNER_THRES and (exp_total - line) >= CORNER_MARGIN:
+        if p_over >= CORNER_OVER_THRES and (exp_total - line) >= CORNER_OVER_MARGIN:
             if edge_over > best_edge:
                 best_edge        = edge_over
                 corner_call      = "YES"
                 corner_call_line = f"OVER {line}"
                 corner_call_pct  = p_over
 
-        if p_under >= CORNER_THRES and (line - exp_total) >= CORNER_MARGIN:
+        if p_under >= CORNER_UNDER_THRES and (line - exp_total) >= CORNER_UNDER_MARGIN:
             if edge_under > best_edge:
                 best_edge        = edge_under
                 corner_call      = "NO"
