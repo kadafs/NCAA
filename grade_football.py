@@ -276,8 +276,21 @@ def main():
     graded_predictions = []
 
     for pred in predictions:
-        # Skip already graded
+        # Skip already graded (but fetch stats if missing)
         if pred.get("actual_result") is not None:
+            corners_block = pred.get("corners") or {}
+            corner_call   = corners_block.get("corner_call")
+            booking_call  = corners_block.get("booking_call")
+            needs_stats   = (corner_call and corner_call != "PASS") or (booking_call and booking_call != "PASS")
+            if needs_stats and (pred.get("actual_corners_total") is None or pred.get("actual_booking_pts") is None):
+                key = (pred["league_id"], pred["home_team"], pred["away_team"])
+                if key in results_map:
+                    _, _, fixture_id = results_map[key]
+                    stats = fetch_fixture_statistics(fixture_id)
+                    if stats:
+                        pred["actual_corners_total"] = stats["corners"]
+                        pred["actual_booking_pts"]   = stats["booking_pts"]
+                        time.sleep(0.1)
             graded_predictions.append(pred)
             continue
 
@@ -356,17 +369,6 @@ def main():
     ]
     btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
     btts_total  = len(btts_played)
-
-    print(f"\n  [---] Grade Summary ({date})")
-    print(f"     1X2:  {x12_wins}/{x12_total} correct" + (f"  ({100*x12_wins//x12_total}%)" if x12_total else ""))
-    print(f"     BTTS YES: {btts_wins}/{btts_total} wins"  + (f"  ({100*btts_wins//btts_total}%)" if btts_total else ""))
-
-    if args.dry_run:
-        print("\n  [DRY RUN] — no changes saved.")
-        return
-
-    data["predictions"]    = graded_predictions
-    data["graded_at"]      = datetime.now().isoformat()
     # Grade corners (only count PASS-filtered calls)
     corners_played = [p for p in completed if (p.get("corners") or {}).get("corner_call") not in (None, "PASS")]
     corners_wins  = sum(1 for p in corners_played if corner_grade(p) == "WIN")
@@ -377,6 +379,20 @@ def main():
     booking_wins  = sum(1 for p in booking_played if booking_grade(p) == "WIN")
     booking_total = sum(1 for p in booking_played if booking_grade(p) is not None)
 
+    print(f"\n  [---] Grade Summary ({date})")
+    print(f"     1X2:  {x12_wins}/{x12_total} correct" + (f"  ({100*x12_wins//x12_total}%)" if x12_total else ""))
+    print(f"     BTTS YES: {btts_wins}/{btts_total} wins"  + (f"  ({100*btts_wins//btts_total}%)" if btts_total else ""))
+    if corners_total:
+        print(f"     CORNERS:  {corners_wins}/{corners_total} wins" + (f"  ({100*corners_wins//corners_total}%)" if corners_total else ""))
+    if booking_total:
+        print(f"     BOOKINGS: {booking_wins}/{booking_total} wins" + (f"  ({100*booking_wins//booking_total}%)" if booking_total else ""))
+
+    if args.dry_run:
+        print("\n  [DRY RUN] — no changes saved.")
+        return
+
+    data["predictions"]    = graded_predictions
+    data["graded_at"]      = datetime.now().isoformat()
     data["grade_summary"]  = {
         "outcome_wins":  x12_wins,
         "outcome_total": x12_total,
