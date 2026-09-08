@@ -14,7 +14,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 from dotenv import load_dotenv
 
@@ -79,15 +79,40 @@ def _delta_tier(delta: float) -> str:
     elif delta <= 21.0: return "MISS"
     else:               return "BUST"
 
+def resolve_target_date(date_arg: str | None = None) -> str:
+    if date_arg:
+        return date_arg
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    yesterday_str = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # If today's predictions file doesn't exist, check yesterday
+    if not os.path.exists(predictions_path(today_str)):
+        if os.path.exists(predictions_path(yesterday_str)):
+            print(f"  [Auto-Date] Today's file ({today_str}) not found. Defaulting to yesterday ({yesterday_str}).")
+            return yesterday_str
+    # If running in early morning (hours 0-6) and yesterday's file has ungraded predictions
+    elif now.hour < 6 and os.path.exists(predictions_path(yesterday_str)):
+        try:
+            with open(predictions_path(yesterday_str), encoding="utf-8") as f:
+                ydata = json.load(f)
+            if any(p.get("actual_result") is None for p in ydata.get("predictions", [])):
+                print(f"  [Auto-Date] Early morning run ({now.hour:02d}:00) and yesterday ({yesterday_str}) has ungraded games. Defaulting to yesterday.")
+                return yesterday_str
+        except Exception:
+            pass
+    return today_str
+
+
 def main():
     parser = argparse.ArgumentParser(description="Grade basketball predictions")
-    parser.add_argument("--date",    default=datetime.now().strftime("%Y-%m-%d"))
+    parser.add_argument("--date",    default=None, help="Date to grade (YYYY-MM-DD)")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--regrade", action="store_true",
                         help="Recalculate Delta Matrix fields on already-graded games (no API call needed)")
     args = parser.parse_args()
 
-    date = args.date
+    date = resolve_target_date(args.date)
     print(f"\n{'='*60}")
     print(f"  GRADING BASKETBALL PREDICTIONS | {date}")
     print(f"{'='*60}")
