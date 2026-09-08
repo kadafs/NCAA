@@ -632,8 +632,14 @@ def process_leagues():
         
         summer_league_ids = {"13", "66", "76", "222", "207", "208", "209", "210", "211", "212", "213", "214", "215", "216"}
         lid_str = str(league_id)
-        
-        if lid_str in summer_league_ids:
+
+        # Check if this league is an active calendar-year / summer league.
+        # Active in spring/early summer (April-June) AND late summer (August-Sept) of cur_year
+        has_spring = any(g["_parsed_date"].year == cur_year and 4 <= g["_parsed_date"].month <= 6 for g in merged_games)
+        has_late_summer = any(g["_parsed_date"].year == cur_year and 8 <= g["_parsed_date"].month <= 9 for g in merged_games)
+        is_calendar_year = (lid_str in summer_league_ids) or (has_spring and has_late_summer)
+
+        if is_calendar_year:
             cutoff_date = datetime.datetime(cur_year, 1, 1)
         else:
             # Global Winter Leagues default
