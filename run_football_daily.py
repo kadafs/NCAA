@@ -671,6 +671,110 @@ def calc_xg(home_s, away_s, avg_home, avg_away):
     xg_a = round(xg_a_raw * reg_away + avg_away * (1 - reg_away), 3)
     return xg_h, xg_a
 
+def solve_lambda_from_over25(target_prob):
+    """Binary search to find Poisson lambda such that P(Goals >= 3) = target_prob."""
+    low, high = 0.5, 6.0
+    for _ in range(25):
+        mid = (low + high) / 2.0
+        p = 1.0 - (math.e ** -mid) * (1.0 + mid + (mid ** 2) / 2.0)
+        if p < target_prob:
+            low = mid
+        else:
+            high = mid
+    return round(mid, 3)
+
+def calc_xg_from_odds(market_odds, default_tg=2.65):
+    """Extract sharp xG parameters from bookmaker 1X2 and Over/Under lines."""
+    ho = market_odds.get("home_odds")
+    ao = market_odds.get("away_odds")
+    o25 = market_odds.get("over25_odds")
+    u25 = market_odds.get("under25_odds")
+
+    # 1. Total Expected Goals from Over/Under market
+    if o25 and u25 and o25 > 1.0 and u25 > 1.0:
+        po = 1.0 / o25
+        pu = 1.0 / u25
+        p_over = po / (po + pu)
+        tg = solve_lambda_from_over25(p_over)
+    elif o25 and o25 > 1.0:
+        p_over = min(0.85, max(0.20, (1.0 / o25) * 0.93))
+        tg = solve_lambda_from_over25(p_over)
+    else:
+        tg = default_tg
+
+    # 2. Split between Home and Away based on implied win probability ratio
+    if ho and ao and ho > 1.0 and ao > 1.0:
+        ph = 1.0 / ho
+        pa = 1.0 / ao
+        ratio = math.sqrt(ph / max(0.01, pa))
+        xg_h = round(tg * (ratio / (ratio + 1.0)), 3)
+        xg_a = round(tg * (1.0 / (ratio + 1.0)), 3)
+    else:
+        xg_h = round(tg * 0.55, 3)
+        xg_a = round(tg * 0.45, 3)
+
+    return max(0.25, xg_h), max(0.25, xg_a)
+
+_GLOBAL_TEAM_STATS_CACHE = None
+
+def get_global_team_stats(team_id=None, team_name=None):
+    """
+    Scans all cached universal_*_stats.json files to find the richest domestic record
+    for a club that has zero or few games in its current cup or continental tournament.
+    """
+    global _GLOBAL_TEAM_STATS_CACHE
+    if _GLOBAL_TEAM_STATS_CACHE is None:
+        _GLOBAL_TEAM_STATS_CACHE = {}
+        for f in glob("data/football/universal_*_stats.json"):
+            try:
+                with open(f, "r", encoding="utf-8") as fp:
+                    data = json.load(fp)
+                    lid = data.get("league_id")
+                    for tname, s in data.get("teams", {}).items():
+                        tid = s.get("team_id")
+                        played = s.get("played_all", 0)
+                        if not tid:
+                            continue
+                        if tid not in _GLOBAL_TEAM_STATS_CACHE or played > _GLOBAL_TEAM_STATS_CACHE[tid].get("played_all", 0):
+                            s_copy = dict(s)
+                            s_copy["origin_league_id"] = lid
+                            _GLOBAL_TEAM_STATS_CACHE[tid] = s_copy
+                            _GLOBAL_TEAM_STATS_CACHE[tname.lower().strip()] = s_copy
+            except Exception:
+                pass
+
+    if team_id and team_id in _GLOBAL_TEAM_STATS_CACHE:
+        return _GLOBAL_TEAM_STATS_CACHE[team_id]
+    if team_name and team_name.lower().strip() in _GLOBAL_TEAM_STATS_CACHE:
+        return _GLOBAL_TEAM_STATS_CACHE[team_name.lower().strip()]
+    return None
+
+def is_national_team_match(home_name, away_name, country="", lname=""):
+    """Checks whether both teams are genuine national teams."""
+    elo_path = os.path.join(os.path.dirname(__file__), "data", "football", "elo_ratings.json")
+    try:
+        with open(elo_path, 'r', encoding='utf-8') as f:
+            elo_data = json.load(f).get("ratings", {})
+    except Exception:
+        elo_data = {}
+
+    def has_elo(name):
+        c_name = name.lower().replace(" u23", "").replace(" u21", "").replace(" u20", "").replace(" u19", "").replace(" u18", "").replace(" u17", "").replace(" w", "").strip()
+        for k in elo_data:
+            if k.lower() == c_name:
+                return True
+        return False
+
+    if has_elo(home_name) and has_elo(away_name):
+        return True
+
+    nl = lname.lower()
+    nat_tourns = ["nations league", "world cup", "euro championship", "copa america", "asian cup", "africa cup of nations", "gold cup", "international friendlies"]
+    if any(t in nl for t in nat_tourns):
+        return True
+
+    return False
+
 def calc_xg_elo(home_name, away_name):
     elo_path = os.path.join(os.path.dirname(__file__), "data", "football", "elo_ratings.json")
     try:
@@ -679,25 +783,20 @@ def calc_xg_elo(home_name, away_name):
     except Exception:
         elo_data = {}
 
-    # Fuzzy match Elo names
     def get_elo(name):
         c_name = name.lower().replace(" u23", "").replace(" u21", "").replace(" u20", "").replace(" u19", "").replace(" u18", "").replace(" u17", "").replace(" w", "").strip()
-        # Generate a small repeatable offset based on the name so unknowns aren't identically rated
-        hash_offset = sum(ord(c) for c in c_name) % 100
-        base = 1450 + hash_offset
         for k, v in elo_data.items():
             if k.lower() == c_name or k.lower() in c_name or c_name in k.lower():
                 return v
-        return base
+        return 1500
 
     h_elo = get_elo(home_name)
     a_elo = get_elo(away_name)
     
-    # +50 Elo for Home Advantage
     diff = (h_elo + 50) - a_elo
-    
-    # Conversion: 100 Elo points ~ 0.35 goals difference. Base Int Total ~ 2.45
-    base = 2.45 / 2.0
+    avg_elo = (h_elo + a_elo) / 2.0
+    base_tg = 2.45 + min(0.40, max(-0.30, (avg_elo - 1600) / 1000.0))
+    base = base_tg / 2.0
     xg_diff = (diff / 100.0) * 0.35
     
     xg_h = round(base + (xg_diff / 2.0), 3)
@@ -710,28 +809,33 @@ def calc_xg_elo(home_name, away_name):
 # STEP 5: RUN ENGINE PER GAME
 # ------------------------------------------------------------------
 
-def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country="", lname=""):
+def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country="", lname="", enrichment=None):
     from core.football_engine import FootballEngine
 
     home_name = game["home_team"]
     away_name = game["away_team"]
 
-    # Identify if this is a competition where domestic stats don't cross over well
-    is_international = (country.lower() == "world")
-    is_domestic_cup = ("cup" in lname.lower() or "copa" in lname.lower() or "trophy" in lname.lower() or "pokal" in lname.lower() or "coppa" in lname.lower() or "coupe" in lname.lower() or "taça" in lname.lower() or "taca" in lname.lower())
-    use_elo = is_international or is_domestic_cup
+    is_national = is_national_team_match(home_name, away_name, country, lname)
+    market_odds = (enrichment or {}).get("market_odds") or {}
+    has_market_odds = bool(market_odds.get("home_odds") or market_odds.get("over25_odds"))
 
-    # National/Cup teams often only play 1-2 games a year. Bypass the strict check.
-    min_req = 1 if use_elo else MIN_GAMES_PLAYED
-    
-    if use_elo:
+    # Determine xG source:
+    # 1. Genuine national team matches use Elo
+    # 2. Clubs with market odds use bookmaker-implied lines (crucial for Champions League / cross-league)
+    # 3. Clubs without market odds use domestic-enriched stats via Dixon-Coles
+    min_req = 1 if (is_national or has_market_odds) else MIN_GAMES_PLAYED
+
+    if is_national:
         xg_h, xg_a = calc_xg_elo(home_name, away_name)
+    elif has_market_odds:
+        xg_h, xg_a = calc_xg_from_odds(market_odds)
     else:
         if home_s.get("played_all", 0) < min_req or away_s.get("played_all", 0) < min_req:
             return None, f"Insufficient games played (need {min_req}+)"
         xg_h, xg_a = calc_xg(home_s, away_s, avg_home, avg_away)
-    btts_prob   = calc_btts_prob(xg_h, xg_a)
-    draw_prob   = calc_draw_prob(xg_h, xg_a)
+
+    btts_prob = calc_btts_prob(xg_h, xg_a)
+    draw_prob = calc_draw_prob(xg_h, xg_a)
 
     home_cs_rate  = home_s.get("clean_sheets", 0) / max(home_s.get("played_all", 1), 1)
     away_cs_rate  = away_s.get("clean_sheets", 0) / max(away_s.get("played_all", 1), 1)
@@ -751,6 +855,7 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=
         "xg_total":         round(xg_h + xg_a, 3),
         "btts_prob":        btts_prob,
         "draw_prob":        draw_prob,
+        "btts_market_prob": market_odds.get("btts_market_prob"),
         "is_both_defensive": home_cs_rate > 0.35 and away_cs_rate > 0.35,
         "is_both_attacking": (home_s.get("pgf_all", 0) > avg_home * 1.1 and
                               away_s.get("pgf_all", 0) > avg_away * 1.1),
@@ -811,7 +916,7 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=
     }
 
     try:
-        engine_mode = "safe" if country.lower() == "world" else mode
+        engine_mode = "safe" if (is_national and country.lower() == "world") else mode
         engine = FootballEngine(default_config, mode=engine_mode, trace=trace)
         result = engine.calculate(game_row)
         return result, None
@@ -936,16 +1041,45 @@ def main():
             hk, home_s = find_team(game.get("home_id"), home, teams)
             ak, away_s = find_team(game.get("away_id"), away, teams)
 
+            # For cup or continental tournaments (UCL, UEL, Libertadores, domestic cups),
+            # teams often have 0 or few games in the tournament cache. Fallback to their
+            # primary domestic league records from the global cache!
+            if not home_s or home_s.get("played_all", 0) < 3:
+                g_home = get_global_team_stats(game.get("home_id"), home)
+                if g_home:
+                    home_s = g_home
+            if not away_s or away_s.get("played_all", 0) < 3:
+                g_away = get_global_team_stats(game.get("away_id"), away)
+                if g_away:
+                    away_s = g_away
+
+            # --- Enrichment per fixture (odds + consensus) fetched early for model use ---
+            fixture_id = game.get("fixture_id")
+            enrichment = enrich_fixture(
+                fixture_id,
+                home_s.get("team_id") if home_s else game.get("home_id"),
+                away_s.get("team_id") if away_s else game.get("away_id"),
+                injury_cache
+            ) if fixture_id and not args.low_data else {}
+
+            market_odds = (enrichment or {}).get("market_odds") or {}
+            has_market_odds = bool(market_odds.get("home_odds") or market_odds.get("over25_odds"))
 
             if not home_s or not away_s:
-                missing = []
-                if not home_s: missing.append(home)
-                if not away_s: missing.append(away)
-                print(f"    {away:28} @ {home:28}  -- SKIP (stats missing: {', '.join(missing)})")
-                total_skipped += 1
-                continue
+                if has_market_odds:
+                    if not home_s:
+                        home_s = {"name": home, "team_id": game.get("home_id"), "played_all": 1, "clean_sheets": 0, "btts_rate": 0.5, "form_wins": 0, "form_draws": 0}
+                    if not away_s:
+                        away_s = {"name": away, "team_id": game.get("away_id"), "played_all": 1, "clean_sheets": 0, "btts_rate": 0.5, "form_wins": 0, "form_draws": 0}
+                else:
+                    missing = []
+                    if not home_s: missing.append(home)
+                    if not away_s: missing.append(away)
+                    print(f"    {away:28} @ {home:28}  -- SKIP (stats missing: {', '.join(missing)})")
+                    total_skipped += 1
+                    continue
 
-            result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace, country, lname)
+            result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace, country, lname, enrichment=enrichment)
             if err:
                 print(f"    {away:28} @ {home:28}  -- SKIP ({err})")
                 total_skipped += 1
@@ -997,15 +1131,6 @@ def main():
                 else:          actual_result = "AWAY"
                 print(f"      Final: {ag}-{hg}  BTTS:{actual_btts}  Result:{actual_result}  "
                       f"(Pred:{pred})")
-
-            # --- Enrichment per fixture (odds + consensus) ---
-            fixture_id = game.get("fixture_id")
-            enrichment = enrich_fixture(
-                fixture_id,
-                home_s.get("team_id"),
-                away_s.get("team_id"),
-                injury_cache
-            ) if fixture_id and not args.low_data else {}
 
             # --- Corner & Booking prediction from team profiles ---
             home_profile = team_profiles.get(str(home_s.get("team_id", "")))
@@ -1066,6 +1191,10 @@ def main():
                 "away_win_odds":    result.get("away_win_odds"),
                 "predicted_result": result.get("predicted_result"),
                 "outcome_decision": result.get("outcome_decision"),
+                # Over/Under probabilities (root level)
+                "over_1_5_prob":    round(calc_over_prob(xg_h + xg_a, 1.5) * 100, 1),
+                "over_2_5_prob":    round(calc_over_prob(xg_h + xg_a, 2.5) * 100, 1),
+                "over_3_5_prob":    round(calc_over_prob(xg_h + xg_a, 3.5) * 100, 1),
                 "mode":        args.mode,
                 "timestamp":   datetime.now(ET_TZ).isoformat(),
                 # Enrichment
