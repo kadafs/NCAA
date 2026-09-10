@@ -90,11 +90,9 @@ def copy_sport_data(sport: str, date_filter: str | None = None):
         copied.append(src_file.name)
 
     # Also copy leaderboard files if they exist
-    for lb_pattern in ["league_leaderboard.json", f"{sport}_leaderboard.json"]:
-        lb_src = src_dir / lb_pattern
-        if lb_src.exists():
-            shutil.copy2(lb_src, dest_dir / lb_pattern)
-            print(f"  📄 Copying: {lb_pattern}")
+    for lb_file in src_dir.glob("*leaderboard*.json"):
+        shutil.copy2(lb_file, dest_dir / lb_file.name)
+        print(f"  📄 Copying: {lb_file.name}")
 
     print(f"  ✅ Copied {len(copied)} file(s) for {sport}.")
     return copied

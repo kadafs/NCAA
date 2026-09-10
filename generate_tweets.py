@@ -409,55 +409,149 @@ def post_confidence_board(preds, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_M
 
 # ── Results Post (Yesterday's grading) ───────────────────────────────────────
 
-def post_results(preds_yesterday, yesterday_date_str=None):
-    """Post 4 — Grade yesterday's BTTS YES picks with per-game detail."""
-    # Only grade BTTS YES plays that have been resolved
-    plays = [
-        p for p in preds_yesterday
-        if p.get("btts_decision") in BTTS_PLAY_DECISIONS
-        and p.get("actual_btts") is not None
-    ]
-    if not plays:
+def post_results(preds_yesterday, yesterday_date_str=None, threshold=DEFAULT_THRESHOLD, min_odds=DEFAULT_MIN_ODDS, league_lb=None):
+    """
+    Post 4 — Grade yesterday's tweeted games & predictions across markets:
+      1. Model's Best 5 (Multi-Market Top Picks)
+      2. 70%+ High Confidence Board (Home Wins, Away Wins, BTTS YES)
+      3. All Model BTTS Plays
+    """
+    if not preds_yesterday:
         return None
 
-    wins   = [p for p in plays if p.get("actual_btts") is True]
-    losses = [p for p in plays if p.get("actual_btts") is False]
-    total  = len(plays)
-    correct = len(wins)
-    pct    = round(correct / total * 100) if total else 0
-
-    icon = "🟢" if pct >= 60 else ("🟡" if pct >= 50 else "🔴")
     date_label = yesterday_date_str or "Yesterday"
 
+    # ── 1. Grade Model's Best 5 ──────────────────────────────────────────
+    scored = [(p, composite_score(p, min_odds)) for p in preds_yesterday]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    best5 = [p for p, _ in scored[:5]]
+
+    best5_lines = []
+    b5_wins = 0
+    b5_total = 0
+
+    for p in best5:
+        if p.get("actual_result") is None:
+            continue
+        ht = shorten(p.get("home_team", ""), 18)
+        at = shorten(p.get("away_team", ""), 18)
+        hg = p.get("actual_home_goals", "?")
+        ag = p.get("actual_away_goals", "?")
+        score_str = f"{hg}-{ag}"
+
+        # Determine primary market
+        decision = p.get("btts_decision", "")
+        side, prob_1x2, odds_1x2 = best_1x2(p)
+        btts_real_edge = real_market_edge(p)
+        has_btts_play = decision in BTTS_PLAY_DECISIONS and btts_real_edge > 0
+
+        if has_btts_play and btts_real_edge >= (prob_1x2 - 65) * 0.5:
+            market_label = "BTTS"
+            is_win = bool(p.get("actual_btts"))
+        else:
+            market_label = f"{side} WIN"
+            is_win = (p.get("actual_result") == side)
+
+        if is_win:
+            b5_wins += 1
+            best5_lines.append(f"  ✅ {ht} vs {at} ({score_str}) — {market_label}")
+        else:
+            best5_lines.append(f"  ❌ {ht} vs {at} ({score_str}) — {market_label}")
+        b5_total += 1
+
+    b5_pct = round(100 * b5_wins / b5_total) if b5_total else 0
+
+    # ── 2. Grade 70%+ Confidence Board ───────────────────────────────────
+    h_wins, h_tot = 0, 0
+    a_wins, a_tot = 0, 0
+    b_wins, b_tot = 0, 0
+
+    for p in preds_yesterday:
+        if p.get("actual_result") is None:
+            continue
+        hp = _safe(p.get("home_win_prob", 0))
+        ap = _safe(p.get("away_win_prob", 0))
+        bp = _safe(p.get("btts_prob", 0))
+        ho = _safe(p.get("home_win_odds", 0))
+        ao = _safe(p.get("away_win_odds", 0))
+
+        if hp >= threshold and ho >= min_odds:
+            h_tot += 1
+            if p.get("actual_result") == "HOME":
+                h_wins += 1
+        if ap >= threshold and ao >= min_odds:
+            a_tot += 1
+            if p.get("actual_result") == "AWAY":
+                a_wins += 1
+
+        if bp >= threshold:
+            lid = p.get("league_id")
+            if league_lb and lid:
+                rate = league_btts_hit_rate(lid, league_lb)
+                if rate is not None and rate < LEAGUE_BTTS_FLOOR:
+                    continue
+            b_tot += 1
+            if p.get("actual_btts"):
+                b_wins += 1
+
+    conf_wins = h_wins + a_wins + b_wins
+    conf_tot = h_tot + a_tot + b_tot
+    conf_pct = round(100 * conf_wins / conf_tot) if conf_tot else 0
+
+    # ── 3. All BTTS Plays ────────────────────────────────────────────────
+    all_btts_plays = [
+        p for p in preds_yesterday
+        if p.get("btts_decision") in BTTS_PLAY_DECISIONS and p.get("actual_btts") is not None
+    ]
+    all_b_wins = sum(1 for p in all_btts_plays if p.get("actual_btts"))
+    all_b_tot = len(all_btts_plays)
+    all_b_pct = round(100 * all_b_wins / all_b_tot) if all_b_tot else 0
+
+    if not b5_total and not conf_tot and not all_b_tot:
+        return None
+
+    # Print clean terminal breakdown
+    print(f"\n{'='*60}")
+    print(f"  YESTERDAY'S PERFORMANCE SUMMARY ({date_label})")
+    print(f"{'='*60}")
+    if b5_total:
+        print(f"  Best 5 Top Picks:       {b5_wins}/{b5_total} ({b5_pct}%)")
+        for line in best5_lines:
+            print(f"  {line}")
+    if conf_tot:
+        print(f"  70%+ Confidence Board:  {conf_wins}/{conf_tot} ({conf_pct}%)")
+        if h_tot: print(f"    - Home Wins:          {h_wins}/{h_tot} ({round(100*h_wins/h_tot)}%)")
+        if a_tot: print(f"    - Away Wins:          {a_wins}/{a_tot} ({round(100*a_wins/a_tot)}%)")
+        if b_tot: print(f"    - BTTS YES:           {b_wins}/{b_tot} ({round(100*b_wins/b_tot)}%)")
+    if all_b_tot:
+        print(f"  All Model BTTS Plays:   {all_b_wins}/{all_b_tot} ({all_b_pct}%)")
+    print(f"{'='*60}\n")
+
+    # ── Build Post 4 Text for X ──────────────────────────────────────────
     lines = [
-        f"📋 BTTS RESULTS — {date_label}",
-        f"{icon} {correct}/{total} correct ({pct}%)\n",
+        f"📋 RESULTS — {date_label}",
+        "Accountability first. Yesterday's performance:\n",
     ]
 
-    if wins:
-        lines.append("✅ Won:")
-        for p in wins:
-            ht = shorten(p["home_team"], 20)
-            at = shorten(p["away_team"], 20)
-            hg = p.get("actual_home_goals", "?")
-            ag = p.get("actual_away_goals", "?")
-            prob = _safe(p.get("btts_prob", 0))
-            lines.append(f"  ✅ {ht} vs {at} — {hg}-{ag} ({prob:.0f}%)")
+    if b5_total:
+        lines.append(f"🧠 MODEL'S BEST 5: {b5_wins}/{b5_total} ({b5_pct}%)")
+        lines.extend(best5_lines)
+        lines.append("")
 
-    if losses:
-        lines.append("\n❌ Lost:")
-        for p in losses:
-            ht = shorten(p["home_team"], 20)
-            at = shorten(p["away_team"], 20)
-            hg = p.get("actual_home_goals", "?")
-            ag = p.get("actual_away_goals", "?")
-            prob = _safe(p.get("btts_prob", 0))
-            lines.append(f"  ❌ {ht} vs {at} — {hg}-{ag} ({prob:.0f}%)")
+    if conf_tot:
+        lines.append(f"📊 70%+ CONFIDENCE BOARD: {conf_wins}/{conf_tot} ({conf_pct}%)")
+        if h_tot: lines.append(f"  🏠 Home Wins: {h_wins}/{h_tot} ({round(100*h_wins/h_tot)}%)")
+        if a_tot: lines.append(f"  ✈️ Away Wins: {a_wins}/{a_tot} ({round(100*a_wins/a_tot)}%)")
+        if b_tot: lines.append(f"  🟢 BTTS YES: {b_wins}/{b_tot} ({round(100*b_wins/b_tot)}%)")
+        lines.append("")
 
-    lines += [
-        f"\nFull record 👉 {SITE_URL}",
-        "#Football #Results #Accountability"
-    ]
+    if all_b_tot:
+        lines.append(f"⚽ ALL BTTS PLAYS: {all_b_wins}/{all_b_tot} ({all_b_pct}%)")
+
+    lines.extend([
+        f"\nFull records 👉 {SITE_URL}",
+        "#Football #Results #Accountability #SportsBetting"
+    ])
     return "\n".join(lines)
 
 
@@ -476,8 +570,8 @@ def main():
     parser = argparse.ArgumentParser(description="Generate X posts from football predictions")
     parser.add_argument("--date",      default=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                         help="Date to generate posts for (YYYY-MM-DD)")
-    parser.add_argument("--yesterday", default=None,
-                        help="Date of yesterday's file for results post (YYYY-MM-DD)")
+    parser.add_argument("--yesterday", nargs="?", const="AUTO", default=None,
+                        help="Auto-grade previous games and generate results post. Can specify YYYY-MM-DD or omit to auto-detect yesterday")
     parser.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD,
                         help=f"Confidence floor for Post 3 (default {DEFAULT_THRESHOLD})")
     parser.add_argument("--min-odds",  type=float, default=DEFAULT_MIN_ODDS,
@@ -492,7 +586,29 @@ def main():
                         help="Auto-post to X via API (requires X_API_* env vars)")
     args = parser.parse_args()
 
-    print(f"Loading predictions for {args.date}...")
+    # ── Auto-Grade Yesterday If Requested ────────────────────────────────────
+    yesterday_date = None
+    if args.yesterday:
+        if args.yesterday.upper() == "AUTO":
+            from datetime import timedelta as _td
+            target_dt = datetime.strptime(args.date, "%Y-%m-%d")
+            yesterday_date = (target_dt - _td(days=1)).strftime("%Y-%m-%d")
+        else:
+            yesterday_date = args.yesterday
+
+        print(f"\n[Yesterday Grading] Checking and grading predictions for {yesterday_date}...")
+        try:
+            from grade_football import grade_football_date
+            grade_football_date(yesterday_date)
+            try:
+                import aggregate_league_stats
+                aggregate_league_stats.main(args_list=[])
+            except Exception as e:
+                print(f"  [warn] Error updating league stats: {e}")
+        except Exception as e:
+            print(f"  ⚠️ Error auto-grading {yesterday_date}: {e}")
+
+    print(f"\nLoading predictions for {args.date}...")
     preds = load_predictions(args.date)
     print(f"  {len(preds)} predictions loaded.")
 
@@ -515,13 +631,15 @@ def main():
         ("POST 2 — Multi-Market Top 5",                               post2),
     ]
 
-    # Optional: results post from yesterday
-    if args.yesterday:
+    # Results post from yesterday
+    if yesterday_date:
         try:
-            y_preds = load_predictions(args.yesterday)
+            y_preds = load_predictions(yesterday_date)
             from datetime import datetime as _dt
-            y_label = _dt.strptime(args.yesterday, "%Y-%m-%d").strftime("%d %b %Y")
-            post4   = post_results(y_preds, yesterday_date_str=y_label)
+            y_label = _dt.strptime(yesterday_date, "%Y-%m-%d").strftime("%d %b %Y")
+            post4   = post_results(y_preds, yesterday_date_str=y_label,
+                                   threshold=args.threshold, min_odds=args.min_odds,
+                                   league_lb=league_lb)
             if post4:
                 posts.insert(0, ("POST 4 — Yesterday's Results (post first)", post4))
 

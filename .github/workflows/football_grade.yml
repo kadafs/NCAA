@@ -100,6 +100,9 @@ jobs:
           # Copy dates index
           cp data/football/dates_index.json sports-analytics/public/data/football/ || true
           
+          # Copy leaderboards
+          cp data/football/*leaderboard*.json sports-analytics/public/data/football/ || true
+          
           # Commit and push
           cd sports-analytics
           git config user.email "github-actions[bot]@users.noreply.github.com"

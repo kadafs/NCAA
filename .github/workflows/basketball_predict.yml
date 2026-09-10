@@ -108,6 +108,10 @@ jobs:
           # Copy up to 14 latest prediction files
           ls -t data/basketball/universal_predictions_*.json 2>/dev/null | head -14 | xargs -I {} cp {} sports-analytics/public/data/basketball/ || true
           
+          # Copy leaderboards
+          cp data/basketball/*leaderboard*.json sports-analytics/public/data/basketball/ 2>/dev/null || true
+          cp *leaderboard*.json sports-analytics/public/data/basketball/ 2>/dev/null || true
+          
           # Commit and push
           cd sports-analytics
           git config user.email "github-actions[bot]@users.noreply.github.com"

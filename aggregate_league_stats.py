@@ -155,12 +155,12 @@ def _compile_metrics(s, base_info):
     metrics.update(base_info)
     return metrics
 
-def main():
+def main(args_list=None):
     import argparse
     parser = argparse.ArgumentParser(description="Aggregate historical football performance stats.")
     parser.add_argument("--date", help="End date (YYYY-MM-DD)")
     parser.add_argument("--verbose", action="store_true")
-    args = parser.parse_args()
+    args = parser.parse_args(args_list)
 
     print("Aggregating historical league & team performance...")
     search_pattern = os.path.join(DATA_DIR, "universal_predictions_*.json")

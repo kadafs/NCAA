@@ -255,13 +255,8 @@ def resolve_target_date(date_arg: str | None = None) -> str:
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
-def main():
-    parser = argparse.ArgumentParser(description="Grade football predictions against actual results")
-    parser.add_argument("--date",    default=None, help="Target date (YYYY-MM-DD)")
-    parser.add_argument("--dry-run", action="store_true", help="Preview changes without saving")
-    args = parser.parse_args()
-
-    date = resolve_target_date(args.date)
+def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
+    """Grade predictions for a specific date against actual match results from API."""
     print(f"\n{'='*60}")
     print(f"  GRADING FOOTBALL PREDICTIONS | {date}")
     print(f"{'='*60}")
@@ -271,14 +266,14 @@ def main():
         data = load_predictions(date)
     except FileNotFoundError as e:
         print(f"  ⚠️ {e}")
-        return
-    predictions = data["predictions"]
+        return None
+    predictions = data.get("predictions", [])
     ungraded = [p for p in predictions if p.get("actual_result") is None]
     print(f"  {len(predictions)} total predictions, {len(ungraded)} ungraded")
 
     if not ungraded:
         print("  ✅ All predictions already graded.")
-        return
+        return data.get("grade_summary")
 
     # Fetch actual results from API
     print(f"  Fetching final scores from API for {date}...")
@@ -287,7 +282,7 @@ def main():
 
     if not fixtures:
         print("  ⚠️  No finished fixtures returned — try again later or check API key.")
-        return
+        return None
 
     # Build lookup: (league_id, home_name, away_name) → (home_goals, away_goals, fixture_id)
     results_map: dict[tuple, tuple[int, int, int]] = {}
@@ -328,7 +323,7 @@ def main():
             home_goals, away_goals, fixture_id = results_map[key]
             graded = grade_prediction(pred, home_goals, away_goals)
             
-            # --- NEW: Fetch statistics if this is a Corners/Booking YES/NO call ---
+            # --- Fetch statistics if this is a Corners/Booking YES/NO call ---
             corners_block = graded.get("corners") or {}
             corner_call = corners_block.get("corner_call")
             booking_call = corners_block.get("booking_call")
@@ -342,12 +337,10 @@ def main():
                 if stats:
                     graded["actual_corners_total"] = stats["corners"]
                     graded["actual_booking_pts"]   = stats["booking_pts"]
-                    # Polite delay to avoid hitting the 10 requests/sec limit
                     time.sleep(0.1)
                 else:
                     graded["actual_corners_total"] = None
                     graded["actual_booking_pts"]   = None
-            # ----------------------------------------------------------------------
 
             graded_predictions.append(graded)
             matched += 1
@@ -416,13 +409,7 @@ def main():
     if booking_total:
         print(f"     BOOKINGS: {booking_wins}/{booking_total} wins" + (f"  ({100*booking_wins//booking_total}%)" if booking_total else ""))
 
-    if args.dry_run:
-        print("\n  [DRY RUN] — no changes saved.")
-        return
-
-    data["predictions"]    = graded_predictions
-    data["graded_at"]      = datetime.now().isoformat()
-    data["grade_summary"]  = {
+    summary = {
         "outcome_wins":  x12_wins,
         "outcome_total": x12_total,
         "outcome_pct":   round(100 * x12_wins / x12_total, 1) if x12_total else None,
@@ -436,8 +423,34 @@ def main():
         "booking_total": booking_total,
         "booking_pct":   round(100 * booking_wins / booking_total, 1) if booking_total else None,
     }
+
+    if dry_run:
+        print("\n  [DRY RUN] — no changes saved.")
+        return summary
+
+    data["predictions"]    = graded_predictions
+    data["graded_at"]      = datetime.now().isoformat()
     save_predictions(date, data)
     print("\n  ✅ Grading complete!")
+
+    # Auto-update historical league and team leaderboards
+    try:
+        import aggregate_league_stats
+        aggregate_league_stats.main(args_list=[])
+    except Exception as e:
+        print(f"  ⚠️ Note: Could not auto-update leaderboards: {e}")
+
+    return summary
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Grade football predictions against actual results")
+    parser.add_argument("--date",    default=None, help="Target date (YYYY-MM-DD)")
+    parser.add_argument("--dry-run", action="store_true", help="Preview changes without saving")
+    args = parser.parse_args()
+
+    date = resolve_target_date(args.date)
+    grade_football_date(date, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
