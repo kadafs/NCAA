@@ -16,6 +16,7 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta
+from core.xgot_engine import compute_match_xgot
 
 import requests
 from dotenv import load_dotenv
@@ -72,10 +73,17 @@ def fetch_fixtures_for_date(date: str) -> list:
         return []
 
 
-def fetch_fixture_statistics(fixture_id: int) -> dict:
+def fetch_fixture_statistics(fixture_id: int, home_team_id: int = None, away_team_id: int = None) -> dict:
     """
     Fetch statistics for a single fixture.
-    Returns a dict with {"corners": int, "booking_pts": int} or None if unavailable.
+    Returns a dict with:
+    {
+        "corners": int,
+        "booking_pts": int,
+        "home": dict,
+        "away": dict
+    }
+    or None if unavailable.
     """
     url = f"{BASE_URL}/fixtures/statistics"
     params = {"fixture": fixture_id}
@@ -90,27 +98,73 @@ def fetch_fixture_statistics(fixture_id: int) -> dict:
         total_corners = 0
         total_booking_pts = 0
         
+        def parse_team_stats(stats_list):
+            d = {
+                "shots_on_goal": 0,
+                "total_shots": 0,
+                "shots_insidebox": 0,
+                "shots_outsidebox": 0,
+                "saves": 0,
+                "xg": None
+            }
+            for s in stats_list:
+                t = s.get("type")
+                val = s.get("value")
+                if val is None:
+                    continue
+                if isinstance(val, str):
+                    val = val.replace("%", "").strip()
+                try:
+                    num = float(val) if "." in str(val) else int(val)
+                except Exception:
+                    num = 0
+                    
+                if t == "Shots on Goal": d["shots_on_goal"] = int(num)
+                elif t == "Total Shots": d["total_shots"] = int(num)
+                elif t == "Shots insidebox": d["shots_insidebox"] = int(num)
+                elif t == "Shots outsidebox": d["shots_outsidebox"] = int(num)
+                elif t == "Goalkeeper Saves": d["saves"] = int(num)
+                elif t == "expected_goals": d["xg"] = float(num)
+            return d
+
+        home_stats = parse_team_stats([])
+        away_stats = parse_team_stats([])
+
+        if len(stats_response) >= 2:
+            t0_id = stats_response[0].get("team", {}).get("id")
+            t1_id = stats_response[1].get("team", {}).get("id")
+            if home_team_id and t1_id == home_team_id:
+                home_stats = parse_team_stats(stats_response[1].get("statistics", []))
+                away_stats = parse_team_stats(stats_response[0].get("statistics", []))
+            else:
+                home_stats = parse_team_stats(stats_response[0].get("statistics", []))
+                away_stats = parse_team_stats(stats_response[1].get("statistics", []))
+        elif len(stats_response) == 1:
+            home_stats = parse_team_stats(stats_response[0].get("statistics", []))
+
         for team_stats in stats_response:
             stats = team_stats.get("statistics", [])
             for stat in stats:
                 val = stat.get("value")
                 if val is None:
                     continue
-                # Corner Kicks
                 if stat.get("type") == "Corner Kicks":
-                    total_corners += int(val)
-                # Booking points (Yellow = 10, Red = 25)
+                    try: total_corners += int(val)
+                    except: pass
                 elif stat.get("type") == "Yellow Cards":
-                    total_booking_pts += int(val) * 10
+                    try: total_booking_pts += int(val) * 10
+                    except: pass
                 elif stat.get("type") == "Red Cards":
-                    total_booking_pts += int(val) * 25
+                    try: total_booking_pts += int(val) * 25
+                    except: pass
                     
         return {
             "corners": total_corners,
-            "booking_pts": total_booking_pts
+            "booking_pts": total_booking_pts,
+            "home": home_stats,
+            "away": away_stats
         }
     except Exception as e:
-        # Ignore errors (could be rate limit or just no stats available)
         return None
 
 
@@ -310,11 +364,24 @@ def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
                 key = (pred["league_id"], pred["home_team"], pred["away_team"])
                 if key in results_map:
                     _, _, fixture_id = results_map[key]
-                    stats = fetch_fixture_statistics(fixture_id)
+                    h_id = pred.get("home_team_id")
+                    a_id = pred.get("away_team_id")
+                    stats = fetch_fixture_statistics(fixture_id, h_id, a_id)
                     if stats:
                         pred["actual_corners_total"] = stats["corners"]
                         pred["actual_booking_pts"]   = stats["booking_pts"]
-                        time.sleep(0.1)
+                        if not pred.get("post_match_xgot"):
+                            h_goals = pred.get("actual_home_goals", 0)
+                            a_goals = pred.get("actual_away_goals", 0)
+                            pred["post_match_xgot"] = compute_match_xgot(
+                                home_stats=stats.get("home"),
+                                away_stats=stats.get("away"),
+                                goals_h=h_goals,
+                                goals_a=a_goals,
+                                pre_xg_home=pred.get("xg_home"),
+                                pre_xg_away=pred.get("xg_away")
+                            )
+                        time.sleep(0.05)
             graded_predictions.append(pred)
             continue
 
@@ -328,19 +395,34 @@ def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
             corner_call = corners_block.get("corner_call")
             booking_call = corners_block.get("booking_call")
             
-            needs_stats = False
-            if corner_call and corner_call != "PASS": needs_stats = True
-            if booking_call and booking_call != "PASS": needs_stats = True
-            
-            if needs_stats:
-                stats = fetch_fixture_statistics(fixture_id)
-                if stats:
-                    graded["actual_corners_total"] = stats["corners"]
-                    graded["actual_booking_pts"]   = stats["booking_pts"]
-                    time.sleep(0.1)
-                else:
-                    graded["actual_corners_total"] = None
-                    graded["actual_booking_pts"]   = None
+            h_id = pred.get("home_team_id")
+            a_id = pred.get("away_team_id")
+            stats = fetch_fixture_statistics(fixture_id, h_id, a_id)
+            if stats:
+                graded["actual_corners_total"] = stats["corners"]
+                graded["actual_booking_pts"]   = stats["booking_pts"]
+                xgot_data = compute_match_xgot(
+                    home_stats=stats.get("home"),
+                    away_stats=stats.get("away"),
+                    goals_h=home_goals,
+                    goals_a=away_goals,
+                    pre_xg_home=pred.get("xg_home"),
+                    pre_xg_away=pred.get("xg_away")
+                )
+                graded["post_match_xgot"] = xgot_data
+                time.sleep(0.05)
+            else:
+                graded["actual_corners_total"] = None
+                graded["actual_booking_pts"]   = None
+                # Fallback calculation from pre-match xG and actual goals
+                graded["post_match_xgot"] = compute_match_xgot(
+                    home_stats={},
+                    away_stats={},
+                    goals_h=home_goals,
+                    goals_a=away_goals,
+                    pre_xg_home=pred.get("xg_home"),
+                    pre_xg_away=pred.get("xg_away")
+                )
 
             graded_predictions.append(graded)
             matched += 1

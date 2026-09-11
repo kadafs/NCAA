@@ -4,6 +4,7 @@ import time
 import datetime
 import requests
 from dotenv import load_dotenv
+from core.xgot_engine import compute_match_xgot
 
 load_dotenv()
 
@@ -58,7 +59,9 @@ def parse_stats(stats_array):
         "fouls": 0,
         "yellow_cards": 0,
         "total_shots": 0,
-        "saves": 0
+        "saves": 0,
+        "shots_insidebox": 0,
+        "shots_outsidebox": 0
     }
     for item in stats_array:
         t = item["type"]
@@ -71,6 +74,8 @@ def parse_stats(stats_array):
         elif t == "Yellow Cards": parsed["yellow_cards"] = v
         elif t == "Total Shots": parsed["total_shots"] = v
         elif t == "Goalkeeper Saves": parsed["saves"] = v
+        elif t == "Shots insidebox": parsed["shots_insidebox"] = v
+        elif t == "Shots outsidebox": parsed["shots_outsidebox"] = v
     return parsed
 
 def get_predictions_dict(date_str):
@@ -186,9 +191,27 @@ def run():
         # Determine Triggers
         triggers = []
         
+        # Compute real-time xGOT & Goalkeeper performance
+        xgot_data = compute_match_xgot(
+            home_stats=h_stats,
+            away_stats=a_stats,
+            goals_h=goals_h,
+            goals_a=goals_a,
+            pre_xg_home=pred.get("xg_home"),
+            pre_xg_away=pred.get("xg_away")
+        )
+        h_xgot = xgot_data["xgot_home"]
+        a_xgot = xgot_data["xgot_away"]
+
         # Underperformance Trigger (High pressure, 0 goals)
         if h_pi > 15 and goals_h == 0: triggers.append("HOME_GOAL_DUE")
         if a_pi > 15 and goals_a == 0: triggers.append("AWAY_GOAL_DUE")
+        
+        # xGOT Triggers
+        if h_xgot >= 1.2 and goals_h == 0: triggers.append("HOME_KEEPER_UNDER_SIEGE")
+        if a_xgot >= 1.2 and goals_a == 0: triggers.append("AWAY_KEEPER_UNDER_SIEGE")
+        if xgot_data["home_gk_prevented"] >= 1.2: triggers.append("HOME_GK_HEROICS")
+        if xgot_data["away_gk_prevented"] >= 1.2: triggers.append("AWAY_GK_HEROICS")
         
         # Pre-match favorite struggling trigger
         pre_home_win = pred.get("home_win_prob", 0)
@@ -226,6 +249,12 @@ def run():
             "home_pi": h_pi,
             "away_pi": a_pi,
             "momentum_diff": momentum_diff,
+            "home_xgot": h_xgot,
+            "away_xgot": a_xgot,
+            "total_xgot": xgot_data["xgot_total"],
+            "home_gk_prevented": xgot_data["home_gk_prevented"],
+            "away_gk_prevented": xgot_data["away_gk_prevented"],
+            "xgot_insights": xgot_data["insights"],
             "red_cards": f"{h_reds}-{a_reds}",
             "pre_match_prediction": {
                 "home_win": pre_home_win,
