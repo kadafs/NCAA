@@ -127,39 +127,65 @@ def cleanup_old_files(sport: str, keep_days: int = 7):
         print(f"  ✅ No old {sport} files to clean up (keeping last {keep_days} days).")
 
 
-def trim_dates_index(sport: str, keep_days: int = 7):
+def update_dates_index(sport: str, keep_days: int = 7):
     """
-    Trim the dates_index.json to keep only the last keep_days dates,
-    preventing the date selector from growing indefinitely.
-    Also removes entries for which no prediction file exists.
+    Rebuild dates_index.json dynamically from whatever prediction files are present
+    in Sports Analytics/public/data/{sport}, keeping it accurate and capped to keep_days.
+    Also syncs ncaa-api/data/{sport}/dates_index.json.
     """
     import json
     dest_dir  = DASHBOARD_ROOT / "public" / "data" / sport
-    idx_path  = dest_dir / "dates_index.json"
-    if not idx_path.exists():
+    src_dir   = NCAA_API_ROOT / "data" / sport
+    if not dest_dir.exists():
         return
 
-    with open(idx_path, encoding="utf-8") as f:
-        idx = json.load(f)
+    files = sorted(dest_dir.glob("universal_predictions_*.json"), reverse=True)
+    if not files:
+        return
 
-    dates = idx.get("dates", [])
-    if not dates or not isinstance(dates[0], dict):
-        return   # unexpected format — skip
+    dates = []
+    for f in files:
+        date_str = f.stem.replace("universal_predictions_", "")
+        try:
+            with open(f, encoding="utf-8") as fh:
+                content = json.load(fh)
+            preds = content.get("predictions", [])
+            scored_count = sum(
+                1 for p in preds
+                if p.get("actual_result") is not None or p.get("actual_total_result") is not None
+            )
+            summary = content.get("grade_summary")
+            dates.append({
+                "date": date_str,
+                "total": content.get("total_predictions", len(preds)),
+                "graded": (summary is not None) or (scored_count > 0),
+                "graded_count": scored_count,
+                "grade_summary": summary or None
+            })
+        except Exception as e:
+            print(f"  ⚠️ Error parsing {f.name} for dates_index: {e}")
 
-    # Keep only dates that still have a corresponding prediction file
-    available = {f.stem.replace("universal_predictions_", "") for f in dest_dir.glob("universal_predictions_*.json")}
-    dates_filtered = [d for d in dates if d.get("date") in available]
+    # Deduplicate: when both 2026-07-10 and 2026-07-10_v2 exist, prefer _v2
+    date_map = {}
+    for entry in dates:
+        base_date = entry["date"].replace("_v2", "")
+        is_v2 = entry["date"].endswith("_v2")
+        if base_date not in date_map or is_v2:
+            date_map[base_date] = entry
 
-    # Sort descending and keep last keep_days
-    dates_trimmed = sorted(dates_filtered, key=lambda d: d["date"], reverse=True)[:keep_days]
+    deduped = sorted(date_map.values(), key=lambda d: d["date"], reverse=True)[:keep_days]
 
-    if len(dates_trimmed) != len(dates):
-        idx["dates"] = dates_trimmed
-        with open(idx_path, "w", encoding="utf-8") as f:
-            json.dump(idx, f, indent=2)
-        print(f"  📅 dates_index trimmed: {len(dates)} → {len(dates_trimmed)} dates")
-    else:
-        print(f"  ✅ dates_index OK ({len(dates_trimmed)} dates).")
+    idx_payload = {"dates": deduped}
+    dest_idx = dest_dir / "dates_index.json"
+    with open(dest_idx, "w", encoding="utf-8") as fh:
+        json.dump(idx_payload, fh, indent=2)
+
+    if src_dir.exists():
+        src_idx = src_dir / "dates_index.json"
+        with open(src_idx, "w", encoding="utf-8") as fh:
+            json.dump(idx_payload, fh, indent=2)
+
+    print(f"  📅 dates_index generated for {sport} ({len(deduped)} dates).")
 
 
 def git_commit_and_push(copied_files: dict[str, list[str]], dashboard_root: Path):
@@ -243,7 +269,7 @@ def main():
         copied = copy_sport_data(sport, date_filter=args.date)
         all_copied[sport] = copied
         cleanup_old_files(sport, keep_days=7)
-        trim_dates_index(sport, keep_days=7)
+        update_dates_index(sport, keep_days=7)
         print()
 
     if args.no_push:

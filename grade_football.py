@@ -309,7 +309,56 @@ def resolve_target_date(date_arg: str | None = None) -> str:
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
-def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
+def compute_grade_summary(predictions: list) -> dict:
+    """Compute 1X2, BTTS, Corners, and Booking accuracy metrics from graded predictions."""
+    completed = [p for p in predictions if p.get("actual_result")]
+    
+    # Only grade 1X2 for matches that meet the 60% premium filter (PLAY or STRONG PLAY)
+    x12_played = [
+        p for p in completed
+        if "PLAY" in p.get("outcome_decision", "") 
+        or max(p.get("home_win_prob", 0), p.get("away_win_prob", 0), p.get("draw_prob_1x2", 0)) >= 60.0
+    ]
+    x12_results = [(outcome_grade(p), p) for p in x12_played]
+    x12_wins  = sum(1 for g, _ in x12_results if g == "WIN")
+    x12_total = sum(1 for g, _ in x12_results if g is not None)
+
+    # Only grade BTTS for matches that meet the 70% premium filter
+    btts_played = [
+        p for p in completed 
+        if p.get("btts_decision") in ("PLAY YES", "[STRONG] PLAY YES") 
+        and p.get("btts_prob", 0) >= 70.0
+    ]
+    btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
+    btts_total  = len(btts_played)
+    
+    # Grade corners (only count PASS-filtered calls)
+    corners_played = [p for p in completed if (p.get("corners") or {}).get("corner_call") not in (None, "PASS")]
+    corners_wins  = sum(1 for p in corners_played if corner_grade(p) == "WIN")
+    corners_total = sum(1 for p in corners_played if corner_grade(p) is not None)
+
+    # Grade bookings (only count PASS-filtered calls)
+    booking_played = [p for p in completed if (p.get("corners") or {}).get("booking_call") not in (None, "PASS")]
+    booking_wins  = sum(1 for p in booking_played if booking_grade(p) == "WIN")
+    booking_total = sum(1 for p in booking_played if booking_grade(p) is not None)
+
+    return {
+        "outcome_wins":  x12_wins,
+        "outcome_total": x12_total,
+        "outcome_pct":   round(100 * x12_wins / x12_total, 1) if x12_total else None,
+        "btts_wins":     btts_wins,
+        "btts_total":    btts_total,
+        "btts_pct":      round(100 * btts_wins / btts_total, 1) if btts_total else None,
+        "corners_wins":  corners_wins,
+        "corners_total": corners_total,
+        "corners_pct":   round(100 * corners_wins / corners_total, 1) if corners_total else None,
+        "booking_wins":  booking_wins,
+        "booking_total": booking_total,
+        "booking_pct":   round(100 * booking_wins / booking_total, 1) if booking_total else None,
+    }
+
+
+def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -> dict | None:
     """Grade predictions for a specific date against actual match results from API."""
     print(f"\n{'='*60}")
     print(f"  GRADING FOOTBALL PREDICTIONS | {date}")
@@ -325,9 +374,16 @@ def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
     ungraded = [p for p in predictions if p.get("actual_result") is None]
     print(f"  {len(predictions)} total predictions, {len(ungraded)} ungraded")
 
-    if not ungraded:
+    if not ungraded and not force:
         print("  ✅ All predictions already graded.")
-        return data.get("grade_summary")
+        summary = data.get("grade_summary")
+        if not summary:
+            summary = compute_grade_summary(predictions)
+            data["grade_summary"] = summary
+            if not dry_run:
+                save_predictions(date, data)
+                print(f"  ✅ Saved missing grade_summary for {date}!")
+        return summary
 
     # Fetch actual results from API
     print(f"  Fetching final scores from API for {date}...")
@@ -453,58 +509,24 @@ def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
     print(f"\n  Matched: {matched}  |  Not found: {missed}")
 
     # Compute grade summary
-    completed = [p for p in graded_predictions if p.get("actual_result")]
-    
-    # Only grade 1X2 for matches that meet the 60% premium filter (PLAY or STRONG PLAY)
-    x12_played = [
-        p for p in completed
-        if "PLAY" in p.get("outcome_decision", "") 
-        or max(p.get("home_win_prob", 0), p.get("away_win_prob", 0), p.get("draw_prob_1x2", 0)) >= 60.0
-    ]
-    x12_results = [(outcome_grade(p), p) for p in x12_played]
-    x12_wins  = sum(1 for g, _ in x12_results if g == "WIN")
-    x12_total = sum(1 for g, _ in x12_results if g is not None)
-
-    # Only grade BTTS for matches that meet the 70% premium filter
-    btts_played = [
-        p for p in completed 
-        if p.get("btts_decision") in ("PLAY YES", "[STRONG] PLAY YES") 
-        and p.get("btts_prob", 0) >= 70.0
-    ]
-    btts_wins   = sum(1 for p in btts_played if btts_grade(p) == "WIN")
-    btts_total  = len(btts_played)
-    # Grade corners (only count PASS-filtered calls)
-    corners_played = [p for p in completed if (p.get("corners") or {}).get("corner_call") not in (None, "PASS")]
-    corners_wins  = sum(1 for p in corners_played if corner_grade(p) == "WIN")
-    corners_total = sum(1 for p in corners_played if corner_grade(p) is not None)
-
-    # Grade bookings (only count PASS-filtered calls)
-    booking_played = [p for p in completed if (p.get("corners") or {}).get("booking_call") not in (None, "PASS")]
-    booking_wins  = sum(1 for p in booking_played if booking_grade(p) == "WIN")
-    booking_total = sum(1 for p in booking_played if booking_grade(p) is not None)
+    summary = compute_grade_summary(graded_predictions)
 
     print(f"\n  [---] Grade Summary ({date})")
-    print(f"     1X2:  {x12_wins}/{x12_total} correct" + (f"  ({100*x12_wins//x12_total}%)" if x12_total else ""))
-    print(f"     BTTS YES: {btts_wins}/{btts_total} wins"  + (f"  ({100*btts_wins//btts_total}%)" if btts_total else ""))
-    if corners_total:
-        print(f"     CORNERS:  {corners_wins}/{corners_total} wins" + (f"  ({100*corners_wins//corners_total}%)" if corners_total else ""))
-    if booking_total:
-        print(f"     BOOKINGS: {booking_wins}/{booking_total} wins" + (f"  ({100*booking_wins//booking_total}%)" if booking_total else ""))
+    x12_w = summary["outcome_wins"]
+    x12_t = summary["outcome_total"]
+    btts_w = summary["btts_wins"]
+    btts_t = summary["btts_total"]
+    corn_w = summary["corners_wins"]
+    corn_t = summary["corners_total"]
+    book_w = summary["booking_wins"]
+    book_t = summary["booking_total"]
 
-    summary = {
-        "outcome_wins":  x12_wins,
-        "outcome_total": x12_total,
-        "outcome_pct":   round(100 * x12_wins / x12_total, 1) if x12_total else None,
-        "btts_wins":     btts_wins,
-        "btts_total":    btts_total,
-        "btts_pct":      round(100 * btts_wins / btts_total, 1) if btts_total else None,
-        "corners_wins":  corners_wins,
-        "corners_total": corners_total,
-        "corners_pct":   round(100 * corners_wins / corners_total, 1) if corners_total else None,
-        "booking_wins":  booking_wins,
-        "booking_total": booking_total,
-        "booking_pct":   round(100 * booking_wins / booking_total, 1) if booking_total else None,
-    }
+    print(f"     1X2:  {x12_w}/{x12_t} correct" + (f"  ({summary['outcome_pct']}%)" if summary['outcome_pct'] is not None else ""))
+    print(f"     BTTS YES: {btts_w}/{btts_t} wins"  + (f"  ({summary['btts_pct']}%)" if summary['btts_pct'] is not None else ""))
+    if corn_t:
+        print(f"     CORNERS:  {corn_w}/{corn_t} wins" + (f"  ({summary['corners_pct']}%)" if summary['corners_pct'] is not None else ""))
+    if book_t:
+        print(f"     BOOKINGS: {book_w}/{book_t} wins" + (f"  ({summary['booking_pct']}%)" if summary['booking_pct'] is not None else ""))
 
     if dry_run:
         print("\n  [DRY RUN] — no changes saved.")
@@ -512,6 +534,7 @@ def grade_football_date(date: str, dry_run: bool = False) -> dict | None:
 
     data["predictions"]    = graded_predictions
     data["graded_at"]      = datetime.now().isoformat()
+    data["grade_summary"]  = summary
     save_predictions(date, data)
     print("\n  ✅ Grading complete!")
 
@@ -529,10 +552,11 @@ def main():
     parser = argparse.ArgumentParser(description="Grade football predictions against actual results")
     parser.add_argument("--date",    default=None, help="Target date (YYYY-MM-DD)")
     parser.add_argument("--dry-run", action="store_true", help="Preview changes without saving")
+    parser.add_argument("--force",   action="store_true", help="Force re-grading / updating summary even if graded")
     args = parser.parse_args()
 
     date = resolve_target_date(args.date)
-    grade_football_date(date, dry_run=args.dry_run)
+    grade_football_date(date, dry_run=args.dry_run, force=args.force)
 
 
 if __name__ == "__main__":
