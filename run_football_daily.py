@@ -55,8 +55,9 @@ ET_TZ    = timezone.utc
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data", "football")
 
 # Stats cache max age in seconds
-# Team stats are valid for a full season week - no need to re-fetch daily
-CACHE_MAX_AGE = 7 * 86400  # 7 days
+# Team stats are valid for 3 days during active seasons
+CACHE_MAX_AGE = 3 * 86400  # 3 days
+STANDINGS_CACHE_MAX_AGE = 12 * 3600  # 12 hours max for league standings
 
 # Minimum games a team must have played before we predict their game
 MIN_GAMES_PLAYED = 0
@@ -269,10 +270,10 @@ def get_or_fetch_stats(league_id, season, games, refresh=False, refresh_stats=Fa
     """
     universal_cache = f"data/football/universal_{league_id}_stats.json"
 
-    # Load existing cache (if it's fresh)
+    # Load existing cache (if it's fresh and refresh not requested)
     base_teams = {}
     base_avgs  = {}
-    if not refresh_stats and is_cache_fresh(universal_cache):
+    if not refresh and not refresh_stats and is_cache_fresh(universal_cache):
         cached = load_json(universal_cache)
         if cached:
             base_teams = cached.get("teams", {})
@@ -501,7 +502,7 @@ def _build_from_raw(raw_new, league_id, season, existing_teams):
 
 def fetch_standings(league_id, season, refresh=False):
     cache_file = f"data/football/standings_{league_id}_{season}.json"
-    if not refresh and is_cache_fresh(cache_file):
+    if not refresh and is_cache_fresh(cache_file, max_age=STANDINGS_CACHE_MAX_AGE):
         return load_json(cache_file)
     r = safe_get(f"{BASE_URL}/standings", {"league": league_id, "season": season})
     response = r.get("response", [])
@@ -520,6 +521,67 @@ def fetch_standings(league_id, season, refresh=False):
     if flat_standings:
         save_json(cache_file, flat_standings)
     return flat_standings
+
+
+def sync_team_stats_from_standings(team_s, standings_row):
+    """
+    Syncs the latest match count, goals, wins, and form from league standings into team stats.
+    Ensures that if the team statistics endpoint cache has lagged behind completed matchdays,
+    the team's actual games played, goals scored/conceded, win %, and form reflect the official standings.
+    """
+    if not team_s or not standings_row:
+        return
+    
+    all_stats = standings_row.get("all", {})
+    st_played = all_stats.get("played", 0)
+    
+    # If standings have more recent matches or team_s has lower played count:
+    if st_played >= team_s.get("played_all", 0):
+        team_s["played_all"] = st_played
+        team_s["league_rank"] = standings_row.get("rank")
+        
+        # Goals
+        gf = all_stats.get("goals", {}).get("for", 0) or 0
+        ga = all_stats.get("goals", {}).get("against", 0) or 0
+        team_s["goals_for_all"] = gf
+        team_s["goals_ag_all"] = ga
+        team_s["pgf_all"] = round(gf / st_played, 3) if st_played else 0
+        team_s["pga_all"] = round(ga / st_played, 3) if st_played else 0
+        
+        # Home / Away splits if available
+        h_stats = standings_row.get("home", {})
+        a_stats = standings_row.get("away", {})
+        if h_stats.get("played"):
+            team_s["played_home"] = h_stats["played"]
+            h_gf = h_stats.get("goals", {}).get("for", 0) or 0
+            h_ga = h_stats.get("goals", {}).get("against", 0) or 0
+            team_s["goals_for_home"] = h_gf
+            team_s["goals_ag_home"] = h_ga
+            team_s["pgf_home"] = round(h_gf / h_stats["played"], 3)
+            team_s["pga_home"] = round(h_ga / h_stats["played"], 3)
+            team_s["wins_home"] = h_stats.get("win", 0)
+            team_s["draws_home"] = h_stats.get("draw", 0)
+            
+        if a_stats.get("played"):
+            team_s["played_away"] = a_stats["played"]
+            a_gf = a_stats.get("goals", {}).get("for", 0) or 0
+            a_ga = a_stats.get("goals", {}).get("against", 0) or 0
+            team_s["goals_for_away"] = a_gf
+            team_s["goals_ag_away"] = a_ga
+            team_s["pgf_away"] = round(a_gf / a_stats["played"], 3)
+            team_s["pga_away"] = round(a_ga / a_stats["played"], 3)
+            team_s["wins_away"] = a_stats.get("win", 0)
+            team_s["draws_away"] = a_stats.get("draw", 0)
+            
+        # Wins / Form
+        wins = all_stats.get("win", 0)
+        draws = all_stats.get("draw", 0)
+        team_s["win_pct"] = round(wins / st_played, 3) if st_played else 0
+        form_str = standings_row.get("form", "")
+        if form_str:
+            team_s["form"] = form_str
+            team_s["form_wins"] = form_str.upper().count("W")
+            team_s["form_draws"] = form_str.upper().count("D")
 
 def fetch_team_recent_fixtures(team_id, last=5, refresh=False):
     """Fetch last N completed fixtures for a team."""
@@ -816,19 +878,33 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=
     away_name = game["away_team"]
 
     is_national = is_national_team_match(home_name, away_name, country, lname)
+    is_cross_league = (
+        country.lower() == "world" or 
+        any(w in lname.lower() for w in ["cup", "copa", "champions league", "europa", "conference", "trophy", "pokal", "coppa", "coupe", "taça", "taca"])
+    )
     market_odds = (enrichment or {}).get("market_odds") or {}
     has_market_odds = bool(market_odds.get("home_odds") or market_odds.get("over25_odds"))
 
-    # Determine xG source:
-    # 1. Genuine national team matches use Elo
-    # 2. Clubs with market odds use bookmaker-implied lines (crucial for Champions League / cross-league)
-    # 3. Clubs without market odds use domestic-enriched stats via Dixon-Coles
-    min_req = 1 if (is_national or has_market_odds) else MIN_GAMES_PLAYED
+    has_domestic_stats = bool(
+        home_s and away_s and
+        (home_s.get("played_all", 0) > 0 or home_s.get("previous_season")) and
+        (away_s.get("played_all", 0) > 0 or away_s.get("previous_season"))
+    )
+
+    min_req = 1 if (is_national or is_cross_league or has_market_odds) else MIN_GAMES_PLAYED
 
     if is_national:
         xg_h, xg_a = calc_xg_elo(home_name, away_name)
+    elif not is_cross_league and has_domestic_stats:
+        # Regular domestic league match with established team stats: use Dixon-Coles model
+        xg_h, xg_a = calc_xg(home_s, away_s, avg_home, avg_away)
     elif has_market_odds:
-        xg_h, xg_a = calc_xg_from_odds(market_odds)
+        # Cross-league, cup tournament, or team missing domestic stats: derive from bookmaker odds
+        default_tg = 2.65
+        if has_domestic_stats:
+            d_h, d_a = calc_xg(home_s, away_s, avg_home, avg_away)
+            default_tg = d_h + d_a
+        xg_h, xg_a = calc_xg_from_odds(market_odds, default_tg=default_tg)
     else:
         if home_s.get("played_all", 0) < min_req or away_s.get("played_all", 0) < min_req:
             return None, f"Insufficient games played (need {min_req}+)"
@@ -1079,19 +1155,20 @@ def main():
                     total_skipped += 1
                     continue
 
+            # Sync latest standings stats (games played, goals, wins, form, rank)
+            if league_standings:
+                home_row = next((s for s in league_standings if s.get("team", {}).get("id") == home_s.get("team_id")), None)
+                away_row = next((s for s in league_standings if s.get("team", {}).get("id") == away_s.get("team_id")), None)
+                if home_row:
+                    sync_team_stats_from_standings(home_s, home_row)
+                if away_row:
+                    sync_team_stats_from_standings(away_s, away_row)
+
             result, err = predict_game(game, home_s, away_s, avg_home, avg_away, args.mode, args.trace, country, lname, enrichment=enrichment)
             if err:
                 print(f"    {away:28} @ {home:28}  -- SKIP ({err})")
                 total_skipped += 1
                 continue
-                
-            # Grab latest ranks
-            home_rank = next((s.get("rank") for s in league_standings if s.get("team", {}).get("id") == home_s.get("team_id")), None)
-            away_rank = next((s.get("rank") for s in league_standings if s.get("team", {}).get("id") == away_s.get("team_id")), None)
-
-            # Inject the ranks directly into the stats dicts for extraction later
-            home_s["league_rank"] = home_rank
-            away_s["league_rank"] = away_rank
 
             btts_pct = result["btts_prob_final"] * 100
             draw_pct = result["draw_prob_final"] * 100
@@ -1241,7 +1318,7 @@ def main():
                         "failed_to_score": home_s.get("failed_to_score"),
                         "btts_rate": home_s.get("btts_rate"),
                         "rank": home_s.get("league_rank"),
-                        "form": home_s.get("form_wins")
+                        "form": home_s.get("form") or home_s.get("form_wins")
                     },
                     "statsA": {
                         "played": away_s.get("played_all"),
@@ -1252,7 +1329,7 @@ def main():
                         "failed_to_score": away_s.get("failed_to_score"),
                         "btts_rate": away_s.get("btts_rate"),
                         "rank": away_s.get("league_rank"),
-                        "form": away_s.get("form_wins")
+                        "form": away_s.get("form") or away_s.get("form_wins")
                     }
                 }
             })
