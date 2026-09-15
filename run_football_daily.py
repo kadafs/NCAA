@@ -1212,7 +1212,8 @@ def main():
             # --- Corner & Booking prediction from team profiles ---
             home_profile = team_profiles.get(str(home_s.get("team_id", "")))
             away_profile = team_profiles.get(str(away_s.get("team_id", "")))
-            corner_booking = corners_prediction(home_profile, away_profile)
+            corner_booking = corners_prediction(home_profile, away_profile,
+                                                country=country, league=lname)
 
             # --- Player Props ---
             home_props = {}

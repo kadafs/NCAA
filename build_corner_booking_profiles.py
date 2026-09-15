@@ -450,7 +450,8 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
     }
 
 
-def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
+def corners_prediction(home_profile: dict, away_profile: dict,
+                       country: str = "", league: str = "") -> dict:
     """
     Predict corner totals and booking points for a match
     given the two team profiles.
@@ -465,6 +466,26 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
 
     if home_profile.get("quarantined") or away_profile.get("quarantined"):
         return {}
+
+    # ── League/country exclusions based on 14-day accuracy audit ─────────
+    # These countries/leagues showed <50% corner hit rate over 14 days and
+    # are excluded to avoid polluting the model's credibility.
+    _CORNERS_EXCLUDED_COUNTRIES = {
+        "Bulgaria",   # 30.0% — worst performer
+        "Austria",    # 33.3%
+        "Colombia",   # 44.4%
+        "Denmark",    # 42.9%
+        "Brazil",     # 47.6%
+    }
+    _CORNERS_EXCLUDED_LEAGUES = {
+        "Serie B",           # Brazil Serie B 38.5%
+        "First League",      # Bulgaria 41.7%
+        "Primera A",         # Colombia 44.4%
+        "Superliga",         # Denmark 42.9%
+    }
+    if country in _CORNERS_EXCLUDED_COUNTRIES or league in _CORNERS_EXCLUDED_LEAGUES:
+        return {}  # PASS — excluded league/country
+
         
     # Default to non-venue splits if venue splits are missing (e.g. from old data)
     h_for = home_profile.get("home_corners_for", home_profile["avg_corners_for"])
@@ -512,10 +533,11 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
     # real odds. Fixing to 10.5 aligns predictions with actual betting markets.
     CORNER_LINES        = [10.5]
     CORNER_PROBS        = [over_10_5]
-    CORNER_OVER_THRES   = 60   # minimum % to call OVER (YES)
+    CORNER_OVER_THRES   = 75   # raised from 60 → 75 (OVER calls were only 64.2% over 14 days)
     CORNER_OVER_MARGIN  = 1.0  # expected total must be >= 1.0 clear of line (>= 11.5)
     CORNER_UNDER_THRES  = 65   # minimum % to call UNDER (NO)
     CORNER_UNDER_MARGIN = 1.5  # expected total must be >= 1.5 clear of line (<= 9.0)
+    CORNER_MAX_PCT      = 95   # cap displayed confidence — model was showing 100% on losing calls
 
     corner_call      = "PASS"
     corner_call_line = None
@@ -532,14 +554,14 @@ def corners_prediction(home_profile: dict, away_profile: dict) -> dict:
                 best_edge        = edge_over
                 corner_call      = "YES"
                 corner_call_line = f"OVER {line}"
-                corner_call_pct  = p_over
+                corner_call_pct  = min(p_over, CORNER_MAX_PCT)
 
         if p_under >= CORNER_UNDER_THRES and (line - exp_total) >= CORNER_UNDER_MARGIN:
             if edge_under > best_edge:
                 best_edge        = edge_under
                 corner_call      = "NO"
                 corner_call_line = f"UNDER {line}"
-                corner_call_pct  = p_under
+                corner_call_pct  = min(p_under, CORNER_MAX_PCT)
 
     # Legacy recommendation field (kept for backward compat)
     if over_10_5 >= 55:

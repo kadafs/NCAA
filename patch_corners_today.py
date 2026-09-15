@@ -110,10 +110,13 @@ def main():
         home_profile = find_profile(home_name, home_id, lid, profiles_by_league, name_to_profile)
         away_profile = find_profile(away_name, away_id, lid, profiles_by_league, name_to_profile)
 
-        corner_data = corners_prediction(home_profile, away_profile)
+        corner_data = corners_prediction(home_profile, away_profile,
+                                         country=game.get("country", ""),
+                                         league=game.get("league", ""))
         if corner_data:
             game["corners"] = corner_data
             patched += 1
+
         else:
             skipped += 1
 
