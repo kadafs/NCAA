@@ -85,14 +85,29 @@ def copy_sport_data(sport: str, date_filter: str | None = None):
     copied = []
     for src_file in files_to_copy:
         dest_file = dest_dir / src_file.name
-        print(f"  📄 Copying: {src_file.name}")
-        shutil.copy2(src_file, dest_file)
+        print(f"  📄 Copying (minified): {src_file.name}")
+        try:
+            import json
+            with open(src_file, "r", encoding="utf-8") as rf:
+                payload = json.load(rf)
+            with open(dest_file, "w", encoding="utf-8") as wf:
+                json.dump(payload, wf, separators=(",", ":"))
+        except Exception:
+            shutil.copy2(src_file, dest_file)
         copied.append(src_file.name)
 
     # Also copy leaderboard files if they exist
     for lb_file in src_dir.glob("*leaderboard*.json"):
-        shutil.copy2(lb_file, dest_dir / lb_file.name)
-        print(f"  📄 Copying: {lb_file.name}")
+        dest_lb = dest_dir / lb_file.name
+        try:
+            import json
+            with open(lb_file, "r", encoding="utf-8") as rf:
+                lb_payload = json.load(rf)
+            with open(dest_lb, "w", encoding="utf-8") as wf:
+                json.dump(lb_payload, wf, separators=(",", ":"))
+        except Exception:
+            shutil.copy2(lb_file, dest_lb)
+        print(f"  📄 Copying (minified): {lb_file.name}")
 
     print(f"  ✅ Copied {len(copied)} file(s) for {sport}.")
     return copied
@@ -102,14 +117,24 @@ def cleanup_old_files(sport: str, keep_days: int = 7):
     """
     Remove universal_predictions_*.json files older than keep_days
     from the dashboard repo to prevent git history from ballooning.
+    Also purges any unauthorized or stray files not needed by the dashboard frontend.
     """
     from datetime import timedelta
     dest_dir = DASHBOARD_ROOT / "public" / "data" / sport
     if not dest_dir.exists():
         return
 
-    cutoff = date.today() - timedelta(days=keep_days)
+    allowed_prefixes = ("universal_predictions_", "dates_index", "league_leaderboard", "basketball_leaderboard", "football_leaderboard")
     removed = []
+
+    # 1. Purge stray/unused files (e.g. recent_*, standings_*, scrap logs)
+    for f in dest_dir.glob("*"):
+        if f.is_file() and not any(f.name.startswith(p) for p in allowed_prefixes):
+            f.unlink()
+            removed.append(f.name)
+
+    # 2. Purge prediction files older than keep_days
+    cutoff = date.today() - timedelta(days=keep_days)
     for f in dest_dir.glob("universal_predictions_*.json"):
         date_str = f.stem.replace("universal_predictions_", "")
         try:
@@ -121,8 +146,15 @@ def cleanup_old_files(sport: str, keep_days: int = 7):
         except ValueError:
             pass  # skip files with unexpected naming
 
+    # 3. Safety cap: never retain more than keep_days unique prediction files
+    remaining_preds = sorted(dest_dir.glob("universal_predictions_*.json"), reverse=True)
+    if len(remaining_preds) > keep_days:
+        for excess in remaining_preds[keep_days:]:
+            excess.unlink()
+            removed.append(excess.name)
+
     if removed:
-        print(f"  🗑️  Cleaned up {len(removed)} old {sport} file(s): {', '.join(removed)}")
+        print(f"  🗑️  Cleaned up {len(removed)} old/stray {sport} file(s): {', '.join(removed[:8])}{'...' if len(removed) > 8 else ''}")
     else:
         print(f"  ✅ No old {sport} files to clean up (keeping last {keep_days} days).")
 
@@ -178,12 +210,12 @@ def update_dates_index(sport: str, keep_days: int = 7):
     idx_payload = {"dates": deduped}
     dest_idx = dest_dir / "dates_index.json"
     with open(dest_idx, "w", encoding="utf-8") as fh:
-        json.dump(idx_payload, fh, indent=2)
+        json.dump(idx_payload, fh, separators=(",", ":"))
 
     if src_dir.exists():
         src_idx = src_dir / "dates_index.json"
         with open(src_idx, "w", encoding="utf-8") as fh:
-            json.dump(idx_payload, fh, indent=2)
+            json.dump(idx_payload, fh, separators=(",", ":"))
 
     print(f"  📅 dates_index generated for {sport} ({len(deduped)} dates).")
 
@@ -199,8 +231,8 @@ def git_commit_and_push(copied_files: dict[str, list[str]], dashboard_root: Path
         print("  Then re-run this script.")
         return
 
-    # Stage all changes in public/data
-    run(["git", "add", "public/data/"], cwd=dashboard_root)
+    # Stage all changes (additions, modifications, AND deletions) in public/data
+    run(["git", "add", "-A", "public/data/"], cwd=dashboard_root)
 
     # Build descriptive commit message
     summary_parts = []
