@@ -47,6 +47,7 @@ from core.football_enricher import (
     fetch_match_stats, fetch_match_events
 )
 from build_corner_booking_profiles import corners_prediction
+from core.xgot_history import build_xgot_adjustments, apply_xgot_adjustment
 
 API_KEY  = os.getenv("API_BASKETBALL_KEY")          # Same key covers api-sports football
 BASE_URL = "https://v3.football.api-sports.io"
@@ -61,6 +62,7 @@ STANDINGS_CACHE_MAX_AGE = 12 * 3600  # 12 hours max for league standings
 
 # Minimum games a team must have played before we predict their game
 MIN_GAMES_PLAYED = 0
+_XGOT_ADJ = {}  # populated once in main() from graded prediction history
 
 
 # ------------------------------------------------------------------
@@ -910,6 +912,12 @@ def predict_game(game, home_s, away_s, avg_home, avg_away, mode, trace, country=
             return None, f"Insufficient games played (need {min_req}+)"
         xg_h, xg_a = calc_xg(home_s, away_s, avg_home, avg_away)
 
+    # Apply xGOT shot-quality feedback adjustment (+/-15% cap, requires >=5 graded games)
+    if _XGOT_ADJ and home_s and away_s:
+        _h_id = home_s.get("team_id")
+        _a_id = away_s.get("team_id")
+        xg_h, xg_a = apply_xgot_adjustment(xg_h, xg_a, _h_id, _a_id, _XGOT_ADJ)
+
     btts_prob = calc_btts_prob(xg_h, xg_a)
     draw_prob = calc_draw_prob(xg_h, xg_a)
 
@@ -1024,6 +1032,15 @@ def main():
         print()
 
     date_str = get_today_str(args.date)
+
+    # Build xGOT feedback adjustments once from last 30 days of graded data
+    global _XGOT_ADJ
+    try:
+        _XGOT_ADJ = build_xgot_adjustments(lookback=30)
+        print(f"  [xGOT] Adjustment map loaded: {len(_XGOT_ADJ)} teams with shot-quality calibration")
+    except Exception as _e:
+        print(f"  [xGOT] Warning: Could not build adjustments: {_e}")
+        _XGOT_ADJ = {}
 
     print("\n" + "=" * 70)
     print(f"  UNIVERSAL FOOTBALL PREDICTIONS | {date_str} | {args.mode.upper()}")
