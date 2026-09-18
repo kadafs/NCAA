@@ -35,6 +35,23 @@ LOOKBACK_DAYS = 30      # max files to scan (one per day)
 MIN_GAMES     = 5       # minimum graded games before any adjustment fires
 XGOT_CAP_PCT  = 0.15   # maximum +/-15% adjustment
 
+# Cup/knockout competition exclusion.
+# Matches whose league name contains any of these keywords are skipped so
+# B-squad cup appearances do not corrupt a team's domestic league rating.
+_CUP_KEYWORDS = frozenset([
+    'cup', 'copa', 'coupe', 'coppa', 'pokal', 'taca', 'kupa',
+    'trophy', 'shield', 'supercup', 'supercoppa', 'super cup',
+    'champions league', 'europa league', 'conference league',
+    'nations league', 'world cup',
+])
+
+
+def _is_cup_match(league_name, country):
+    lname = (league_name or '').lower()
+    if (country or '').lower() in ('world', 'europe'):
+        return True
+    return any(kw in lname for kw in _CUP_KEYWORDS)
+
 
 def build_xgot_adjustments(lookback: int = LOOKBACK_DAYS) -> dict:
     """
@@ -59,6 +76,10 @@ def build_xgot_adjustments(lookback: int = LOOKBACK_DAYS) -> dict:
         for p in data.get("predictions", []):
             pmx = p.get("post_match_xgot")
             if not pmx:
+                continue
+
+            # Skip cup / continental / international fixtures
+            if _is_cup_match(p.get("league"), p.get("country")):
                 continue
 
             h_id = p.get("home_team_id")
