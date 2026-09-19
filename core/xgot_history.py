@@ -38,6 +38,10 @@ XGOT_CAP_PCT  = 0.15   # maximum +/-15% adjustment
 # Cup/knockout competition exclusion.
 # Matches whose league name contains any of these keywords are skipped so
 # B-squad cup appearances do not corrupt a team's domestic league rating.
+# Note: lname is ASCII-normalised before matching so accented variants
+# (e.g. "Ta\u00e7a" -> "taca", "Cop\u00f6" -> "copa") are caught correctly.
+import unicodedata as _ud
+
 _CUP_KEYWORDS = frozenset([
     'cup', 'copa', 'coupe', 'coppa', 'pokal', 'taca', 'kupa',
     'trophy', 'shield', 'supercup', 'supercoppa', 'super cup',
@@ -46,8 +50,13 @@ _CUP_KEYWORDS = frozenset([
 ])
 
 
+def _normalise(s: str) -> str:
+    """Strip accents so e.g. Ta\u00e7a -> taca for keyword matching."""
+    return _ud.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
+
+
 def _is_cup_match(league_name, country):
-    lname = (league_name or '').lower()
+    lname = _normalise((league_name or '').lower())
     if (country or '').lower() in ('world', 'europe'):
         return True
     return any(kw in lname for kw in _CUP_KEYWORDS)
