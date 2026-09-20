@@ -321,8 +321,10 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         
         is_home = fix["teams"]["home"]["id"] == team_id
         
-        # If it's already cached, grab stats locally (0 API calls)
-        if fid in cached_history:
+        # If it's already cached AND has full shot data, grab stats locally (0 API calls).
+        # Old cache entries only had 'shots' (for) but not 'shots_ag'/'sot_for'/'sot_ag'.
+        # If shots_ag is missing, fall through and re-fetch from API to get complete data.
+        if fid in cached_history and "shots_ag" in cached_history[fid]:
             cached = cached_history[fid]
             corners_for_list.append(cached["corners_for"])
             corners_ag_list.append(cached["corners_ag"])
