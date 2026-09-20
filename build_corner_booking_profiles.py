@@ -23,6 +23,7 @@ import glob
 import requests
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
+from core.shots_engine import calculate_shots_prediction as shots_prediction
 
 if sys.platform == "win32":
     try:
@@ -299,7 +300,18 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
     red_list            = []
     fouls_list          = []
     booking_pts_list    = []
-    shots_total_list    = []
+    shots_for_list      = []
+    shots_ag_list       = []
+    home_shots_for      = []
+    home_shots_ag       = []
+    away_shots_for      = []
+    away_shots_ag       = []
+    sot_for_list        = []
+    sot_ag_list         = []
+    home_sot_for        = []
+    home_sot_ag         = []
+    away_sot_for        = []
+    away_sot_ag         = []
     
     cached_history = old_prof.get("fixture_history", {}) if old_prof else {}
     new_history = {}
@@ -315,18 +327,35 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
             corners_for_list.append(cached["corners_for"])
             corners_ag_list.append(cached["corners_ag"])
             
+            c_shots_for = cached.get("shots", 0)
+            c_shots_ag  = cached.get("shots_ag", 0)
+            c_sot_for   = cached.get("sot_for", int(c_shots_for * 0.34))
+            c_sot_ag    = cached.get("sot_ag", int(c_shots_ag * 0.34))
+
+            shots_for_list.append(c_shots_for)
+            shots_ag_list.append(c_shots_ag)
+            sot_for_list.append(c_sot_for)
+            sot_ag_list.append(c_sot_ag)
+            
             if is_home:
                 home_corners_for.append(cached["corners_for"])
                 home_corners_ag.append(cached["corners_ag"])
+                home_shots_for.append(c_shots_for)
+                home_shots_ag.append(c_shots_ag)
+                home_sot_for.append(c_sot_for)
+                home_sot_ag.append(c_sot_ag)
             else:
                 away_corners_for.append(cached["corners_for"])
                 away_corners_ag.append(cached["corners_ag"])
+                away_shots_for.append(c_shots_for)
+                away_shots_ag.append(c_shots_ag)
+                away_sot_for.append(c_sot_for)
+                away_sot_ag.append(c_sot_ag)
                 
             yellow_list.append(cached["yellow"])
             red_list.append(cached["red"])
             fouls_list.append(cached.get("fouls", 0))
             booking_pts_list.append(cached["booking_pts"])
-            shots_total_list.append(cached.get("shots", 0))
             new_history[fid] = cached
             continue
         side    = "home" if is_home else "away"
@@ -359,25 +388,39 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         yellow       = _int(team_stats, "Yellow Cards")
         red          = _int(team_stats, "Red Cards")
         fouls        = _int(team_stats, "Fouls")
-        shots        = _int(team_stats, "Total Shots")
+        shots_for    = _int(team_stats, "Total Shots")
+        shots_ag     = _int(opp_stats,  "Total Shots")
+        sot_for      = _int(team_stats, "Shots on Goal")
+        sot_ag       = _int(opp_stats,  "Shots on Goal")
         booking_pts  = (yellow * YELLOW_CARD_PTS) + (red * RED_CARD_PTS)
 
-        if corners_for + corners_ag + yellow + shots > 0:   # skip blank stat returns
+        if corners_for + corners_ag + yellow + shots_for > 0:   # skip blank stat returns
             corners_for_list.append(corners_for)
             corners_ag_list.append(corners_ag)
+            shots_for_list.append(shots_for)
+            shots_ag_list.append(shots_ag)
+            sot_for_list.append(sot_for)
+            sot_ag_list.append(sot_ag)
             
             if is_home:
                 home_corners_for.append(corners_for)
                 home_corners_ag.append(corners_ag)
+                home_shots_for.append(shots_for)
+                home_shots_ag.append(shots_ag)
+                home_sot_for.append(sot_for)
+                home_sot_ag.append(sot_ag)
             else:
                 away_corners_for.append(corners_for)
                 away_corners_ag.append(corners_ag)
+                away_shots_for.append(shots_for)
+                away_shots_ag.append(shots_ag)
+                away_sot_for.append(sot_for)
+                away_sot_ag.append(sot_ag)
                 
             yellow_list.append(yellow)
             red_list.append(red)
             fouls_list.append(fouls)
             booking_pts_list.append(booking_pts)
-            shots_total_list.append(shots)
             
             new_history[fid] = {
                 "corners_for": corners_for,
@@ -385,7 +428,10 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
                 "yellow": yellow,
                 "red": red,
                 "fouls": fouls,
-                "shots": shots,
+                "shots": shots_for,
+                "shots_ag": shots_ag,
+                "sot_for": sot_for,
+                "sot_ag": sot_ag,
                 "booking_pts": booking_pts
             }
 
@@ -407,13 +453,6 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         return round(w * v_avg + (1 - w) * o_avg, 2)
 
     # Calculate Form Slope (Last 5 matches corners_for)
-    # y = corners, x = [1, 2, 3, 4, 5] (where 5 is most recent)
-    # Slope = sum((x - mean_x) * (y - mean_y)) / sum((x - mean_x)^2)
-    # The list is from oldest to newest if they are ordered that way. 
-    # API usually returns newest to oldest or oldest to newest. We need to be careful.
-    # Let's assume the order in corners_for_list is newest last or oldest last.
-    # Actually, fixtures from API with `last=N` returns newest first. 
-    # Let's reverse to get oldest first for slope calculation:
     recent_5 = list(reversed(corners_for_list))[-5:] if len(corners_for_list) >= 5 else []
     corner_form_slope = 0.0
     if len(recent_5) == 5:
@@ -424,13 +463,17 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         denominator = 10.0 # sum((x-3)^2) = 4 + 1 + 0 + 1 + 4 = 10
         corner_form_slope = round(numerator / denominator, 2)
 
+    tot_shots_sum = sum(shots_for_list)
+    tot_sot_sum   = sum(sot_for_list)
+    sot_ratio     = round(tot_sot_sum / tot_shots_sum, 3) if tot_shots_sum > 0 else 0.345
+
     return {
         "team_id":              team_id,
         "avg_corners_for":      avg(corners_for_list),
         "avg_corners_against":  avg(corners_ag_list),
         "avg_total_corners":    avg([f + a for f, a in zip(corners_for_list, corners_ag_list)]),
         
-        # Venue-specific stats
+        # Venue-specific corner stats
         "home_corners_for":     blended_venue_avg(home_corners_for, corners_for_list),
         "home_corners_against": blended_venue_avg(home_corners_ag, corners_ag_list),
         "away_corners_for":     blended_venue_avg(away_corners_for, corners_for_list),
@@ -438,11 +481,27 @@ def build_profile_for_team(team_id: int, league_id: int, season: int, last: int,
         
         "corner_form_slope":    corner_form_slope,
         
+        # Shots & Shots on Target metrics
+        "avg_shots_for":        avg(shots_for_list),
+        "avg_shots_against":    avg(shots_ag_list),
+        "avg_shots_total":      avg(shots_for_list),
+        "home_shots_for":       blended_venue_avg(home_shots_for, shots_for_list),
+        "home_shots_against":   blended_venue_avg(home_shots_ag, shots_ag_list),
+        "away_shots_for":       blended_venue_avg(away_shots_for, shots_for_list),
+        "away_shots_against":   blended_venue_avg(away_shots_ag, shots_ag_list),
+
+        "avg_sot_for":          avg(sot_for_list),
+        "avg_sot_against":      avg(sot_ag_list),
+        "home_sot_for":         blended_venue_avg(home_sot_for, sot_for_list),
+        "home_sot_against":     blended_venue_avg(home_sot_ag, sot_ag_list),
+        "away_sot_for":         blended_venue_avg(away_sot_for, sot_for_list),
+        "away_sot_against":     blended_venue_avg(away_sot_ag, sot_ag_list),
+        "sot_accuracy_ratio":   sot_ratio,
+        
         "avg_yellow_cards":     avg(yellow_list),
         "avg_red_cards":        avg(red_list),
         "avg_fouls":            avg(fouls_list),
         "avg_booking_pts":      avg(booking_pts_list),
-        "avg_shots_total":      avg(shots_total_list),
         "sample_size":          n,
         "confidence":           assign_confidence(n),
         "built_at":             datetime.utcnow().isoformat(),

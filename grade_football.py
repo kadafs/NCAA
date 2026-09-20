@@ -273,6 +273,48 @@ def booking_grade(pred: dict) -> str | None:
     return None
 
 
+def shots_grade(pred: dict) -> str | None:
+    """Return WIN, LOSS, or None (PASS) based on shots_call vs actual shots total."""
+    shots = pred.get("shots") or {}
+    call = shots.get("shots_call")
+    if not call or call == "PASS":
+        return None
+    actual_total = pred.get("actual_shots_total")
+    if actual_total is None:
+        return None
+    line_str = shots.get("shots_call_line", "")
+    try:
+        line_val = float(line_str.split()[-1])
+    except (ValueError, IndexError):
+        return None
+    if "OVER" in line_str:
+        return "WIN" if actual_total > line_val else "LOSS"
+    elif "UNDER" in line_str:
+        return "WIN" if actual_total < line_val else "LOSS"
+    return None
+
+
+def sot_grade(pred: dict) -> str | None:
+    """Return WIN, LOSS, or None (PASS) based on sot_call vs actual SoT total."""
+    shots = pred.get("shots") or {}
+    call = shots.get("sot_call")
+    if not call or call == "PASS":
+        return None
+    actual_total = pred.get("actual_sot_total")
+    if actual_total is None:
+        return None
+    line_str = shots.get("sot_call_line", "")
+    try:
+        line_val = float(line_str.split()[-1])
+    except (ValueError, IndexError):
+        return None
+    if "OVER" in line_str:
+        return "WIN" if actual_total > line_val else "LOSS"
+    elif "UNDER" in line_str:
+        return "WIN" if actual_total < line_val else "LOSS"
+    return None
+
+
 def outcome_grade(pred: dict) -> str | None:
     """Return WIN or LOSS for 1X2 prediction vs actual."""
     pred_result   = pred.get("predicted_result")
@@ -342,6 +384,16 @@ def compute_grade_summary(predictions: list) -> dict:
     booking_wins  = sum(1 for p in booking_played if booking_grade(p) == "WIN")
     booking_total = sum(1 for p in booking_played if booking_grade(p) is not None)
 
+    # Grade total shots (only count PASS-filtered calls)
+    shots_played = [p for p in completed if (p.get("shots") or {}).get("shots_call") not in (None, "PASS")]
+    shots_wins  = sum(1 for p in shots_played if shots_grade(p) == "WIN")
+    shots_total = sum(1 for p in shots_played if shots_grade(p) is not None)
+
+    # Grade shots on target (only count PASS-filtered calls)
+    sot_played = [p for p in completed if (p.get("shots") or {}).get("sot_call") not in (None, "PASS")]
+    sot_wins  = sum(1 for p in sot_played if sot_grade(p) == "WIN")
+    sot_total = sum(1 for p in sot_played if sot_grade(p) is not None)
+
     return {
         "outcome_wins":  x12_wins,
         "outcome_total": x12_total,
@@ -355,6 +407,12 @@ def compute_grade_summary(predictions: list) -> dict:
         "booking_wins":  booking_wins,
         "booking_total": booking_total,
         "booking_pct":   round(100 * booking_wins / booking_total, 1) if booking_total else None,
+        "shots_wins":    shots_wins,
+        "shots_total":   shots_total,
+        "shots_pct":     round(100 * shots_wins / shots_total, 1) if shots_total else None,
+        "sot_wins":      sot_wins,
+        "sot_total":     sot_total,
+        "sot_pct":       round(100 * sot_wins / sot_total, 1) if sot_total else None,
     }
 
 
@@ -415,8 +473,16 @@ def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -
             corners_block = pred.get("corners") or {}
             corner_call   = corners_block.get("corner_call")
             booking_call  = corners_block.get("booking_call")
-            needs_stats   = (corner_call and corner_call != "PASS") or (booking_call and booking_call != "PASS")
-            if needs_stats and (pred.get("actual_corners_total") is None or pred.get("actual_booking_pts") is None):
+            shots_block   = pred.get("shots") or {}
+            sh_call       = shots_block.get("shots_call")
+            sot_call      = shots_block.get("sot_call")
+            needs_stats   = (
+                (corner_call and corner_call != "PASS") or
+                (booking_call and booking_call != "PASS") or
+                (sh_call and sh_call != "PASS") or
+                (sot_call and sot_call != "PASS")
+            )
+            if needs_stats and (pred.get("actual_corners_total") is None or pred.get("actual_shots_total") is None):
                 key = (pred["league_id"], pred["home_team"], pred["away_team"])
                 if key in results_map:
                     _, _, fixture_id = results_map[key]
@@ -426,6 +492,18 @@ def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -
                     if stats:
                         pred["actual_corners_total"] = stats["corners"]
                         pred["actual_booking_pts"]   = stats["booking_pts"]
+                        h_st = stats.get("home") or {}
+                        a_st = stats.get("away") or {}
+                        h_sh = h_st.get("total_shots")
+                        a_sh = a_st.get("total_shots")
+                        h_sot = h_st.get("shots_on_goal")
+                        a_sot = a_st.get("shots_on_goal")
+                        pred["actual_shots_home"]  = h_sh
+                        pred["actual_shots_away"]  = a_sh
+                        pred["actual_shots_total"] = (h_sh + a_sh) if (h_sh is not None and a_sh is not None) else None
+                        pred["actual_sot_home"]    = h_sot
+                        pred["actual_sot_away"]    = a_sot
+                        pred["actual_sot_total"]   = (h_sot + a_sot) if (h_sot is not None and a_sot is not None) else None
                         if not pred.get("post_match_xgot"):
                             h_goals = pred.get("actual_home_goals", 0)
                             a_goals = pred.get("actual_away_goals", 0)
@@ -457,6 +535,19 @@ def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -
             if stats:
                 graded["actual_corners_total"] = stats["corners"]
                 graded["actual_booking_pts"]   = stats["booking_pts"]
+                h_st = stats.get("home") or {}
+                a_st = stats.get("away") or {}
+                h_sh = h_st.get("total_shots")
+                a_sh = a_st.get("total_shots")
+                h_sot = h_st.get("shots_on_goal")
+                a_sot = a_st.get("shots_on_goal")
+                graded["actual_shots_home"]  = h_sh
+                graded["actual_shots_away"]  = a_sh
+                graded["actual_shots_total"] = (h_sh + a_sh) if (h_sh is not None and a_sh is not None) else None
+                graded["actual_sot_home"]    = h_sot
+                graded["actual_sot_away"]    = a_sot
+                graded["actual_sot_total"]   = (h_sot + a_sot) if (h_sot is not None and a_sot is not None) else None
+
                 xgot_data = compute_match_xgot(
                     home_stats=stats.get("home"),
                     away_stats=stats.get("away"),
@@ -470,6 +561,12 @@ def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -
             else:
                 graded["actual_corners_total"] = None
                 graded["actual_booking_pts"]   = None
+                graded["actual_shots_home"]    = None
+                graded["actual_shots_away"]    = None
+                graded["actual_shots_total"]   = None
+                graded["actual_sot_home"]      = None
+                graded["actual_sot_away"]      = None
+                graded["actual_sot_total"]     = None
                 # Fallback calculation from pre-match xG and actual goals
                 graded["post_match_xgot"] = compute_match_xgot(
                     home_stats={},
@@ -485,17 +582,23 @@ def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -
 
             o_grade = outcome_grade(graded)
             b_grade = btts_grade(graded)
+            c_grade = corner_grade(graded)
+            bk_grade = booking_grade(graded)
+            sh_grade = shots_grade(graded)
+            sot_gr   = sot_grade(graded)
+
             tier_str = graded.get("accuracy_tier", "")
             score_str   = f"{home_goals}-{away_goals}"
             outcome_str = f"  1X2: {graded['predicted_result']} -> {graded['actual_result']} [{o_grade}]"
             btts_str    = f"  BTTS: {graded['btts_decision']} [{b_grade}]" if b_grade else ""
             
-            c_grade = corner_grade(graded)
-            bk_grade = booking_grade(graded)
             corners_block = graded.get("corners") or {}
+            shots_block   = graded.get("shots") or {}
             corner_str = f"  CORNERS: {corners_block.get('corner_call_line','?')} [{c_grade}]" if c_grade else ""
             booking_str = f"  BOOKING: {corners_block.get('booking_call_line','?')} [{bk_grade}]" if bk_grade else ""
-            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}{corner_str}{booking_str} | {tier_str}")
+            shots_str  = f"  SHOTS: {shots_block.get('shots_call_line','?')} [{sh_grade}]" if sh_grade else ""
+            sot_str    = f"  SOT: {shots_block.get('sot_call_line','?')} [{sot_gr}]" if sot_gr else ""
+            print(f"  [OK] {pred['home_team']} {score_str} {pred['away_team']}  {outcome_str}{btts_str}{corner_str}{booking_str}{shots_str}{sot_str} | {tier_str}")
         else:
             graded_predictions.append(pred)
             missed += 1
@@ -527,6 +630,14 @@ def grade_football_date(date: str, dry_run: bool = False, force: bool = False) -
         print(f"     CORNERS:  {corn_w}/{corn_t} wins" + (f"  ({summary['corners_pct']}%)" if summary['corners_pct'] is not None else ""))
     if book_t:
         print(f"     BOOKINGS: {book_w}/{book_t} wins" + (f"  ({summary['booking_pct']}%)" if summary['booking_pct'] is not None else ""))
+    shots_t = summary.get("shots_total", 0)
+    shots_w = summary.get("shots_wins", 0)
+    if shots_t:
+        print(f"     SHOTS:    {shots_w}/{shots_t} wins" + (f"  ({summary['shots_pct']}%)" if summary.get('shots_pct') is not None else ""))
+    sot_t = summary.get("sot_total", 0)
+    sot_w = summary.get("sot_wins", 0)
+    if sot_t:
+        print(f"     SOT:      {sot_w}/{sot_t} wins" + (f"  ({summary['sot_pct']}%)" if summary.get('sot_pct') is not None else ""))
 
     if dry_run:
         print("\n  [DRY RUN] — no changes saved.")

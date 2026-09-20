@@ -47,6 +47,7 @@ from core.football_enricher import (
     fetch_match_stats, fetch_match_events
 )
 from build_corner_booking_profiles import corners_prediction
+from core.shots_engine import calculate_shots_prediction
 from core.xgot_history import build_xgot_adjustments, apply_xgot_adjustment
 
 API_KEY  = os.getenv("API_BASKETBALL_KEY")          # Same key covers api-sports football
@@ -1232,6 +1233,21 @@ def main():
             corner_booking = corners_prediction(home_profile, away_profile,
                                                 country=country, league=lname)
 
+            # --- Total Shots & Shots on Target (SoT) prediction ---
+            shots_block = calculate_shots_prediction(
+                home_profile, away_profile,
+                pre_xg_home=xg_h, pre_xg_away=xg_a,
+                country=country, league=lname
+            )
+            if shots_block:
+                sh_call = shots_block.get("shots_call")
+                sot_call = shots_block.get("sot_call")
+                if sh_call != "PASS" or sot_call != "PASS":
+                    print(f"      Shots: Exp {shots_block['exp_total_shots']} (SoT: {shots_block['exp_total_sot']}) -> "
+                          f"Shots: {sh_call} | SoT: {sot_call} [{shots_block['conversion_rating']}]")
+                if shots_block.get("conversion_rating") == "LOW_CONVERSION_RISK" and (calc_over_prob(xg_h + xg_a, 2.5) * 100) >= 70.0:
+                    print(f"      ⚠️  CAUTION: Low shot accuracy ({shots_block['sot_accuracy_pct']}%) — Over 2.5 conversion risk.")
+
             # --- Player Props ---
             home_props = {}
             away_props = {}
@@ -1300,6 +1316,8 @@ def main():
                 "away_injuries":   enrichment.get("away_injuries", []),
                 # Corner & Booking
                 "corners":         corner_booking if corner_booking else None,
+                # Total Shots & Shots on Target
+                "shots":           shots_block if shots_block else None,
                 # Actual results for backtesting
                 "actual_home_goals": game.get("home_goals") if game.get("is_completed") else None,
                 "actual_away_goals": game.get("away_goals") if game.get("is_completed") else None,
