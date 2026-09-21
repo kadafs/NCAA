@@ -76,7 +76,8 @@ def lookup_team(name: str, league_id: int, index: dict) -> dict | None:
     Find leaderboard entry for a team.
     Priority:
       1. Exact name match within same league_id
-      2. Fuzzy name match (>= 0.80 similarity) within same league_id
+      2. Fuzzy name match (>= 0.72 similarity) within same league_id
+      3. Substring match within same league_id (one name contained in the other)
 
     NOTE: Cross-league fallback intentionally removed. Borrowing stats from
     a different competition produces misleading confidence scores.
@@ -92,9 +93,14 @@ def lookup_team(name: str, league_id: int, index: dict) -> dict | None:
     league_names = [(k[0], k[1]) for k in index if k[1] == league_id]
     if league_names:
         names_only = [k[0] for k in league_names]
-        matches = difflib.get_close_matches(name_lower, names_only, n=1, cutoff=0.80)
+        matches = difflib.get_close_matches(name_lower, names_only, n=1, cutoff=0.72)
         if matches:
             return index[(matches[0], league_id)]
+
+        # 3. Substring fallback — catches "AIK" <-> "AIK Basket", "Djurgarden" <-> "Djurgarden Basket" etc.
+        for lb_name in names_only:
+            if name_lower in lb_name or lb_name in name_lower:
+                return index[(lb_name, league_id)]
 
     # No cross-league fallback — return None, caller will use defaults
     return None
