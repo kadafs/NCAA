@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: 'Target date (YYYY-MM-DD)'
+        description: 'Single date YYYY-MM-DD (default: today). Ignored when date_range is set.'
+        required: false
+        default: ''
+      date_range:
+        description: 'Batch mode — comma-separated dates e.g. 2026-09-18,2026-09-19,2026-09-20'
         required: false
         default: ''
       skip_profiles:
@@ -47,7 +51,12 @@ jobs:
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
+          # Profiles: use the first date in the range (or the single date, or today)
+          DATE_RANGE="${{ github.event.inputs.date_range }}"
+          if [ -n "$DATE_RANGE" ]; then
+            TARGET_DATE=$(echo "$DATE_RANGE" | cut -d',' -f1 | tr -d ' ')
+            echo "Batch mode: building profiles for first date in range: $TARGET_DATE"
+          elif [ -n "${{ github.event.inputs.date }}" ]; then
             TARGET_DATE="${{ github.event.inputs.date }}"
           else
             TARGET_DATE=$(date -u +'%Y-%m-%d')
@@ -73,15 +82,34 @@ jobs:
         env:
           API_BASKETBALL_KEY: ${{ secrets.API_BASKETBALL_KEY }}
         run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            TODAY="${{ github.event.inputs.date }}"
-            echo "Using manually provided date: $TODAY"
+          DATE_RANGE="${{ github.event.inputs.date_range }}"
+
+          if [ -n "$DATE_RANGE" ]; then
+            # ── BATCH MODE ── loop over every date in the comma-separated list
+            echo "Batch mode: $DATE_RANGE"
+            IFS=',' read -ra DATES <<< "$DATE_RANGE"
+            for D in "${DATES[@]}"; do
+              D=$(echo "$D" | tr -d ' ')   # strip any accidental spaces
+              echo ""
+              echo "====================================================="
+              echo "  Predicting $D  ($(( ${#DATES[@]} )) dates total)"
+              echo "====================================================="
+              python run_football_daily.py --mode full --all-leagues --refresh --date "$D"
+              echo "Done: $D"
+              sleep 3  # polite pause between dates to avoid API burst
+            done
           else
-            TODAY=$(date -u +'%Y-%m-%d')
+            # ── SINGLE DATE MODE (original behaviour) ──
+            if [ -n "${{ github.event.inputs.date }}" ]; then
+              TODAY="${{ github.event.inputs.date }}"
+              echo "Using manually provided date: $TODAY"
+            else
+              TODAY=$(date -u +'%Y-%m-%d')
+            fi
+            echo "Generating football predictions for $TODAY..."
+            python run_football_daily.py --mode full --all-leagues --refresh --date "$TODAY"
+            echo "Done."
           fi
-          echo "Generating football predictions for $TODAY..."
-          python run_football_daily.py --mode full --all-leagues --refresh --date "$TODAY"
-          echo "Done."
 
       - name: Regenerate dates index
         run: |
