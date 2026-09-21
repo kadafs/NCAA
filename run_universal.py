@@ -28,7 +28,8 @@ def main():
                                               'par_primera_ap', 'usa_mls', 'ven_primera', 'spa_tercera_6', 'hon_liga_nac', 'spa_tercera_18', 'ecu_primera_b', 'arg_nacional_b', 'arg_primera', 'ita_serie_b', 'col_primera_a', 'arg_primera_b', 'fra_national', 'egy_prem', 'uru_apertura',
                                               'eng_championship', 'eng_league_one', 'eng_league_two', 'eng_national',
                                               'bra_serie_a', 'bra_serie_b', 'chi_primera', 'bol_primera', 'per_primera', 'ecu_primera_a', 'uru_clausura', 'par_primera_cl', 'col_primera_b',
-                                              'sui_super', 'sui_challenge', 'aut_bundesliga', 'aut_2liga', 'bel_pro', 'ned_eerste', 'swe_allsvenskan', 'nor_eliteserien', 'isl_urvalsdeild', 'ger_2bundesliga', 'tur_super_lig'],
+                                              'sui_super', 'sui_challenge', 'aut_bundesliga', 'aut_2liga', 'bel_pro', 'ned_eerste', 'swe_allsvenskan', 'nor_eliteserien', 'isl_urvalsdeild', 'ger_2bundesliga', 'tur_super_lig',
+                                              'sau_div1', 'den_1div', 'mex_liga_mx', 'chi_segunda', 'fra_ligue2'],
                         default="nba", help="League to model")
     parser.add_argument("--sport", choices=["basketball", "football"], default="basketball",
                         help="Sport to model (football = soccer)")
@@ -120,6 +121,11 @@ def main():
         "isl_urvalsdeild":  "configs/leagues/isl_urvalsdeild.json",
         "ger_2bundesliga":  "configs/leagues/ger_2bundesliga.json",
         "tur_super_lig":    "configs/leagues/tur_super_lig.json",
+        "sau_div1":         "configs/leagues/sau_div1.json",
+        "den_1div":         "configs/leagues/den_1div.json",
+        "mex_liga_mx":      "configs/leagues/mex_liga_mx.json",
+        "chi_segunda":      "configs/leagues/chi_segunda.json",
+        "fra_ligue2":       "configs/leagues/fra_ligue2.json",
     }
     
     # 2. Refresh if needed

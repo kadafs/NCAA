@@ -4,8 +4,9 @@ import subprocess
 import argparse
 from datetime import datetime
 
-# The 15 high-draw leagues we added
+# High-draw leagues list (including newly verified high-draw leagues)
 HIGH_DRAW_LEAGUES = [
+    'sau_div1', 'den_1div', 'mex_liga_mx', 'chi_segunda', 'fra_ligue2', 'eng_league_two',
     'par_primera_ap', 'usa_mls', 'ven_primera', 'spa_tercera_6', 
     'hon_liga_nac', 'spa_tercera_18', 'ecu_primera_b', 'arg_nacional_b', 
     'arg_primera', 'ita_serie_b', 'col_primera_a', 'arg_primera_b', 
@@ -27,7 +28,7 @@ def main():
     target_date = args.date or datetime.now().strftime("%Y-%m-%d")
 
     print("================================================================")
-    print(f" BATCH RUN: 15 HIGH-DRAW LEAGUES | MODE: {args.mode.upper()}")
+    print(f" BATCH RUN: {len(HIGH_DRAW_LEAGUES)} HIGH-DRAW LEAGUES | MODE: {args.mode.upper()}")
     print(f" Date: {target_date}")
     print("================================================================\n")
 
@@ -40,7 +41,7 @@ def main():
         base_cmd += ["--date", args.date]
 
     for idx, league in enumerate(HIGH_DRAW_LEAGUES, 1):
-        print(f"\n[{idx}/15] Running {league.upper()}...")
+        print(f"\n[{idx}/{len(HIGH_DRAW_LEAGUES)}] Running {league.upper()}...")
         print("-" * 50)
         
         cmd = base_cmd + ["--league", league]

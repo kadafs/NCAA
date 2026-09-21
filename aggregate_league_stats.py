@@ -19,6 +19,7 @@ def _blank_stats():
         "btts_yes_w": 0, "btts_yes_l": 0,
         "btts_no_w": 0, "btts_no_l": 0,
         "draw_w": 0, "draw_l": 0,
+        "actual_draws": 0, "actual_games": 0,
         "1x2_w": 0, "1x2_l": 0,
         "bullseyes": 0, "excellents": 0, "solids": 0,
         "misses": 0, "busts": 0,
@@ -28,6 +29,11 @@ def _blank_stats():
 
 def _tally(bucket, pred_1x2, actual_1x2, decision, actual_btts, d_flag, actual_draw, tier, delta, signed_delta):
     """Add one prediction's data into a stats bucket."""
+    if actual_1x2 is not None:
+        bucket["actual_games"] += 1
+        if actual_draw is True or actual_1x2 == "DRAW":
+            bucket["actual_draws"] += 1
+
     is_1x2_win = (pred_1x2 == actual_1x2)
     if pred_1x2 and actual_1x2:
         if is_1x2_win: bucket["1x2_w"] += 1
@@ -134,13 +140,51 @@ def _compile_metrics(s, base_info):
     
     count_d = s["count_delta"]
     count_sd = s["count_signed_delta"]
+
+    # --- Draw Metrics ---
+    d_w = s["draw_w"]
+    d_l = s["draw_l"]
+    d_total = d_w + d_l
+    d_hit_rate = round((d_w / d_total * 100), 1) if d_total > 0 else 0.0
+    # Simulated ROI at ~3.30 decimal odds (+230): profit is +2.30 units per win, -1.0 per loss
+    d_roi = round((d_w * 2.30) - d_l, 2) if d_total > 0 else 0.0
+
+    actual_games = s.get("actual_games", 0)
+    actual_draws = s.get("actual_draws", 0)
+    raw_draw_rate = round((actual_draws / actual_games * 100), 1) if actual_games > 0 else 0.0
+
+    # Empirical Bayes shrinkage towards global football draw baseline of 22.7% (prior M=15)
+    GLOBAL_DRAW_BASELINE = 0.227
+    PRIOR_WEIGHT = 15.0
+    if actual_games > 0:
+        regressed_rate = ((actual_draws + (PRIOR_WEIGHT * GLOBAL_DRAW_BASELINE)) / (actual_games + PRIOR_WEIGHT)) * 100
+        regressed_draw_rate = round(regressed_rate, 1)
+    else:
+        regressed_draw_rate = 0.0
+
+    if regressed_draw_rate >= 35.0 and actual_games >= 10:
+        draw_tier = "ELITE"
+    elif regressed_draw_rate >= 30.0 and actual_games >= 10:
+        draw_tier = "HIGH"
+    elif actual_games >= 10 and regressed_draw_rate <= 16.0:
+        draw_tier = "LOW"
+    else:
+        draw_tier = "STANDARD"
     
     metrics = {
         "btts_plays": b_total,
         "btts_w": b_w, "btts_l": b_l,
         "btts_hit_rate": round(hit_rate, 1),
         "btts_roi": round(roi, 2),
-        "draw_w": s["draw_w"], "draw_l": s["draw_l"],
+        "draw_plays": d_total,
+        "draw_w": d_w, "draw_l": d_l,
+        "draw_hit_rate": d_hit_rate,
+        "draw_roi": d_roi,
+        "actual_draws": actual_draws,
+        "actual_games": actual_games,
+        "raw_draw_rate": raw_draw_rate,
+        "regressed_draw_rate": regressed_draw_rate,
+        "draw_tier": draw_tier,
         "outcome_w": x_w, "outcome_l": x_l,
         "outcome_hit_rate": round(x_hit_rate, 1),
         "mae": round(s["sum_delta"] / count_d, 2) if count_d else None,
