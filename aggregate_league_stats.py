@@ -162,9 +162,9 @@ def _compile_metrics(s, base_info):
     else:
         regressed_draw_rate = 0.0
 
-    if regressed_draw_rate >= 35.0 and actual_games >= 10:
+    if (regressed_draw_rate >= 34.0 or (raw_draw_rate >= 38.0 and actual_games >= 15)) and actual_games >= 10:
         draw_tier = "ELITE"
-    elif regressed_draw_rate >= 30.0 and actual_games >= 10:
+    elif (regressed_draw_rate >= 27.0 or (raw_draw_rate >= 28.5 and actual_games >= 15)) and actual_games >= 10:
         draw_tier = "HIGH"
     elif actual_games >= 10 and regressed_draw_rate <= 16.0:
         draw_tier = "LOW"
