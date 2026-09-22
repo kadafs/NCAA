@@ -396,8 +396,27 @@ def calculate_advanced_ratings(games, pace_pivot=76.0):
 
 
 import re
+import unicodedata
 
 NOW = datetime.datetime.now()
+
+def clean_team_name(text: str) -> str:
+    """
+    Universal team name normalizer for robust cross-source matching.
+    Strips diacritics/accents via Unicode NFKD decomposition, bridges Latin character
+    equivalents (e.g. Polish ł->l, Scandinavian ø->o, Slavic đ->d, German ß->ss),
+    and strips punctuation/excess whitespace.
+    """
+    if not text:
+        return ""
+    t = unicodedata.normalize('NFKD', str(text))
+    t = ''.join(c for c in t if not unicodedata.combining(c))
+    t = (t.replace('ł', 'l').replace('Ł', 'L')
+          .replace('ø', 'o').replace('Ø', 'O')
+          .replace('đ', 'd').replace('Đ', 'D')
+          .replace('ß', 'ss'))
+    t = re.sub(r'[^a-zA-Z0-9\s]', ' ', t)
+    return ' '.join(t.lower().split())
 
 def parse_date(date_str):
     """Parse dates from multiple sources: YYYY-MM-DD (API), Dec 12, 2025 (Proballers), DD.MM. HH:MM (Flashscore)"""
@@ -580,18 +599,18 @@ def process_leagues():
         sorted_names = sorted(list(all_names), key=len, reverse=True)
         for name in sorted_names:
             matched = False
-            name_lower = name.lower()
+            clean_name = clean_team_name(name)
             for primary in set(team_name_map.values()):
-                pri_lower = primary.lower()
+                clean_pri = clean_team_name(primary)
                 
-                # Rule 1: Exact substring overlap (e.g. 'AS Monaco' and 'Monaco')
-                if name_lower in pri_lower or pri_lower in name_lower:
+                # Rule 1: Exact substring overlap on normalized names (min 4 chars to avoid tiny collisions)
+                if (clean_name in clean_pri or clean_pri in clean_name) and min(len(clean_name), len(clean_pri)) >= 4:
                     team_name_map[name] = primary
                     matched = True
                     break
                 
-                # Rule 2: High character overlap ratio via difflib
-                similarity = difflib.SequenceMatcher(None, name_lower, pri_lower).ratio()
+                # Rule 2: High character overlap ratio via difflib on normalized names
+                similarity = difflib.SequenceMatcher(None, clean_name, clean_pri).ratio()
                 if similarity >= 0.85:
                     team_name_map[name] = primary
                     matched = True
@@ -633,11 +652,9 @@ def process_leagues():
         summer_league_ids = {"13", "66", "76", "222", "207", "208", "209", "210", "211", "212", "213", "214", "215", "216"}
         lid_str = str(league_id)
 
-        # Check if this league is an active calendar-year / summer league.
-        # Active in spring/early summer (April-June) AND late summer (August-Sept) of cur_year
-        has_spring = any(g["_parsed_date"].year == cur_year and 4 <= g["_parsed_date"].month <= 6 for g in merged_games)
-        has_late_summer = any(g["_parsed_date"].year == cur_year and 8 <= g["_parsed_date"].month <= 9 for g in merged_games)
-        is_calendar_year = (lid_str in summer_league_ids) or (has_spring and has_late_summer)
+        # Calendar-year summer leagues run within a single calendar year (e.g. WNBA, NBL1, CEBL).
+        # Global winter leagues run across calendar year boundaries (e.g. Sept to May).
+        is_calendar_year = (lid_str in summer_league_ids)
 
         if is_calendar_year:
             cutoff_date = datetime.datetime(cur_year, 1, 1)
