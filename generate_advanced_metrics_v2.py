@@ -668,6 +668,13 @@ def process_leagues():
         # In early season (or autumn months for winter leagues), anchor with prior season
         is_early_season = (len(current_season_games) < 40) or (not is_calendar_year and cur_month in (8, 9, 10))
 
+        # Build per-team current-season game count for UI display
+        from collections import Counter as _Counter
+        current_season_team_counts = _Counter()
+        for _g in current_season_games:
+            if _g.get("home_team"): current_season_team_counts[_g["home_team"]] += 1
+            if _g.get("away_team"): current_season_team_counts[_g["away_team"]] += 1
+
         if is_early_season:
             # Look back 365 days to anchor with the prior season
             prior_cutoff = cutoff_date - datetime.timedelta(days=365)
@@ -752,6 +759,7 @@ def process_leagues():
                 "adj_t": round(pace_pivot, 1),
                 "std_dev_totals": std_dev_totals,
                 "games_played": data["games"],
+                "current_season_games": current_season_team_counts.get(team_name, data["games"]),
                 "wins": data["wins"],
                 "win_pct": win_pct,
                 "srs_rating": round(data["srs"], 2)
