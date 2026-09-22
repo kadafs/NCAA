@@ -251,9 +251,9 @@ def main():
                 
         final_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
         
-        # Early-season anchor: If current season has < 25 games, expand window 365 days back
+        # Early-season anchor: If current season has < 40 games (or autumn for winter leagues), expand window 365 days back
         # to ensure pace_pivot and eff_pivot are calibrated to the league's true distribution
-        if len(final_games) < 25:
+        if len(final_games) < 40 or (not is_calendar_year and cur_month in (8, 9, 10)):
             prior_cutoff = cutoff_date - datetime.timedelta(days=365)
             final_games = [g for g in merged_games if g["_parsed_date"] >= prior_cutoff]
         

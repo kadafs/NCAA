@@ -437,11 +437,10 @@ def parse_date(date_str):
             parts = [p for p in clean.split('.') if p]
             if len(parts) >= 2:
                 day, month = int(parts[0]), int(parts[1])
-                # Infer year: try current year first; if that would place the date more
-                # than 18 months in the future, step back a year.
+                # Final completed games cannot be in the future (allow 1 day for timezone variance)
                 year = NOW.year
                 candidate = datetime.datetime(year, month, day)
-                if candidate > NOW + datetime.timedelta(days=60):
+                if candidate > NOW + datetime.timedelta(days=1):
                     candidate = datetime.datetime(year - 1, month, day)
                 return candidate
     except:
@@ -666,7 +665,8 @@ def process_leagues():
                 cutoff_date = datetime.datetime(cur_year - 1, 8, 1)
                 
         current_season_games = [g for g in merged_games if g["_parsed_date"] >= cutoff_date]
-        is_early_season = len(current_season_games) < 20
+        # In early season (or autumn months for winter leagues), anchor with prior season
+        is_early_season = (len(current_season_games) < 40) or (not is_calendar_year and cur_month in (8, 9, 10))
 
         if is_early_season:
             # Look back 365 days to anchor with the prior season

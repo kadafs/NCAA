@@ -1,7 +1,7 @@
 {
   "date": "2026-09-21",
-  "mode": "full",
-  "total_predictions": 16,
+  "mode": "safe",
+  "total_predictions": 17,
   "predictions": [
     {
       "is_clash": false,
@@ -13,11 +13,11 @@
       "time": "17:00",
       "away_team": "Lancut",
       "home_team": "Polonia Warszawa",
-      "status": "FT",
+      "status": "Game Finished",
       "stage": "1",
-      "model_total": 176.32,
-      "xpts_h": 87.5,
-      "xpts_a": 88.8,
+      "model_total": 173.83,
+      "xpts_h": 86.3,
+      "xpts_a": 87.6,
       "probs_1x2": {
         "home": 45.6,
         "away": 54.4
@@ -27,25 +27,25 @@
       "away_source": "ADVANCED",
       "home_team_volatility": 19.54,
       "away_team_volatility": 19.68,
-      "market_total": 163.9,
-      "edge": 12.42,
+      "market_total": 164.0,
+      "edge": 9.83,
       "side": "OVER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
-      "confidence_score_band": "[MODERATE]",
-      "confidence_score": 53.0,
-      "mae_h": 12.0,
-      "mae_a": 12.0,
-      "bias_h": 0.0,
-      "bias_a": 0.0,
-      "graded_h": 0,
-      "graded_a": 0,
+      "confidence_score_band": "[LOW]",
+      "confidence_score": 42.0,
+      "mae_h": 8.89,
+      "mae_a": 8.89,
+      "bias_h": 8.89,
+      "bias_a": 8.89,
+      "graded_h": 1,
+      "graded_a": 1,
       "mbet_threshold": 16.6,
       "model_architecture": "[ADVANCED]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.517506+00:00",
+      "timestamp": "2026-09-22T08:43:39.961973+00:00",
       "match_center": {
         "h2h": [],
         "recentH": [
@@ -550,18 +550,7 @@
           "rank": null,
           "prior_blended": false
         }
-      },
-      "actual_home_score": 95,
-      "actual_away_score": 93,
-      "actual_result": "HOME",
-      "halftime_home_score": 65,
-      "halftime_away_score": 40,
-      "halftime_total": 105,
-      "halftime_pct_of_model": 58.6,
-      "total_delta": 8.89,
-      "signed_delta": 8.89,
-      "total_rpe": 4.73,
-      "accuracy_tier": "SOLID"
+      }
     },
     {
       "is_clash": false,
@@ -575,9 +564,9 @@
       "home_team": "Mongolia W",
       "status": "Game Finished",
       "stage": "",
-      "model_total": 157.7,
-      "xpts_h": 43.4,
-      "xpts_a": 114.3,
+      "model_total": 158.16,
+      "xpts_h": 42.1,
+      "xpts_a": 116.0,
       "probs_1x2": {
         "home": 0.0,
         "away": 100.0
@@ -585,13 +574,13 @@
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 8.06,
-      "away_team_volatility": 8.52,
-      "market_total": 145.4,
-      "edge": 12.3,
-      "side": "OVER",
-      "decision": "PLAY OVER",
-      "confidence": "SOLID",
+      "home_team_volatility": 8.47,
+      "away_team_volatility": 7.89,
+      "market_total": null,
+      "edge": null,
+      "side": null,
+      "decision": "MODEL ONLY",
+      "confidence": "HIGH",
       "confidence_score_band": "[MODERATE]",
       "confidence_score": 49.0,
       "mae_h": 9.79,
@@ -602,10 +591,10 @@
       "graded_a": 2,
       "mbet_threshold": 11.7,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.525369+00:00",
+      "timestamp": "2026-09-22T08:43:39.975836+00:00",
       "match_center": {
         "h2h": [],
         "recentH": [
@@ -1049,18 +1038,436 @@
           ]
         ],
         "statsH": {
-          "played": 4,
+          "played": 5,
           "win_pct": 0.0,
-          "scored": 68.3,
-          "conceded": 111.3,
+          "scored": 71.0,
+          "conceded": 112.1,
           "rank": null,
           "prior_blended": true
         },
         "statsA": {
-          "played": 7,
-          "win_pct": 0.857,
-          "scored": 122.4,
-          "conceded": 71.4,
+          "played": 8,
+          "win_pct": 0.875,
+          "scored": 125.2,
+          "conceded": 68.3,
+          "rank": null,
+          "prior_blended": false
+        }
+      }
+    },
+    {
+      "is_clash": true,
+      "clash_trigger": "CLASH",
+      "league_id": 302,
+      "league": "Asian Games Women",
+      "country": "Asia",
+      "date": "2026-09-21",
+      "time": "07:00",
+      "away_team": "Chinese Taipei W",
+      "home_team": "Malaysia W",
+      "status": "Game Finished",
+      "stage": "",
+      "model_total": 161.14,
+      "xpts_h": 75.3,
+      "xpts_a": 85.9,
+      "probs_1x2": {
+        "home": 18.8,
+        "away": 81.2
+      },
+      "predicted_result": "AWAY",
+      "home_source": "SRS",
+      "away_source": "SRS",
+      "home_team_volatility": 7.78,
+      "away_team_volatility": 20.3,
+      "market_total": null,
+      "edge": null,
+      "side": null,
+      "decision": "MODEL ONLY",
+      "confidence": "HIGH",
+      "confidence_score_band": "[MODERATE]",
+      "confidence_score": 48.0,
+      "mae_h": 7.24,
+      "mae_a": 7.88,
+      "bias_h": -4.14,
+      "bias_a": -4.79,
+      "graded_h": 2,
+      "graded_a": 2,
+      "mbet_threshold": 11.7,
+      "model_architecture": "[  SRS   ]",
+      "mode": "safe",
+      "config_source": "auto-calibrated",
+      "tier": "top_domestic",
+      "timestamp": "2026-09-22T08:43:39.982493+00:00",
+      "match_center": {
+        "h2h": [],
+        "recentH": [],
+        "recentA": [
+          {
+            "date": "02.10. 04:00",
+            "teams": {
+              "home": {
+                "name": "China W",
+                "winner": true
+              },
+              "away": {
+                "name": "Chinese Taipei W",
+                "winner": false
+              }
+            },
+            "scores": {
+              "home": {
+                "total": 104
+              },
+              "away": {
+                "total": 60
+              }
+            }
+          },
+          {
+            "date": "01.10. 01:30",
+            "teams": {
+              "home": {
+                "name": "South Korea W",
+                "winner": true
+              },
+              "away": {
+                "name": "Chinese Taipei W",
+                "winner": false
+              }
+            },
+            "scores": {
+              "home": {
+                "total": 87
+              },
+              "away": {
+                "total": 59
+              }
+            }
+          },
+          {
+            "date": "29.09. 05:30",
+            "teams": {
+              "home": {
+                "name": "Thailand W",
+                "winner": false
+              },
+              "away": {
+                "name": "Chinese Taipei W",
+                "winner": true
+              }
+            },
+            "scores": {
+              "home": {
+                "total": 54
+              },
+              "away": {
+                "total": 58
+              }
+            }
+          },
+          {
+            "date": "27.09. 01:30",
+            "teams": {
+              "home": {
+                "name": "Chinese Taipei W",
+                "winner": false
+              },
+              "away": {
+                "name": "North Korea W",
+                "winner": true
+              }
+            },
+            "scores": {
+              "home": {
+                "total": 77
+              },
+              "away": {
+                "total": 91
+              }
+            }
+          }
+        ],
+        "full_standings": [
+          [
+            {
+              "position": 1,
+              "team": {
+                "name": "China W",
+                "logo": ""
+              },
+              "games": {
+                "played": 6,
+                "win": {
+                  "total": 6,
+                  "percentage": "1.000"
+                },
+                "lose": {
+                  "total": 0
+                }
+              },
+              "points": {
+                "for": 591,
+                "against": 327
+              },
+              "form": "WWWWW"
+            },
+            {
+              "position": 2,
+              "team": {
+                "name": "Japan W",
+                "logo": ""
+              },
+              "games": {
+                "played": 6,
+                "win": {
+                  "total": 5,
+                  "percentage": "0.833"
+                },
+                "lose": {
+                  "total": 1
+                }
+              },
+              "points": {
+                "for": 548,
+                "against": 314
+              },
+              "form": "LWWWW"
+            },
+            {
+              "position": 3,
+              "team": {
+                "name": "South Korea W",
+                "logo": ""
+              },
+              "games": {
+                "played": 6,
+                "win": {
+                  "total": 5,
+                  "percentage": "0.833"
+                },
+                "lose": {
+                  "total": 1
+                }
+              },
+              "points": {
+                "for": 502,
+                "against": 392
+              },
+              "form": "WLWWW"
+            },
+            {
+              "position": 4,
+              "team": {
+                "name": "North Korea W",
+                "logo": ""
+              },
+              "games": {
+                "played": 6,
+                "win": {
+                  "total": 3,
+                  "percentage": "0.500"
+                },
+                "lose": {
+                  "total": 3
+                }
+              },
+              "points": {
+                "for": 461,
+                "against": 457
+              },
+              "form": "LLWWL"
+            },
+            {
+              "position": 5,
+              "team": {
+                "name": "Philippines W",
+                "logo": ""
+              },
+              "games": {
+                "played": 4,
+                "win": {
+                  "total": 2,
+                  "percentage": "0.500"
+                },
+                "lose": {
+                  "total": 2
+                }
+              },
+              "points": {
+                "for": 312,
+                "against": 311
+              },
+              "form": "LLWW"
+            },
+            {
+              "position": 6,
+              "team": {
+                "name": "India W",
+                "logo": ""
+              },
+              "games": {
+                "played": 4,
+                "win": {
+                  "total": 2,
+                  "percentage": "0.500"
+                },
+                "lose": {
+                  "total": 2
+                }
+              },
+              "points": {
+                "for": 244,
+                "against": 315
+              },
+              "form": "LLWW"
+            },
+            {
+              "position": 7,
+              "team": {
+                "name": "Hong Kong W",
+                "logo": ""
+              },
+              "games": {
+                "played": 3,
+                "win": {
+                  "total": 1,
+                  "percentage": "0.333"
+                },
+                "lose": {
+                  "total": 2
+                }
+              },
+              "points": {
+                "for": 179,
+                "against": 273
+              },
+              "form": "WLL"
+            },
+            {
+              "position": 8,
+              "team": {
+                "name": "Chinese Taipei W",
+                "logo": ""
+              },
+              "games": {
+                "played": 4,
+                "win": {
+                  "total": 1,
+                  "percentage": "0.250"
+                },
+                "lose": {
+                  "total": 3
+                }
+              },
+              "points": {
+                "for": 254,
+                "against": 336
+              },
+              "form": "LLWL"
+            },
+            {
+              "position": 9,
+              "team": {
+                "name": "Indonesia W",
+                "logo": ""
+              },
+              "games": {
+                "played": 4,
+                "win": {
+                  "total": 1,
+                  "percentage": "0.250"
+                },
+                "lose": {
+                  "total": 3
+                }
+              },
+              "points": {
+                "for": 214,
+                "against": 320
+              },
+              "form": "LWLL"
+            },
+            {
+              "position": 10,
+              "team": {
+                "name": "Mongolia W",
+                "logo": ""
+              },
+              "games": {
+                "played": 3,
+                "win": {
+                  "total": 0,
+                  "percentage": "0.000"
+                },
+                "lose": {
+                  "total": 3
+                }
+              },
+              "points": {
+                "for": 172,
+                "against": 238
+              },
+              "form": "LLL"
+            },
+            {
+              "position": 11,
+              "team": {
+                "name": "Thailand W",
+                "logo": ""
+              },
+              "games": {
+                "played": 3,
+                "win": {
+                  "total": 0,
+                  "percentage": "0.000"
+                },
+                "lose": {
+                  "total": 3
+                }
+              },
+              "points": {
+                "for": 159,
+                "against": 253
+              },
+              "form": "LLL"
+            },
+            {
+              "position": 12,
+              "team": {
+                "name": "Kazakhstan W",
+                "logo": ""
+              },
+              "games": {
+                "played": 3,
+                "win": {
+                  "total": 0,
+                  "percentage": "0.000"
+                },
+                "lose": {
+                  "total": 3
+                }
+              },
+              "points": {
+                "for": 145,
+                "against": 245
+              },
+              "form": "LLL"
+            }
+          ]
+        ],
+        "statsH": {
+          "played": 2,
+          "win_pct": 0.0,
+          "scored": 83.4,
+          "conceded": 107.7,
+          "rank": null,
+          "prior_blended": false
+        },
+        "statsA": {
+          "played": 6,
+          "win_pct": 0.5,
+          "scored": 91.4,
+          "conceded": 98.9,
           "rank": null,
           "prior_blended": true
         }
@@ -1078,9 +1485,9 @@
       "home_team": "China W",
       "status": "Game Finished",
       "stage": "",
-      "model_total": 158.26,
-      "xpts_h": 129.1,
-      "xpts_a": 29.2,
+      "model_total": 159.14,
+      "xpts_h": 136.2,
+      "xpts_a": 22.9,
       "probs_1x2": {
         "home": 100.0,
         "away": 0.0
@@ -1088,13 +1495,13 @@
       "predicted_result": "HOME",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 8.38,
-      "away_team_volatility": 17.21,
-      "market_total": 145.4,
-      "edge": 12.86,
-      "side": "OVER",
-      "decision": "PLAY OVER",
-      "confidence": "SOLID",
+      "home_team_volatility": 7.81,
+      "away_team_volatility": 17.74,
+      "market_total": null,
+      "edge": null,
+      "side": null,
+      "decision": "MODEL ONLY",
+      "confidence": "HIGH",
       "confidence_score_band": "[AVOID]",
       "confidence_score": 12.0,
       "mae_h": 3.68,
@@ -1105,10 +1512,10 @@
       "graded_a": 2,
       "mbet_threshold": 11.7,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.528756+00:00",
+      "timestamp": "2026-09-22T08:43:39.990081+00:00",
       "match_center": {
         "h2h": [
           {
@@ -1593,18 +2000,18 @@
           ]
         ],
         "statsH": {
-          "played": 7,
+          "played": 8,
           "win_pct": 1.0,
-          "scored": 142.9,
-          "conceded": 60.7,
+          "scored": 149.3,
+          "conceded": 55.7,
           "rank": null,
-          "prior_blended": true
+          "prior_blended": false
         },
         "statsA": {
-          "played": 5,
-          "win_pct": 0.4,
-          "scored": 63.2,
-          "conceded": 105.8,
+          "played": 6,
+          "win_pct": 0.333,
+          "scored": 61.8,
+          "conceded": 110.2,
           "rank": null,
           "prior_blended": true
         }
@@ -1622,25 +2029,25 @@
       "home_team": "Deportivo Amambay",
       "status": "Break Time",
       "stage": "",
-      "model_total": 174.02,
-      "xpts_h": 80.6,
-      "xpts_a": 93.4,
+      "model_total": 167.87,
+      "xpts_h": 78.6,
+      "xpts_a": 89.3,
       "probs_1x2": {
-        "home": 14.3,
-        "away": 85.7
+        "home": 18.5,
+        "away": 81.5
       },
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 19.65,
-      "away_team_volatility": 19.48,
-      "market_total": 154.1,
-      "edge": 19.92,
+      "home_team_volatility": 21.43,
+      "away_team_volatility": 20.58,
+      "market_total": 155.3,
+      "edge": 12.57,
       "side": "OVER",
-      "decision": "PLAY OVER",
-      "confidence": "SOLID",
+      "decision": "PASS",
+      "confidence": "MBET FILTER",
       "confidence_score_band": "[AVOID]",
-      "confidence_score": 13.0,
+      "confidence_score": 15.0,
       "mae_h": 13.05,
       "mae_a": 25.48,
       "bias_h": -4.3,
@@ -1649,10 +2056,10 @@
       "graded_a": 5,
       "mbet_threshold": 19.5,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.539168+00:00",
+      "timestamp": "2026-09-22T08:43:40.000692+00:00",
       "match_center": {
         "h2h": [
           {
@@ -2111,18 +2518,18 @@
           ]
         ],
         "statsH": {
-          "played": 27,
-          "win_pct": 0.593,
-          "scored": 111.4,
-          "conceded": 91.4,
+          "played": 49,
+          "win_pct": 0.571,
+          "scored": 106.6,
+          "conceded": 94.8,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 27,
-          "win_pct": 0.852,
-          "scored": 123.0,
-          "conceded": 83.4,
+          "played": 51,
+          "win_pct": 0.686,
+          "scored": 115.6,
+          "conceded": 86.8,
           "rank": null,
           "prior_blended": false
         }
@@ -2140,9 +2547,9 @@
       "home_team": "San Alfonzo",
       "status": "Quarter 4",
       "stage": "",
-      "model_total": 178.25,
-      "xpts_h": 61.6,
-      "xpts_a": 116.7,
+      "model_total": 171.59,
+      "xpts_h": 56.2,
+      "xpts_a": 115.4,
       "probs_1x2": {
         "home": 0.0,
         "away": 100.0
@@ -2150,13 +2557,13 @@
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 27.92,
-      "away_team_volatility": 20.32,
-      "market_total": 154.1,
-      "edge": 24.15,
+      "home_team_volatility": 26.77,
+      "away_team_volatility": 21.57,
+      "market_total": 155.3,
+      "edge": 16.29,
       "side": "OVER",
-      "decision": "PLAY OVER",
-      "confidence": "HIGH",
+      "decision": "PASS",
+      "confidence": "MBET FILTER",
       "confidence_score_band": "[LOW]",
       "confidence_score": 36.0,
       "mae_h": 27.44,
@@ -2167,10 +2574,10 @@
       "graded_a": 5,
       "mbet_threshold": 19.5,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.543170+00:00",
+      "timestamp": "2026-09-22T08:43:40.006419+00:00",
       "match_center": {
         "h2h": [
           {
@@ -2629,26 +3036,26 @@
           ]
         ],
         "statsH": {
-          "played": 26,
-          "win_pct": 0.308,
-          "scored": 85.2,
-          "conceded": 130.5,
+          "played": 43,
+          "win_pct": 0.233,
+          "scored": 84.1,
+          "conceded": 126.4,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 29,
-          "win_pct": 0.759,
-          "scored": 113.8,
-          "conceded": 85.3,
+          "played": 55,
+          "win_pct": 0.782,
+          "scored": 117.6,
+          "conceded": 80.8,
           "rank": null,
           "prior_blended": false
         }
       }
     },
     {
-      "is_clash": true,
-      "clash_trigger": "SHARP OVER",
+      "is_clash": false,
+      "clash_trigger": "",
       "league_id": 258,
       "league": "LNB",
       "country": "Paraguay",
@@ -2658,25 +3065,25 @@
       "home_team": "Deportivo Campoalto",
       "status": "Quarter 3",
       "stage": "",
-      "model_total": 166.49,
-      "xpts_h": 77.2,
-      "xpts_a": 89.3,
+      "model_total": 161.83,
+      "xpts_h": 71.1,
+      "xpts_a": 90.7,
       "probs_1x2": {
-        "home": 15.7,
-        "away": 84.3
+        "home": 5.1,
+        "away": 94.9
       },
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 23.59,
-      "away_team_volatility": 20.35,
-      "market_total": 154.1,
-      "edge": 12.39,
+      "home_team_volatility": 26.07,
+      "away_team_volatility": 26.87,
+      "market_total": 155.3,
+      "edge": 6.53,
       "side": "OVER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
       "confidence_score_band": "[AVOID]",
-      "confidence_score": 22.0,
+      "confidence_score": 26.0,
       "mae_h": 19.42,
       "mae_a": 14.54,
       "bias_h": 14.48,
@@ -2685,10 +3092,10 @@
       "graded_a": 6,
       "mbet_threshold": 19.5,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.547129+00:00",
+      "timestamp": "2026-09-22T08:43:40.012323+00:00",
       "match_center": {
         "h2h": [
           {
@@ -3147,18 +3554,18 @@
           ]
         ],
         "statsH": {
-          "played": 28,
-          "win_pct": 0.286,
-          "scored": 85.7,
-          "conceded": 110.0,
+          "played": 47,
+          "win_pct": 0.277,
+          "scored": 89.0,
+          "conceded": 114.4,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 28,
-          "win_pct": 0.464,
-          "scored": 98.7,
-          "conceded": 104.3,
+          "played": 48,
+          "win_pct": 0.458,
+          "scored": 97.5,
+          "conceded": 94.6,
           "rank": null,
           "prior_blended": false
         }
@@ -3166,7 +3573,7 @@
     },
     {
       "is_clash": true,
-      "clash_trigger": "SHARP OVER",
+      "clash_trigger": "CLASH",
       "league_id": 63,
       "league": "LNBP",
       "country": "Mexico",
@@ -3176,21 +3583,21 @@
       "home_team": "Abejas",
       "status": "Game Finished",
       "stage": "21",
-      "model_total": 178.96,
-      "xpts_h": 91.9,
-      "xpts_a": 87.1,
+      "model_total": 167.43,
+      "xpts_h": 85.5,
+      "xpts_a": 81.9,
       "probs_1x2": {
-        "home": 65.7,
-        "away": 34.3
+        "home": 61.8,
+        "away": 38.2
       },
       "predicted_result": "HOME",
-      "home_source": "SRS",
-      "away_source": "SRS",
-      "home_team_volatility": 17.79,
-      "away_team_volatility": 12.83,
-      "market_total": 168.0,
-      "edge": 10.96,
-      "side": "OVER",
+      "home_source": "ADVANCED",
+      "away_source": "ADVANCED",
+      "home_team_volatility": 18.21,
+      "away_team_volatility": 15.15,
+      "market_total": 168.7,
+      "edge": -1.27,
+      "side": "UNDER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
       "confidence_score_band": "[AVOID]",
@@ -3202,11 +3609,11 @@
       "graded_h": 6,
       "graded_a": 8,
       "mbet_threshold": 14.4,
-      "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "model_architecture": "[ADVANCED]",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.557799+00:00",
+      "timestamp": "2026-09-22T08:43:40.032227+00:00",
       "match_center": {
         "h2h": [
           {
@@ -3775,18 +4182,18 @@
           ]
         ],
         "statsH": {
-          "played": 18,
-          "win_pct": 0.167,
-          "scored": 94.7,
-          "conceded": 125.3,
+          "played": 20,
+          "win_pct": 0.1,
+          "scored": 96.6,
+          "conceded": 119.2,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
           "played": 18,
-          "win_pct": 0.278,
-          "scored": 89.5,
-          "conceded": 123.1,
+          "win_pct": 0.056,
+          "scored": 93.9,
+          "conceded": 117.9,
           "rank": null,
           "prior_blended": false
         }
@@ -3804,25 +4211,25 @@
       "home_team": "Mineros",
       "status": "Game Finished",
       "stage": "21",
-      "model_total": 182.46,
-      "xpts_h": 100.3,
-      "xpts_a": 82.2,
+      "model_total": 169.89,
+      "xpts_h": 88.2,
+      "xpts_a": 81.7,
       "probs_1x2": {
-        "home": 93.4,
-        "away": 6.6
+        "home": 70.5,
+        "away": 29.5
       },
       "predicted_result": "HOME",
-      "home_source": "SRS",
-      "away_source": "SRS",
-      "home_team_volatility": 17.05,
-      "away_team_volatility": 17.41,
-      "market_total": 168.0,
-      "edge": 14.46,
+      "home_source": "ADVANCED",
+      "away_source": "ADVANCED",
+      "home_team_volatility": 18.4,
+      "away_team_volatility": 15.67,
+      "market_total": 168.7,
+      "edge": 1.19,
       "side": "OVER",
-      "decision": "PLAY OVER",
-      "confidence": "SOLID",
+      "decision": "PASS",
+      "confidence": "MBET FILTER",
       "confidence_score_band": "[AVOID]",
-      "confidence_score": 22.0,
+      "confidence_score": 26.0,
       "mae_h": 11.24,
       "mae_a": 20.49,
       "bias_h": 1.53,
@@ -3830,11 +4237,11 @@
       "graded_h": 9,
       "graded_a": 8,
       "mbet_threshold": 14.4,
-      "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "model_architecture": "[ADVANCED]",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.565432+00:00",
+      "timestamp": "2026-09-22T08:43:40.048589+00:00",
       "match_center": {
         "h2h": [
           {
@@ -4403,18 +4810,18 @@
           ]
         ],
         "statsH": {
-          "played": 24,
-          "win_pct": 0.417,
-          "scored": 106.5,
-          "conceded": 106.6,
+          "played": 18,
+          "win_pct": 0.556,
+          "scored": 101.2,
+          "conceded": 103.3,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 20,
-          "win_pct": 0.35,
-          "scored": 102.1,
-          "conceded": 122.2,
+          "played": 18,
+          "win_pct": 0.278,
+          "scored": 109.7,
+          "conceded": 116.9,
           "rank": null,
           "prior_blended": false
         }
@@ -4432,20 +4839,20 @@
       "home_team": "Santos",
       "status": "Game Finished",
       "stage": "21",
-      "model_total": 177.21,
-      "xpts_h": 82.7,
-      "xpts_a": 94.5,
+      "model_total": 169.96,
+      "xpts_h": 78.7,
+      "xpts_a": 91.2,
       "probs_1x2": {
-        "home": 16.2,
-        "away": 83.8
+        "home": 14.9,
+        "away": 85.1
       },
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 15.97,
-      "away_team_volatility": 17.27,
-      "market_total": 168.0,
-      "edge": 9.21,
+      "home_team_volatility": 13.18,
+      "away_team_volatility": 18.22,
+      "market_total": 168.7,
+      "edge": 1.26,
       "side": "OVER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
@@ -4459,10 +4866,10 @@
       "graded_a": 9,
       "mbet_threshold": 14.4,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.573446+00:00",
+      "timestamp": "2026-09-22T08:43:40.817348+00:00",
       "match_center": {
         "h2h": [],
         "recentH": [
@@ -4886,18 +5293,18 @@
           ]
         ],
         "statsH": {
-          "played": 21,
-          "win_pct": 0.381,
-          "scored": 98.8,
-          "conceded": 118.8,
+          "played": 40,
+          "win_pct": 0.375,
+          "scored": 101.6,
+          "conceded": 114.4,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 10,
-          "win_pct": 0.6,
-          "scored": 105.5,
-          "conceded": 107.1,
+          "played": 13,
+          "win_pct": 0.692,
+          "scored": 110.8,
+          "conceded": 104.4,
           "rank": null,
           "prior_blended": false
         }
@@ -4915,25 +5322,25 @@
       "home_team": "Sarangani Marlins",
       "status": "Game Finished",
       "stage": "",
-      "model_total": 189.65,
-      "xpts_h": 103.8,
-      "xpts_a": 85.8,
+      "model_total": 191.36,
+      "xpts_h": 101.1,
+      "xpts_a": 90.3,
       "probs_1x2": {
-        "home": 93.3,
-        "away": 6.7
+        "home": 81.7,
+        "away": 18.3
       },
       "predicted_result": "HOME",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 19.36,
-      "away_team_volatility": 25.36,
-      "market_total": 162.4,
-      "edge": 27.25,
+      "home_team_volatility": 21.79,
+      "away_team_volatility": 26.64,
+      "market_total": 164.8,
+      "edge": 26.56,
       "side": "OVER",
       "decision": "PLAY OVER",
       "confidence": "HIGH",
       "confidence_score_band": "[LOW]",
-      "confidence_score": 33.0,
+      "confidence_score": 37.0,
       "mae_h": 22.28,
       "mae_a": 18.57,
       "bias_h": 2.63,
@@ -4942,10 +5349,10 @@
       "graded_a": 5,
       "mbet_threshold": 20.0,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.592578+00:00",
+      "timestamp": "2026-09-22T08:43:40.826783+00:00",
       "match_center": {
         "h2h": [],
         "recentH": [
@@ -5764,20 +6171,20 @@
           ]
         ],
         "statsH": {
-          "played": 7,
-          "win_pct": 0.143,
-          "scored": 94.9,
-          "conceded": 138.8,
+          "played": 29,
+          "win_pct": 0.172,
+          "scored": 96.5,
+          "conceded": 133.0,
           "rank": null,
-          "prior_blended": true
+          "prior_blended": false
         },
         "statsA": {
-          "played": 7,
-          "win_pct": 0.0,
-          "scored": 79.8,
-          "conceded": 143.6,
+          "played": 28,
+          "win_pct": 0.179,
+          "scored": 91.8,
+          "conceded": 139.0,
           "rank": null,
-          "prior_blended": true
+          "prior_blended": false
         }
       }
     },
@@ -5793,21 +6200,21 @@
       "home_team": "Rizal Golden Coolers",
       "status": "Game Finished",
       "stage": "",
-      "model_total": 165.43,
-      "xpts_h": 67.7,
-      "xpts_a": 97.8,
+      "model_total": 156.0,
+      "xpts_h": 67.5,
+      "xpts_a": 88.5,
       "probs_1x2": {
-        "home": 0.6,
-        "away": 99.4
+        "home": 4.0,
+        "away": 96.0
       },
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 19.54,
-      "away_team_volatility": 23.97,
-      "market_total": 162.4,
-      "edge": 3.03,
-      "side": "OVER",
+      "home_team_volatility": 20.07,
+      "away_team_volatility": 23.55,
+      "market_total": 164.8,
+      "edge": -8.8,
+      "side": "UNDER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
       "confidence_score_band": "[AVOID]",
@@ -5820,10 +6227,10 @@
       "graded_a": 8,
       "mbet_threshold": 20.0,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.595287+00:00",
+      "timestamp": "2026-09-22T08:43:40.833660+00:00",
       "match_center": {
         "h2h": [],
         "recentH": [
@@ -6705,18 +7112,18 @@
           ]
         ],
         "statsH": {
-          "played": 12,
-          "win_pct": 0.583,
-          "scored": 95.9,
-          "conceded": 101.8,
+          "played": 30,
+          "win_pct": 0.567,
+          "scored": 109.4,
+          "conceded": 100.0,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 15,
-          "win_pct": 0.867,
-          "scored": 128.9,
-          "conceded": 93.0,
+          "played": 41,
+          "win_pct": 0.78,
+          "scored": 119.3,
+          "conceded": 79.8,
           "rank": null,
           "prior_blended": false
         }
@@ -6734,20 +7141,20 @@
       "home_team": "Quezon City",
       "status": "Cancelled",
       "stage": "",
-      "model_total": 162.55,
-      "xpts_h": 61.8,
-      "xpts_a": 100.7,
+      "model_total": 167.37,
+      "xpts_h": 72.4,
+      "xpts_a": 95.0,
       "probs_1x2": {
-        "home": 0.1,
-        "away": 99.9
+        "home": 3.0,
+        "away": 97.0
       },
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 30.02,
-      "away_team_volatility": 18.8,
-      "market_total": 162.4,
-      "edge": 0.15,
+      "home_team_volatility": 23.11,
+      "away_team_volatility": 21.93,
+      "market_total": 164.8,
+      "edge": 2.57,
       "side": "OVER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
@@ -6761,10 +7168,10 @@
       "graded_a": 4,
       "mbet_threshold": 20.0,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.600086+00:00",
+      "timestamp": "2026-09-22T08:43:40.838479+00:00",
       "match_center": {
         "h2h": [],
         "recentH": [
@@ -7646,18 +8053,18 @@
           ]
         ],
         "statsH": {
-          "played": 12,
-          "win_pct": 0.25,
-          "scored": 87.1,
-          "conceded": 122.9,
+          "played": 31,
+          "win_pct": 0.387,
+          "scored": 95.2,
+          "conceded": 111.7,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 10,
-          "win_pct": 0.7,
-          "scored": 111.4,
-          "conceded": 94.1,
+          "played": 31,
+          "win_pct": 0.548,
+          "scored": 116.7,
+          "conceded": 101.1,
           "rank": null,
           "prior_blended": false
         }
@@ -7673,11 +8080,11 @@
       "time": "11:00",
       "away_team": "GenSan Warriors",
       "home_team": "Bulacan Kuyas",
-      "status": "FT",
+      "status": "Game Finished",
       "stage": "",
-      "model_total": 182.19,
-      "xpts_h": 68.1,
-      "xpts_a": 114.1,
+      "model_total": 174.67,
+      "xpts_h": 64.5,
+      "xpts_a": 110.1,
       "probs_1x2": {
         "home": 0.0,
         "away": 100.0
@@ -7685,27 +8092,27 @@
       "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 10.78,
-      "away_team_volatility": 26.12,
-      "market_total": 162.4,
-      "edge": 19.79,
+      "home_team_volatility": 11.07,
+      "away_team_volatility": 23.8,
+      "market_total": 164.8,
+      "edge": 9.87,
       "side": "OVER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
       "confidence_score_band": "[LOW]",
-      "confidence_score": 34.0,
-      "mae_h": 11.35,
-      "mae_a": 17.96,
-      "bias_h": 5.28,
-      "bias_a": -0.57,
-      "graded_h": 2,
-      "graded_a": 4,
+      "confidence_score": 31.0,
+      "mae_h": 9.42,
+      "mae_a": 15.48,
+      "bias_h": 1.66,
+      "bias_a": -1.57,
+      "graded_h": 3,
+      "graded_a": 5,
       "mbet_threshold": 20.0,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.605346+00:00",
+      "timestamp": "2026-09-22T08:43:40.842934+00:00",
       "match_center": {
         "h2h": [
           {
@@ -8586,33 +8993,22 @@
           ]
         ],
         "statsH": {
-          "played": 8,
-          "win_pct": 0.125,
-          "scored": 78.4,
-          "conceded": 142.4,
+          "played": 28,
+          "win_pct": 0.214,
+          "scored": 91.9,
+          "conceded": 125.0,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 13,
-          "win_pct": 0.615,
-          "scored": 110.8,
-          "conceded": 112.7,
+          "played": 32,
+          "win_pct": 0.75,
+          "scored": 123.4,
+          "conceded": 94.8,
           "rank": null,
           "prior_blended": false
         }
-      },
-      "actual_home_score": 82,
-      "actual_away_score": 102,
-      "actual_result": "AWAY",
-      "halftime_home_score": 37,
-      "halftime_away_score": 40,
-      "halftime_total": 77,
-      "halftime_pct_of_model": 40.4,
-      "total_delta": 6.51,
-      "signed_delta": -6.51,
-      "total_rpe": 3.54,
-      "accuracy_tier": "EXCELLENT"
+      }
     },
     {
       "is_clash": false,
@@ -8626,9 +9022,9 @@
       "home_team": "Las Vegas Aces W",
       "status": "Game Finished",
       "stage": "",
-      "model_total": 176.79,
-      "xpts_h": 108.6,
-      "xpts_a": 68.2,
+      "model_total": 172.97,
+      "xpts_h": 109.0,
+      "xpts_a": 64.0,
       "probs_1x2": {
         "home": 100.0,
         "away": 0.0
@@ -8636,13 +9032,13 @@
       "predicted_result": "HOME",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 15.84,
-      "away_team_volatility": 20.93,
-      "market_total": 169.5,
-      "edge": 7.29,
+      "home_team_volatility": 15.61,
+      "away_team_volatility": 20.66,
+      "market_total": 172.6,
+      "edge": 0.37,
       "side": "OVER",
-      "decision": "PLAY OVER",
-      "confidence": "HIGH",
+      "decision": "PASS",
+      "confidence": "MBET FILTER",
       "confidence_score_band": "[AVOID]",
       "confidence_score": 25.0,
       "mae_h": 20.23,
@@ -8653,10 +9049,10 @@
       "graded_a": 6,
       "mbet_threshold": 4.0,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.640085+00:00",
+      "timestamp": "2026-09-22T08:43:40.872128+00:00",
       "match_center": {
         "h2h": [
           {
@@ -9313,18 +9709,18 @@
           ]
         ],
         "statsH": {
-          "played": 33,
-          "win_pct": 0.697,
-          "scored": 129.6,
-          "conceded": 101.3,
+          "played": 34,
+          "win_pct": 0.706,
+          "scored": 130.7,
+          "conceded": 99.7,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 37,
-          "win_pct": 0.216,
-          "scored": 102.7,
-          "conceded": 123.1,
+          "played": 38,
+          "win_pct": 0.211,
+          "scored": 101.3,
+          "conceded": 124.7,
           "rank": null,
           "prior_blended": false
         }
@@ -9342,9 +9738,9 @@
       "home_team": "Tasmania JackJumpers",
       "status": "Game Finished",
       "stage": "1",
-      "model_total": 186.98,
+      "model_total": 186.89,
       "xpts_h": 89.9,
-      "xpts_a": 97.1,
+      "xpts_a": 97.0,
       "probs_1x2": {
         "home": 27.5,
         "away": 72.5
@@ -9355,7 +9751,7 @@
       "home_team_volatility": 18.94,
       "away_team_volatility": 22.32,
       "market_total": 183.8,
-      "edge": 3.18,
+      "edge": 3.09,
       "side": "OVER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
@@ -9369,10 +9765,10 @@
       "graded_a": 1,
       "mbet_threshold": 16.2,
       "model_architecture": "[ADVANCED]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "top_domestic",
-      "timestamp": "2026-09-22T00:03:07.651639+00:00",
+      "timestamp": "2026-09-22T08:43:40.884787+00:00",
       "match_center": {
         "h2h": [
           {
@@ -9899,39 +10295,39 @@
       "time": "17:00",
       "away_team": "AIK Basket",
       "home_team": "Djurgarden",
-      "status": "FT",
+      "status": "Game Finished",
       "stage": "",
-      "model_total": 165.25,
-      "xpts_h": 89.4,
-      "xpts_a": 75.9,
+      "model_total": 162.77,
+      "xpts_h": 80.4,
+      "xpts_a": 82.4,
       "probs_1x2": {
-        "home": 86.9,
-        "away": 13.1
+        "home": 43.6,
+        "away": 56.4
       },
-      "predicted_result": "HOME",
+      "predicted_result": "AWAY",
       "home_source": "SRS",
       "away_source": "SRS",
-      "home_team_volatility": 19.6,
-      "away_team_volatility": 17.79,
-      "market_total": 167.2,
-      "edge": -1.95,
+      "home_team_volatility": 19.27,
+      "away_team_volatility": 17.41,
+      "market_total": 167.1,
+      "edge": -4.33,
       "side": "UNDER",
       "decision": "PASS",
       "confidence": "MBET FILTER",
       "confidence_score_band": "[MODERATE]",
-      "confidence_score": 53.0,
-      "mae_h": 12.0,
-      "mae_a": 12.0,
-      "bias_h": 0.0,
-      "bias_a": 0.0,
-      "graded_h": 0,
-      "graded_a": 0,
+      "confidence_score": 51.0,
+      "mae_h": 5.12,
+      "mae_a": 5.12,
+      "bias_h": 5.12,
+      "bias_a": 5.12,
+      "graded_h": 1,
+      "graded_a": 1,
       "mbet_threshold": 15.5,
       "model_architecture": "[  SRS   ]",
-      "mode": "full",
+      "mode": "safe",
       "config_source": "auto-calibrated",
       "tier": "second_division",
-      "timestamp": "2026-09-22T00:03:07.662689+00:00",
+      "timestamp": "2026-09-22T08:43:40.894382+00:00",
       "match_center": {
         "h2h": [
           {
@@ -10481,41 +10877,22 @@
           ]
         ],
         "statsH": {
-          "played": 21,
-          "win_pct": 0.714,
-          "scored": 122.9,
-          "conceded": 101.9,
+          "played": 22,
+          "win_pct": 0.682,
+          "scored": 116.4,
+          "conceded": 106.2,
           "rank": null,
           "prior_blended": false
         },
         "statsA": {
-          "played": 18,
-          "win_pct": 0.556,
-          "scored": 113.8,
-          "conceded": 107.6,
+          "played": 19,
+          "win_pct": 0.579,
+          "scored": 118.1,
+          "conceded": 101.9,
           "rank": null,
           "prior_blended": false
         }
-      },
-      "actual_home_score": 62,
-      "actual_away_score": 93,
-      "actual_result": "AWAY",
-      "halftime_home_score": 34,
-      "halftime_away_score": 44,
-      "halftime_total": 78,
-      "halftime_pct_of_model": 40.9,
-      "total_delta": 35.72,
-      "signed_delta": -35.72,
-      "total_rpe": 23.05,
-      "accuracy_tier": "BUST"
+      }
     }
-  ],
-  "graded_at": "2026-09-21T19:35:12.803318",
-  "grade_summary": {
-    "[  SRS   ]": {
-      "wins": 1,
-      "total": 3,
-      "pct": 33.3
-    }
-  }
+  ]
 }
