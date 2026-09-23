@@ -437,10 +437,11 @@ def parse_date(date_str):
             parts = [p for p in clean.split('.') if p]
             if len(parts) >= 2:
                 day, month = int(parts[0]), int(parts[1])
-                # Final completed games cannot be in the future (allow 1 day for timezone variance)
+                # Historical Flashscore files only contain completed past games.
+                # If the inferred date is today or in the future, it must be from the prior year.
                 year = NOW.year
                 candidate = datetime.datetime(year, month, day)
-                if candidate > NOW + datetime.timedelta(days=1):
+                if candidate >= NOW.replace(hour=0, minute=0, second=0, microsecond=0):
                     candidate = datetime.datetime(year - 1, month, day)
                 return candidate
     except:
@@ -759,7 +760,7 @@ def process_leagues():
                 "adj_t": round(pace_pivot, 1),
                 "std_dev_totals": std_dev_totals,
                 "games_played": data["games"],
-                "current_season_games": current_season_team_counts.get(team_name, data["games"]),
+                "current_season_games": current_season_team_counts.get(team_name, 0),
                 "wins": data["wins"],
                 "win_pct": win_pct,
                 "srs_rating": round(data["srs"], 2)
