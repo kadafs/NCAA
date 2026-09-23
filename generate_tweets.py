@@ -43,9 +43,9 @@ DEFAULT_MIN_ODDS  = 1.10
 DEFAULT_THRESHOLD = 70   # % confidence floor — main Poisson probability gate
 
 # Triple-filter thresholds
-LEAGUE_BTTS_FLOOR   = 55  # league safety gate: structural goal-friendliness (>50% of games score both ways)
+LEAGUE_BTTS_FLOOR   = 0   # 0 to disable (backtest showed early season cups/leagues hit at 74.5% even if league rate < 55%)
 TEAM_BTTS_THRESHOLD = 70  # team model accuracy gate: matches Poisson threshold — model must be proven right
-TEAM_MIN_PLAYS      = 8   # min graded predictions before team filter activates (~statistically meaningful)
+TEAM_MIN_PLAYS      = 3   # at least one team must have >= 3 graded games on record
 
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────
@@ -130,22 +130,21 @@ def real_market_edge(p):
 
 
 def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS,
-                  league_lb=None, team_lb=None, model_threshold=DEFAULT_THRESHOLD):
+                  league_lb=None, team_lb=None, model_threshold=DEFAULT_THRESHOLD,
+                  require_odds=False):
     """
-    Triple filter — a pick must pass ALL three:
-
-    1. LEAGUE safety gate (league_btts_hit_rate >= LEAGUE_BTTS_FLOOR):
-       Ensures the game is in a structurally goal-friendly league.
-       Uses a low 50% floor — just a sanity check, not the main signal.
-
-    2. POISSON model probability (btts_prob >= model_threshold):
+    BTTS Filter:
+    1. POISSON model probability (btts_prob >= model_threshold):
        The primary signal — the mathematical prediction for this exact game.
 
-    3. TEAM model accuracy (btts_hit_rate >= TEAM_BTTS_THRESHOLD):
-       Confirms our model has a proven track record on this team.
-       Gracefully SKIPPED if either team has fewer than TEAM_MIN_PLAYS graded.
+    2. TEAM model accuracy (btts_hit_rate >= TEAM_BTTS_THRESHOLD):
+       Requires AT LEAST ONE team to have >= TEAM_MIN_PLAYS graded games on record.
+       Any team with >= TEAM_MIN_PLAYS must have btts_hit_rate >= TEAM_BTTS_THRESHOLD.
 
-    Plus: positive real market edge and odds >= min_odds.
+    3. Optional LEAGUE safety gate (if LEAGUE_BTTS_FLOOR > 0).
+
+    4. Market edge & odds: if real odds > 1.0, requires positive edge & odds >= min_odds.
+       If require_odds=True, rejects picks without live odds in feed.
     """
     decision = p.get("btts_decision", "")
     if decision not in BTTS_PLAY_DECISIONS:
@@ -153,8 +152,8 @@ def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS,
 
     lid = p.get("league_id")
 
-    # ── Filter 1: League safety gate (>= 50%) ───────────────────────────
-    if league_lb is not None and lid:
+    # ── Filter 1: League safety gate (active only if LEAGUE_BTTS_FLOOR > 0)
+    if LEAGUE_BTTS_FLOOR > 0 and league_lb is not None and lid:
         rate = league_btts_hit_rate(lid, league_lb)
         if rate is not None and rate < LEAGUE_BTTS_FLOOR:
             return False
@@ -163,18 +162,34 @@ def is_value_btts(p, min_odds=DEFAULT_MIN_ODDS,
     if _safe(p.get("btts_prob", 0)) < model_threshold:
         return False
 
-    # ── Filter 3: Team model accuracy (only when >= TEAM_MIN_PLAYS) ─────
+    # ── Filter 3: Team model accuracy (at least one team >= TEAM_MIN_PLAYS) ───
     if team_lb is not None and lid:
-        for team_key in [p.get("home_team", ""), p.get("away_team", "")]:
-            entry = team_btts_entry(team_key, lid, team_lb)
-            if entry and entry.get("btts_plays", 0) >= TEAM_MIN_PLAYS:
-                if _safe(entry.get("btts_hit_rate", 100)) < TEAM_BTTS_THRESHOLD:
-                    return False   # model has a poor track record for this team
+        h_entry = team_btts_entry(p.get("home_team", ""), lid, team_lb)
+        a_entry = team_btts_entry(p.get("away_team", ""), lid, team_lb)
+        h_plays = h_entry.get("btts_plays", 0) if h_entry else 0
+        a_plays = a_entry.get("btts_plays", 0) if a_entry else 0
+        h_rate  = _safe(h_entry.get("btts_hit_rate", 100)) if h_entry else 100.0
+        a_rate  = _safe(a_entry.get("btts_hit_rate", 100)) if a_entry else 100.0
+
+        # Require at least one team to have >= TEAM_MIN_PLAYS on record
+        if h_plays < TEAM_MIN_PLAYS and a_plays < TEAM_MIN_PLAYS:
+            return False
+
+        # If either team has >= TEAM_MIN_PLAYS, accuracy must meet threshold
+        if h_plays >= TEAM_MIN_PLAYS and h_rate < TEAM_BTTS_THRESHOLD:
+            return False
+        if a_plays >= TEAM_MIN_PLAYS and a_rate < TEAM_BTTS_THRESHOLD:
+            return False
 
     # ── Market edge & odds ───────────────────────────────────────
-    if real_market_edge(p) <= 0:
+    mkt_odds = get_btts_market_odds(p)
+    if mkt_odds > 1.0:
+        if real_market_edge(p) <= 0 or mkt_odds < min_odds:
+            return False
+    elif require_odds:
         return False
-    return get_btts_market_odds(p) >= min_odds
+
+    return True
 
 
 def btts_display(p):
