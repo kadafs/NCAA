@@ -57,6 +57,21 @@ def prob_under(exp_val: float, line: float) -> float:
     return round(poisson_cdf(exp_val, k) * 100.0, 1)
 
 
+# Women's league keywords — shots baselines are calibrated on men's data only
+# Women's games average ~35-40 shots vs ~24 for men, causing systematic UNDER bias
+WOMENS_LEAGUE_KEYWORDS = (
+    " w ", " women", "frauen", "femenil", "feminin", "feminine",
+    "damen", "mulher", "donne", "vrouwen", "kvinde", "kvinner",
+    "naiset", "naisten", "nők", "womens", "woman",
+)
+
+
+def _is_womens_league(league: str, country: str = "") -> bool:
+    """Return True if the league name indicates a women's competition."""
+    combined = (league + " " + country).lower()
+    return any(kw in combined for kw in WOMENS_LEAGUE_KEYWORDS)
+
+
 def calculate_shots_prediction(
     home_profile: Optional[Dict[str, Any]],
     away_profile: Optional[Dict[str, Any]],
@@ -71,6 +86,11 @@ def calculate_shots_prediction(
     """
     h_prof = home_profile or {}
     a_prof = away_profile or {}
+
+    # Skip women's leagues — baselines calibrated on men's data only.
+    # Women's games average ~35-40 total shots vs ~24 for men, causing large UNDER bias.
+    if _is_womens_league(league, country):
+        return None
 
     # Check if teams are quarantined
     if h_prof.get("quarantined") or a_prof.get("quarantined"):
@@ -160,31 +180,38 @@ def calculate_shots_prediction(
     prob_over_9_5_sot = prob_over(exp_total_sot, SOT_LINE_HIGH)
 
     # 6. Actionable Market Calls
+    # Guard: suppress all calls when exp_total_shots is suspiciously low.
+    # Values below 18 indicate missing/bad historical data (e.g. Belarus, low-tier leagues
+    # with no API shot stats) — the Poisson model has no reliable signal in this range.
+    DATA_QUALITY_FLOOR = 18.0
+
     # Shots Call
     shots_call = "PASS"
     shots_call_line = ""
-    if prob_over_26_5_shots >= CALL_CONFIDENCE_THRESHOLD:
-        shots_call = "OVER 26.5"
-        shots_call_line = "OVER 26.5"
-    elif prob_over_24_5_shots >= CALL_CONFIDENCE_THRESHOLD:
-        shots_call = "OVER 24.5"
-        shots_call_line = "OVER 24.5"
-    elif (100.0 - prob_over_22_5_shots) >= CALL_CONFIDENCE_THRESHOLD:
-        shots_call = "UNDER 22.5"
-        shots_call_line = "UNDER 22.5"
+    if exp_total_shots >= DATA_QUALITY_FLOOR:
+        if prob_over_26_5_shots >= CALL_CONFIDENCE_THRESHOLD:
+            shots_call = "OVER 26.5"
+            shots_call_line = "OVER 26.5"
+        elif prob_over_24_5_shots >= CALL_CONFIDENCE_THRESHOLD:
+            shots_call = "OVER 24.5"
+            shots_call_line = "OVER 24.5"
+        elif (100.0 - prob_over_22_5_shots) >= CALL_CONFIDENCE_THRESHOLD:
+            shots_call = "UNDER 22.5"
+            shots_call_line = "UNDER 22.5"
 
     # SoT Call
     sot_call = "PASS"
     sot_call_line = ""
-    if prob_over_9_5_sot >= CALL_CONFIDENCE_THRESHOLD:
-        sot_call = "OVER 9.5"
-        sot_call_line = "OVER 9.5"
-    elif prob_over_8_5_sot >= CALL_CONFIDENCE_THRESHOLD:
-        sot_call = "OVER 8.5"
-        sot_call_line = "OVER 8.5"
-    elif (100.0 - prob_over_7_5_sot) >= CALL_CONFIDENCE_THRESHOLD:
-        sot_call = "UNDER 7.5"
-        sot_call_line = "UNDER 7.5"
+    if exp_total_shots >= DATA_QUALITY_FLOOR:
+        if prob_over_9_5_sot >= CALL_CONFIDENCE_THRESHOLD:
+            sot_call = "OVER 9.5"
+            sot_call_line = "OVER 9.5"
+        elif prob_over_8_5_sot >= CALL_CONFIDENCE_THRESHOLD:
+            sot_call = "OVER 8.5"
+            sot_call_line = "OVER 8.5"
+        elif (100.0 - prob_over_7_5_sot) >= CALL_CONFIDENCE_THRESHOLD:
+            sot_call = "UNDER 7.5"
+            sot_call_line = "UNDER 7.5"
 
     return {
         "exp_home_shots": exp_home_shots,
