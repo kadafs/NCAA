@@ -681,8 +681,18 @@ def process_leagues():
         from collections import Counter as _Counter
         current_season_team_counts = _Counter()
         for _g in current_season_games:
-            if _g.get("home_team"): current_season_team_counts[_g["home_team"]] += 1
-            if _g.get("away_team"): current_season_team_counts[_g["away_team"]] += 1
+            ht = _g.get("home_team")
+            at = _g.get("away_team")
+            if ht:
+                current_season_team_counts[ht] += 1
+                c_ht = CROSS_SOURCE_CANONICAL_MAP.get(ht)
+                if c_ht and c_ht != ht:
+                    current_season_team_counts[c_ht] += 1
+            if at:
+                current_season_team_counts[at] += 1
+                c_at = CROSS_SOURCE_CANONICAL_MAP.get(at)
+                if c_at and c_at != at:
+                    current_season_team_counts[c_at] += 1
 
         if is_early_season:
             # Look back 365 days to anchor with the prior season
@@ -768,7 +778,7 @@ def process_leagues():
                 "adj_t": round(pace_pivot, 1),
                 "std_dev_totals": std_dev_totals,
                 "games_played": data["games"],
-                "current_season_games": current_season_team_counts.get(team_name, data["games"]),
+                "current_season_games": current_season_team_counts.get(team_name, 0),
                 "wins": data["wins"],
                 "win_pct": win_pct,
                 "srs_rating": round(data["srs"], 2)
@@ -800,6 +810,8 @@ def process_leagues():
         # Write [ADVANCED] — uses GENUINE efficiency ratings, not SRS clone
         adv_stats = calculate_advanced_ratings(filtered_games, pace_pivot=pace_pivot) if advanced_eligible else []
         if adv_stats:
+            for t in adv_stats:
+                t["current_season_games"] = current_season_team_counts.get(t["team_name"], 0)
             payload_adv = {
                 "league_id": league_id,
                 "season": season,

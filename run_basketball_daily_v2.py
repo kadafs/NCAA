@@ -1076,8 +1076,8 @@ def main():
                         "recentA": recentA,
                         "full_standings": league_standings_data,
                         "statsH": {
-                            "played": sH.get("current_season_games", sH.get("played", sH.get("games_played", 0))) if sH else 0,
-                            "current_season_games": sH.get("current_season_games", sH.get("played", sH.get("games_played", 0))) if sH else 0,
+                            "played": sH.get("current_season_games") if (sH and sH.get("current_season_games") is not None) else (sH.get("played", sH.get("games_played", 0)) if sH else 0),
+                            "current_season_games": sH.get("current_season_games") if (sH and sH.get("current_season_games") is not None) else (sH.get("played", sH.get("games_played", 0)) if sH else 0),
                             "model_games": sH.get("games_played", 0) if sH else 0,
                             "win_pct": sH.get("win_pct", 0) if sH else 0,
                             "scored": sH.get("adj_off", 0) if sH else 0,
@@ -1086,8 +1086,8 @@ def main():
                             "prior_blended": bool(sH.get("prior_blended")) if sH else False,
                         },
                         "statsA": {
-                            "played": sA.get("current_season_games", sA.get("played", sA.get("games_played", 0))) if sA else 0,
-                            "current_season_games": sA.get("current_season_games", sA.get("played", sA.get("games_played", 0))) if sA else 0,
+                            "played": sA.get("current_season_games") if (sA and sA.get("current_season_games") is not None) else (sA.get("played", sA.get("games_played", 0)) if sA else 0),
+                            "current_season_games": sA.get("current_season_games") if (sA and sA.get("current_season_games") is not None) else (sA.get("played", sA.get("games_played", 0)) if sA else 0),
                             "model_games": sA.get("games_played", 0) if sA else 0,
                             "win_pct": sA.get("win_pct", 0) if sA else 0,
                             "scored": sA.get("adj_off", 0) if sA else 0,
